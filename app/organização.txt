@@ -1,0 +1,352 @@
+
+# =============================================================================
+# MotoGuard IoT — MAPA DE ETAPAS DO PROJETO
+# =============================================================================
+# Baseado na Proposta de Licenciatura 2025/2026
+# Orientadores: Cristiano Pendão, Arsénio Reis (UTAD)
+# =============================================================================
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ANÁLISE: PROPOSTA vs ESTADO ATUAL
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#  O que a PROPOSTA exige:
+#    1. Familiarização com o tema do projeto
+#    2. Implementação da plataforma web
+#    3. Lógica heurística para deteção de eventos de risco (IMU/GPS)
+#    4. Avaliação, testes com dados simulados/reais + notificações
+#    5. Documentação técnica e análise dos resultados
+#
+#  Funcionalidades mencionadas na apresentação:
+#    · Plataforma web que processa dados de sensores IMU e GPS
+#    · Backend com ingestão de dados via API REST/MQTT
+#    · Base de dados para histórico de viagens
+#    · Frontend com gráficos interativos e mapas
+#    · Registo de viagens e análise pós-viagem
+#    · Deteção de eventos de risco por limiares (travagens bruscas, vibrações)
+#    · Relatórios exportáveis
+#    · Notificações proativas (cruzar dados com regras heurísticas)
+#    · Contributo comunitário (mapeamento colaborativo condições de estrada)
+#    · Acessível via web e/ou mobile
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  O que JÁ TEMOS (concluído):
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#    [✔] Simulador Python completo (motoguard_simulator.py)
+#        → Gera telemetria realista: velocidade, RPM, temp, IMU, GPS, etc.
+#        → 18 subsistemas físicos interligados (aceleração→pitch, yaw→roll, etc.)
+#    [✔] Configuração com 8 perfis de mota (config.py)
+#        → Scooter, Naked, Desportiva, Trail, Cruiser, Motocross, Touring, Supermotard
+#    [✔] Payload JSON completo (data contract documentado em a_ver.txt)
+#        → telemetry, imu, active_safety, health, location, environment, system
+#    [✔] Comunicação MQTT funcional (broker.hivemq.com)
+#        → Publica telemetria 1x/segundo, recebe comandos
+#    [✔] Deteção de queda com thresholds específicos por modelo
+#    [✔] Mini-GUI debug com customtkinter
+#    [✔] Documentação de variáveis ambientais externas
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  O que FALTA (por fazer):
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#    [✘] Plataforma Web — Frontend (React.js)
+#    [✘] Backend — API REST + subscrição MQTT (Node.js)
+#    [✘] Base de dados — InfluxDB (telemetria) + PostgreSQL (utilizadores)
+#    [✘] Registo e histórico de viagens
+#    [✘] Lógica heurística de deteção de eventos no backend
+#    [✘] Gráficos interativos e mapas em tempo real
+#    [✘] Análise pós-viagem e relatórios exportáveis
+#    [✘] Sistema de notificações proativas
+#    [✘] Mapeamento colaborativo de condições de estrada
+#    [✘] Testes com dados simulados e reais
+#    [✘] Documentação técnica final
+#
+
+
+# =============================================================================
+#  MAPA DE ETAPAS
+# =============================================================================
+#
+#  Organizado por fases sequenciais. Dentro de cada fase, as tarefas podem
+#  ser feitas em paralelo por 2 elementos do grupo.
+#
+# =============================================================================
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 0 — FAMILIARIZAÇÃO COM O TEMA  [CONCLUÍDA ✔]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 1 da proposta.
+#
+#  [✔] 0.1  Estudo de sistemas de telemetria (MotoGP, track days)
+#  [✔] 0.2  Definição dos sensores e variáveis a monitorizar
+#  [✔] 0.3  Escolha do stack tecnológico (fundamentos.txt)
+#  [✔] 0.4  Criação dos perfis de modelos de mota com limiares reais
+#  [✔] 0.5  Documentação do data contract / payload JSON
+#  [✔] 0.6  Implementação do simulador (Digital Twin) como fonte de dados
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 1 — INFRAESTRUTURA E BACKEND           [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 2 da proposta (parte backend).
+#
+#  [✔] 1.1  Configurar Docker Compose
+#           → Contentores: Node.js backend, InfluxDB, PostgreSQL, Mosquitto
+#           → docker-compose.yml com volumes e redes
+#           → .env / .env.example / Dockerfile / mosquitto.conf
+#           → Docker Desktop instalado, docker compose up testado
+#
+#  [✔] 1.2  Configurar broker MQTT local (Eclipse Mosquitto)
+#           → Broker local (Docker) substituiu broker público (hivemq)
+#           → Autenticação básica OK (3 users: motoguard, simulator, backend)
+#           → ACL por tópico configurado
+#           → WebSocket na porta 9001 (para frontend React)
+#           → Serviço Mosquitto local do Windows desativado (conflito porta)
+#           → Script de teste: simulador/test_mqtt_broker.py (7/7 testes OK)
+#
+#  [ ] 1.3  Criar projeto Node.js (backend)
+#           → Express.js + TypeScript
+#           → Estrutura de pastas: routes/, controllers/, services/, models/
+#
+#  [ ] 1.4  Subscrição MQTT no backend
+#           → Ligar ao broker local via mqtt.js
+#           → Receber telemetria do simulador em tempo real
+#           → Parsear payload JSON e validar estrutura
+#
+#  [ ] 1.5  Modelar base de dados PostgreSQL
+#           → Tabelas: users, motorcycles, trips, trip_events, road_reports
+#           → Migrations com Prisma ou Knex
+#
+#  [ ] 1.6  Configurar InfluxDB para telemetria
+#           → Bucket: motoguard_telemetry
+#           → Pontos: speed, rpm, temp, roll, pitch, gps, voltage, etc.
+#           → Retenção: 30 dias detalhado, 1 ano agregado
+#
+#  [ ] 1.7  API REST — endpoints base
+#           → POST /api/auth/register, POST /api/auth/login (JWT)
+#           → GET /api/trips, GET /api/trips/:id
+#           → GET /api/telemetry/:tripId (query InfluxDB)
+#           → POST /api/motorcycles (associar mota ao user)
+#
+#  [ ] 1.8  WebSocket para dados em tempo real
+#           → Socket.IO — reencaminha telemetria MQTT→WebSocket para frontend
+#           → Eventos: telemetry_update, alert, trip_started, trip_ended
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 2 da proposta (parte frontend).
+#
+#  [ ] 2.1  Criar projeto React.js (Vite + TypeScript)
+#           → Instalar dependências: react-router, axios, socket.io-client
+#           → Estrutura: pages/, components/, hooks/, services/
+#
+#  [ ] 2.2  Layout e navegação base
+#           → Sidebar/navbar: Dashboard, Viagens, Mapa, Perfil
+#           → Design responsivo (web + mobile-friendly)
+#
+#  [ ] 2.3  Página — Dashboard em Tempo Real
+#           → Gauges animados: velocidade, RPM, temperatura, voltagem
+#           → IMU visual: roll e pitch com representação gráfica da mota
+#           → Estado do sistema: alertas ativos, segurança (ABS, TC)
+#           → Mapa com posição GPS em tempo real (Leaflet.js ou Mapbox)
+#
+#  [ ] 2.4  Página — Histórico de Viagens
+#           → Lista de viagens com data, duração, distância, eventos
+#           → Filtros por data, modelo de mota, tipo de evento
+#
+#  [ ] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
+#           → Gráficos interativos (Recharts ou Chart.js):
+#             · Velocidade ao longo do tempo
+#             · RPM vs velocidade  
+#             · Temperatura do motor
+#             · Ângulo de inclinação (roll) por curva
+#             · Pressão dos pneus e óleo
+#           → Mapa com rota percorrida + pontos de evento marcados
+#           → Resumo: velocidade média/máx, inclinação máx por curva, eventos
+#
+#  [ ] 2.6  Página — Mapa Colaborativo
+#           → Mapeamento de condições de estrada reportadas pela comunidade
+#           → Marcadores: buracos, piso escorregadio, obras, zonas perigosas
+#
+#  [ ] 2.7  Exportação de Relatórios
+#           → PDF com resumo da viagem + gráficos
+#           → CSV com dados brutos de telemetria
+#
+#  [ ] 2.8  Autenticação — Login/Registo
+#           → Formulários de login e registo
+#           → Armazenamento de JWT, refresh automático
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 3 da proposta.
+#
+#  [ ] 3.1  Motor de regras heurísticas no backend
+#           → Recebe telemetria em tempo real e aplica regras
+#           → Configurável por modelo de mota (thresholds do config.py)
+#
+#  [ ] 3.2  Deteção de eventos de risco
+#           → Travagem brusca: desaceleração > X G + brakes > 80%
+#           → Vibração anómala: picos em accel_z fora do padrão
+#           → Inclinação excessiva: roll > threshold do modelo
+#           → Sobreaquecimento: temp > limiar durante Y segundos
+#           → Falha de alternador: voltagem a descer progressivamente
+#           → Queda confirmada: G-force + roll + imobilidade
+#
+#  [ ] 3.3  Classificação de severidade
+#           → INFO: leituras fora do habitual mas não perigosas
+#           → WARNING: valores em zona de atenção
+#           → CRITICAL: evento de risco confirmado
+#
+#  [ ] 3.4  Análise preditiva simples
+#           → Tendência de temperatura (vai sobreadecer em X minutos?)
+#           → Padrão de voltagem (alternador a falhar?)
+#           → Desgaste de pneus (pressão a descer consistentemente?)
+#
+#  [ ] 3.5  Cruzamento com dados externos
+#           → API meteorológica: alertas de precipitação na rota
+#           → Condições reportadas pela comunidade (Fase 2.6)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 4 — NOTIFICAÇÕES E ALERTAS             [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 4 da proposta (parte notificações).
+#
+#  [ ] 4.1  Sistema de notificações em tempo real
+#           → Alertas via WebSocket → popup no dashboard
+#           → Sons/vibração para alertas CRITICAL
+#
+#  [ ] 4.2  Notificações proativas
+#           → "Atenção: chuva prevista na sua rota dentro de 30 min"
+#           → "Zona com buracos reportados a 2 km à frente"
+#           → "Temperatura do motor a subir — considere parar"
+#
+#  [ ] 4.3  Histórico de notificações
+#           → Log de todos os alertas gerados por viagem
+#           → Associar alertas a pontos GPS no mapa da viagem
+#
+#  [ ] 4.4  Contacto de emergência (opcional)
+#           → Em caso de queda confirmada, enviar SMS/email ao contacto
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 5 — TESTES E VALIDAÇÃO                 [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 4 da proposta (parte testes).
+#
+#  [ ] 5.1  Testes com dados simulados
+#           → Usar o simulador existente para gerar cenários:
+#             · Condução normal (30 min por modelo)
+#             · Evento de queda + confirmação
+#             · Falha de alternador progressiva
+#             · Sobreaquecimento em trânsito lento
+#           → Validar que o backend deteta todos os eventos corretamente
+#
+#  [ ] 5.2  Testes com dados reais (ficheiros GPX)
+#           → Importar rotas GPX reais (ideia já registada em ideias.txt)
+#           → Replay de dados GPS reais pelo simulador
+#           → Comparar com expectativas de condução real
+#
+#  [ ] 5.3  Testes de integração
+#           → Simulador → MQTT → Backend → InfluxDB → WebSocket → Frontend
+#           → Cadeia completa funcional ponta a ponta
+#
+#  [ ] 5.4  Testes de usabilidade
+#           → Testar dashboard com 2-3 utilizadores
+#           → Feedback sobre visualizações e alertas
+#
+#  [ ] 5.5  Métricas de performance
+#           → Latência: tempo desde geração do dado até visualização
+#           → Taxa de falsos positivos nos alertas
+#           → Carga: quantos pontos/segundo o sistema suporta
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 6 — DOCUMENTAÇÃO E ENTREGA             [POR FAZER]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 5 da proposta.
+#
+#  [ ] 6.1  Relatório técnico do projeto
+#           → Introdução, estado da arte, arquitetura, implementação
+#           → Diagramas: sistema, base de dados, fluxo de dados
+#
+#  [ ] 6.2  Análise de resultados
+#           → Métricas de deteção (precisão, recall dos alertas)
+#           → Comparação entre dados simulados vs reais
+#           → Screenshots e demonstrações do dashboard
+#
+#  [ ] 6.3  Manual de utilização
+#           → Como instalar (Docker), como usar, como configurar
+#
+#  [ ] 6.4  Apresentação final
+#           → Slides + demo em tempo real do sistema completo
+
+
+# =============================================================================
+#  RESUMO — PROGRESSO GLOBAL
+# =============================================================================
+#
+#  FASE 0 — Familiarização ............... [██████████] 100%  ✔
+#  FASE 1 — Infraestrutura e Backend ..... [██░░░░░░░░]  25%  (1.1 + 1.2 ✔)
+#  FASE 2 — Frontend (Plataforma Web) .... [░░░░░░░░░░]   0%
+#  FASE 3 — Lógica Heurística ........... [░░░░░░░░░░]   0%
+#  FASE 4 — Notificações e Alertas ....... [░░░░░░░░░░]   0%
+#  FASE 5 — Testes e Validação ........... [░░░░░░░░░░]   0%
+#  FASE 6 — Documentação e Entrega ....... [░░░░░░░░░░]   0%
+#
+#  PROGRESSO TOTAL ≈ 15% (Fase 0 concluída de 7 fases)
+#
+# =============================================================================
+
+
+# =============================================================================
+#  STACK TECNOLÓGICO (confirmado em fundamentos.txt)
+# =============================================================================
+#
+#  ┌───────────────────────┬──────────────────────────────────┐
+#  │ Componente            │ Tecnologia                       │
+#  ├───────────────────────┼──────────────────────────────────┤
+#  │ Simulador             │ Python + CustomTkinter           │
+#  │ Broker MQTT           │ Eclipse Mosquitto (Docker)       │
+#  │ Backend               │ Node.js + TypeScript (Express)   │
+#  │ BD Telemetria         │ InfluxDB                         │
+#  │ BD Relacional         │ PostgreSQL                       │
+#  │ Frontend              │ React.js + TypeScript            │
+#  │ Gráficos              │ Recharts / Chart.js              │
+#  │ Mapas                 │ Leaflet.js / Mapbox              │
+#  │ Real-time             │ Socket.IO (WebSocket)            │
+#  │ Infraestrutura        │ Docker + Docker Compose          │
+#  └───────────────────────┴──────────────────────────────────┘
+#
+# =============================================================================
+
+
+# =============================================================================
+#  ARQUITETURA DO SISTEMA (visão geral)
+# =============================================================================
+#
+#  ┌─────────────┐    MQTT     ┌───────────┐    Write    ┌──────────┐
+#  │ Simulador   │ ──────────► │ Mosquitto │ ──────────► │ InfluxDB │
+#  │ (Python)    │             │ (Broker)  │             │ (Series) │
+#  └─────────────┘             └─────┬─────┘             └────┬─────┘
+#                                    │ Subscribe                │ Query
+#                              ┌─────▼─────┐                   │
+#                              │  Backend  │ ◄─────────────────┘
+#                              │ (Node.js) │
+#                              │           │ ──► PostgreSQL (users, trips)
+#                              └─────┬─────┘
+#                                    │ WebSocket + REST API
+#                              ┌─────▼─────┐
+#                              │ Frontend  │
+#                              │ (React)   │
+#                              │ Dashboard │
+#                              └───────────┘
+#
+# =============================================================================

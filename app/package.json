@@ -1,0 +1,17 @@
+{
+  "name": "motoguard-backend",
+  "version": "1.0.0",
+  "description": "MotoGuard IoT — Backend API",
+  "main": "backend/index.js",
+  "scripts": {
+    "dev": "node backend/index.js",
+    "start": "node backend/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "mqtt": "^5.10.0",
+    "socket.io": "^4.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0"
+  }
+}
