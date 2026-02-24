@@ -1,0 +1,2 @@
+ideal colocar um secacao que ira se basear em viagens reais extraidas de ficheiros gpx
+com isto teremos outra aba na app focada em analisar as rotas gpx

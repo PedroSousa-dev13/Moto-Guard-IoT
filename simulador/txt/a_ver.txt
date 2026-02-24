@@ -1,0 +1,242 @@
+
+
+# =============================================================================
+# MotoGuard IoT — Estrutura Completa do Payload JSON
+# =============================================================================
+# Este ficheiro documenta TODAS as variáveis do payload MQTT publicado
+# pelo simulador, incluindo variáveis ambientais externas que influenciam
+# as leituras dos sensores.
+#
+# Legenda:
+#   [ATIVO]    → Variável gerada pelo simulador (motoguard_simulator.py)
+#   [AMBIENTE] → Factor externo que influencia as leituras (não é enviado 
+#                diretamente, mas pode ser simulado para alterar valores)
+# =============================================================================
+
+{
+  # ─── IDENTIFICAÇÃO ────────────────────────────────────────────────────────
+
+  # [ATIVO] Identificador único do dispositivo IoT instalado na mota
+  "device_id": "MOTOGUARD-SIM-01",
+
+  # [ATIVO] Data/hora UTC em que o pacote foi gerado (formato ISO 8601)
+  "timestamp": "2026-02-23T20:45:00Z",
+
+  # [ATIVO] Modelo/perfil de mota selecionado (ex: Naked, Scooter, Desportiva…)
+  # Define os limites de velocidade, RPM, temperatura, roll, etc.
+  "modelo": "Naked",
+
+  # ─── TELEMETRIA DO VEÍCULO ────────────────────────────────────────────────
+
+  "telemetry": {
+
+    # [ATIVO] Velocidade instantânea em km/h — sensor de roda ou GPS
+    # Usada para detetar paragem pós-queda e calcular RPM proporcional
+    "speed_kmh": 120.5,
+
+    # [ATIVO] Rotações por minuto do motor
+    # Valor proporcional à velocidade; picos sem aumento de velocidade → patinagem
+    "rpm": 8500,
+
+    # [ATIVO] Temperatura do motor em graus Celsius
+    # Monitoriza sobreaquecimento; sobe com velocidade/carga, desce em repouso
+    "engine_temp_c": 92,
+
+    # [ATIVO] Mudança/velocidade engrenada (0=neutro, 1-6)
+    # Calculada proporcionalmente à velocidade; 0 quando parado
+    "gear": 4,
+
+    # [ATIVO] Posição do acelerador em percentagem (0-100%)
+    # MUTUAMENTE EXCLUSIVO com brakes: se acelera, brakes = 0 e vice-versa
+    # Proporcional à diferença entre velocidade alvo e atual
+    "throttle_pct": 85,
+
+    # [ATIVO] Estado da embraiagem (true = puxada / false = solta)
+    # True quando parado OU durante 2 ticks ao trocar de mudança (gear change)
+    "clutch_engaged": false,
+
+    # [ATIVO] Pressão nos travões em percentagem (0-100%)
+    # MUTUAMENTE EXCLUSIVO com throttle; ativam ao desacelerar (vel_diff < -5)
+    # Front > rear (distribuição de travagem realista)
+    "brakes": { "front_pct": 0, "rear_pct": 0 },
+
+    # [ATIVO] Quilometragem total acumulada (incrementa a cada tick)
+    # Calculada a partir da velocidade instantânea: vel_km/h ÷ 3600
+    "odometer_km": 1250.3,
+
+    # ─── IMU (Unidade de Medição Inercial) ──────────────────────────────
+
+    "imu": {
+      # [ATIVO] Inclinação lateral em graus (limitada por roll_tipico_max do modelo)
+      # DERIVADO DO YAW: quanto mais a estrada curva, mais a mota inclina
+      # Roll é proporcional à diferença angular (yaw_diff) × velocidade
+      # Usado na deteção de queda (threshold por modelo: Scooter=55°, Desportiva=85°)
+      "roll": 15.4,
+
+      # [ATIVO] Inclinação frontal/traseira em graus (-45 a 45)
+      # DERIVADO DA ACELERAÇÃO: travar = nariz desce (negativo), acelerar = nariz sobe
+      # Proporcional a acceleration × -0.8
+      "pitch": -1.2,
+
+      # [ATIVO] Orientação/bússola em graus (0-360)
+      # INTERLIGADO COM ROLL: yaw muda proporcionalmente ao roll e velocidade
+      # Fórmula: yaw += roll × 0.08 × speed_factor (curva real da mota)
+      "yaw": 185.0,
+
+      # [ATIVO] Aceleração longitudinal (G) — derivada do pitch (eixo frente/trás)
+      # Valores altos indicam travagem ou aceleração forte
+      "accel_x": 0.02,
+
+      # [ATIVO] Aceleração lateral (G) — derivada do roll / sin(roll)
+      # Componente de inclinação lateral projetada (curvas)
+      "accel_y": 0.85,
+
+      # [ATIVO] Aceleração vertical (G) — derivada do roll (coseno)
+      # Em repouso ≈ 1.0G (gravidade); picos = buracos, saltos ou impacto
+      "accel_z": 1.01,
+
+      # [ATIVO] Força G total no momento do impacto
+      # Gerada durante evento de queda; usada para confirmar colisão real
+      # Threshold varia por modelo (ex: Touring=1.5G, Motocross=3.5G)
+      "g_force": 0.0
+    }
+  },
+
+  # ─── SEGURANÇA ATIVA ──────────────────────────────────────────────────────
+
+  "active_safety": {
+    # [ATIVO] ABS ativo — probabilístico quando travão dianteiro >60% e vel >30 km/h
+    # Picos frequentes → piso escorregadio ou travagem de emergência
+    "abs_active": false,
+
+    # [ATIVO] Controlo de tração ativo — probabilístico quando throttle >70% e vel >20 km/h
+    # Ativações frequentes → chuva, areia ou aceleração excessiva
+    "tc_active": true,
+
+    # [ATIVO] Descanso lateral em baixo (true = descanso aberto)
+    # Apenas true quando a mota está parada (vel < 1 km/h), com baixa probabilidade
+    "side_stand_down": false
+  },
+
+  # ─── SAÚDE DO VEÍCULO ────────────────────────────────────────────────────
+
+  "health": {
+    # [ATIVO] Pressão do óleo em bar — proporcional ao RPM (1.5 + rpm_ratio × 3.5)
+    # Desce durante sobreaquecimento; valor baixo → risco de gripagem
+    "oil_pressure_bar": 4.5,
+
+    # [ATIVO] Tensão da bateria em Volt (normal ≈ 14.2V com alternador)
+    # Queda abaixo de 11V → falha do alternador; abaixo de 10V → mota pode parar
+    "battery_voltage": 14.2,
+
+    # [ATIVO] Pressão dos pneus em bar (TPMS) — varia com temperatura do motor
+    # Front: 2.3-3.2 bar; Rear: 2.6-3.5 bar; sobe com aquecimento
+    "tire_pressure_bar": { "front": 2.5, "rear": 2.9 }
+  },
+
+  # ─── LOCALIZAÇÃO GPS ──────────────────────────────────────────────────────
+
+  "location": {
+    # [ATIVO] Latitude GPS — MOVE-SE NA DIREÇÃO DO YAW à velocidade atual
+    # Fórmula: lat += (speed_m/s × cos(yaw)) / 111320 + ruído GPS (±0.2m)
+    "lat": 41.2951,
+
+    # [ATIVO] Longitude GPS — MOVE-SE NA DIREÇÃO DO YAW à velocidade atual
+    # Fórmula: lng += (speed_m/s × sin(yaw)) / (111320 × cos(lat)) + ruído GPS
+    "lng": -7.7463
+  },
+
+  # ─── ESTADO DO SISTEMA ────────────────────────────────────────────────────
+
+  "system": {
+    # [ATIVO] Estado atual da mota detetado pelo sistema:
+    #   "normal"             → funcionamento regular
+    #   "possivel_queda"     → sensores indicam possível queda (a confirmar)
+    #   "queda_confirmada"   → queda confirmada após X segundos de imobilidade
+    #   "falha_alternador"   → voltagem abaixo do limiar crítico
+    #   "sobreaquecimento"   → temperatura acima do limiar crítico do modelo
+    "status": "normal",
+
+    # [ATIVO] Voltagem da bateria (duplicado de health para acesso rápido)
+    "battery_voltage": 14.2
+  },
+
+  # ─── LIMITES DO MODELO ATIVO ──────────────────────────────────────────────
+  # Enviados em cada pacote para que o backend saiba os limites do perfil
+  # sem precisar de manter uma cópia local dos perfis
+
+  "limites_modelo": {
+    # [ATIVO] Velocidade máxima do modelo em km/h
+    "velocidade_max": 200,
+
+    # [ATIVO] RPM máximo do motor
+    "rpm_max": 12000,
+
+    # [ATIVO] Temperatura máxima normal do motor em °C
+    "temp_max": 105,
+
+    # [ATIVO] Roll típico máximo para o tipo de condução (graus)
+    "roll_tipico_max": 40
+  },
+
+  # ─── AMBIENTE / LUZ ──────────────────────────────────────────────────────
+
+  "environment": {
+    # [ATIVO] Luminosidade ambiente em lux (ciclo dia/noite simulado a cada 30 min)
+    # 0-50 lux = noite/túnel; 50-550 lux = dia; variação com ruído
+    "ambient_light_lux": 450
+  }
+}
+
+
+# =============================================================================
+# VARIÁVEIS EXTERNAS / AMBIENTAIS
+# =============================================================================
+# Factores externos que NÃO são enviados diretamente como campos no payload,
+# mas que influenciam as leituras dos sensores e devem ser considerados
+# na lógica de deteção de anomalias (filtros, thresholds adaptativos, etc.)
+#
+# O simulador pode modelar estes efeitos para gerar dados mais realistas.
+# =============================================================================
+
+# [AMBIENTE] Temperatura Ambiente (°C)
+# Frio extremo reduz a pressão natural dos pneus e atrasa o aquecimento do motor.
+# Asfalto muito quente (ex: 50°C no verão) expande o ar nos pneus (aumenta TPMS)
+# e agrava o sobreaquecimento em trânsito lento.
+# → Afeta: tire_pressure_bar, engine_temp_c
+
+# [AMBIENTE] Vento Cruzado (km/h e direção)
+# Obriga a mota a inclinar-se para compensar a força do vento, gerando leitura
+# de Roll no IMU mesmo numa reta perfeita.
+# → Afeta: imu.roll, imu.accel_y
+
+# [AMBIENTE] Chuva / Estado do Piso (seco, molhado, alagado)
+# Pode gerar pico súbito de RPM sem aumento de velocidade correspondente
+# (pneu traseiro a patinar no asfalto molhado). Ativa ABS e TC com mais frequência.
+# → Afeta: rpm, speed_kmh, abs_active, tc_active
+
+# [AMBIENTE] Irregularidades no Piso (buracos, empedrado, lombas)
+# Causa vibrações extremas e picos repentinos no eixo Z da aceleração (accel_z),
+# gerando "ruído" nos gráficos ou até falsos alarmes de queda se o backend
+# não tiver filtro para ignorar saltos rápidos.
+# → Afeta: imu.accel_z, imu.accel_x, g_force
+
+# [AMBIENTE] Declive da Estrada (subida/descida em %)
+# Altera permanentemente o eixo frontal (pitch) durante o trajeto.
+# O sistema tem de distinguir declive de travagem a fundo ou aceleração forte.
+# → Afeta: imu.pitch, imu.accel_x
+
+# [AMBIENTE] Carga Extra (passageiro ou bagagem pesada, kg)
+# Afunda a suspensão traseira, alterando a geometria e o pitch base da mota.
+# Aumenta a inércia, exigindo mais tempo e distância para reduzir a velocidade.
+# → Afeta: imu.pitch, g_force, brakes (distância de travagem)
+
+# [AMBIENTE] Altitude (metros acima do nível do mar)
+# Ar mais rarefeito altera a combustão (mais RPM para mesma velocidade)
+# e afeta ligeiramente as leituras de pressão dos pneus.
+# → Afeta: rpm, tire_pressure_bar
+
+# [AMBIENTE] Bloqueios Físicos (túneis, prédios altos, vales profundos)
+# Causam perda imediata de leitura GPS e podem cortar a ligação de rede móvel,
+# impedindo o envio de pacotes MQTT em tempo real.
+# → Afeta: location.lat, location.lng, conectividade MQTT

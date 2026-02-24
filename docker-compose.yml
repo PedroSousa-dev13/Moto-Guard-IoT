@@ -1,0 +1,123 @@
+# =============================================================================
+# MotoGuard IoT — Docker Compose
+# =============================================================================
+# Serviços:
+#   1. mosquitto   — Broker MQTT (Eclipse Mosquitto)
+#   2. influxdb    — Base de dados de séries temporais (telemetria)
+#   3. postgres    — Base de dados relacional (utilizadores, viagens)
+#   4. backend     — API Node.js (Express + TypeScript)
+# =============================================================================
+
+services:
+
+  # ─── MQTT Broker ────────────────────────────────────────────────────────
+  mosquitto:
+    build:
+      context: ./docker/mosquitto
+      dockerfile: Dockerfile
+    container_name: motoguard-mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"       # MQTT
+      - "${MQTT_WS_PORT:-9001}:9001"    # WebSocket (para frontend)
+    environment:
+      MQTT_USER: ${MQTT_USER:-motoguard}
+      MQTT_PASS: ${MQTT_PASS:-motoguard123}
+      MQTT_SIM_USER: ${MQTT_SIM_USER:-simulator}
+      MQTT_SIM_PASS: ${MQTT_SIM_PASS:-simulator123}
+      MQTT_BACK_USER: ${MQTT_BACK_USER:-backend}
+      MQTT_BACK_PASS: ${MQTT_BACK_PASS:-backend123}
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - motoguard-net
+
+  # ─── InfluxDB (Telemetria) ─────────────────────────────────────────────
+  influxdb:
+    image: influxdb:2
+    container_name: motoguard-influxdb
+    restart: unless-stopped
+    ports:
+      - "${INFLUXDB_PORT:-8086}:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-motoguard}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-motoguard123}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-motoguard}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    networks:
+      - motoguard-net
+
+  # ─── PostgreSQL (Utilizadores, Viagens) ────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: motoguard-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-motoguard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-motoguard123}
+      POSTGRES_DB: ${POSTGRES_DB:-motoguard}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - motoguard-net
+
+  # ─── Backend Node.js ───────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: motoguard-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # MQTT
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_USER: ${MQTT_BACK_USER:-backend}
+      MQTT_PASS: ${MQTT_BACK_PASS:-backend123}
+      MQTT_TOPIC_TELEMETRIA: ${MQTT_TOPIC_TELEMETRIA:-motoguard/telemetria}
+      MQTT_TOPIC_COMANDO: ${MQTT_TOPIC_COMANDO:-motoguard/comando}
+      # InfluxDB
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-motoguard}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
+      # PostgreSQL
+      DATABASE_URL: postgresql://${POSTGRES_USER:-motoguard}:${POSTGRES_PASSWORD:-motoguard123}@postgres:5432/${POSTGRES_DB:-motoguard}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-motoguard-dev-secret-change-in-prod}
+    depends_on:
+      - mosquitto
+      - influxdb
+      - postgres
+    volumes:
+      - ./app/backend:/app/backend
+      - /app/node_modules
+      - /app/frontend/node_modules
+      - /app/frontend/dist
+    networks:
+      - motoguard-net
+
+# ─── Volumes persistentes ──────────────────────────────────────────────────
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+  influxdb-data:
+  influxdb-config:
+  postgres-data:
+
+# ─── Rede interna ──────────────────────────────────────────────────────────
+networks:
+  motoguard-net:
+    driver: bridge

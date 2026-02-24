@@ -8,13 +8,18 @@
 # ─────────────────────────────────────────────
 #  MQTT
 # ─────────────────────────────────────────────
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "localhost"                         # broker local (Mosquitto)
+# MQTT_BROKER = "broker.hivemq.com"              # broker público (fallback)
 MQTT_PORT = 1883
 MQTT_TOPIC_TELEMETRIA = "motoguard/telemetria"   # publica dados gerados
 MQTT_TOPIC_COMANDO    = "motoguard/comando"       # recebe comandos da app principal
 MQTT_QOS = 1
 MQTT_RETAIN = False
 MQTT_KEEPALIVE = 60
+
+# Autenticação MQTT (deve corresponder às credenciais do Mosquitto)
+MQTT_USER = "motoguard"                           # utilizador principal
+MQTT_PASS = "motoguard123"                        # password (alterar em produção)
 
 # ─────────────────────────────────────────────
 #  DISPOSITIVO

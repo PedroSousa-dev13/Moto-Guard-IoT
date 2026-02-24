@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 
 from config import (
     MQTT_BROKER, MQTT_PORT, MQTT_TOPIC_TELEMETRIA, MQTT_TOPIC_COMANDO,
-    MQTT_QOS, MQTT_RETAIN, MQTT_KEEPALIVE,
+    MQTT_QOS, MQTT_RETAIN, MQTT_KEEPALIVE, MQTT_USER, MQTT_PASS,
     DEVICE_ID, PUBLISH_INTERVAL,
     DEFAULT_LAT, DEFAULT_LNG,
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
@@ -80,14 +80,40 @@ class TelemetriaState:
         self.voltagem: float = VOLTAGEM_NOMINAL
         self.roll: float = 0.0
         self.pitch: float = 0.0
+        self.yaw: float = 0.0
         self.g_force: float = 0.0
         self.lat: float = DEFAULT_LAT
         self.lng: float = DEFAULT_LNG
 
+        # Novas variáveis de telemetria
+        self.gear: int = 0                        # mudança engrenada (0 = neutro)
+        self.throttle_pct: float = 0.0            # posição do acelerador (%)
+        self.clutch_engaged: bool = False          # embraiagem puxada
+        self.brake_front_pct: float = 0.0         # travão dianteiro (%)
+        self.brake_rear_pct: float = 0.0          # travão traseiro (%)
+        self.odometer_km: float = 0.0             # quilometragem acumulada
+
+        # Segurança ativa
+        self.abs_active: bool = False
+        self.tc_active: bool = False
+        self.side_stand_down: bool = False
+
+        # Saúde do veículo
+        self.oil_pressure_bar: float = 4.0
+        self.tire_pressure_front: float = 2.5
+        self.tire_pressure_rear: float = 2.9
+
+        # Ambiente
+        self.ambient_light_lux: float = 500.0
+
         # Alvos internos (interpolação suave)
         self._target_vel: float = 0.0
-        self._target_roll: float = 0.0
-        self._target_pitch: float = 0.0
+        self._target_yaw: float = 0.0
+
+        # Dinâmica interna
+        self._acceleration: float = 0.0       # aceleração atual (km/h por tick)
+        self._clutch_timer: int = 0           # ticks restantes com embraiagem puxada
+        self._prev_gear: int = 0              # mudança anterior (para detetar troca)
 
         # Flags de eventos
         self.flag_queda: bool = False
@@ -302,6 +328,7 @@ class MotoGuardGenerator(ctk.CTk):
         try:
             self.mqtt_client = mqtt.Client(client_id=DEVICE_ID,
                                           callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+            self.mqtt_client.username_pw_set(MQTT_USER, MQTT_PASS)
             self.mqtt_client.on_connect = self._on_mqtt_connect
             self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
             self.mqtt_client.on_message = self._on_mqtt_message
@@ -411,49 +438,157 @@ class MotoGuardGenerator(ctk.CTk):
             self._tick_count += 1
             s = self.tele
 
-            # ── 1. Alvos automáticos (condução natural) ───────────────────
+            # =============================================================
+            #  MODELO FÍSICO — todos os dados derivam uns dos outros
+            # =============================================================
+
+            # ── 1. Intenção do motociclista (alvos) ───────────────────────
+            #  Velocidade alvo: muda a cada 8s (decisão do condutor)
             if self._tick_count % 8 == 0:
                 s._target_vel = clamp(
                     s._target_vel + random.uniform(-15, 15),
                     20, self.vel_max * 0.7
                 )
-            if self._tick_count % 5 == 0:
-                s._target_roll = random.uniform(-self.roll_tipico, self.roll_tipico)
-            if self._tick_count % 6 == 0:
-                s._target_pitch = random.uniform(-8, 8)
+            #  Direção da estrada: curvas naturais a cada 4s
+            if self._tick_count % 4 == 0:
+                s._target_yaw = (s._target_yaw + random.uniform(-15, 15)) % 360
 
-            target_vel   = s._target_vel
-            target_rpm   = target_vel * (self.rpm_max / self.vel_max) + random.uniform(-100, 100)
-            target_temp  = self.temp_min + (self.temp_max - self.temp_min) * (target_vel / self.vel_max) * 0.9
-            target_volt  = VOLTAGEM_NOMINAL + random.uniform(-0.05, 0.05)
-            target_roll  = s._target_roll
-            target_pitch = s._target_pitch
+            # ── 2. Velocidade e Aceleração ────────────────────────────────
+            vel_diff = s._target_vel - s.velocidade
+            s._acceleration = clamp(vel_diff * 0.15, -15, 15)
 
-            # ── 2. Interpolação suave (inércia) ──────────────────────────
-            s.velocidade = lerp(s.velocidade, target_vel, LERP_VEL)
-            s.rpm        = lerp(float(s.rpm), target_rpm, LERP_RPM)
-            s.temp_motor = lerp(s.temp_motor, target_temp, LERP_TEMP)
-            s.voltagem   = lerp(s.voltagem, target_volt, LERP_VOLT)
-            s.roll       = lerp(s.roll, target_roll, LERP_ROLL)
-            s.pitch      = lerp(s.pitch, target_pitch, LERP_PITCH)
-
-            # Ruído de sensor
+            s.velocidade = lerp(s.velocidade, s._target_vel, LERP_VEL)
             s.velocidade += random.uniform(-0.3, 0.3)
-            s.rpm        += random.uniform(-15, 15)
-            s.temp_motor += random.uniform(-0.1, 0.1)
-            s.voltagem   += random.uniform(-0.02, 0.02)
-            s.roll       += random.uniform(-0.2, 0.2)
-            s.pitch      += random.uniform(-0.15, 0.15)
-
-            # Clampar limites físicos
             s.velocidade = clamp(s.velocidade, 0, self.vel_max)
-            s.rpm        = clamp(s.rpm, 0, self.rpm_max)
-            s.temp_motor = clamp(s.temp_motor, self.temp_min - 5, self.temp_max + 25)
-            s.voltagem   = clamp(s.voltagem, 9.0, self.volt_max)
-            s.roll       = clamp(s.roll, -180, 180)
-            s.pitch      = clamp(s.pitch, -180, 180)
 
-            # ── 3. Efeitos de eventos activos ─────────────────────────────
+            # ── 3. Throttle e Brakes (MUTUAMENTE EXCLUSIVOS) ─────────────
+            if vel_diff > 2:
+                # Acelerando → throttle proporcional, brakes a zero
+                s.throttle_pct = clamp(vel_diff * 3 + random.uniform(5, 15), 5, 100)
+                s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.5)
+                s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.5)
+            elif vel_diff < -5:
+                # Travando → brakes proporcionais, throttle a zero
+                s.throttle_pct = lerp(s.throttle_pct, 0, 0.5)
+                brake_force = clamp(abs(vel_diff) * 2, 0, 100)
+                s.brake_front_pct = lerp(s.brake_front_pct,
+                    brake_force * random.uniform(0.5, 0.8), 0.4)
+                s.brake_rear_pct  = lerp(s.brake_rear_pct,
+                    brake_force * random.uniform(0.2, 0.5), 0.4)
+            else:
+                # Cruzeiro — manter velocidade
+                s.throttle_pct = lerp(s.throttle_pct,
+                    random.uniform(15, 30), 0.2)
+                s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.3)
+                s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.3)
+            s.throttle_pct    = clamp(s.throttle_pct, 0, 100)
+            s.brake_front_pct = clamp(s.brake_front_pct, 0, 100)
+            s.brake_rear_pct  = clamp(s.brake_rear_pct, 0, 100)
+
+            # ── 4. Pitch DERIVADO da aceleração ──────────────────────────
+            #  Acelerar = nariz sobe (pitch positivo)
+            #  Travar = nariz desce (pitch negativo)
+            target_pitch = clamp(s._acceleration * 0.8, -12, 12)
+            s.pitch = lerp(s.pitch, target_pitch, LERP_PITCH)
+            s.pitch += random.uniform(-0.15, 0.15)
+            s.pitch = clamp(s.pitch, -45, 45)
+
+            # ── 5. Roll e Yaw INTERLIGADOS (curvas) ──────────────────────
+            #  Diferença angular pelo caminho mais curto
+            yaw_diff = (s._target_yaw - s.yaw + 180) % 360 - 180
+            speed_factor = clamp(s.velocidade / 60.0, 0.1, 2.0)
+
+            #  Roll necessário: quanto mais rápido + mais curva → mais inclinação
+            target_roll = clamp(
+                yaw_diff * speed_factor * 0.5,
+                -self.roll_tipico, self.roll_tipico
+            )
+            s.roll = lerp(s.roll, target_roll, LERP_ROLL)
+            s.roll += random.uniform(-0.2, 0.2)
+            s.roll = clamp(s.roll,
+                           -self.roll_tipico * 1.2,
+                            self.roll_tipico * 1.2)
+
+            #  Yaw atualiza-se com base no roll (mais inclinação → mais viragem)
+            if s.velocidade > 1:
+                yaw_rate = s.roll * 0.08 * speed_factor
+                s.yaw = (s.yaw + yaw_rate) % 360
+            s.yaw += random.uniform(-0.3, 0.3)
+            s.yaw = s.yaw % 360
+
+            # ── 6. RPM PROPORCIONAL à velocidade ─────────────────────────
+            target_rpm = (s.velocidade * (self.rpm_max / self.vel_max)
+                          + random.uniform(-100, 100))
+            s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
+            s.rpm += random.uniform(-15, 15)
+            s.rpm = clamp(s.rpm, 0, self.rpm_max)
+
+            # ── 7. Temperatura PROPORCIONAL à velocidade e RPM ───────────
+            target_temp = (self.temp_min
+                           + (self.temp_max - self.temp_min)
+                           * (s.velocidade / self.vel_max) * 0.9)
+            s.temp_motor = lerp(s.temp_motor, target_temp, LERP_TEMP)
+            s.temp_motor += random.uniform(-0.1, 0.1)
+            s.temp_motor = clamp(s.temp_motor,
+                                 self.temp_min - 5,
+                                 self.temp_max + 25)
+
+            # ── 8. Voltagem ──────────────────────────────────────────────
+            target_volt = VOLTAGEM_NOMINAL + random.uniform(-0.05, 0.05)
+            s.voltagem = lerp(s.voltagem, target_volt, LERP_VOLT)
+            s.voltagem += random.uniform(-0.02, 0.02)
+            s.voltagem = clamp(s.voltagem, 9.0, self.volt_max)
+
+            # ── 9. Gear e Clutch (com deteção de troca) ──────────────────
+            s._prev_gear = s.gear
+            if s.velocidade < 1:
+                s.gear = 0
+                s.clutch_engaged = True
+            else:
+                gear_ratio = s.velocidade / self.vel_max
+                s.gear = max(1, min(6, int(gear_ratio * 6) + 1))
+                # Embraiagem puxa durante 1-2 ticks ao mudar de mudança
+                if s.gear != s._prev_gear and s._prev_gear != 0:
+                    s._clutch_timer = 2
+                if s._clutch_timer > 0:
+                    s.clutch_engaged = True
+                    s._clutch_timer -= 1
+                else:
+                    s.clutch_engaged = False
+
+            # ── 10. Odómetro (acumula distância real) ────────────────────
+            s.odometer_km += s.velocidade / 3600.0
+
+            # ── 11. Segurança ativa (derivada de throttle e brakes) ──────
+            s.abs_active = (s.brake_front_pct > 60 and s.velocidade > 30
+                           and random.random() < 0.15)
+            s.tc_active = (s.throttle_pct > 70 and s.velocidade > 20
+                          and random.random() < 0.10)
+            s.side_stand_down = (s.velocidade < 1
+                                and random.random() < 0.05)
+
+            # ── 12. Pressão óleo PROPORCIONAL ao RPM ─────────────────────
+            oil_base = 1.5 + (s.rpm / self.rpm_max) * 3.5
+            s.oil_pressure_bar = clamp(
+                oil_base + random.uniform(-0.1, 0.1), 0.5, 5.5)
+
+            # ── 13. Pressão pneus PROPORCIONAL à temperatura ─────────────
+            temp_factor = ((s.temp_motor - self.temp_min)
+                          / max(1, self.temp_max - self.temp_min))
+            s.tire_pressure_front = clamp(
+                2.3 + temp_factor * 0.3 + random.uniform(-0.02, 0.02),
+                1.8, 3.2)
+            s.tire_pressure_rear = clamp(
+                2.6 + temp_factor * 0.4 + random.uniform(-0.02, 0.02),
+                2.0, 3.5)
+
+            # ── 14. Luminosidade (ciclo dia/noite de 30 min) ─────────────
+            hour_sim = (self._tick_count % 1800) / 1800.0
+            lux_base = 500 * math.sin(math.pi * hour_sim) + 50
+            s.ambient_light_lux = clamp(
+                lux_base + random.uniform(-20, 20), 0, 1000)
+
+            # ── 15. Efeitos de eventos activos ───────────────────────────
             s.g_force = 0.0
 
             if s.flag_queda:
@@ -465,37 +600,53 @@ class MotoGuardGenerator(ctk.CTk):
                     s.rpm        = lerp(float(s.rpm), 0, 0.6)
                     target_crash_roll = self.th_roll if s.roll >= 0 else -self.th_roll
                     s.roll = lerp(s.roll, target_crash_roll, 0.5)
+                    s.throttle_pct = 0
+                    s.brake_front_pct = 0
+                    s.brake_rear_pct = 0
                     if s._queda_timer >= self.th_confirmacao:
                         s._queda_confirmed = True
                 else:
                     s.velocidade = lerp(s.velocidade, 0, 0.9)
                     s.rpm        = lerp(float(s.rpm), 0, 0.9)
+                    s.gear = 0
+                    s.throttle_pct = 0
+                    s.side_stand_down = False
 
             if s.flag_alternador:
                 s.voltagem = max(9.0, s.voltagem - random.uniform(0.15, 0.25))
 
             if s.flag_sobreaquecimento:
                 s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
+                s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-            # ── 4. Localização com drift GPS ──────────────────────────────
+            # ── 16. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
             if s.velocidade > 1:
-                s.lat += random.uniform(-0.00005, 0.00005)
-                s.lng += random.uniform(-0.00005, 0.00005)
+                speed_ms = s.velocidade / 3.6          # km/h → m/s
+                yaw_rad  = math.radians(s.yaw)
+                # 1° latitude ≈ 111 320 m
+                # 1° longitude ≈ 111 320 × cos(latitude) m
+                s.lat += (speed_ms * math.cos(yaw_rad)) / 111320.0
+                s.lng += (speed_ms * math.sin(yaw_rad)) / (
+                    111320.0 * math.cos(math.radians(s.lat)))
+                # Ruído GPS (±0.2 m)
+                s.lat += random.uniform(-0.000002, 0.000002)
+                s.lng += random.uniform(-0.000002, 0.000002)
 
-            # ── 5. Arredondar para output ─────────────────────────────────
+            # ── 17. Arredondar para output ───────────────────────────────
             vel_out   = round(s.velocidade, 1)
             rpm_out   = int(round(s.rpm))
             temp_out  = round(s.temp_motor, 1)
             volt_out  = round(s.voltagem, 1)
             roll_out  = round(s.roll, 1)
             pitch_out = round(s.pitch, 1)
+            yaw_out   = round(s.yaw, 1)
             evento    = s.evento_activo()
 
             accel_x = pitch_out * 0.02 + random.uniform(-0.05, 0.05)
             accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
             accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-            # ── 6. Construir e publicar payload ───────────────────────────
+            # ── 18. Construir e publicar payload ─────────────────────────
             payload = {
                 "device_id": DEVICE_ID,
                 "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -504,18 +655,43 @@ class MotoGuardGenerator(ctk.CTk):
                     "speed_kmh":     vel_out,
                     "rpm":           rpm_out,
                     "engine_temp_c": temp_out,
+                    "gear":          s.gear,
+                    "throttle_pct":  round(s.throttle_pct, 1),
+                    "clutch_engaged": s.clutch_engaged,
+                    "brakes": {
+                        "front_pct": round(s.brake_front_pct, 1),
+                        "rear_pct":  round(s.brake_rear_pct, 1),
+                    },
+                    "odometer_km":   round(s.odometer_km, 1),
                     "imu": {
                         "roll":    roll_out,
                         "pitch":   pitch_out,
+                        "yaw":     yaw_out,
                         "accel_x": round(accel_x, 2),
                         "accel_y": round(accel_y, 2),
                         "accel_z": round(accel_z, 2),
                         "g_force": s.g_force,
                     },
                 },
+                "active_safety": {
+                    "abs_active":      s.abs_active,
+                    "tc_active":       s.tc_active,
+                    "side_stand_down": s.side_stand_down,
+                },
+                "health": {
+                    "oil_pressure_bar":  round(s.oil_pressure_bar, 1),
+                    "battery_voltage":   volt_out,
+                    "tire_pressure_bar": {
+                        "front": round(s.tire_pressure_front, 2),
+                        "rear":  round(s.tire_pressure_rear, 2),
+                    },
+                },
                 "location": {
                     "lat": round(s.lat, 6),
                     "lng": round(s.lng, 6),
+                },
+                "environment": {
+                    "ambient_light_lux": round(s.ambient_light_lux),
                 },
                 "system": {
                     "status":          evento.lower(),
@@ -531,7 +707,7 @@ class MotoGuardGenerator(ctk.CTk):
 
             self._publicar(payload)
 
-            # ── 7. Actualizar GUI de debug ────────────────────────────────
+            # ── 19. Actualizar GUI de debug ────────────────────────────
             self.after(0, lambda v=vel_out, r=rpm_out, t=temp_out,
                        vt=volt_out, ro=roll_out, pi=pitch_out,
                        g=s.g_force, ev=evento, tk=self._tick_count:
