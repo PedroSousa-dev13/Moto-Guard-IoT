@@ -12,8 +12,8 @@ COPY config/mosquitto.conf /mosquitto/config/mosquitto.conf
 COPY config/acl.conf       /mosquitto/config/acl.conf
 COPY entrypoint.sh         /entrypoint.sh
 
-# Tornar entrypoint executável
-RUN chmod +x /entrypoint.sh
+# Converter line endings CRLF→LF e tornar executável
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Criar diretórios necessários com permissões corretas
 RUN mkdir -p /mosquitto/data /mosquitto/log && \

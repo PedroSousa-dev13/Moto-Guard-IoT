@@ -3,23 +3,25 @@
 # =============================================================================
 # Todas as constantes e perfis de modelos centralizados aqui.
 # O simulador lê este ficheiro para adaptar limites e comportamento.
+# Variáveis de ambiente sobrepõem os valores por defeito (para Docker).
 # =============================================================================
+
+import os
 
 # ─────────────────────────────────────────────
 #  MQTT
 # ─────────────────────────────────────────────
-MQTT_BROKER = "localhost"                         # broker local (Mosquitto)
-# MQTT_BROKER = "broker.hivemq.com"              # broker público (fallback)
-MQTT_PORT = 1883
-MQTT_TOPIC_TELEMETRIA = "motoguard/telemetria"   # publica dados gerados
-MQTT_TOPIC_COMANDO    = "motoguard/comando"       # recebe comandos da app principal
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "localhost")          # Docker: "mosquitto"
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_TOPIC_TELEMETRIA = os.environ.get("MQTT_TOPIC_TELEMETRIA", "motoguard/telemetria")
+MQTT_TOPIC_COMANDO    = os.environ.get("MQTT_TOPIC_COMANDO", "motoguard/comando")
 MQTT_QOS = 1
 MQTT_RETAIN = False
 MQTT_KEEPALIVE = 60
 
 # Autenticação MQTT (deve corresponder às credenciais do Mosquitto)
-MQTT_USER = "motoguard"                           # utilizador principal
-MQTT_PASS = "motoguard123"                        # password (alterar em produção)
+MQTT_USER = os.environ.get("MQTT_USER", "motoguard")
+MQTT_PASS = os.environ.get("MQTT_PASS", "motoguard123")
 
 # ─────────────────────────────────────────────
 #  DISPOSITIVO

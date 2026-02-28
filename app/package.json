@@ -1,11 +1,12 @@
 {
   "name": "motoguard-backend",
   "version": "1.0.0",
-  "description": "MotoGuard IoT — Backend API",
-  "main": "backend/index.js",
+  "description": "MotoGuard IoT — Backend API (TypeScript)",
+  "main": "backend/dist/index.js",
   "scripts": {
-    "dev": "node backend/index.js",
-    "start": "node backend/index.js"
+    "build": "cd backend && npx tsc",
+    "dev": "npx tsx backend/src/index.ts",
+    "start": "node backend/dist/index.js"
   },
   "dependencies": {
     "express": "^4.21.0",
@@ -13,5 +14,12 @@
     "socket.io": "^4.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "tsx": "^4.19.0"
   }
 }
