@@ -1,5 +1,5 @@
 # =============================================================================
-# MotoGuard IoT — Dockerfile (Backend + Frontend Build)
+# MotoGuard IoT — Dockerfile (Backend TypeScript + Frontend Build)
 # =============================================================================
 
 FROM node:20-alpine
@@ -11,8 +11,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copiar código do backend
+# Copiar código do backend e compilar TypeScript
 COPY backend/ ./backend/
+RUN npm run build
 
 # ─── Frontend ────────────────────────────────────────────────────────────────
 # Instalar dependências e fazer build do React

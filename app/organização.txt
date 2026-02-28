@@ -107,9 +107,18 @@
 #           → Serviço Mosquitto local do Windows desativado (conflito porta)
 #           → Script de teste: simulador/test_mqtt_broker.py (7/7 testes OK)
 #
-#  [ ] 1.3  Criar projeto Node.js (backend)
-#           → Express.js + TypeScript
+#  [✔] 1.3  Criar projeto Node.js (backend)
+#           → Express.js + TypeScript (compilação com tsc)
 #           → Estrutura de pastas: routes/, controllers/, services/, models/
+#           → backend/src/index.ts — entry point
+#           → backend/src/config/env.ts — variáveis de ambiente centralizadas
+#           → backend/src/models/telemetry.model.ts — interfaces do data contract
+#           → backend/src/services/ — mqtt.service.ts, socket.service.ts, telemetry.store.ts
+#           → backend/src/controllers/ — health, telemetry, command
+#           → backend/src/routes/ — agregador + rotas individuais
+#           → backend/tsconfig.json — configuração TypeScript
+#           → Dockerfile e package.json atualizados para build TS
+#           → Antigo index.js monolítico substituído por estrutura modular
 #
 #  [ ] 1.4  Subscrição MQTT no backend
 #           → Ligar ao broker local via mqtt.js
@@ -294,7 +303,7 @@
 # =============================================================================
 #
 #  FASE 0 — Familiarização ............... [██████████] 100%  ✔
-#  FASE 1 — Infraestrutura e Backend ..... [██░░░░░░░░]  25%  (1.1 + 1.2 ✔)
+#  FASE 1 — Infraestrutura e Backend ..... [███░░░░░░░]  37%  (1.1 + 1.2 + 1.3 ✔)
 #  FASE 2 — Frontend (Plataforma Web) .... [░░░░░░░░░░]   0%
 #  FASE 3 — Lógica Heurística ........... [░░░░░░░░░░]   0%
 #  FASE 4 — Notificações e Alertas ....... [░░░░░░░░░░]   0%

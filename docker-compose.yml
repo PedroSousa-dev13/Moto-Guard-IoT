@@ -69,7 +69,25 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - motoguard-net
-
+  # ─── Simulador Python (Headless) ────────────────────────────────────────────
+  simulator:
+    build:
+      context: ./simulador
+      dockerfile: Dockerfile
+    container_name: motoguard-simulator
+    restart: unless-stopped
+    environment:
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-motoguard}
+      MQTT_PASS: ${MQTT_PASS:-motoguard123}
+      MQTT_TOPIC_TELEMETRIA: ${MQTT_TOPIC_TELEMETRIA:-motoguard/telemetria}
+      MQTT_TOPIC_COMANDO: ${MQTT_TOPIC_COMANDO:-motoguard/comando}
+      SIM_MODELO: ${SIM_MODELO:-Naked}
+    depends_on:
+      - mosquitto
+    networks:
+      - motoguard-net
   # ─── Backend Node.js ───────────────────────────────────────────────────
   backend:
     build:
@@ -102,8 +120,9 @@ services:
       - influxdb
       - postgres
     volumes:
-      - ./app/backend:/app/backend
+      - ./app/backend/src:/app/backend/src
       - /app/node_modules
+      - /app/backend/dist
       - /app/frontend/node_modules
       - /app/frontend/dist
     networks:
