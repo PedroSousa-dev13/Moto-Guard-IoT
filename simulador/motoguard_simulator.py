@@ -1,7 +1,7 @@
 # =============================================================================
-# MotoGuard IoT — Gerador de Telemetria em Tempo Real (Digital Twin)
+# MotoGuard IoT — Gerador de Telemetria em Tempo Real
 # =============================================================================
-#  FOCO: Geração de dados de telemetria.
+#  FOCO: Geração de dados de telemetria simulados.
 #
 #  Arquitectura:
 #    1. Liga-se ao broker MQTT automaticamente ao arrancar

@@ -1,8 +1,8 @@
-# MotoGuard IoT — Gerador de Telemetria (Digital Twin)
+# MotoGuard IoT — Gerador de Telemetria
 
 ## Contexto e Objetivo
-Este script atua como um **Digital Twin** — um gerador de dados de telemetria para motociclos.
-Foca-se **exclusivamente na geração de dados**, sendo dependente de uma **app principal** (separada) que:
+Este script é um **gerador de dados de telemetria** para motociclos.
+Foca-se **exclusivamente na geração de dados simulados**, sendo dependente de uma **app principal** (separada) que:
 1. Permite ao utilizador selecionar o modelo de mota
 2. Envia o modelo escolhido via MQTT para este gerador
 3. Recebe e visualiza os dados de telemetria em tempo real

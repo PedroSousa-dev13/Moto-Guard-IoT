@@ -9,6 +9,7 @@ import mqtt, { MqttClient } from "mqtt";
 import { env } from "../config/env";
 import { telemetryStore } from "./telemetry.store";
 import type { TelemetryPayload } from "../models/telemetry.model";
+import { validateTelemetryPayload } from "../utils/validate-telemetry";
 
 export type TelemetryHandler = (payload: TelemetryPayload) => void;
 
@@ -72,7 +73,16 @@ class MqttService {
     this.client.on("message", (topic, message) => {
       if (topic === env.MQTT_TOPIC_TELEMETRIA) {
         try {
-          const payload: TelemetryPayload = JSON.parse(message.toString());
+          const raw = JSON.parse(message.toString());
+
+          // Validar estrutura do payload
+          const validation = validateTelemetryPayload(raw);
+          if (!validation.valid) {
+            console.warn(`⚠️  Payload inválido rejeitado: ${validation.error}`);
+            return;
+          }
+
+          const payload = raw as TelemetryPayload;
 
           // Atualizar store central
           telemetryStore.update(payload);
