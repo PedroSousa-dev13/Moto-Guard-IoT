@@ -1,0 +1,160 @@
+// =============================================================================
+// MotoGuard IoT — Prisma Schema (PostgreSQL)
+// =============================================================================
+// Tabelas:
+//   · motorcycle_profiles — Classes de mota (Scooter, Naked, etc.) + limiares
+//   · users               — Utilizadores da plataforma
+//   · motorcycles         — Motas associadas a cada utilizador
+//   · trips               — Viagens registadas
+//   · trip_events         — Eventos de risco detetados durante viagens
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../backend/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Utilizadores ───────────────────────────────────────────────────────────
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  passwordHash  String       @map("password_hash")
+  name          String
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  motorcycles   Motorcycle[]
+  trips         Trip[]
+
+  @@map("users")
+}
+
+// ─── Perfis / Classes de Mota ───────────────────────────────────────────────
+// Dados de referência semeados a partir de config.py (8 perfis).
+// Contém os limiares físicos e thresholds de deteção de eventos.
+model MotorcycleProfile {
+  id                  String   @id @default(uuid())
+  name                String   @unique              // "Scooter", "Naked", etc.
+  example             String?                        // "Honda PCX 125, Yamaha XMAX 300"
+  // ─── Limites do modelo ──────────────────────────
+  ccMin               Int      @map("cc_min")             // cilindrada mínima
+  ccMax               Int      @map("cc_max")             // cilindrada máxima
+  maxSpeedKmh         Int      @map("max_speed_kmh")
+  maxRpm              Int      @map("max_rpm")
+  engineTempMin       Int      @map("engine_temp_min")    // °C
+  engineTempMax       Int      @map("engine_temp_max")    // °C
+  voltageMin          Float    @map("voltage_min")
+  voltageMax          Float    @map("voltage_max")
+  typicalMaxRollDeg   Int      @map("typical_max_roll_deg")
+  avgWeightKg         Int      @map("avg_weight_kg")
+  // ─── Thresholds de deteção ──────────────────────
+  crashRollThreshold  Int      @map("crash_roll_threshold")   // °
+  crashPitchThreshold Int      @map("crash_pitch_threshold")  // °
+  crashGForce         Float    @map("crash_g_force")          // G
+  crashConfirmSec     Int      @map("crash_confirm_sec")      // segundos
+  criticalRpm         Int      @map("critical_rpm")
+  criticalTemp        Int      @map("critical_temp")          // °C
+  criticalVoltage     Float    @map("critical_voltage")       // V
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  motorcycles         Motorcycle[]
+
+  @@map("motorcycle_profiles")
+}
+
+// ─── Motas ──────────────────────────────────────────────────────────────────
+model Motorcycle {
+  id            String             @id @default(uuid())
+  userId        String             @map("user_id")
+  profileId     String?            @map("profile_id")  // referência ao perfil da classe
+  name          String                                  // ex: "A minha PCX"
+  brand         String?                                 // ex: "Honda", "Yamaha"
+  year          Int?
+  deviceId      String?            @map("device_id")   // ex: "MOTOGUARD-SIM-01"
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile       MotorcycleProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  trips         Trip[]
+
+  @@map("motorcycles")
+}
+
+// ─── Viagens ────────────────────────────────────────────────────────────────
+model Trip {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  motorcycleId    String      @map("motorcycle_id")
+  startedAt       DateTime    @map("started_at")
+  endedAt         DateTime?   @map("ended_at")
+  distanceKm      Float?      @map("distance_km")
+  maxSpeedKmh     Float?      @map("max_speed_kmh")
+  avgSpeedKmh     Float?      @map("avg_speed_kmh")
+  maxRollDeg      Float?      @map("max_roll_deg")
+  maxGForce       Float?      @map("max_g_force")
+  status          TripStatus  @default(ACTIVE)
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  motorcycle      Motorcycle  @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  events          TripEvent[]
+
+  @@index([userId])
+  @@index([motorcycleId])
+  @@index([startedAt])
+  @@map("trips")
+}
+
+enum TripStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// ─── Eventos de Risco ───────────────────────────────────────────────────────
+model TripEvent {
+  id            String        @id @default(uuid())
+  tripId        String        @map("trip_id")
+  type          EventType
+  severity      EventSeverity
+  message       String
+  latitude      Float?
+  longitude     Float?
+  speedKmh      Float?        @map("speed_kmh")
+  rollDeg       Float?        @map("roll_deg")
+  gForce        Float?        @map("g_force")
+  engineTempC   Float?        @map("engine_temp_c")
+  voltage       Float?
+  occurredAt    DateTime      @map("occurred_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  trip          Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([type])
+  @@index([severity])
+  @@index([occurredAt])
+  @@map("trip_events")
+}
+
+enum EventType {
+  HARD_BRAKING          // Travagem brusca
+  EXCESSIVE_LEAN        // Inclinação excessiva
+  HIGH_VIBRATION        // Vibração anómala
+  OVERHEAT              // Sobreaquecimento do motor
+  LOW_VOLTAGE           // Voltagem baixa / falha de alternador
+  CRASH_DETECTED        // Queda detetada
+  RAPID_ACCELERATION    // Aceleração brusca
+  TIRE_PRESSURE_LOW     // Pressão dos pneus baixa
+  OIL_PRESSURE_LOW      // Pressão do óleo baixa
+}
+
+enum EventSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}

@@ -27,7 +27,6 @@
 #    · Deteção de eventos de risco por limiares (travagens bruscas, vibrações)
 #    · Relatórios exportáveis
 #    · Notificações proativas (cruzar dados com regras heurísticas)
-#    · Contributo comunitário (mapeamento colaborativo condições de estrada)
 #    · Acessível via web e/ou mobile
 #
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,7 +58,6 @@
 #    [✘] Gráficos interativos e mapas em tempo real
 #    [✘] Análise pós-viagem e relatórios exportáveis
 #    [✘] Sistema de notificações proativas
-#    [✘] Mapeamento colaborativo de condições de estrada
 #    [✘] Testes com dados simulados e reais
 #    [✘] Documentação técnica final
 #
@@ -85,7 +83,7 @@
 #  [✔] 0.3  Escolha do stack tecnológico (fundamentos.txt)
 #  [✔] 0.4  Criação dos perfis de modelos de mota com limiares reais
 #  [✔] 0.5  Documentação do data contract / payload JSON
-#  [✔] 0.6  Implementação do simulador (Digital Twin) como fonte de dados
+#  [✔] 0.6  Implementação do simulador (script de geração de dados) como fonte de dados
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -120,14 +118,41 @@
 #           → Dockerfile e package.json atualizados para build TS
 #           → Antigo index.js monolítico substituído por estrutura modular
 #
-#  [ ] 1.4  Subscrição MQTT no backend
-#           → Ligar ao broker local via mqtt.js
-#           → Receber telemetria do simulador em tempo real
-#           → Parsear payload JSON e validar estrutura
+#  [✔] 1.4  Subscrição MQTT no backend
+#           → package.json atualizado com TypeScript, @types/*, tsx (devDeps)
+#           → Scripts: build (tsc), start (dist/index.js), dev (tsx)
+#           → Dockerfile atualizado com passo `npm run build` (compila TS→JS)
+#           → mqtt.service.ts liga ao broker local via mqtt.js com autenticação
+#           → Subscreve motoguard/telemetria (QoS 1, reconnect automático)
+#           → Parseia payload JSON e valida estrutura com validateTelemetryPayload()
+#           → backend/src/utils/validate-telemetry.ts — valida 7 blocos + campos chave
+#           → Payloads inválidos rejeitados com warning no log (não crasham)
+#           → telemetry.store.ts armazena último payload + contador
+#           → Compilação tsc OK, backend arranca sem erros
 #
-#  [ ] 1.5  Modelar base de dados PostgreSQL
-#           → Tabelas: users, motorcycles, trips, trip_events, road_reports
-#           → Migrations com Prisma ou Knex
+#  [✔] 1.5  Modelar base de dados PostgreSQL
+#           → Prisma ORM (v7) com adapter @prisma/adapter-pg
+#           → prisma/schema.prisma com 4 modelos + 3 enums
+#           → Tabela users: id, email, passwordHash, name, timestamps
+#           → Tabela motorcycles: id, userId, name, model, brand, year, deviceId
+#           → Tabela trips: id, userId, motorcycleId, start/end, stats, status
+#           → Tabela trip_events: id, tripId, type, severity, dados do sensor, GPS
+#           → Enums: TripStatus, EventType (9 tipos), EventSeverity (3 níveis)
+#           → Migration inicial aplicada (prisma migrate dev)
+#           → Prisma Client gerado em backend/src/generated/prisma/
+#           → prisma.service.ts — singleton com PrismaPg adapter
+#           → Integrado no index.ts — $connect no arranque, $disconnect no shutdown
+#           → Scripts: prisma:generate, prisma:migrate, prisma:studio, prisma:deploy
+#           → Tabela motorcycle_profiles: 8 perfis semeados (seed) do config.py
+#             com limiares, specs e thresholds de deteção por classe de mota
+#           → Motorcycle liga a MotorcycleProfile via FK profileId
+#           → 37 testes automatizados (scripts/test-database.ts) — todos OK
+#
+#       NOTA para etapa 1.7:
+#           → No registo/perfil do user, mostrar dropdown com os 8 perfis
+#             (motorcycle_profiles) para associar a mota concreta ao user
+#           → O simulador continua a usar config.py (standalone/Python)
+#           → O backend usa motorcycle_profiles da BD para thresholds (Fase 3)
 #
 #  [ ] 1.6  Configurar InfluxDB para telemetria
 #           → Bucket: motoguard_telemetry
@@ -178,15 +203,11 @@
 #           → Mapa com rota percorrida + pontos de evento marcados
 #           → Resumo: velocidade média/máx, inclinação máx por curva, eventos
 #
-#  [ ] 2.6  Página — Mapa Colaborativo
-#           → Mapeamento de condições de estrada reportadas pela comunidade
-#           → Marcadores: buracos, piso escorregadio, obras, zonas perigosas
-#
-#  [ ] 2.7  Exportação de Relatórios
+#  [ ] 2.6  Exportação de Relatórios
 #           → PDF com resumo da viagem + gráficos
 #           → CSV com dados brutos de telemetria
 #
-#  [ ] 2.8  Autenticação — Login/Registo
+#  [ ] 2.7  Autenticação — Login/Registo
 #           → Formulários de login e registo
 #           → Armazenamento de JWT, refresh automático
 
@@ -220,7 +241,6 @@
 #
 #  [ ] 3.5  Cruzamento com dados externos
 #           → API meteorológica: alertas de precipitação na rota
-#           → Condições reportadas pela comunidade (Fase 2.6)
 
 
 # ═════════════════════════════════════════════════════════════════════════════

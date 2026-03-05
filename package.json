@@ -1,4 +1,15 @@
 {
+  "scripts": {
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build",
+    "start": "cd app && npm run start",
+    "prisma:generate": "cd app && npm run prisma:generate",
+    "prisma:migrate": "cd app && npm run prisma:migrate",
+    "prisma:studio": "cd app && npm run prisma:studio",
+    "prisma:deploy": "cd app && npm run prisma:deploy",
+    "prisma:seed": "cd app && npm run prisma:seed",
+    "test:db": "cd app && npx tsx scripts/test-database.ts"
+  },
   "dependencies": {
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
