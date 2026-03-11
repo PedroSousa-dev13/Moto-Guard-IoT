@@ -1,0 +1,15 @@
+# Arrancar todos os serviços de forma limpa (independente de estado anterior)
+docker compose down --remove-orphans
+docker compose up -d --build
+
+# Ver logs em tempo real
+docker compose logs -f
+
+# Ver só os logs do backend
+docker compose logs -f backend
+
+# Parar tudo
+docker compose down
+
+# Parar e apagar volumes (reset completo da BD)
+docker compose down -v

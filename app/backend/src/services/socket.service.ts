@@ -2,7 +2,7 @@
 // MotoGuard IoT — Serviço: Socket.IO
 // =============================================================================
 // Gere as ligações WebSocket com o frontend. Reencaminha telemetria MQTT
-// em tempo real e recebe comandos do utilizador.
+// em tempo real, emite eventos de alerta/viagem e recebe comandos.
 // =============================================================================
 
 import { Server, Socket } from "socket.io";
@@ -14,9 +14,30 @@ import type {
   SimulatorCommand,
 } from "../models/telemetry.model";
 
+interface AlertEvent {
+  status: string;
+  deviceId: string;
+  motoModel: string;
+  timestamp: string;
+}
+
+interface TripEvent {
+  deviceId: string;
+  motoModel: string;
+  timestamp: string;
+}
+
 class SocketService {
   private io: Server | null = null;
   private _connectedClients = 0;
+  private tripActiveByDevice = new Map<string, boolean>();
+  private stationaryTicksByDevice = new Map<string, number>();
+  private lastEventStatusByDevice = new Map<string, string>();
+
+  // Thresholds simples para ciclo de viagem em tempo real.
+  private static readonly TRIP_START_SPEED_KMH = 5;
+  private static readonly TRIP_END_SPEED_KMH = 2;
+  private static readonly TRIP_END_STATIONARY_TICKS = 10;
 
   /** Número de clientes WebSocket ligados */
   get connectedClients(): number {
@@ -63,10 +84,80 @@ class SocketService {
       });
     });
 
-    // ─── Registar handler para reencaminhar telemetria ──────────────────
+    // Reencaminhar telemetria e derivar eventos em tempo real.
     mqttService.onTelemetry((payload: TelemetryPayload) => {
       this.io?.emit("telemetry_update", payload);
+      this.handleAlertEvent(payload);
+      this.handleTripLifecycle(payload);
     });
+  }
+
+  private handleAlertEvent(payload: TelemetryPayload): void {
+    const deviceId = payload.system.device_id;
+    const status = this.normalizeEventStatus(payload.system.event_status);
+    const previousStatus = this.lastEventStatusByDevice.get(deviceId) ?? "NORMAL";
+
+    if (status !== "NORMAL" && status !== previousStatus) {
+      const alert: AlertEvent = {
+        status,
+        deviceId,
+        motoModel: payload.system.moto_model,
+        timestamp: payload.system.timestamp,
+      };
+      this.io?.emit("alert", alert);
+    }
+
+    this.lastEventStatusByDevice.set(deviceId, status);
+  }
+
+  private handleTripLifecycle(payload: TelemetryPayload): void {
+    const deviceId = payload.system.device_id;
+    const speed = payload.telemetry.speed_kmh;
+    const tripActive = this.tripActiveByDevice.get(deviceId) ?? false;
+
+    if (!tripActive && speed >= SocketService.TRIP_START_SPEED_KMH) {
+      const started: TripEvent = {
+        deviceId,
+        motoModel: payload.system.moto_model,
+        timestamp: payload.system.timestamp,
+      };
+      this.tripActiveByDevice.set(deviceId, true);
+      this.stationaryTicksByDevice.set(deviceId, 0);
+      this.io?.emit("trip_started", started);
+      return;
+    }
+
+    if (!tripActive) {
+      return;
+    }
+
+    if (speed <= SocketService.TRIP_END_SPEED_KMH) {
+      const stationaryTicks =
+        (this.stationaryTicksByDevice.get(deviceId) ?? 0) + 1;
+      this.stationaryTicksByDevice.set(deviceId, stationaryTicks);
+
+      if (stationaryTicks >= SocketService.TRIP_END_STATIONARY_TICKS) {
+        const ended: TripEvent = {
+          deviceId,
+          motoModel: payload.system.moto_model,
+          timestamp: payload.system.timestamp,
+        };
+        this.tripActiveByDevice.set(deviceId, false);
+        this.stationaryTicksByDevice.set(deviceId, 0);
+        this.io?.emit("trip_ended", ended);
+      }
+      return;
+    }
+
+    this.stationaryTicksByDevice.set(deviceId, 0);
+  }
+
+  private normalizeEventStatus(status: string): string {
+    const trimmed = status.trim();
+    if (!trimmed) {
+      return "NORMAL";
+    }
+    return trimmed.toUpperCase();
   }
 }
 

@@ -12,6 +12,8 @@ import type {
   LogEntry,
   ConnectionStatus,
   SimulatorCommand,
+  AlertEvent,
+  TripSocketEvent,
 } from "../types/telemetry";
 
 export function useSocket() {
@@ -73,6 +75,22 @@ export function useSocket() {
       setTelemetry(data);
       setMsgCount((prev) => prev + 1);
       setStatus((prev) => ({ ...prev, mqtt: true, hasData: true }));
+    });
+
+    socket.on("alert", (data: AlertEvent) => {
+      const status = data.status.replace(/_/g, " ");
+      addLog(`ALERTA [${status}] ${data.motoModel} (${data.deviceId})`, "#f97316");
+    });
+
+    socket.on("trip_started", (data: TripSocketEvent) => {
+      addLog(
+        `Viagem iniciada: ${data.motoModel} (${data.deviceId})`,
+        "#22c55e"
+      );
+    });
+
+    socket.on("trip_ended", (data: TripSocketEvent) => {
+      addLog(`Viagem terminada: ${data.motoModel} (${data.deviceId})`, "#eab308");
     });
 
     socket.on("error_msg", (data: { message: string }) => {
