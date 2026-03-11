@@ -25,7 +25,7 @@ export function getHealth(_req: Request, res: Response): void {
       connectedClients: socketService.connectedClients,
       hasData: telemetryStore.hasData,
     },
-    environment: {
+    infrastructure: {
       influxdb: env.INFLUXDB_URL,
       postgres: env.DATABASE_URL ? "configured" : "not configured",
     },

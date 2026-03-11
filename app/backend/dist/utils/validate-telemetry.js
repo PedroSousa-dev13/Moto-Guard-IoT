@@ -3,7 +3,7 @@
 // MotoGuard IoT — Validação do Payload de Telemetria
 // =============================================================================
 // Valida a estrutura do JSON recebido via MQTT antes de o aceitar.
-// Garante que os 7 blocos obrigatórios existem e contêm os campos esperados.
+// Garante que os blocos obrigatórios existem e contêm os campos esperados.
 // =============================================================================
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateTelemetryPayload = validateTelemetryPayload;
@@ -34,7 +34,6 @@ function validateTelemetryPayload(data) {
         "active_safety",
         "health",
         "location",
-        "environment",
         "system",
     ];
     for (const block of requiredBlocks) {

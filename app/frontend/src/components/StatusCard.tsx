@@ -6,14 +6,12 @@ import type {
   SystemData,
   ActiveSafety,
   HealthData,
-  EnvironmentData,
 } from "../types/telemetry";
 
 interface StatusCardProps {
   system: SystemData | null;
   safety: ActiveSafety | null;
   health: HealthData | null;
-  environment: EnvironmentData | null;
 }
 
 function SafetyBadge({ label, active }: { label: string; active: boolean }) {
@@ -24,7 +22,7 @@ function SafetyBadge({ label, active }: { label: string; active: boolean }) {
   );
 }
 
-export default function StatusCard({ system, safety, health, environment }: StatusCardProps) {
+export default function StatusCard({ system, safety, health }: StatusCardProps) {
   const evento = system?.event_status ?? "NORMAL";
 
   return (
@@ -57,10 +55,6 @@ export default function StatusCard({ system, safety, health, environment }: Stat
       <div className="info-row">
         <span className="key">Pneu Trás</span>
         <span className="val">{(health?.tire_pressure_rear_bar ?? 0).toFixed(1)} bar</span>
-      </div>
-      <div className="info-row">
-        <span className="key">Luz Ambiente</span>
-        <span className="val">{Math.round(environment?.ambient_light_lux ?? 0)} lux</span>
       </div>
     </div>
   );

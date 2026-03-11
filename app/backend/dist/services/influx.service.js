@@ -12,7 +12,7 @@
 // Campos:  speed_kmh, rpm, gear, throttle_pct, engine_temp_c, voltage,
 //          brake_front_pct, brake_rear_pct, roll_deg, pitch_deg, yaw_deg,
 //          g_force, latitude, longitude, oil_pressure_bar,
-//          tire_pressure_front_bar, tire_pressure_rear_bar, ambient_light_lux
+//          tire_pressure_front_bar, tire_pressure_rear_bar
 // =============================================================================
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.influxService = void 0;
@@ -67,8 +67,6 @@ class InfluxService {
                 .floatField("oil_pressure_bar", payload.health.oil_pressure_bar)
                 .floatField("tire_pressure_front_bar", payload.health.tire_pressure_front_bar)
                 .floatField("tire_pressure_rear_bar", payload.health.tire_pressure_rear_bar)
-                // Ambiente
-                .floatField("ambient_light_lux", payload.environment.ambient_light_lux)
                 // Timestamp do payload
                 .timestamp(new Date(payload.system.timestamp));
             this.writeApi.writePoint(point);

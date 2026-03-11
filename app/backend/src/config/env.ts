@@ -1,7 +1,7 @@
 // =============================================================================
-// MotoGuard IoT — Configuração (Variáveis de Ambiente)
+// MotoGuard IoT — Configuração (Variáveis Externas)
 // =============================================================================
-// Centraliza todas as variáveis de ambiente usadas pelo backend.
+// Centraliza todas as variáveis externas usadas pelo backend.
 // Valores por defeito alinham com o docker-compose.yml.
 // =============================================================================
 

@@ -25,7 +25,7 @@ function getHealth(_req, res) {
             connectedClients: socket_service_1.socketService.connectedClients,
             hasData: telemetry_store_1.telemetryStore.hasData,
         },
-        environment: {
+        infrastructure: {
             influxdb: env_1.env.INFLUXDB_URL,
             postgres: env_1.env.DATABASE_URL ? "configured" : "not configured",
         },

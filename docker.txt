@@ -13,3 +13,12 @@ docker compose down
 
 # Parar e apagar volumes (reset completo da BD)
 docker compose down -v
+
+
+Frontend (dashboard): http://localhost:5173
+(mapeado em docker-compose.yml, serviço frontend)
+Backend (API): http://localhost:3000
+(mapeado em docker-compose.yml, serviço backend)
+No backend, isso é iniciado em start dentro de index.ts, que
+
+
