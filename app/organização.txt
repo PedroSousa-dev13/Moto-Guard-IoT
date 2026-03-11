@@ -45,17 +45,35 @@
 #    [✔] Deteção de queda com thresholds específicos por modelo
 #    [✔] Mini-GUI debug com customtkinter
 #    [✔] Documentação do data contract de telemetria
+#    [✔] Docker Compose com 6 serviços (Mosquitto, InfluxDB, PostgreSQL,
+#        Backend, Simulador, Frontend)
+#    [✔] Broker MQTT local (Mosquitto) com autenticação + ACLs
+#    [✔] Backend Node.js + TypeScript modular (Express)
+#        → routes/, controllers/, services/, models/, middleware/
+#    [✔] Validação de payload de telemetria (6 blocos obrigatórios)
+#    [✔] InfluxDB — escrita e leitura de telemetria (17 campos por ponto)
+#    [✔] PostgreSQL — schema Prisma com 5 modelos, 2 migrations, seed
+#        → Users, Motorcycles, MotorcycleProfiles, Trips, TripEvents
+#    [✔] API REST completa (auth, motorcycles, trips, telemetry, health, command)
+#    [✔] Middleware JWT para autenticação
+#    [✔] Socket.IO — reencaminha telemetria MQTT → WebSocket em tempo real
+#    [✔] Frontend React — Dashboard em tempo real
+#        → GaugeCard, TempVoltCard, IMUCard, MapCard, StatusCard, CommandPanel
+#        → Mapa GPS com Leaflet (marcador + trilho de rota)
+#        → Painel de comandos + log de eventos em tempo real
 #
 # ─────────────────────────────────────────────────────────────────────────────
 #  O que FALTA (por fazer):
 # ─────────────────────────────────────────────────────────────────────────────
 #
-#    [✘] Plataforma Web — Frontend (React.js)
-#    [✘] Backend — API REST + subscrição MQTT (Node.js)
-#    [✘] Base de dados — InfluxDB (telemetria) + PostgreSQL (utilizadores)
-#    [✘] Registo e histórico de viagens
+#    [✔] Backend — API REST + subscrição MQTT (Node.js)
+#    [✔] Base de dados — InfluxDB (telemetria) funcional
+#    [~] Base de dados — PostgreSQL parcial (migrations não executam no Docker,
+#        viagens e eventos de risco não são persistidos automaticamente)
+#    [~] Plataforma Web — Dashboard tempo real existe, falta auth + gestão
+#    [✘] Registo e histórico de viagens (schema BD existe, falta persistência + UI)
 #    [✘] Lógica heurística de deteção de eventos no backend
-#    [✘] Gráficos interativos e mapas em tempo real
+#    [~] Gráficos interativos e mapas (dashboard OK, falta análise pós-viagem)
 #    [✘] Análise pós-viagem e relatórios exportáveis
 #    [✘] Sistema de notificações proativas
 #    [✘] Testes com dados simulados e reais
@@ -84,10 +102,31 @@
 #  [✔] 0.4  Criação dos perfis de modelos de mota com limiares reais
 #  [✔] 0.5  Documentação do data contract / payload JSON
 #  [✔] 0.6  Implementação do simulador (script de geração de dados) como fonte de dados
+#
+#  ── 🔴 PRIORIDADE — Melhorias ao simulador detetadas (ideias.txt, 2026-03-11) ──
+#
+#  [ ] 0.7  Interromper geração de dados após queda
+#           → Atualmente a mota cai e os dados continuam a ser gerados
+#           → Deveria haver um break no ciclo de geração após crash detetado
+#           → Garantir coerência: após queda, velocidade=0, RPM=0, etc.
+#           → Retomar apenas com comando explícito (ex: "reset" ou "arrancar")
+#
+#  [ ] 0.8  Validar coerência dos perfis de mota
+#           → Cada perfil deve ser fiel à vida real
+#           → Ex: pressão do óleo numa scooter pode ser baixa mas numa naked não
+#           → Limitar características por perfil (temp máx, voltagem, pressões)
+#           → Verificar que thresholds de crash fazem sentido por classe
+#           → Cruzar com dados reais de especificações de cada tipo de mota
+#
+#  [ ] 0.9  Mota seguir estradas reais no mapa
+#           → Atualmente o GPS gera coordenadas com random walk
+#           → Arranjar forma de a mota seguir estradas que existem no mapa
+#           → Opções: OSRM (routing API), ficheiros GPX pré-definidos,
+#             ou snap-to-road após geração
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 1 — INFRAESTRUTURA E BACKEND           [POR FAZER]
+#  FASE 1 — INFRAESTRUTURA E BACKEND           [~80% — lacunas pendentes]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 2 da proposta (parte backend).
 #
@@ -209,30 +248,66 @@
 #  [✔] 1.8  WebSocket para dados em tempo real
 #           → Socket.IO — reencaminha telemetria MQTT→WebSocket para frontend
 #           → Eventos implementados: telemetry_update, alert, trip_started, trip_ended
+#
+#  ── 🔴 PRIORIDADE — Lacunas detetadas na auditoria (2026-03-11) ──────────
+#
+#  [ ] 1.9   Executar migrations automaticamente no Docker
+#            → Dockerfile faz prisma generate mas NÃO faz prisma migrate deploy
+#            → Tabelas (users, motorcycles, trips, etc.) não existem no PostgreSQL
+#            → Fix: adicionar "npx prisma migrate deploy" ao CMD ou entrypoint
+#
+#  [ ] 1.10  Executar seed dos perfis de moto
+#            → Correr "npx tsx prisma/seed.ts" após migrate deploy
+#            → Popula motorcycle_profiles com os 8 perfis do config.py
+#
+#  [ ] 1.11  Persistir viagens no PostgreSQL
+#            → socket.service.ts deteta trip_started/trip_ended por velocidade
+#            → Emite eventos Socket.IO mas NÃO grava na BD
+#            → Ligar: prisma.trip.create() no trip_started,
+#              prisma.trip.update() no trip_ended
+#
+#  [ ] 1.12  Persistir eventos de risco como TripEvents
+#            → socket.service.ts deteta alertas (CRASH, OVERHEAT, etc.)
+#            → Emite "alert" via Socket.IO mas NÃO grava na BD
+#            → Ligar: prisma.tripEvent.create() quando alerta detetado
+#
+#  [ ] 1.13  Proteger endpoints públicos com JWT
+#            → /api/telemetry/latest e /api/command são atualmente públicos
+#            → Auth middleware já existe — basta adicionar às rotas
+#
+#  [ ] 1.14  Associar device_id do simulador a uma mota no PostgreSQL
+#            → Permite saber "que mota está a gerar esta telemetria"
+#            → Necessário para ligar trip ao user correto (1.11)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [POR FAZER]
+#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [~20% — dashboard básico existe]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 2 da proposta (parte frontend).
 #
-#  [ ] 2.1  Criar projeto React.js (Vite + TypeScript)
-#           → Instalar dependências: react-router, axios, socket.io-client
-#           → Estrutura: pages/, components/, hooks/, services/
+#  [~] 2.1  Criar projeto React.js (Vite + TypeScript)
+#           → ✔ Projeto criado com Vite + TypeScript
+#           → ✔ Dependências instaladas: socket.io-client, leaflet
+#           → ✘ Falta: react-router (navegação entre páginas), axios (HTTP client)
+#           → ✘ Falta: estrutura pages/, services/ (atualmente tudo em components/)
 #
 #  [ ] 2.2  Layout e navegação base
 #           → Sidebar/navbar: Dashboard, Viagens, Mapa, Perfil
 #           → Design responsivo (web + mobile-friendly)
+#           → Atualmente é single-page sem routing
 #
-#  [ ] 2.3  Página — Dashboard em Tempo Real
-#           → Gauges animados: velocidade, RPM, temperatura, voltagem
-#           → IMU visual: roll e pitch com representação gráfica da mota
-#           → Estado do sistema: alertas ativos, segurança (ABS, TC)
-#           → Mapa com posição GPS em tempo real (Leaflet.js ou Mapbox)
+#  [✔] 2.3  Página — Dashboard em Tempo Real
+#           → ✔ GaugeCard: velocidade, RPM, mudança, acelerador, travões
+#           → ✔ TempVoltCard: temperatura motor, voltagem, pressões
+#           → ✔ IMUCard: roll, pitch, yaw, G-force
+#           → ✔ MapCard: mapa GPS com Leaflet (marcador + trilho de rota)
+#           → ✔ StatusCard: device_id, modelo, evento, ABS/TC, descanso
+#           → ✔ CommandPanel: painel de comandos + log em tempo real
 #
 #  [ ] 2.4  Página — Histórico de Viagens
 #           → Lista de viagens com data, duração, distância, eventos
 #           → Filtros por data, modelo de mota, tipo de evento
+#           → Backend pronto: GET /api/trips, GET /api/trips/:id
 #
 #  [ ] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
 #           → Gráficos interativos (Recharts ou Chart.js):
@@ -243,6 +318,7 @@
 #             · Pressão dos pneus e óleo
 #           → Mapa com rota percorrida + pontos de evento marcados
 #           → Resumo: velocidade média/máx, inclinação máx por curva, eventos
+#           → Backend pronto: GET /api/telemetry/:tripId (query InfluxDB)
 #
 #  [ ] 2.6  Exportação de Relatórios
 #           → PDF com resumo da viagem + gráficos
@@ -251,6 +327,34 @@
 #  [ ] 2.7  Autenticação — Login/Registo
 #           → Formulários de login e registo
 #           → Armazenamento de JWT, refresh automático
+#           → Backend pronto: POST /api/auth/register, POST /api/auth/login
+#           → Middleware JWT já existe (auth.middleware.ts)
+#
+#  [ ] 2.8  Página — Gestão de Motas
+#           → Listar motas do utilizador, associar mota a perfil
+#           → Ver thresholds de deteção do perfil selecionado
+#           → Backend pronto: POST/GET /api/motorcycles,
+#             GET /api/motorcycle-profiles
+#
+#  [ ] 2.9  Dashboard multi-dispositivo
+#           → Suportar múltiplos simuladores / dispositivos em simultâneo
+#           → Selector de dispositivo no header
+#
+#  [ ] 2.10 Página — Explicação dos Contextos do Simulador
+#           → Página educativa sobre como cada contexto gerado pelo simulador
+#             influencia o comportamento da mota
+#           → Ex: como a aceleração afeta o pitch, como o yaw afeta o roll,
+#             como a temperatura sobe com RPM alto, etc.
+#           → Diagrama visual dos 18 subsistemas interligados
+#           → Útil para documentação e para compreensão do sistema
+#
+#  [ ] 2.11 Página — Viagens Reais (GPX)
+#           → Nova aba/página focada em viagens reais
+#           → Import de ficheiros GPX (viagens reais de apps externas)
+#           → Visualizar rotas importadas no mapa com dados de percurso
+#           → Export GPX das viagens registadas pelo sistema
+#             (para usar em apps externas: Strava, Relive, etc.)
+#           → Conversor: dados de telemetria MotoGuard → formato GPX
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -282,6 +386,34 @@
 #
 #  [ ] 3.5  Cruzamento com dados externos
 #           → (removido) sem cruzamento meteorológico
+#
+#  ── Inteligência Artificial — Avaliação de Viagens (ideias.txt) ─────────
+#
+#  [ ] 3.6  Sistema de pontuação de viagens (Score 0–100)
+#           → Avaliar qualidade da condução com base nos dados capturados:
+#             · Suavidade (aceleração/travagem brusca via IMU)
+#             · Comportamento em curvas (lean angle + velocidade)
+#             · Padrões de risco (velocidade excessiva, acelerações bruscas)
+#             · Eficiência de condução
+#           → Abordagem inicial: regras heurísticas (penalizar eventos negativos)
+#           → Evolução: classificação supervisionada com viagens rotuladas
+#           → Dados disponíveis já são muito mais ricos que GPX puro
+#             (GPS + IMU + velocidade + temperatura + voltagem + TripEvents)
+#
+#  [ ] 3.7  Pipeline ML para avaliação de viagens
+#           → Arquitetura:
+#             Telemetria (tempo real) → BD (Trip + TripEvent)
+#                                          ↓
+#                                Pós-processamento (Python)
+#                                          ↓
+#                                Modelo ML (scikit-learn / TF Lite)
+#                                          ↓
+#                                Score + Feedback ao utilizador
+#           → Opções de modelo:
+#             a) Regras heurísticas — mais simples, rápido de implementar
+#             b) Classificação supervisionada — treinar com viagens rotuladas
+#             c) Anomaly detection — detetar comportamentos fora do padrão
+#           → Usar datasets públicos GPX para enriquecer treino
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -322,6 +454,9 @@
 #           → Importar rotas GPX reais (ideia já registada em ideias.txt)
 #           → Replay de dados GPS reais pelo simulador
 #           → Comparar com expectativas de condução real
+#           → Usar GPX como formato de import/export (página 2.11)
+#           → Importar datasets públicos de condução para enriquecer validação
+#           → Testar snap-to-road do simulador (0.9) com rotas GPX reais
 #
 #  [ ] 5.3  Testes de integração
 #           → Simulador → MQTT → Backend → InfluxDB → WebSocket → Frontend
@@ -362,15 +497,15 @@
 #  RESUMO — PROGRESSO GLOBAL
 # =============================================================================
 #
-#  FASE 0 — Familiarização ............... [██████████] 100%  ✔
-#  FASE 1 — Infraestrutura e Backend ..... [██████████] 100%  ✔
-#  FASE 2 — Frontend (Plataforma Web) .... [░░░░░░░░░░]   0%
-#  FASE 3 — Lógica Heurística ........... [░░░░░░░░░░]   0%
+#  FASE 0 — Familiarização ............... [███████░░░]  70%  (3 melhorias simulador pendentes)
+#  FASE 1 — Infraestrutura e Backend ..... [████████░░]  80%  (6 lacunas por resolver)
+#  FASE 2 — Frontend (Plataforma Web) .... [██░░░░░░░░]  20%  (dashboard básico existe)
+#  FASE 3 — Lógica Heurística + IA ....... [░░░░░░░░░░]   0%  (+2 tarefas IA de ideias.txt)
 #  FASE 4 — Notificações e Alertas ....... [░░░░░░░░░░]   0%
-#  FASE 5 — Testes e Validação ........... [░░░░░░░░░░]   0%
+#  FASE 5 — Testes e Validação ........... [░░░░░░░░░░]   0%  (GPX enriquecido)
 #  FASE 6 — Documentação e Entrega ....... [░░░░░░░░░░]   0%
 #
-#  PROGRESSO TOTAL ≈ 15% (Fase 0 concluída de 7 fases)
+#  PROGRESSO TOTAL ≈ 25%
 #
 # =============================================================================
 
