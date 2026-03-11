@@ -103,9 +103,43 @@ services:
       - postgres
     volumes:
       - ./app/backend:/app/backend
-      - /app/node_modules
-      - /app/frontend/node_modules
-      - /app/frontend/dist
+    networks:
+      - motoguard-net
+
+  # ─── Simulador Python (gera telemetria MQTT) ────────────────────────────
+  simulador:
+    build:
+      context: ./simulador
+      dockerfile: Dockerfile
+    container_name: motoguard-simulador
+    restart: unless-stopped
+    environment:
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_SIM_USER:-simulator}
+      MQTT_PASS: ${MQTT_SIM_PASS:-simulator123}
+      SIM_MODELO: ${SIM_MODELO:-Naked}
+    depends_on:
+      - mosquitto
+    networks:
+      - motoguard-net
+
+  # ─── Frontend React (Vite dev server) ────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: motoguard-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      BACKEND_URL: http://backend:3000
+    depends_on:
+      - backend
+    volumes:
+      - ./app/frontend:/app
+      - frontend-node-modules:/app/node_modules
     networks:
       - motoguard-net
 
@@ -116,6 +150,7 @@ volumes:
   influxdb-data:
   influxdb-config:
   postgres-data:
+  frontend-node-modules:  # cache de node_modules do frontend (evita reinstalação)
 
 # ─── Rede interna ──────────────────────────────────────────────────────────
 networks:

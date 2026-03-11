@@ -268,8 +268,10 @@ class HeadlessSimulator:
             log("Comando: reset_eventos")
             self.tele.reset_eventos()
         elif acao == "parar":
-            log("Comando: parar")
-            self.running = False
+            log("Comando: parar — simulador a ficar inactivo (aguarda novo 'definir_modelo')")
+            self.perfil_nome = None
+            self.tele = TelemetriaState()
+            self._tick_count = 0
         else:
             log(f"Comando desconhecido: {acao}")
 
@@ -284,6 +286,7 @@ class HeadlessSimulator:
         self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
         self._tick_count = 0
         log(f"Perfil '{modelo}' carregado — Vel máx: {self.vel_max} km/h | RPM máx: {self.rpm_max}")
+        log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
 
     def _aplicar_evento(self, tipo: str):
         if tipo == "queda":
@@ -486,31 +489,25 @@ class HeadlessSimulator:
         accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
         # ── 18. Payload ──────────────────────────────────────────────
+        # Estrutura alinhada com o contrato do backend (telemetry.model.ts)
         payload = {
-            "device_id": DEVICE_ID,
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "modelo": self.perfil_nome,
             "telemetry": {
-                "speed_kmh":     vel_out,
-                "rpm":           rpm_out,
-                "engine_temp_c": temp_out,
-                "gear":          s.gear,
-                "throttle_pct":  round(s.throttle_pct, 1),
-                "clutch_engaged": s.clutch_engaged,
-                "brakes": {
-                    "front_pct": round(s.brake_front_pct, 1),
-                    "rear_pct":  round(s.brake_rear_pct, 1),
-                },
-                "odometer_km":   round(s.odometer_km, 1),
-                "imu": {
-                    "roll":    roll_out,
-                    "pitch":   pitch_out,
-                    "yaw":     yaw_out,
-                    "accel_x": round(accel_x, 2),
-                    "accel_y": round(accel_y, 2),
-                    "accel_z": round(accel_z, 2),
-                    "g_force": s.g_force,
-                },
+                "speed_kmh":       vel_out,
+                "rpm":             rpm_out,
+                "engine_temp_c":   temp_out,
+                "gear":            s.gear,
+                "throttle_pct":    round(s.throttle_pct, 1),
+                "voltage":         volt_out,
+                "brake_front_pct": round(s.brake_front_pct, 1),
+                "brake_rear_pct":  round(s.brake_rear_pct, 1),
+                "odometer_km":     round(s.odometer_km, 1),
+                "clutch_engaged":  s.clutch_engaged,
+            },
+            "imu": {
+                "roll_deg":  roll_out,
+                "pitch_deg": pitch_out,
+                "yaw_deg":   yaw_out,
+                "g_force":   s.g_force,
             },
             "active_safety": {
                 "abs_active":      s.abs_active,
@@ -518,29 +515,23 @@ class HeadlessSimulator:
                 "side_stand_down": s.side_stand_down,
             },
             "health": {
-                "oil_pressure_bar":  round(s.oil_pressure_bar, 1),
-                "battery_voltage":   volt_out,
-                "tire_pressure_bar": {
-                    "front": round(s.tire_pressure_front, 2),
-                    "rear":  round(s.tire_pressure_rear, 2),
-                },
+                "oil_pressure_bar":        round(s.oil_pressure_bar, 1),
+                "tire_pressure_front_bar": round(s.tire_pressure_front, 2),
+                "tire_pressure_rear_bar":  round(s.tire_pressure_rear, 2),
             },
             "location": {
-                "lat": round(s.lat, 6),
-                "lng": round(s.lng, 6),
+                "latitude":  round(s.lat, 6),
+                "longitude": round(s.lng, 6),
             },
             "environment": {
                 "ambient_light_lux": round(s.ambient_light_lux),
             },
             "system": {
-                "status":          evento.lower(),
-                "battery_voltage": volt_out,
-            },
-            "limites_modelo": {
-                "velocidade_max":  self.vel_max,
-                "rpm_max":         self.rpm_max,
-                "temp_max":        self.temp_max,
-                "roll_tipico_max": self.roll_tipico,
+                "device_id":    DEVICE_ID,
+                "moto_model":   self.perfil_nome,
+                "event_status": evento,
+                "tick":         self._tick_count,
+                "timestamp":    datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             },
         }
 
@@ -577,11 +568,10 @@ class HeadlessSimulator:
             log("Timeout à espera de conexão MQTT — a sair")
             sys.exit(1)
 
-        # Carregar modelo inicial
-        self._aplicar_modelo(self.modelo_inicial)
+        # Não arranca automaticamente — aguarda comando 'definir_modelo' do frontend
+        log("Simulador idle — à espera do comando 'definir_modelo' do frontend...")
 
         # Loop principal
-        log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
         while self.running:
             if self.connected and self.perfil_nome:
                 payload = self._sim_tick()

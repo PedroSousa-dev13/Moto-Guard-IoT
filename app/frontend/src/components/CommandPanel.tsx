@@ -24,6 +24,7 @@ const MODELOS = [
 
 export default function CommandPanel({ sendCommand, addLog, logs }: CommandPanelProps) {
   const [selectedModel, setSelectedModel] = useState("");
+  const [simRunning, setSimRunning] = useState(false);
 
   function handleSendModel() {
     if (!selectedModel) {
@@ -31,6 +32,13 @@ export default function CommandPanel({ sendCommand, addLog, logs }: CommandPanel
       return;
     }
     sendCommand({ acao: "definir_modelo", modelo: selectedModel });
+    setSimRunning(true);
+  }
+
+  function handleStop() {
+    sendCommand({ acao: "parar" });
+    setSimRunning(false);
+    setSelectedModel("");
   }
 
   return (
@@ -39,18 +47,31 @@ export default function CommandPanel({ sendCommand, addLog, logs }: CommandPanel
       <div className="command-layout">
         {/* Coluna — Modelo */}
         <div className="command-col">
-          <label className="cmd-label">Selecionar Modelo</label>
+          <label className="cmd-label">
+            Selecionar Modelo{" "}
+            {simRunning ? (
+              <span style={{ color: "#22c55e", fontWeight: 600 }}>● A correr</span>
+            ) : (
+              <span style={{ color: "#71717a" }}>○ Idle</span>
+            )}
+          </label>
           <select
             className="model-select"
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={simRunning}
           >
             <option value="">— escolher modelo —</option>
             {MODELOS.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-          <button className="cmd-btn" onClick={handleSendModel} style={{ width: "100%" }}>
+          <button
+            className="cmd-btn"
+            onClick={handleSendModel}
+            style={{ width: "100%" }}
+            disabled={simRunning || !selectedModel}
+          >
             ▶ Definir Modelo &amp; Iniciar
           </button>
         </div>
@@ -62,30 +83,35 @@ export default function CommandPanel({ sendCommand, addLog, logs }: CommandPanel
             <button
               className="cmd-btn danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "queda" })}
+              disabled={!simRunning}
             >
               💥 Queda
             </button>
             <button
               className="cmd-btn danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "alternador" })}
+              disabled={!simRunning}
             >
               🔋 Falha Alternador
             </button>
             <button
               className="cmd-btn danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "sobreaquecimento" })}
+              disabled={!simRunning}
             >
               🌡️ Sobreaquecimento
             </button>
             <button
               className="cmd-btn"
               onClick={() => sendCommand({ acao: "reset_eventos" })}
+              disabled={!simRunning}
             >
               🔄 Reset Eventos
             </button>
             <button
               className="cmd-btn danger"
-              onClick={() => sendCommand({ acao: "parar" })}
+              onClick={handleStop}
+              disabled={!simRunning}
             >
               ⏹ Parar Simulador
             </button>

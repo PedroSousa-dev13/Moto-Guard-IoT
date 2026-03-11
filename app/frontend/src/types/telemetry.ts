@@ -84,3 +84,18 @@ export interface SimulatorCommand {
   modelo?: string;
   tipo?: string;
 }
+
+/** Evento de alerta emitido por WebSocket */
+export interface AlertEvent {
+  status: string;
+  deviceId: string;
+  motoModel: string;
+  timestamp: string;
+}
+
+/** Evento de ciclo de viagem emitido por WebSocket */
+export interface TripSocketEvent {
+  deviceId: string;
+  motoModel: string;
+  timestamp: string;
+}

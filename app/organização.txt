@@ -154,20 +154,61 @@
 #           → O simulador continua a usar config.py (standalone/Python)
 #           → O backend usa motorcycle_profiles da BD para thresholds (Fase 3)
 #
-#  [ ] 1.6  Configurar InfluxDB para telemetria
-#           → Bucket: motoguard_telemetry
-#           → Pontos: speed, rpm, temp, roll, pitch, gps, voltage, etc.
-#           → Retenção: 30 dias detalhado, 1 ano agregado
+#  [✔] 1.6  Configurar InfluxDB para telemetria
+#           → Dependência: @influxdata/influxdb-client
+#           → influx.service.ts — singleton com WriteApi + QueryApi
+#             · writeTelemetry(payload) — grava 1 Point por mensagem MQTT
+#               Medição "telemetry", tags: device_id, moto_model
+#               18 campos: speed_kmh, rpm, gear, throttle_pct, engine_temp_c,
+#               voltage, brake_front/rear_pct, roll/pitch/yaw_deg, g_force,
+#               latitude, longitude, oil_pressure_bar,
+#               tire_pressure_front/rear_bar, ambient_light_lux
+#             · queryTripTelemetry(startedAt, endedAt, deviceId?)
+#               Flux query: range por intervalo da viagem + pivot + sort
+#               Retorna array de pontos com metadados InfluxDB removidos
+#             · close() — flush + fecho no graceful shutdown
+#           → Escrita em lote: flush a cada 5 s ou 20 pontos acumulados
+#           → Retenção configurada no Docker Compose: 30 dias (INFLUXDB init)
+#           → Integrado em index.ts:
+#             mqttService.onTelemetry → influxService.writeTelemetry()
+#             SIGINT/SIGTERM → influxService.close() antes de sair
+#           → GET /api/telemetry/:tripId faz query real ao InfluxDB
+#             Retorna { trip, total_points, data: [...] }
+#             Em caso de falha do InfluxDB → 503 (não derruba o servidor)
+#           → Compilação tsc OK (0 erros)
 #
-#  [ ] 1.7  API REST — endpoints base
-#           → POST /api/auth/register, POST /api/auth/login (JWT)
-#           → GET /api/trips, GET /api/trips/:id
-#           → GET /api/telemetry/:tripId (query InfluxDB)
-#           → POST /api/motorcycles (associar mota ao user)
+#  [✔] 1.7  API REST — endpoints base
+#           → Dependências: bcryptjs (hash passwords), jsonwebtoken (JWT)
+#           → Tipos: @types/bcryptjs, @types/jsonwebtoken
+#           → middleware/auth.middleware.ts — verificação JWT (Bearer token)
+#             · Extrai userId do token e injeta em req.userId
+#           → POST /api/auth/register — registo com email/password/name
+#             · Validação de campos obrigatórios + password mínima 6 chars
+#             · Hash com bcrypt (12 rounds), verifica email duplicado
+#             · Retorna user + JWT (validade 7 dias)
+#           → POST /api/auth/login — autenticação
+#             · Verifica email + password (bcrypt.compare)
+#             · Retorna user + JWT
+#           → GET /api/trips — listar viagens do utilizador (auth required)
+#             · Inclui dados da mota e contagem de eventos
+#             · Ordenadas por data (desc)
+#           → GET /api/trips/:id — detalhe de viagem (auth required)
+#             · Inclui mota, perfil e todos os eventos ordenados
+#             · Verifica que a viagem pertence ao utilizador
+#           → GET /api/telemetry/:tripId — telemetria de viagem (auth required)
+#             · Valida que a viagem pertence ao utilizador
+#             · Retorna 501 até InfluxDB estar configurado (etapa 1.6)
+#           → POST /api/motorcycles — associar mota ao utilizador (auth required)
+#             · Campos: name (obrigatório), brand, year, profileId, deviceId
+#             · Valida que profileId existe (se fornecido)
+#           → GET /api/motorcycles — listar motas do utilizador (auth required)
+#           → GET /api/motorcycle-profiles — listar perfis/classes disponíveis
+#           → Rotas registadas no agregador routes/index.ts
+#           → Compilação tsc OK (0 erros)
 #
-#  [ ] 1.8  WebSocket para dados em tempo real
+#  [✔] 1.8  WebSocket para dados em tempo real
 #           → Socket.IO — reencaminha telemetria MQTT→WebSocket para frontend
-#           → Eventos: telemetry_update, alert, trip_started, trip_ended
+#           → Eventos implementados: telemetry_update, alert, trip_started, trip_ended
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -323,7 +364,7 @@
 # =============================================================================
 #
 #  FASE 0 — Familiarização ............... [██████████] 100%  ✔
-#  FASE 1 — Infraestrutura e Backend ..... [███░░░░░░░]  37%  (1.1 + 1.2 + 1.3 ✔)
+#  FASE 1 — Infraestrutura e Backend ..... [██████████] 100%  ✔
 #  FASE 2 — Frontend (Plataforma Web) .... [░░░░░░░░░░]   0%
 #  FASE 3 — Lógica Heurística ........... [░░░░░░░░░░]   0%
 #  FASE 4 — Notificações e Alertas ....... [░░░░░░░░░░]   0%
