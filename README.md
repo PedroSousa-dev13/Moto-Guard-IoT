@@ -69,7 +69,8 @@ A cada segundo:
 | Evento queda | `{"acao": "evento", "tipo": "queda"}` | Simula queda da mota |
 | Evento alternador | `{"acao": "evento", "tipo": "alternador"}` | Simula falha do alternador |
 | Evento sobreaquecimento | `{"acao": "evento", "tipo": "sobreaquecimento"}` | Simula sobreaquecimento |
-| Reset eventos | `{"acao": "reset_eventos"}` | Limpa todos os eventos activos |
+| Reset eventos | `{"acao": "reset_eventos"}` | Limpa todos os eventos activos e retoma geração pós-queda |
+| Arrancar | `{"acao": "arrancar"}` | Retoma geração após queda confirmada, sem alterar o modelo |
 | Parar | `{"acao": "parar"}` | Para a geração de dados |
 
 ## Mini-GUI de Debug

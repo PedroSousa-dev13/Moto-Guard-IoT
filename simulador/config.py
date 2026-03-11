@@ -36,6 +36,12 @@ DEFAULT_LAT = 41.2951
 DEFAULT_LNG = -7.7463
 
 # ─────────────────────────────────────────────
+#  ROTA GPS PRÉ-DEFINIDA (Etapa 0.9)
+#  Opções: "vila_real_urbano" | "vila_real_estrada"
+# ─────────────────────────────────────────────
+ROUTE_NAME = os.environ.get("ROUTE_NAME", "vila_real_estrada")
+
+# ─────────────────────────────────────────────
 #  DETECÇÃO DE QUEDA — valores por defeito
 #  (cada perfil de mota sobrepõe com os seus)
 # ─────────────────────────────────────────────
@@ -77,6 +83,11 @@ PERFIS_MOTO = {
         "rpm_critico": 8500,           # zona vermelha
         "temp_critica": 95,            # motor pequeno sobreaquece mais cedo
         "voltagem_critica": 11.0,
+        # --- Pressões (específicas por classe) ---
+        "oil_pressure_idle_bar": 0.8,    # sistema CVT / motor pequeno — pressão reduzida
+        "oil_pressure_max_bar":  3.0,
+        "tire_pressure_front_bar": 1.75, # pneus pequenos (10-12") — baixa pressão
+        "tire_pressure_rear_bar":  2.00,
     },
     "Naked": {
         "cilindrada_min": 300,
@@ -98,6 +109,11 @@ PERFIS_MOTO = {
         "rpm_critico": 11000,
         "temp_critica": 110,
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.5,    # motor 4cil/2cil de médio porte
+        "oil_pressure_max_bar":  4.5,
+        "tire_pressure_front_bar": 2.30, # pneu 120/70 ZR17 típico
+        "tire_pressure_rear_bar":  2.50, # pneu 180/55 ZR17 típico
     },
     "Desportiva": {
         "cilindrada_min": 600,
@@ -119,6 +135,11 @@ PERFIS_MOTO = {
         "rpm_critico": 14000,
         "temp_critica": 115,           # motor de alta performance tolera mais
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 2.0,    # bomba dedicada de alta performance
+        "oil_pressure_max_bar":  5.5,
+        "tire_pressure_front_bar": 2.50, # pneu 120/70 ZR17 racing
+        "tire_pressure_rear_bar":  2.90, # pneu 190/55 ZR17 racing
     },
     "Trail / Adventure": {
         "cilindrada_min": 650,
@@ -140,6 +161,11 @@ PERFIS_MOTO = {
         "rpm_critico": 9000,
         "temp_critica": 105,
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.5,    # motor boxer/2cil de grande cilindrada
+        "oil_pressure_max_bar":  4.5,
+        "tire_pressure_front_bar": 2.40, # setup estrada (off-road: ~1.0)
+        "tire_pressure_rear_bar":  2.80,
     },
     "Custom / Cruiser": {
         "cilindrada_min": 800,
@@ -161,6 +187,11 @@ PERFIS_MOTO = {
         "rpm_critico": 6500,
         "temp_critica": 100,
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.0,    # V-twin a ar (Harley-style) — pressão historicamente baixa
+        "oil_pressure_max_bar":  3.5,
+        "tire_pressure_front_bar": 2.10, # pneu largo mas de baixa pressão
+        "tire_pressure_rear_bar":  2.40,
     },
     "Motocross / Enduro": {
         "cilindrada_min": 125,
@@ -182,6 +213,11 @@ PERFIS_MOTO = {
         "rpm_critico": 12500,
         "temp_critica": 120,           # motor arrefecido a ar — tolera mais
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.5,    # monocilíndrico 4T
+        "oil_pressure_max_bar":  4.0,
+        "tire_pressure_front_bar": 1.00, # off-road — pressão muito baixa para aderência
+        "tire_pressure_rear_bar":  1.10,
     },
     "Touring": {
         "cilindrada_min": 1000,
@@ -203,6 +239,11 @@ PERFIS_MOTO = {
         "rpm_critico": 7500,
         "temp_critica": 100,
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.5,    # grande motor longitudinal / boxer
+        "oil_pressure_max_bar":  4.5,
+        "tire_pressure_front_bar": 2.50, # pneu largo com carga elevada (bagagens)
+        "tire_pressure_rear_bar":  3.00,
     },
     "Supermotard": {
         "cilindrada_min": 450,
@@ -224,5 +265,10 @@ PERFIS_MOTO = {
         "rpm_critico": 10500,
         "temp_critica": 115,
         "voltagem_critica": 11.0,
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 1.5,    # monocilíndrico de grande cilindrada
+        "oil_pressure_max_bar":  4.5,
+        "tire_pressure_front_bar": 2.30,
+        "tire_pressure_rear_bar":  2.50,
     },
 }

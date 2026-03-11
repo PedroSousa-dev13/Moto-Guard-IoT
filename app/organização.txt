@@ -105,20 +105,20 @@
 #
 #  ── 🔴 PRIORIDADE — Melhorias ao simulador detetadas (ideias.txt, 2026-03-11) ──
 #
-#  [ ] 0.7  Interromper geração de dados após queda
+#  [✔] 0.7  Interromper geração de dados após queda
 #           → Atualmente a mota cai e os dados continuam a ser gerados
 #           → Deveria haver um break no ciclo de geração após crash detetado
 #           → Garantir coerência: após queda, velocidade=0, RPM=0, etc.
 #           → Retomar apenas com comando explícito (ex: "reset" ou "arrancar")
 #
-#  [ ] 0.8  Validar coerência dos perfis de mota
+#  [✔] 0.8  Validar coerência dos perfis de mota
 #           → Cada perfil deve ser fiel à vida real
 #           → Ex: pressão do óleo numa scooter pode ser baixa mas numa naked não
 #           → Limitar características por perfil (temp máx, voltagem, pressões)
 #           → Verificar que thresholds de crash fazem sentido por classe
 #           → Cruzar com dados reais de especificações de cada tipo de mota
 #
-#  [ ] 0.9  Mota seguir estradas reais no mapa
+#  [✔] 0.9  Mota seguir estradas reais no mapa
 #           → Atualmente o GPS gera coordenadas com random walk
 #           → Arranjar forma de a mota seguir estradas que existem no mapa
 #           → Opções: OSRM (routing API), ficheiros GPX pré-definidos,
@@ -251,12 +251,12 @@
 #
 #  ── 🔴 PRIORIDADE — Lacunas detetadas na auditoria (2026-03-11) ──────────
 #
-#  [ ] 1.9   Executar migrations automaticamente no Docker
+#  [✔] 1.9   Executar migrations automaticamente no Docker
 #            → Dockerfile faz prisma generate mas NÃO faz prisma migrate deploy
 #            → Tabelas (users, motorcycles, trips, etc.) não existem no PostgreSQL
 #            → Fix: adicionar "npx prisma migrate deploy" ao CMD ou entrypoint
 #
-#  [ ] 1.10  Executar seed dos perfis de moto
+#  [✔] 1.10  Executar seed dos perfis de moto
 #            → Correr "npx tsx prisma/seed.ts" após migrate deploy
 #            → Popula motorcycle_profiles com os 8 perfis do config.py
 #

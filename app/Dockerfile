@@ -32,4 +32,5 @@ RUN cd frontend && npm run build
 
 # ─── Arrancar ────────────────────────────────────────────────────────────────
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+# Executar migrations (1.9), seed dos perfis (1.10) e arrancar o servidor
+CMD sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && exec npm run start"
