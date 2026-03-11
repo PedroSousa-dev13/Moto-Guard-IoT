@@ -35,8 +35,9 @@ from config import (
     DEFAULT_LAT, DEFAULT_LNG,
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
-    PERFIS_MOTO,
+    PERFIS_MOTO, ROUTE_NAME,
 )
+from routes import RouteFollower, ROTAS, ROTA_PADRAO
 
 # ── Tema ──────────────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
@@ -171,6 +172,9 @@ class MotoGuardGenerator(ctk.CTk):
         self._tick_count = 0
         self._sim_running = False
         self._sim_thread: threading.Thread | None = None
+        self.route_follower: RouteFollower = RouteFollower(
+            ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
+        )
 
         # Limites do perfil activo (preenchidos por _carregar_perfil)
         self.vel_max = 200
@@ -181,6 +185,10 @@ class MotoGuardGenerator(ctk.CTk):
         self.volt_max = 14.5
         self.roll_tipico = 40.0
         self.peso = 190
+        self.oil_idle = 1.5           # pressão óleo em marcha lenta (bar)
+        self.oil_max = 5.0            # pressão óleo a RPM máximo (bar)
+        self.tire_front_base = 2.3    # pressão base pneu dianteiro (bar)
+        self.tire_rear_base = 2.6     # pressão base pneu traseiro (bar)
         self.th_roll = QUEDA_ROLL_THRESHOLD
         self.th_pitch = QUEDA_PITCH_THRESHOLD
         self.th_g_force = QUEDA_G_FORCE
@@ -214,6 +222,11 @@ class MotoGuardGenerator(ctk.CTk):
         self.roll_tipico = p["roll_tipico_max"]
         self.peso        = p["peso_medio"]
 
+        self.oil_idle        = p.get("oil_pressure_idle_bar", 1.5)
+        self.oil_max         = p.get("oil_pressure_max_bar", 5.0)
+        self.tire_front_base = p.get("tire_pressure_front_bar", 2.3)
+        self.tire_rear_base  = p.get("tire_pressure_rear_bar", 2.6)
+
         self.th_roll         = p.get("queda_roll_threshold", QUEDA_ROLL_THRESHOLD)
         self.th_pitch        = p.get("queda_pitch_threshold", QUEDA_PITCH_THRESHOLD)
         self.th_g_force      = p.get("queda_g_force", QUEDA_G_FORCE)
@@ -230,6 +243,10 @@ class MotoGuardGenerator(ctk.CTk):
         self.tele.th_rpm_critico  = self.th_rpm_critico
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
+
+        # Re-inicializar seguidor de rota ao carregar novo perfil
+        rota = ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
+        self.route_follower = RouteFollower(rota)
         return True
 
     # ========================================================================
@@ -377,6 +394,10 @@ class MotoGuardGenerator(ctk.CTk):
             self._log("Comando recebido: parar")
             self.after(0, self._parar_geracao)
 
+        elif acao == "arrancar":
+            self._log("Comando recebido: arrancar")
+            self.after(0, self._arrancar_geracao)
+
         else:
             self._log(f"Comando desconhecido: {acao}")
 
@@ -390,7 +411,13 @@ class MotoGuardGenerator(ctk.CTk):
 
         # Reset estado para novo modelo
         self.tele = TelemetriaState()
-        self._carregar_perfil(modelo)  # re-propagar thresholds para novo tele
+        self._carregar_perfil(modelo)  # re-propagar thresholds após reset
+
+        # Iniciar GPS no ponto de partida da rota
+        rota_start = self.route_follower.waypoints[0]
+        self.tele.lat = rota_start[0]
+        self.tele.lng = rota_start[1]
+
         self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
         self._tick_count = 0
 
@@ -427,6 +454,35 @@ class MotoGuardGenerator(ctk.CTk):
         self.lbl_estado.configure(text="Parado — à espera de modelo via MQTT", text_color="gray")
         self._log("Geração parada")
 
+    def _pausar_apos_queda(self):
+        """Para a geração após queda confirmada, mantendo o perfil activo para retoma."""
+        self._sim_running = False
+        # Não limpar perfil_nome: permite retomar com reset_eventos ou arrancar
+        self.lbl_estado.configure(
+            text="PARADO — Queda confirmada. Aguarda 'reset' ou 'arrancar'.",
+            text_color="#FF4444"
+        )
+        self.lbl_evento.configure(text="QUEDA CONFIRMADA — aguarda reset", text_color="#FF0000")
+        self._log("QUEDA CONFIRMADA — geração parada. Aguarda 'reset_eventos' ou 'arrancar'.")
+
+    def _arrancar_geracao(self):
+        """Retoma a geração após queda (ou inicia se o modelo já foi definido)."""
+        if self.perfil_nome and not self._sim_running:
+            self.tele.reset_eventos()
+            self._sim_running = True
+            self._sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
+            self._sim_thread.start()
+            self.lbl_estado.configure(
+                text=f"A gerar dados — {self.perfil_nome} (retomado)",
+                text_color="#00FF88"
+            )
+            self.lbl_evento.configure(text="Retomado após queda", text_color="#00FF88")
+            self._log(f"Geração retomada — modelo: {self.perfil_nome}")
+        elif not self.perfil_nome:
+            self._log("Arrancar: sem modelo activo — usa 'definir_modelo' primeiro.")
+        else:
+            self._log("Arrancar: geração já activa.")
+
     # ========================================================================
     #  LOOP CENTRAL DE GERAÇÃO (1 tick = 1 segundo)
     # ========================================================================
@@ -439,16 +495,19 @@ class MotoGuardGenerator(ctk.CTk):
             #  MODELO FÍSICO — todos os dados derivam uns dos outros
             # =============================================================
 
-            # ── 1. Intenção do motociclista (alvos) ───────────────────────
+            # ── 1. Intenção do motociclista (guiada pela rota) ─────────────
             #  Velocidade alvo: muda a cada 8s (decisão do condutor)
             if self._tick_count % 8 == 0:
                 s._target_vel = clamp(
-                    s._target_vel + random.uniform(-15, 15),
-                    20, self.vel_max * 0.7
+                    s._target_vel + random.uniform(-5, 5),
+                    30, self.vel_max * 0.7
                 )
-            #  Direção da estrada: curvas naturais a cada 4s
-            if self._tick_count % 4 == 0:
-                s._target_yaw = (s._target_yaw + random.uniform(-15, 15)) % 360
+            #  Yaw alvo derivado da rota pré-definida (substitui random walk)
+            route_info = self.route_follower.update(s.lat, s.lng)
+            s._target_yaw = route_info["target_yaw_deg"]
+            #  Reduzir velocidade antes de curvas fechadas
+            if route_info["speed_limit_kmh"] is not None:
+                s._target_vel = min(s._target_vel, route_info["speed_limit_kmh"])
 
             # ── 2. Velocidade e Aceleração ────────────────────────────────
             vel_diff = s._target_vel - s.velocidade
@@ -564,20 +623,23 @@ class MotoGuardGenerator(ctk.CTk):
             s.side_stand_down = (s.velocidade < 1
                                 and random.random() < 0.05)
 
-            # ── 12. Pressão óleo PROPORCIONAL ao RPM ─────────────────────
-            oil_base = 1.5 + (s.rpm / self.rpm_max) * 3.5
+            # ── 12. Pressão óleo (específica por perfil) ──────────────────────────
+            oil_base = self.oil_idle + (s.rpm / self.rpm_max) * (self.oil_max - self.oil_idle)
             s.oil_pressure_bar = clamp(
-                oil_base + random.uniform(-0.1, 0.1), 0.5, 5.5)
+                oil_base + random.uniform(-0.1, 0.1),
+                self.oil_idle * 0.5, self.oil_max * 1.1)
 
-            # ── 13. Pressão pneus PROPORCIONAL à temperatura ─────────────
+            # ── 13. Pressão pneus (base específica por perfil + calor) ───────────
             temp_factor = ((s.temp_motor - self.temp_min)
                           / max(1, self.temp_max - self.temp_min))
             s.tire_pressure_front = clamp(
-                2.3 + temp_factor * 0.3 + random.uniform(-0.02, 0.02),
-                1.8, 3.2)
+                self.tire_front_base + temp_factor * self.tire_front_base * 0.08
+                + random.uniform(-0.02, 0.02),
+                self.tire_front_base * 0.85, self.tire_front_base * 1.15)
             s.tire_pressure_rear = clamp(
-                2.6 + temp_factor * 0.4 + random.uniform(-0.02, 0.02),
-                2.0, 3.5)
+                self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
+                + random.uniform(-0.02, 0.02),
+                self.tire_rear_base * 0.85, self.tire_rear_base * 1.15)
 
             # ── 14. Efeitos de eventos activos ───────────────────────────
             s.g_force = 0.0
@@ -594,13 +656,20 @@ class MotoGuardGenerator(ctk.CTk):
                     s.throttle_pct = 0
                     s.brake_front_pct = 0
                     s.brake_rear_pct = 0
+                    s.tc_active = False          # sem acelerador durante queda
+                    s.side_stand_down = False    # mota em queda — descanso levantado
                     if s._queda_timer >= self.th_confirmacao:
                         s._queda_confirmed = True
                 else:
+                    # Mota no chão — estado congelado até reset
                     s.velocidade = lerp(s.velocidade, 0, 0.9)
                     s.rpm        = lerp(float(s.rpm), 0, 0.9)
                     s.gear = 0
                     s.throttle_pct = 0
+                    s.roll = self.th_roll if s.roll >= 0 else -self.th_roll
+                    s.oil_pressure_bar = max(0.0, lerp(s.oil_pressure_bar, 0.0, 0.5))
+                    s.abs_active = False
+                    s.tc_active = False
                     s.side_stand_down = False
 
             if s.flag_alternador:
@@ -614,14 +683,10 @@ class MotoGuardGenerator(ctk.CTk):
             if s.velocidade > 1:
                 speed_ms = s.velocidade / 3.6          # km/h → m/s
                 yaw_rad  = math.radians(s.yaw)
-                # 1° latitude ≈ 111 320 m
-                # 1° longitude ≈ 111 320 × cos(latitude) m
                 s.lat += (speed_ms * math.cos(yaw_rad)) / 111320.0
                 s.lng += (speed_ms * math.sin(yaw_rad)) / (
                     111320.0 * math.cos(math.radians(s.lat)))
-                # Ruído GPS (±0.2 m)
-                s.lat += random.uniform(-0.000002, 0.000002)
-                s.lng += random.uniform(-0.000002, 0.000002)
+                # Sem ruído aleatório — posição segue a física da rota
 
             # ── 16. Arredondar para output ───────────────────────────────
             vel_out   = round(s.velocidade, 1)
@@ -700,6 +765,18 @@ class MotoGuardGenerator(ctk.CTk):
                        vt=volt_out, ro=roll_out, pi=pitch_out,
                        g=s.g_force, ev=evento, tk=self._tick_count:
                        self._update_debug_ui(v, r, t, vt, ro, pi, g, ev, tk))
+
+            # ── Detectar queda confirmada — parar geração e aguardar reset ──────────────
+            if self.tele._queda_confirmed:
+                s.velocidade = 0.0
+                s.rpm = 0.0
+                s.gear = 0
+                s.throttle_pct = 0.0
+                s.brake_front_pct = 0.0
+                s.brake_rear_pct = 0.0
+                s._target_vel = 0.0
+                self.after(0, self._pausar_apos_queda)
+                break
 
             time.sleep(PUBLISH_INTERVAL)
 
@@ -782,6 +859,9 @@ class MotoGuardGenerator(ctk.CTk):
         self.lbl_evento.configure(text="Eventos limpos", text_color="#00FF88")
         self._log("Eventos resetados")
         self.after(3000, lambda: self.lbl_evento.configure(text=""))
+        # Retomar geração se estava parada por queda (perfil activo mas loop parado)
+        if self.perfil_nome and not self._sim_running:
+            self._arrancar_geracao()
 
     # ========================================================================
     #  Log

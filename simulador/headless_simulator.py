@@ -6,7 +6,7 @@
 #
 #  Usa:  python headless_simulator.py [--modelo Naked] [--evento queda]
 #
-#  Variáveis externas suportadas (via config.py):
+#  Variáveis de ambiente suportadas (via config.py):
 #    MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASS, etc.
 # =============================================================================
 
@@ -28,8 +28,9 @@ from config import (
     DEFAULT_LAT, DEFAULT_LNG,
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
-    PERFIS_MOTO,
+    PERFIS_MOTO, ROUTE_NAME,
 )
+from routes import RouteFollower, ROTAS, ROTA_PADRAO
 
 # ── Constantes de interpolação (suavidade por tick de 1s) ─────────────────────
 LERP_VEL   = 0.15
@@ -88,6 +89,8 @@ class TelemetriaState:
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
 
+        self.ambient_light_lux: float = 500.0
+
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
         self._acceleration: float = 0.0
@@ -141,6 +144,10 @@ class HeadlessSimulator:
         self.tele = TelemetriaState()
         self.perfil_nome: str | None = None
         self._tick_count = 0
+        self._generation_paused: bool = False  # True após queda confirmada; retoma com reset_eventos/arrancar
+        self.route_follower: RouteFollower = RouteFollower(
+            ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
+        )
 
         # Limites do perfil
         self.vel_max = 200
@@ -151,6 +158,10 @@ class HeadlessSimulator:
         self.volt_max = 14.5
         self.roll_tipico = 40.0
         self.peso = 190
+        self.oil_idle = 1.5           # pressão óleo em marcha lenta (bar)
+        self.oil_max = 5.0            # pressão óleo a RPM máximo (bar)
+        self.tire_front_base = 2.3    # pressão base pneu dianteiro (bar)
+        self.tire_rear_base = 2.6     # pressão base pneu traseiro (bar)
         self.th_roll = QUEDA_ROLL_THRESHOLD
         self.th_pitch = QUEDA_PITCH_THRESHOLD
         self.th_g_force = QUEDA_G_FORCE
@@ -188,6 +199,11 @@ class HeadlessSimulator:
         self.roll_tipico = p["roll_tipico_max"]
         self.peso        = p["peso_medio"]
 
+        self.oil_idle        = p.get("oil_pressure_idle_bar", 1.5)
+        self.oil_max         = p.get("oil_pressure_max_bar", 5.0)
+        self.tire_front_base = p.get("tire_pressure_front_bar", 2.3)
+        self.tire_rear_base  = p.get("tire_pressure_rear_bar", 2.6)
+
         self.th_roll         = p.get("queda_roll_threshold", QUEDA_ROLL_THRESHOLD)
         self.th_pitch        = p.get("queda_pitch_threshold", QUEDA_PITCH_THRESHOLD)
         self.th_g_force      = p.get("queda_g_force", QUEDA_G_FORCE)
@@ -203,6 +219,10 @@ class HeadlessSimulator:
         self.tele.th_rpm_critico  = self.th_rpm_critico
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
+
+        # Re-inicializar seguidor de rota ao carregar novo perfil
+        rota = ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
+        self.route_follower = RouteFollower(rota)
         return True
 
     # ========================================================================
@@ -265,9 +285,23 @@ class HeadlessSimulator:
         elif acao == "reset_eventos":
             log("Comando: reset_eventos")
             self.tele.reset_eventos()
+            if self._generation_paused:
+                self._generation_paused = False
+                log(f"Geração retomada após reset_eventos — modelo '{self.perfil_nome}'.")
+        elif acao == "arrancar":
+            log("Comando: arrancar")
+            if self.perfil_nome and self._generation_paused:
+                self.tele.reset_eventos()
+                self._generation_paused = False
+                log(f"Geração retomada — modelo '{self.perfil_nome}'.")
+            elif not self.perfil_nome:
+                log("Arrancar: sem modelo activo — usa 'definir_modelo' primeiro.")
+            else:
+                log("Arrancar: geração já activa.")
         elif acao == "parar":
             log("Comando: parar — simulador a ficar inactivo (aguarda novo 'definir_modelo')")
             self.perfil_nome = None
+            self._generation_paused = False
             self.tele = TelemetriaState()
             self._tick_count = 0
         else:
@@ -279,8 +313,15 @@ class HeadlessSimulator:
     def _aplicar_modelo(self, modelo: str):
         if not self._carregar_perfil(modelo):
             return
+        self._generation_paused = False
         self.tele = TelemetriaState()
-        self._carregar_perfil(modelo)
+        self._carregar_perfil(modelo)  # re-propagar thresholds após reset
+
+        # Iniciar GPS no ponto de partida da rota
+        rota_start = self.route_follower.waypoints[0]
+        self.tele.lat = rota_start[0]
+        self.tele.lng = rota_start[1]
+
         self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
         self._tick_count = 0
         log(f"Perfil '{modelo}' carregado — Vel máx: {self.vel_max} km/h | RPM máx: {self.rpm_max}")
@@ -308,14 +349,19 @@ class HeadlessSimulator:
         self._tick_count += 1
         s = self.tele
 
-        # ── 1. Intenção do motociclista ───────────────────────────────
+        # ── 1. Intenção do motociclista (guiada pela rota) ────────────────
+        #  Velocidade alvo: ajuste suave a cada 8s + limites de curva
         if self._tick_count % 8 == 0:
             s._target_vel = clamp(
-                s._target_vel + random.uniform(-15, 15),
-                20, self.vel_max * 0.7
+                s._target_vel + random.uniform(-5, 5),
+                30, self.vel_max * 0.7
             )
-        if self._tick_count % 4 == 0:
-            s._target_yaw = (s._target_yaw + random.uniform(-15, 15)) % 360
+        #  Yaw alvo derivado da rota pré-definida (substitui random walk)
+        route_info = self.route_follower.update(s.lat, s.lng)
+        s._target_yaw = route_info["target_yaw_deg"]
+        #  Reduzir velocidade antes de curvas fechadas
+        if route_info["speed_limit_kmh"] is not None:
+            s._target_vel = min(s._target_vel, route_info["speed_limit_kmh"])
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
@@ -414,19 +460,29 @@ class HeadlessSimulator:
                       and random.random() < 0.10)
         s.side_stand_down = (s.velocidade < 1 and random.random() < 0.05)
 
-        # ── 12. Pressão óleo ─────────────────────────────────────────
-        oil_base = 1.5 + (s.rpm / self.rpm_max) * 3.5
-        s.oil_pressure_bar = clamp(oil_base + random.uniform(-0.1, 0.1), 0.5, 5.5)
+        # ── 12. Pressão óleo (específica por perfil) ──────────────────────────
+        oil_base = self.oil_idle + (s.rpm / self.rpm_max) * (self.oil_max - self.oil_idle)
+        s.oil_pressure_bar = clamp(oil_base + random.uniform(-0.1, 0.1),
+                                   self.oil_idle * 0.5, self.oil_max * 1.1)
 
-        # ── 13. Pressão pneus ────────────────────────────────────────
+        # ── 13. Pressão pneus (base específica por perfil + calor) ───────────
         temp_factor = ((s.temp_motor - self.temp_min)
                       / max(1, self.temp_max - self.temp_min))
         s.tire_pressure_front = clamp(
-            2.3 + temp_factor * 0.3 + random.uniform(-0.02, 0.02), 1.8, 3.2)
+            self.tire_front_base + temp_factor * self.tire_front_base * 0.08
+            + random.uniform(-0.02, 0.02),
+            self.tire_front_base * 0.85, self.tire_front_base * 1.15)
         s.tire_pressure_rear = clamp(
-            2.6 + temp_factor * 0.4 + random.uniform(-0.02, 0.02), 2.0, 3.5)
+            self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
+            + random.uniform(-0.02, 0.02),
+            self.tire_rear_base * 0.85, self.tire_rear_base * 1.15)
 
-        # ── 14. Efeitos de eventos ───────────────────────────────────
+        # ── 14. Luminosidade ─────────────────────────────────────────
+        hour_sim = (self._tick_count % 1800) / 1800.0
+        lux_base = 500 * math.sin(math.pi * hour_sim) + 50
+        s.ambient_light_lux = clamp(lux_base + random.uniform(-20, 20), 0, 1000)
+
+        # ── 15. Efeitos de eventos ───────────────────────────────────
         s.g_force = 0.0
 
         if s.flag_queda:
@@ -441,13 +497,20 @@ class HeadlessSimulator:
                 s.throttle_pct = 0
                 s.brake_front_pct = 0
                 s.brake_rear_pct = 0
+                s.tc_active = False          # sem acelerador durante queda
+                s.side_stand_down = False    # mota em queda — descanso levantado
                 if s._queda_timer >= self.th_confirmacao:
                     s._queda_confirmed = True
             else:
+                # Mota no chão — estado congelado até reset
                 s.velocidade = lerp(s.velocidade, 0, 0.9)
                 s.rpm = lerp(float(s.rpm), 0, 0.9)
                 s.gear = 0
                 s.throttle_pct = 0
+                s.roll = self.th_roll if s.roll >= 0 else -self.th_roll
+                s.oil_pressure_bar = max(0.0, lerp(s.oil_pressure_bar, 0.0, 0.5))
+                s.abs_active = False
+                s.tc_active = False
                 s.side_stand_down = False
 
         if s.flag_alternador:
@@ -457,17 +520,16 @@ class HeadlessSimulator:
             s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-        # ── 15. GPS ──────────────────────────────────────────────────
+        # ── 16. GPS ──────────────────────────────────────────────────
         if s.velocidade > 1:
             speed_ms = s.velocidade / 3.6
             yaw_rad = math.radians(s.yaw)
             s.lat += (speed_ms * math.cos(yaw_rad)) / 111320.0
             s.lng += (speed_ms * math.sin(yaw_rad)) / (
                 111320.0 * math.cos(math.radians(s.lat)))
-            s.lat += random.uniform(-0.000002, 0.000002)
-            s.lng += random.uniform(-0.000002, 0.000002)
+            # Sem ruído aleatório — posição segue a física da rota
 
-        # ── 16. Arredondar ───────────────────────────────────────────
+        # ── 17. Arredondar ───────────────────────────────────────────
         vel_out   = round(s.velocidade, 1)
         rpm_out   = int(round(s.rpm))
         temp_out  = round(s.temp_motor, 1)
@@ -481,7 +543,7 @@ class HeadlessSimulator:
         accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
         accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-        # ── 17. Payload ──────────────────────────────────────────────
+        # ── 18. Payload ──────────────────────────────────────────────
         # Estrutura alinhada com o contrato do backend (telemetry.model.ts)
         payload = {
             "telemetry": {
@@ -515,6 +577,9 @@ class HeadlessSimulator:
             "location": {
                 "latitude":  round(s.lat, 6),
                 "longitude": round(s.lng, 6),
+            },
+            "environment": {
+                "ambient_light_lux": round(s.ambient_light_lux),
             },
             "system": {
                 "device_id":    DEVICE_ID,
@@ -563,9 +628,23 @@ class HeadlessSimulator:
 
         # Loop principal
         while self.running:
-            if self.connected and self.perfil_nome:
+            if self.connected and self.perfil_nome and not self._generation_paused:
                 payload = self._sim_tick()
                 self._publicar(payload)
+
+                # Detectar queda confirmada — parar geração e aguardar reset explícito
+                if self.tele._queda_confirmed:
+                    self._generation_paused = True
+                    s = self.tele
+                    s.velocidade = 0.0
+                    s.rpm = 0.0
+                    s.gear = 0
+                    s.throttle_pct = 0.0
+                    s.brake_front_pct = 0.0
+                    s.brake_rear_pct = 0.0
+                    s._target_vel = 0.0
+                    log("QUEDA CONFIRMADA — geração de dados parada. "
+                        "Aguarda 'reset_eventos' ou 'arrancar' para retomar.")
 
                 # Log resumido a cada 10 ticks
                 if self._tick_count % 10 == 0:

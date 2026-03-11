@@ -119,6 +119,7 @@ services:
       MQTT_USER: ${MQTT_SIM_USER:-simulator}
       MQTT_PASS: ${MQTT_SIM_PASS:-simulator123}
       SIM_MODELO: ${SIM_MODELO:-Naked}
+      ROUTE_NAME: ${ROUTE_NAME:-vila_real_estrada}
     depends_on:
       - mosquitto
     networks:
