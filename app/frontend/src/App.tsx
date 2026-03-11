@@ -37,7 +37,6 @@ export default function App() {
           system={telemetry?.system ?? null}
           safety={telemetry?.active_safety ?? null}
           health={telemetry?.health ?? null}
-          environment={telemetry?.environment ?? null}
         />
 
         {/* Linha 3 — Comandos (largura total) */}

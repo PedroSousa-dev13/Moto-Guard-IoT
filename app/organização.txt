@@ -39,12 +39,12 @@
 #    [✔] Configuração com 8 perfis de mota (config.py)
 #        → Scooter, Naked, Desportiva, Trail, Cruiser, Motocross, Touring, Supermotard
 #    [✔] Payload JSON completo (data contract documentado em a_ver.txt)
-#        → telemetry, imu, active_safety, health, location, environment, system
+#        → telemetry, imu, active_safety, health, location, system
 #    [✔] Comunicação MQTT funcional (broker.hivemq.com)
 #        → Publica telemetria 1x/segundo, recebe comandos
 #    [✔] Deteção de queda com thresholds específicos por modelo
 #    [✔] Mini-GUI debug com customtkinter
-#    [✔] Documentação de variáveis ambientais externas
+#    [✔] Documentação do data contract de telemetria
 #
 # ─────────────────────────────────────────────────────────────────────────────
 #  O que FALTA (por fazer):
@@ -109,7 +109,7 @@
 #           → Express.js + TypeScript (compilação com tsc)
 #           → Estrutura de pastas: routes/, controllers/, services/, models/
 #           → backend/src/index.ts — entry point
-#           → backend/src/config/env.ts — variáveis de ambiente centralizadas
+#           → backend/src/config/env.ts — variáveis externas centralizadas
 #           → backend/src/models/telemetry.model.ts — interfaces do data contract
 #           → backend/src/services/ — mqtt.service.ts, socket.service.ts, telemetry.store.ts
 #           → backend/src/controllers/ — health, telemetry, command
@@ -162,7 +162,7 @@
 #               18 campos: speed_kmh, rpm, gear, throttle_pct, engine_temp_c,
 #               voltage, brake_front/rear_pct, roll/pitch/yaw_deg, g_force,
 #               latitude, longitude, oil_pressure_bar,
-#               tire_pressure_front/rear_bar, ambient_light_lux
+#               tire_pressure_front/rear_bar
 #             · queryTripTelemetry(startedAt, endedAt, deviceId?)
 #               Flux query: range por intervalo da viagem + pivot + sort
 #               Retorna array de pontos com metadados InfluxDB removidos
@@ -281,7 +281,7 @@
 #           → Desgaste de pneus (pressão a descer consistentemente?)
 #
 #  [ ] 3.5  Cruzamento com dados externos
-#           → API meteorológica: alertas de precipitação na rota
+#           → (removido) sem cruzamento meteorológico
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -294,7 +294,6 @@
 #           → Sons/vibração para alertas CRITICAL
 #
 #  [ ] 4.2  Notificações proativas
-#           → "Atenção: chuva prevista na sua rota dentro de 30 min"
 #           → "Zona com buracos reportados a 2 km à frente"
 #           → "Temperatura do motor a subir — considere parar"
 #

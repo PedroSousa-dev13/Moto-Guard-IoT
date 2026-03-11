@@ -103,9 +103,6 @@ class TelemetriaState:
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
 
-        # Ambiente
-        self.ambient_light_lux: float = 500.0
-
         # Alvos internos (interpolação suave)
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -582,13 +579,7 @@ class MotoGuardGenerator(ctk.CTk):
                 2.6 + temp_factor * 0.4 + random.uniform(-0.02, 0.02),
                 2.0, 3.5)
 
-            # ── 14. Luminosidade (ciclo dia/noite de 30 min) ─────────────
-            hour_sim = (self._tick_count % 1800) / 1800.0
-            lux_base = 500 * math.sin(math.pi * hour_sim) + 50
-            s.ambient_light_lux = clamp(
-                lux_base + random.uniform(-20, 20), 0, 1000)
-
-            # ── 15. Efeitos de eventos activos ───────────────────────────
+            # ── 14. Efeitos de eventos activos ───────────────────────────
             s.g_force = 0.0
 
             if s.flag_queda:
@@ -619,7 +610,7 @@ class MotoGuardGenerator(ctk.CTk):
                 s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
                 s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-            # ── 16. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
+            # ── 15. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
             if s.velocidade > 1:
                 speed_ms = s.velocidade / 3.6          # km/h → m/s
                 yaw_rad  = math.radians(s.yaw)
@@ -632,7 +623,7 @@ class MotoGuardGenerator(ctk.CTk):
                 s.lat += random.uniform(-0.000002, 0.000002)
                 s.lng += random.uniform(-0.000002, 0.000002)
 
-            # ── 17. Arredondar para output ───────────────────────────────
+            # ── 16. Arredondar para output ───────────────────────────────
             vel_out   = round(s.velocidade, 1)
             rpm_out   = int(round(s.rpm))
             temp_out  = round(s.temp_motor, 1)
@@ -646,7 +637,7 @@ class MotoGuardGenerator(ctk.CTk):
             accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
             accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-            # ── 18. Construir e publicar payload ─────────────────────────
+            # ── 17. Construir e publicar payload ─────────────────────────
             payload = {
                 "device_id": DEVICE_ID,
                 "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -690,9 +681,6 @@ class MotoGuardGenerator(ctk.CTk):
                     "lat": round(s.lat, 6),
                     "lng": round(s.lng, 6),
                 },
-                "environment": {
-                    "ambient_light_lux": round(s.ambient_light_lux),
-                },
                 "system": {
                     "status":          evento.lower(),
                     "battery_voltage": volt_out,
@@ -707,7 +695,7 @@ class MotoGuardGenerator(ctk.CTk):
 
             self._publicar(payload)
 
-            # ── 19. Actualizar GUI de debug ────────────────────────────
+            # ── 18. Actualizar GUI de debug ────────────────────────────
             self.after(0, lambda v=vel_out, r=rpm_out, t=temp_out,
                        vt=volt_out, ro=roll_out, pi=pitch_out,
                        g=s.g_force, ev=evento, tk=self._tick_count:

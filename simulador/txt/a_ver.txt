@@ -4,13 +4,10 @@
 # MotoGuard IoT — Estrutura Completa do Payload JSON
 # =============================================================================
 # Este ficheiro documenta TODAS as variáveis do payload MQTT publicado
-# pelo simulador, incluindo variáveis ambientais externas que influenciam
-# as leituras dos sensores.
+# pelo simulador.
 #
 # Legenda:
 #   [ATIVO]    → Variável gerada pelo simulador (motoguard_simulator.py)
-#   [AMBIENTE] → Factor externo que influencia as leituras (não é enviado 
-#                diretamente, mas pode ser simulado para alterar valores)
 # =============================================================================
 
 {
@@ -179,64 +176,6 @@
     "roll_tipico_max": 40
   },
 
-  # ─── AMBIENTE / LUZ ──────────────────────────────────────────────────────
-
-  "environment": {
-    # [ATIVO] Luminosidade ambiente em lux (ciclo dia/noite simulado a cada 30 min)
-    # 0-50 lux = noite/túnel; 50-550 lux = dia; variação com ruído
-    "ambient_light_lux": 450
-  }
 }
 
 
-# =============================================================================
-# VARIÁVEIS EXTERNAS / AMBIENTAIS
-# =============================================================================
-# Factores externos que NÃO são enviados diretamente como campos no payload,
-# mas que influenciam as leituras dos sensores e devem ser considerados
-# na lógica de deteção de anomalias (filtros, thresholds adaptativos, etc.)
-#
-# O simulador pode modelar estes efeitos para gerar dados mais realistas.
-# =============================================================================
-
-# [AMBIENTE] Temperatura Ambiente (°C)
-# Frio extremo reduz a pressão natural dos pneus e atrasa o aquecimento do motor.
-# Asfalto muito quente (ex: 50°C no verão) expande o ar nos pneus (aumenta TPMS)
-# e agrava o sobreaquecimento em trânsito lento.
-# → Afeta: tire_pressure_bar, engine_temp_c
-
-# [AMBIENTE] Vento Cruzado (km/h e direção)
-# Obriga a mota a inclinar-se para compensar a força do vento, gerando leitura
-# de Roll no IMU mesmo numa reta perfeita.
-# → Afeta: imu.roll, imu.accel_y
-
-# [AMBIENTE] Chuva / Estado do Piso (seco, molhado, alagado)
-# Pode gerar pico súbito de RPM sem aumento de velocidade correspondente
-# (pneu traseiro a patinar no asfalto molhado). Ativa ABS e TC com mais frequência.
-# → Afeta: rpm, speed_kmh, abs_active, tc_active
-
-# [AMBIENTE] Irregularidades no Piso (buracos, empedrado, lombas)
-# Causa vibrações extremas e picos repentinos no eixo Z da aceleração (accel_z),
-# gerando "ruído" nos gráficos ou até falsos alarmes de queda se o backend
-# não tiver filtro para ignorar saltos rápidos.
-# → Afeta: imu.accel_z, imu.accel_x, g_force
-
-# [AMBIENTE] Declive da Estrada (subida/descida em %)
-# Altera permanentemente o eixo frontal (pitch) durante o trajeto.
-# O sistema tem de distinguir declive de travagem a fundo ou aceleração forte.
-# → Afeta: imu.pitch, imu.accel_x
-
-# [AMBIENTE] Carga Extra (passageiro ou bagagem pesada, kg)
-# Afunda a suspensão traseira, alterando a geometria e o pitch base da mota.
-# Aumenta a inércia, exigindo mais tempo e distância para reduzir a velocidade.
-# → Afeta: imu.pitch, g_force, brakes (distância de travagem)
-
-# [AMBIENTE] Altitude (metros acima do nível do mar)
-# Ar mais rarefeito altera a combustão (mais RPM para mesma velocidade)
-# e afeta ligeiramente as leituras de pressão dos pneus.
-# → Afeta: rpm, tire_pressure_bar
-
-# [AMBIENTE] Bloqueios Físicos (túneis, prédios altos, vales profundos)
-# Causam perda imediata de leitura GPS e podem cortar a ligação de rede móvel,
-# impedindo o envio de pacotes MQTT em tempo real.
-# → Afeta: location.lat, location.lng, conectividade MQTT

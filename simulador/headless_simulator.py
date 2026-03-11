@@ -6,7 +6,7 @@
 #
 #  Usa:  python headless_simulator.py [--modelo Naked] [--evento queda]
 #
-#  Variáveis de ambiente suportadas (via config.py):
+#  Variáveis externas suportadas (via config.py):
 #    MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASS, etc.
 # =============================================================================
 
@@ -87,8 +87,6 @@ class TelemetriaState:
         self.oil_pressure_bar: float = 4.0
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
-
-        self.ambient_light_lux: float = 500.0
 
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -428,12 +426,7 @@ class HeadlessSimulator:
         s.tire_pressure_rear = clamp(
             2.6 + temp_factor * 0.4 + random.uniform(-0.02, 0.02), 2.0, 3.5)
 
-        # ── 14. Luminosidade ─────────────────────────────────────────
-        hour_sim = (self._tick_count % 1800) / 1800.0
-        lux_base = 500 * math.sin(math.pi * hour_sim) + 50
-        s.ambient_light_lux = clamp(lux_base + random.uniform(-20, 20), 0, 1000)
-
-        # ── 15. Efeitos de eventos ───────────────────────────────────
+        # ── 14. Efeitos de eventos ───────────────────────────────────
         s.g_force = 0.0
 
         if s.flag_queda:
@@ -464,7 +457,7 @@ class HeadlessSimulator:
             s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-        # ── 16. GPS ──────────────────────────────────────────────────
+        # ── 15. GPS ──────────────────────────────────────────────────
         if s.velocidade > 1:
             speed_ms = s.velocidade / 3.6
             yaw_rad = math.radians(s.yaw)
@@ -474,7 +467,7 @@ class HeadlessSimulator:
             s.lat += random.uniform(-0.000002, 0.000002)
             s.lng += random.uniform(-0.000002, 0.000002)
 
-        # ── 17. Arredondar ───────────────────────────────────────────
+        # ── 16. Arredondar ───────────────────────────────────────────
         vel_out   = round(s.velocidade, 1)
         rpm_out   = int(round(s.rpm))
         temp_out  = round(s.temp_motor, 1)
@@ -488,7 +481,7 @@ class HeadlessSimulator:
         accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
         accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-        # ── 18. Payload ──────────────────────────────────────────────
+        # ── 17. Payload ──────────────────────────────────────────────
         # Estrutura alinhada com o contrato do backend (telemetry.model.ts)
         payload = {
             "telemetry": {
@@ -522,9 +515,6 @@ class HeadlessSimulator:
             "location": {
                 "latitude":  round(s.lat, 6),
                 "longitude": round(s.lng, 6),
-            },
-            "environment": {
-                "ambient_light_lux": round(s.ambient_light_lux),
             },
             "system": {
                 "device_id":    DEVICE_ID,

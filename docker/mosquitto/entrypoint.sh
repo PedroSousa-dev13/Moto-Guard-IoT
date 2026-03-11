@@ -3,7 +3,7 @@
 # MotoGuard IoT — Mosquitto Entrypoint
 # =============================================================================
 # Gera o ficheiro de passwords na primeira execução e arranca o broker.
-# Utiliza variáveis de ambiente para configurar utilizadores MQTT.
+# Utiliza variáveis externas para configurar utilizadores MQTT.
 # =============================================================================
 
 PASSWORD_FILE="/mosquitto/config/password.txt"

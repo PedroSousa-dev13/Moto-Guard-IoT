@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código
 COPY config.py headless_simulator.py ./
 
-# Variáveis de ambiente por defeito
+# Variáveis externas por defeito
 ENV MQTT_BROKER=mosquitto
 ENV MQTT_PORT=1883
 ENV MQTT_USER=motoguard

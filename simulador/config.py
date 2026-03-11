@@ -3,7 +3,7 @@
 # =============================================================================
 # Todas as constantes e perfis de modelos centralizados aqui.
 # O simulador lê este ficheiro para adaptar limites e comportamento.
-# Variáveis de ambiente sobrepõem os valores por defeito (para Docker).
+# Variáveis externas sobrepõem os valores por defeito (para Docker).
 # =============================================================================
 
 import os
