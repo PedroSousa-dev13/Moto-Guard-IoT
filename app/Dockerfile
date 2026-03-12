@@ -1,36 +1,31 @@
 # =============================================================================
-# MotoGuard IoT — Dockerfile (Backend + Frontend Build)
+# MotoGuard IoT — Dockerfile (Backend apenas)
+# =============================================================================
+# Opção A (dev): o frontend é servido pelo container dedicado (Vite dev server).
+# Este Dockerfile apenas compila e arranca o backend Node.js na porta 3000.
 # =============================================================================
 
 FROM node:20-alpine
 
 WORKDIR /app
 
-# ─── Backend ─────────────────────────────────────────────────────────────────
-# Instalar dependências do backend primeiro (cache de camadas)
+# ─── Dependências ─────────────────────────────────────────────────────────────
 COPY package*.json ./
 RUN npm install
 
-# Copiar Prisma schema e gerar client
+# ─── Prisma ───────────────────────────────────────────────────────────────────
 COPY prisma/ ./prisma/
 COPY prisma.config.ts ./
 RUN npx prisma generate
 
-# Copiar código do backend
+# ─── Backend ──────────────────────────────────────────────────────────────────
 COPY backend/ ./backend/
-
-# Compilar TypeScript → JavaScript
 RUN npm run build
 
-# ─── Frontend ────────────────────────────────────────────────────────────────
-# Instalar dependências e fazer build do React
-COPY frontend/package*.json ./frontend/
-RUN cd frontend && npm install
-
-COPY frontend/ ./frontend/
-RUN cd frontend && npm run build
-
-# ─── Arrancar ────────────────────────────────────────────────────────────────
+# ─── Arrancar ─────────────────────────────────────────────────────────────────
 EXPOSE 3000
-# Executar migrations (1.9), seed dos perfis (1.10) e arrancar o servidor
-CMD sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && exec npm run start"
+
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+CMD ["./docker-entrypoint.sh"]

@@ -52,7 +52,7 @@ async function getTripTelemetry(req, res) {
         });
     }
     catch (err) {
-        console.error("❌ Erro ao consultar InfluxDB:", err.message);
+        console.error("Erro ao consultar InfluxDB:", err.message);
         res.status(503).json({ error: "Não foi possível consultar o InfluxDB" });
     }
 }

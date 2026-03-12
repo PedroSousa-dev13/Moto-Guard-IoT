@@ -22,6 +22,6 @@ export function sendCommand(req: Request, res: Response): void {
   }
 
   mqttService.publishCommand(command);
-  console.log("📤 Comando enviado via REST:", JSON.stringify(command));
+  console.log("Comando enviado via REST:", JSON.stringify(command));
   res.json({ status: "sent", command });
 }

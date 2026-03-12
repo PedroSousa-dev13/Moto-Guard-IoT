@@ -157,7 +157,7 @@ app.get("/api/health", (req, res) => {
       connectedClients,
       hasData: latestTelemetry !== null,
     },
-    infrastructure: {
+    environment: {
       influxdb: process.env.INFLUXDB_URL || "not configured",
       postgres: process.env.DATABASE_URL ? "configured" : "not configured",
     },

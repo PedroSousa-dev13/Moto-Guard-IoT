@@ -55,3 +55,10 @@
 
 fazer uma organizacao dos comandos do simulador, a mota caiu e os dados continuaram a ser gerardos, deveria de haver
 um break no ciclo de geração de dados. verfiicar coenrencia entre todos os dados 
+
+
+
+
+
+
+no gpx podemos usar as rotas como o GPS

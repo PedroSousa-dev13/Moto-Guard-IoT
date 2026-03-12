@@ -28,9 +28,8 @@ class MqttService {
     this.onTelemetryHandlers.push(handler);
   }
 
-  /** Inicia a ligação ao broker MQTT */
   connect(): void {
-    console.log(`\n📡 A ligar ao broker MQTT: ${env.MQTT_BROKER_URL}`);
+    console.log(`A ligar ao broker MQTT: ${env.MQTT_BROKER_URL}`);
 
     this.client = mqtt.connect(env.MQTT_BROKER_URL, {
       username: env.MQTT_USER,
@@ -42,70 +41,56 @@ class MqttService {
 
     this.client.on("connect", () => {
       this._connected = true;
-      console.log("✅ MQTT conectado ao broker");
+      console.log("MQTT conectado ao broker");
 
       this.client!.subscribe(env.MQTT_TOPIC_TELEMETRIA, { qos: 1 }, (err) => {
         if (err) {
-          console.error(
-            "❌ Erro ao subscrever tópico de telemetria:",
-            err.message
-          );
+          console.error("Erro ao subscrever tópico de telemetria:", err.message);
         } else {
-          console.log(`📥 Subscrito a: ${env.MQTT_TOPIC_TELEMETRIA}`);
+          console.log(`Subscrito a: ${env.MQTT_TOPIC_TELEMETRIA}`);
         }
       });
     });
 
     this.client.on("error", (err) => {
-      console.error("❌ Erro MQTT:", err.message);
+      console.error("Erro MQTT:", err.message);
     });
 
     this.client.on("offline", () => {
       this._connected = false;
-      console.log("⚠️  MQTT desconectado — a tentar reconectar...");
+      console.log("MQTT desconectado - a tentar reconectar...");
     });
 
     this.client.on("reconnect", () => {
-      console.log("🔄 MQTT a reconectar...");
+      console.log("MQTT a reconectar...");
     });
 
-    // ─── Processar mensagens recebidas ────────────────────────────────────
     this.client.on("message", (topic, message) => {
       if (topic === env.MQTT_TOPIC_TELEMETRIA) {
         try {
           const raw = JSON.parse(message.toString());
 
-          // Validar estrutura do payload
           const validation = validateTelemetryPayload(raw);
           if (!validation.valid) {
-            console.warn(`⚠️  Payload inválido rejeitado: ${validation.error}`);
+            console.warn(`Payload inválido rejeitado: ${validation.error}`);
             return;
           }
 
           const payload = raw as TelemetryPayload;
-
-          // Atualizar store central
           telemetryStore.update(payload);
 
-          // Notificar handlers registados (ex: Socket.IO)
           for (const handler of this.onTelemetryHandlers) {
             handler(payload);
           }
 
-          // Log periódico (a cada 10 mensagens)
           if (telemetryStore.count % 10 === 0) {
             const vel = payload?.telemetry?.speed_kmh ?? "?";
             const rpm = payload?.telemetry?.rpm ?? "?";
             const evento = payload?.system?.event_status ?? "?";
-            console.log(
-              `📊 [#${telemetryStore.count}] vel=${vel} km/h | rpm=${rpm} | evento=${evento}`
-            );
+            console.log(`[#${telemetryStore.count}] vel=${vel} km/h | rpm=${rpm} | evento=${evento}`);
           }
         } catch (err) {
-          console.error(
-            "❌ Erro ao parsear telemetria:",
-            (err as Error).message
-          );
+          console.error("Erro ao parsear telemetria:", (err as Error).message);
         }
       }
     });

@@ -5,6 +5,8 @@ declare class SocketService {
     private tripActiveByDevice;
     private stationaryTicksByDevice;
     private lastEventStatusByDevice;
+    private activeTripIdByDevice;
+    private tripStatsByDevice;
     private static readonly TRIP_START_SPEED_KMH;
     private static readonly TRIP_END_SPEED_KMH;
     private static readonly TRIP_END_STATIONARY_TICKS;
@@ -14,7 +16,16 @@ declare class SocketService {
     init(httpServer: http.Server): void;
     private handleAlertEvent;
     private handleTripLifecycle;
+    private startTrip;
+    private updateTripStats;
+    private endTrip;
+    /** Calcula distância em km entre coordenadas GPS */
+    private haversineDistance;
+    private toRad;
     private normalizeEventStatus;
+    /** Persiste evento de risco na base de dados (etapa 1.12) */
+    private persistTripEvent;
+    private mapStatusToEventType;
 }
 export declare const socketService: SocketService;
 export {};

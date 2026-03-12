@@ -18,7 +18,7 @@ function sendCommand(req, res) {
         return;
     }
     mqtt_service_1.mqttService.publishCommand(command);
-    console.log("📤 Comando enviado via REST:", JSON.stringify(command));
+    console.log("Comando enviado via REST:", JSON.stringify(command));
     res.json({ status: "sent", command });
 }
 //# sourceMappingURL=command.controller.js.map

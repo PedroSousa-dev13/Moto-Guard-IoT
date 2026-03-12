@@ -123,6 +123,7 @@ exports.UserScalarFieldEnum = {
     email: 'email',
     passwordHash: 'passwordHash',
     name: 'name',
+    resetToken: 'resetToken',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };

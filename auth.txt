@@ -1,0 +1,88 @@
+# Plano de Autenticação Frontend - MotoGuard IoT
+
+Implementar sistema de autenticação completo com login sidebar, recuperação de senha, protected routes e remember me functionality, mantendo simplicidade mas com UX moderna.
+
+## Etapas
+
+### 1. Implementar Login no useAuth
+- Conectar login/register com API backend existente
+- Adicionar remember me (localStorage vs sessionStorage)
+- Implementar refresh token automático
+- Adicionar loading states e error handling
+
+### 2. Criar Login Sidebar Modal
+- Componente modal/sidebar que se abre sobre a aplicação
+- Alternar entre Login e Registo no mesmo modal
+- Fechar automaticamente após login bem-sucedido
+- Overlay com backdrop blur
+
+### 3. Implementar Protected Routes
+- Criar ProtectedRoute component
+- Redirecionar para login sidebar se não autenticado
+- Guardar URL original para redirecionar após login
+- Loading state durante verificação de auth
+
+### 4. Recuperação de Senha
+- Criar formulário "Esqueci a senha" no login modal
+- Enviar email com token de reset (backend endpoint)
+- Formulário para definir nova password com token
+- Fluxo completo de reset
+
+### 5. Melhorias UX Básicas
+- Toast notifications para sucessos/erros
+- Loading skeletons durante auth
+- Validação em tempo real dos formulários
+- Feedback visual claro
+
+## Arquivos a Criar/Modificar
+
+### Novos Arquivos
+- `components/auth/LoginSidebar.tsx` - Modal de login
+- `components/auth/ProtectedRoute.tsx` - Route guard
+- `components/ui/Toast.tsx` - Notificações
+- `components/ui/LoadingSpinner.tsx` - Loading states
+- `pages/ResetPassword.tsx` - Página de reset
+
+### Arquivos a Modificar
+- `hooks/useAuth.tsx` - Implementar login real + remember me
+- `pages/Login.tsx` - Redirecionar para sidebar ou usar como fallback
+- `App.tsx` - Adicionar ProtectedRoutes e toast provider
+- `services/api.ts` - Adicionar endpoint de reset password
+- `components/Layout.tsx` - Integrar login sidebar
+- `types/index.ts` - Adicionar tipos de auth
+
+## Funcionalidades Específicas
+
+### Remember Me
+- Checkbox no formulário de login
+- Se marcado: localStorage (persistente)
+- Se não marcado: sessionStorage (sessão atual)
+
+### Protected Routes
+- Todas as páginas exceto login exigem autenticação
+- Redirecionamento automático para sidebar
+- Manter URL original para pós-login
+
+### Login Sidebar
+- Abre sobre qualquer página
+- Transições suaves
+- Alternância login/register
+- Esqueci a senha link
+
+### Recuperação de Senha
+- 3-step flow: email → token → nova password
+- Validação de token via API
+- Segurança básica (expiração de token)
+
+## Backend Endpoints Necessários
+- `POST /api/auth/forgot-password` - Enviar email reset
+- `POST /api/auth/reset-password` - Confirmar reset com token
+- `GET /api/auth/verify-reset-token/:token` - Verificar token válido
+
+## Resultado Final
+- Sistema auth completo e funcional
+- UX moderna com sidebar modal
+- Proteção de rotas automática
+- Recuperação de senha completa
+- Remember me funcional
+- Feedback visual claro

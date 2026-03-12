@@ -809,10 +809,6 @@ export type MotorcycleProfileNullableScalarRelationFilter = {
   isNot?: Prisma.MotorcycleProfileWhereInput | null
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type IntFieldUpdateOperationsInput = {
   set?: number
   increment?: number

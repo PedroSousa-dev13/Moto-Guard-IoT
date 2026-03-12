@@ -9,7 +9,6 @@
 # =============================================================================
 
 services:
-
   # ─── MQTT Broker ────────────────────────────────────────────────────────
   mosquitto:
     build:
@@ -18,8 +17,8 @@ services:
     container_name: motoguard-mosquitto
     restart: unless-stopped
     ports:
-      - "${MQTT_PORT:-1883}:1883"       # MQTT
-      - "${MQTT_WS_PORT:-9001}:9001"    # WebSocket (para frontend)
+      - "${MQTT_PORT:-1883}:1883" # MQTT
+      - "${MQTT_WS_PORT:-9001}:9001" # WebSocket (para frontend)
     environment:
       MQTT_USER: ${MQTT_USER:-motoguard}
       MQTT_PASS: ${MQTT_PASS:-motoguard123}
@@ -78,7 +77,7 @@ services:
     container_name: motoguard-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-3000}:3000" # Backend API
     environment:
       NODE_ENV: development
       PORT: 3000
@@ -151,7 +150,7 @@ volumes:
   influxdb-data:
   influxdb-config:
   postgres-data:
-  frontend-node-modules:  # cache de node_modules do frontend (evita reinstalação)
+  frontend-node-modules: # cache de node_modules do frontend (evita reinstalação)
 
 # ─── Rede interna ──────────────────────────────────────────────────────────
 networks:
