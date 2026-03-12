@@ -8,7 +8,6 @@ declare class MqttService {
     get connected(): boolean;
     /** Regista um handler que será chamado a cada mensagem de telemetria */
     onTelemetry(handler: TelemetryHandler): void;
-    /** Inicia a ligação ao broker MQTT */
     connect(): void;
     /** Publica um comando no tópico MQTT de comandos */
     publishCommand(command: object): boolean;

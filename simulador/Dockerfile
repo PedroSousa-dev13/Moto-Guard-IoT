@@ -11,7 +11,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código
-COPY config.py headless_simulator.py ./
+COPY config.py headless_simulator.py routes.py ./
 
 # Variáveis externas por defeito
 ENV MQTT_BROKER=mosquitto

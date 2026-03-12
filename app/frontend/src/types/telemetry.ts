@@ -41,6 +41,10 @@ export interface LocationData {
   longitude: number;
 }
 
+export interface EnvironmentData {
+  ambient_light_lux: number;
+}
+
 export interface SystemData {
   device_id: string;
   moto_model: string;
@@ -56,6 +60,7 @@ export interface TelemetryPayload {
   active_safety: ActiveSafety;
   health: HealthData;
   location: LocationData;
+  environment: EnvironmentData;
   system: SystemData;
 }
 

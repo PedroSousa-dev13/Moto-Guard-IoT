@@ -260,24 +260,24 @@
 #            → Correr "npx tsx prisma/seed.ts" após migrate deploy
 #            → Popula motorcycle_profiles com os 8 perfis do config.py
 #
-#  [ ] 1.11  Persistir viagens no PostgreSQL
+#  [✔] 1.11  Persistir viagens no PostgreSQL
 #            → socket.service.ts deteta trip_started/trip_ended por velocidade
-#            → Emite eventos Socket.IO mas NÃO grava na BD
-#            → Ligar: prisma.trip.create() no trip_started,
-#              prisma.trip.update() no trip_ended
+#            → Cria viagem com prisma.trip.create() no trip_started
+#            → Atualiza com prisma.trip.update() no trip_ended (stats + distância)
 #
-#  [ ] 1.12  Persistir eventos de risco como TripEvents
+#  [✔] 1.12  Persistir eventos de risco como TripEvents
 #            → socket.service.ts deteta alertas (CRASH, OVERHEAT, etc.)
-#            → Emite "alert" via Socket.IO mas NÃO grava na BD
-#            → Ligar: prisma.tripEvent.create() quando alerta detetado
+#            → Cria prisma.tripEvent.create() quando alerta detetado
+#            → Dados: GPS, speed, roll, G-force, temp, voltage + timestamp
 #
-#  [ ] 1.13  Proteger endpoints públicos com JWT
-#            → /api/telemetry/latest e /api/command são atualmente públicos
-#            → Auth middleware já existe — basta adicionar às rotas
+#  [✔] 1.13  Proteger endpoints públicos com JWT
+#            → /api/telemetry/latest e /api/command agora protegidos
+#            → Auth middleware adicionado às rotas em telemetry.routes.ts e command.routes.ts
 #
-#  [ ] 1.14  Associar device_id do simulador a uma mota no PostgreSQL
-#            → Permite saber "que mota está a gerar esta telemetria"
-#            → Necessário para ligar trip ao user correto (1.11)
+#  [✔] 1.14  Associar device_id do simulador a uma mota no PostgreSQL
+            → device-association.service.ts gere associação device_id -> mota
+            → Cache de 60s para evitar queries repetidas
+            → socket.service.ts usa serviço para ligar trip ao user correto
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -285,16 +285,19 @@
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 2 da proposta (parte frontend).
 #
-#  [~] 2.1  Criar projeto React.js (Vite + TypeScript)
-#           → ✔ Projeto criado com Vite + TypeScript
-#           → ✔ Dependências instaladas: socket.io-client, leaflet
-#           → ✘ Falta: react-router (navegação entre páginas), axios (HTTP client)
-#           → ✘ Falta: estrutura pages/, services/ (atualmente tudo em components/)
+#  [✔] 2.1  Criar projeto React.js (Vite + TypeScript)
+            → ✔ Projeto criado com Vite + TypeScript
+            → ✔ Dependências instaladas: socket.io-client, leaflet
+            → ✔ react-router-dom + axios instalados
+            → ✔ Estrutura pages/ e services/ criada
+            → ✔ App.tsx configurado com routing
 #
-#  [ ] 2.2  Layout e navegação base
-#           → Sidebar/navbar: Dashboard, Viagens, Mapa, Perfil
-#           → Design responsivo (web + mobile-friendly)
-#           → Atualmente é single-page sem routing
+#  [✔] 2.2  Layout e navegação base
+            → ✔ Sidebar com navegação (Dashboard, Viagens, Mapa, Perfil)
+            → ✔ Navbar responsiva com info do utilizador
+            → ✔ Layout component com suporte para auth/no-auth
+            → ✔ Design responsivo (web + mobile-friendly)
+            → ✔ CSS moderno com gradientes e transições
 #
 #  [✔] 2.3  Página — Dashboard em Tempo Real
 #           → ✔ GaugeCard: velocidade, RPM, mudança, acelerador, travões
