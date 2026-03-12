@@ -1,22 +1,18 @@
 #!/bin/sh
 
 # =============================================================================
-# MotoGuard IoT — Docker Entrypoint (Opção A — Dev)
+# MotoGuard IoT - Docker Entrypoint (Dev)
 # =============================================================================
-# Apenas arranca o backend Node.js.
-# O frontend é servido pelo container dedicado (Vite dev server).
+# Corre migrations, seed e arranca o backend com hot reload (tsx watch).
 # =============================================================================
 
-echo "🚀 Iniciando MotoGuard IoT Backend..."
+echo "MotoGuard IoT Backend a arrancar..."
 
-# Executar migrations
-echo "📊 Executando migrations do Prisma..."
+echo "A executar migrations do Prisma..."
 npx prisma migrate deploy
 
-# Executar seed dos perfis de mota
-echo "🌱 Executando seed dos perfis de mota..."
+echo "A executar seed dos perfis de mota..."
 npx tsx prisma/seed.ts
 
-# Arrancar backend (foreground — o container fica vivo enquanto o processo viver)
-echo "🔧 Arrancando backend na porta 3000..."
-exec npm start
+echo "A arrancar backend com hot reload (tsx watch)..."
+exec npm run dev:watch

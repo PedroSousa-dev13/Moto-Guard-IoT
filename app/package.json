@@ -1,12 +1,13 @@
 {
   "name": "motoguard-backend",
   "version": "1.0.0",
-  "description": "MotoGuard IoT — Backend API",
+  "description": "MotoGuard IoT - Backend API",
   "main": "backend/dist/index.js",
   "scripts": {
     "build": "cd backend && npx tsc",
     "start": "node backend/dist/index.js",
     "dev": "npx tsx backend/src/index.ts",
+    "dev:watch": "npx tsx watch backend/src/index.ts",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "prisma:generate": "npx prisma generate",

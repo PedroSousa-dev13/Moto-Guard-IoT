@@ -23,30 +23,35 @@ export async function createMotorcycle(
     return;
   }
 
-  // Validar que o perfil existe (se fornecido)
-  if (profileId) {
-    const profile = await prisma.motorcycleProfile.findUnique({
-      where: { id: profileId },
-    });
-    if (!profile) {
-      res.status(400).json({ error: "Perfil de mota não encontrado" });
-      return;
+  try {
+    // Validar que o perfil existe (se fornecido)
+    if (profileId) {
+      const profile = await prisma.motorcycleProfile.findUnique({
+        where: { id: profileId },
+      });
+      if (!profile) {
+        res.status(400).json({ error: "Perfil de mota não encontrado" });
+        return;
+      }
     }
+
+    const motorcycle = await prisma.motorcycle.create({
+      data: {
+        userId,
+        name,
+        brand: brand || null,
+        year: year ? parseInt(year, 10) : null,
+        profileId: profileId || null,
+        deviceId: deviceId || null,
+      },
+      include: { profile: true },
+    });
+
+    res.status(201).json(motorcycle);
+  } catch (err) {
+    console.error("[createMotorcycle] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
-
-  const motorcycle = await prisma.motorcycle.create({
-    data: {
-      userId,
-      name,
-      brand: brand || null,
-      year: year ? parseInt(year, 10) : null,
-      profileId: profileId || null,
-      deviceId: deviceId || null,
-    },
-    include: { profile: true },
-  });
-
-  res.status(201).json(motorcycle);
 }
 
 // ─── Listar motas do utilizador ─────────────────────────────────────────────
@@ -56,13 +61,18 @@ export async function listMotorcycles(
 ): Promise<void> {
   const userId = req.userId!;
 
-  const motorcycles = await prisma.motorcycle.findMany({
-    where: { userId },
-    include: { profile: true },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const motorcycles = await prisma.motorcycle.findMany({
+      where: { userId },
+      include: { profile: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-  res.json(motorcycles);
+    res.json(motorcycles);
+  } catch (err) {
+    console.error("[listMotorcycles] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
 }
 
 // ─── Listar perfis de mota disponíveis ──────────────────────────────────────
@@ -70,9 +80,14 @@ export async function listProfiles(
   _req: AuthRequest,
   res: Response
 ): Promise<void> {
-  const profiles = await prisma.motorcycleProfile.findMany({
-    orderBy: { name: "asc" },
-  });
+  try {
+    const profiles = await prisma.motorcycleProfile.findMany({
+      orderBy: { name: "asc" },
+    });
 
-  res.json(profiles);
+    res.json(profiles);
+  } catch (err) {
+    console.error("[listProfiles] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
 }

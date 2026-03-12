@@ -13,16 +13,21 @@ import type { AuthRequest } from "../middleware/auth.middleware";
 export async function listTrips(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
 
-  const trips = await prisma.trip.findMany({
-    where: { userId },
-    orderBy: { startedAt: "desc" },
-    include: {
-      motorcycle: { select: { id: true, name: true, brand: true } },
-      _count: { select: { events: true } },
-    },
-  });
+  try {
+    const trips = await prisma.trip.findMany({
+      where: { userId },
+      orderBy: { startedAt: "desc" },
+      include: {
+        motorcycle: { select: { id: true, name: true, brand: true } },
+        _count: { select: { events: true } },
+      },
+    });
 
-  res.json(trips);
+    res.json(trips);
+  } catch (err) {
+    console.error("[listTrips] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
 }
 
 // ─── Detalhe de viagem ──────────────────────────────────────────────────────
@@ -30,20 +35,25 @@ export async function getTrip(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
   const id = req.params.id as string;
 
-  const trip = await prisma.trip.findFirst({
-    where: { id, userId },
-    include: {
-      motorcycle: {
-        select: { id: true, name: true, brand: true, profile: true },
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id, userId },
+      include: {
+        motorcycle: {
+          select: { id: true, name: true, brand: true, profile: true },
+        },
+        events: { orderBy: { occurredAt: "asc" } },
       },
-      events: { orderBy: { occurredAt: "asc" } },
-    },
-  });
+    });
 
-  if (!trip) {
-    res.status(404).json({ error: "Viagem não encontrada" });
-    return;
+    if (!trip) {
+      res.status(404).json({ error: "Viagem não encontrada" });
+      return;
+    }
+
+    res.json(trip);
+  } catch (err) {
+    console.error("[getTrip] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
-
-  res.json(trip);
 }
