@@ -12,13 +12,24 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import path from "path";
-import fs from "fs";
 import { setupStaticServing } from "./utils/setup-static-serving";
 import { env } from "./config/env";
 import apiRoutes from "./routes";
 import { mqttService } from "./services/mqtt.service";
 import { socketService } from "./services/socket.service";
 import { prisma } from "./services/prisma.service";
+
+// ─── Handlers globais de erros não capturados ────────────────────────────────
+// Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
+// stream, rejeição de Promise sem .catch(), etc.) mata o processo inteiro.
+// Com eles, o erro é registado e o servidor continua a correr.
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException] Erro não capturado:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection] Promise rejeitada sem handler:", reason);
+});
 
 const app = express();
 const server = http.createServer(app);

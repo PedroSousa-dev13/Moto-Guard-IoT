@@ -1,31 +1,40 @@
 # =============================================================================
-# MotoGuard IoT — Dockerfile (Backend apenas)
-# =============================================================================
-# Opção A (dev): o frontend é servido pelo container dedicado (Vite dev server).
-# Este Dockerfile apenas compila e arranca o backend Node.js na porta 3000.
+# MotoGuard IoT — Dockerfile (Backend + Frontend Build)
 # =============================================================================
 
 FROM node:20-alpine
 
 WORKDIR /app
 
-# ─── Dependências ─────────────────────────────────────────────────────────────
+# ─── Backend ─────────────────────────────────────────────────────────────────
+# Instalar dependências do backend primeiro (cache de camadas)
 COPY package*.json ./
+COPY docker-entrypoint.sh ./
+RUN node -e "const fs=require('fs'); for (const file of ['package.json','docker-entrypoint.sh']) { const path='/app/' + file; let data=fs.readFileSync(path); if (data[0]===0xEF && data[1]===0xBB && data[2]===0xBF) data=data.subarray(3); fs.writeFileSync(path, data); }" \
+ && sed -i 's/\r$//' docker-entrypoint.sh \
+ && chmod +x docker-entrypoint.sh
 RUN npm install
 
-# ─── Prisma ───────────────────────────────────────────────────────────────────
+# Copiar Prisma schema e gerar client
 COPY prisma/ ./prisma/
 COPY prisma.config.ts ./
 RUN npx prisma generate
 
-# ─── Backend ──────────────────────────────────────────────────────────────────
+# Copiar código do backend
 COPY backend/ ./backend/
+
+# Compilar TypeScript → JavaScript
 RUN npm run build
 
-# ─── Arrancar ─────────────────────────────────────────────────────────────────
+# ─── Frontend ────────────────────────────────────────────────────────────────
+# Instalar dependências e fazer build do React
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm install
+
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
+
+# ─── Arrancar ────────────────────────────────────────────────────────────────
 EXPOSE 3000
-
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
-CMD ["./docker-entrypoint.sh"]
+# Executar migrations, seed e arrancar o backend com hot reload
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

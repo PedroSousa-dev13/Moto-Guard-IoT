@@ -61,4 +61,9 @@ um break no ciclo de geração de dados. verfiicar coenrencia entre todos os dad
 
 
 
-no gpx podemos usar as rotas como o GPS
+no gpx podemos usar as rotas como o GPS7
+
+
+
+
+apos a mota ser definida pelo usuario, o simulador, exceto em modo admin trerá que ir logo buscar o modelo 
