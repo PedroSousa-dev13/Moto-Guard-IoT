@@ -1,0 +1,151 @@
+Layout Superior
+
+┌────────────────────────────────────────────────────────────┐
+│ 🏍 MOTOGUARD │ Alertas │ Moto: [Yamaha MT-09 ▼] │ 👤 ▼ │
+└────────────────────────────────────────────────────────────┘
+
+
+Filtros & Ordenação
+
+┌────────────────────────────────────────────────────┐
+│ Filtros:                                           					 │
+│ Tipo: [Todos ▼]                                    					 │
+│   • Todos                                          					 │
+│   • Queda                                          					 │
+│   • Alternador                                     					 │
+│   • Sobreaquecimento                               					 │
+│   • Pressão de Pneu                                					 │
+│   • Hard Acceleration                              					 │
+│   • Hard Braking                                   					 │
+│   • Velocidade Alta                                					 │
+│                                                    					 │
+│ Severidade: [Todos ▼] (Critical, Warning, Info)   					 │
+│ Período: [Este Mês ▼]                              					 │
+│ Moto: [Yamaha MT-09 ▼]                             					 │
+│ [Reset] [Aplicar]                                  					 │
+└────────────────────────────────────────────────────┘
+
+
+Timeline de Eventos
+
+┌───────────────────────────────────────────┐
+│ EVENTOS CRÍTICOS — Últimos 30 dias (24 eventos)           │
+├───────────────────────────────────────────┤
+│                                                           │
+│ 🔴 QUEDA DETECTADA                                       │
+│    12/03/2026 — 14:30:45                                  │
+│    Localização: 38.72°N, 9.14°W (Lisboa, Portugal)        │
+│    Lean Angle: 82° | G-Force: 2.8G | Speed: 85 km/h       │
+│    Status: Viagem continua (piloto OK)                    │
+│    [Ver No Mapa] [Ver Viagem Completa]                    │
+│                                                           │
+│ 🟡 SOBREAQUECIMENTO                                      │
+│    11/03/2026 — 16:15:30                                  │
+│    Temperatura: 105°C (acima do limite 100°C)             │
+│    Duração: 3 minutos                                     │
+│    Localização: Cascais, Portugal                         │
+│    [Ver Gráfico de Temperatura] [Ver Viagem]              │
+│                                                           │
+│ ⚡ FALHA DE ALTERNADOR                                   │
+│    10/03/2026 — 09:45:12                                  │
+│    Voltagem: 11.8V (abaixo de 13V)                        │
+│    Duração: 5 minutos depois normalizou                   │
+│    Localização: Porto, Portugal                           │
+│    [Diagnóstico] [Ver Viagem]                             │
+│                                                           │
+│ 🟡 PRESSÃO DE PNEU BAIXA                                 │
+│    08/03/2026 — 13:20:00                                  │
+│    Pneu Dianteiro: 1.8 bar (recomendado: 2.2)             │
+│    [Vista Mais Detalhes]                                  │
+│                                                           │
+│ [Carregar mais eventos...]                                │
+│                                                           │
+└───────────────────────────────────────────┘
+
+
+Detalhes de Evento (Modal)
+
+┌──────────────────────────────────────────┐
+│ Evento: QUEDA DETECTADA                                 │
+│ ─────────────────────────────────────────┤
+│                                                         │
+│ Data & Hora: 12/03/2026 14:30:45                        │
+│ Severidade: 🔴 CRÍTICA                                 │
+│ Tipo: Queda                                             │
+│ Moto: Yamaha MT-09 (MOTOGUARD-SIM-01)                   │
+│                                                         │
+│ LOCALIZAÇÃO                                             │
+│ ┌─────────────────────────────────────┐  │
+│ │ 🗺️ Mapa com marcador do evento                    │  │
+│ │ Zoom/Pan disponível                                │  │
+│ └──────────────────────────────────────┘  │
+│ GPS: 38.72°N 9.14°W                                      │
+│ Endereço: Avenida da República, Lisboa                   │
+│                                                          │
+│ MÉTRICAS NO MOMENTO DO EVENTO                            │
+│ ┌─────────────────────────────────────┐   │
+│ │ Lean Angle: 82°         │ Velocidade: 85 km/h    │   │
+│ │ G-Force: 2.8G           │ RPM: 6,200             │   │
+│ │ Temperatura: 92°C       │ Voltagem: 14.1V        │   │
+│ │ Pressão Pneu F: 2.1 bar │ Pressão Pneu R: 2.3 bar│   │
+│ └─────────────────────────────────────┘   │
+│                                                         │
+│ STATUS PÓS-EVENTO                                       │
+│ Outcome: Piloto continuou viagem                        │
+│ Duração no chão (estimado): < 5 segundos                │
+│ Próxima viagem: Mesma sessão (sem interrupção)          │
+│                                                         │
+│ RECOMENDAÇÕES                                           │
+│ ⚠️ Verificar pneus e suspensão após queda              │
+│ ⚠️ Considerar reduzir velocidade em curvas             │
+│                                                         │
+│ [Voltar] [Export PDF] [Partilhar]                       │
+└─────────────────────────────────────────┘
+
+
+Configurações de Notificação (Expandível)
+
+┌──────────────────────────────────────┐
+│ NOTIFICAÇÕES & ALERTAS                             │
+│ ─────────────────────────────────────┤
+│                                                    │
+│ Tipo de Evento      │ Dashboard │ Email │ Push    │
+│ ──────────────┼────────┼──────┼──────┤
+│ Queda               │ ☑️       │ ☑️    │ ☑️     │
+│ Overheating         │ ☑️       │ ☑️    │ ○      │
+│ Alternador          │ ☑️       │ ○     │ ○      │
+│ Pressão de Pneu     │ ☑️       │ ○     │ ○      │
+│ Velocidade Alta     │ ☑️       │ ○     │ ○      │
+│ Hard Acceleration   │ ☑️       │ ○     │ ○      │
+│                                                    │
+│ [Guardar Preferências]                             │
+└──────────────────────────────────────┘
+
+Tipos de Eventos & Cores
+🔴 Queda (CRÍTICA - Vermelho)
+🟠 Alterador/Voltagem Baixa (ALTA - Laranja)
+🟡 Sobreaquecimento (MÉDIA - Amarelo)
+🟢 Pressão de Pneu (BAIXA - Verde claro)
+🔵 Eventos de Comportamento (INFO - Azul)
+
+
+Dados
+
+{
+  "event_id": "event_uuid",
+  "type": "fall",
+  "severity": "critical",
+  "timestamp": "2026-03-12T14:30:45Z",
+  "device_id": "MOTOGUARD-SIM-01",
+  "location": {
+    "latitude": 38.72,
+    "longitude": 9.14
+  },
+  "metrics": {
+    "roll_deg": 82,
+    "g_force": 2.8,
+    "speed": 85,
+    "rpm": 6200
+  },
+  "recommendations": ["Check tires", "Reduce curve speed"]
+}

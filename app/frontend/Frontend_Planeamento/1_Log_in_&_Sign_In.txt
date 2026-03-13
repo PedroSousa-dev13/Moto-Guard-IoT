@@ -1,0 +1,52 @@
+Layout
+
+┌─────────────────────────────────┐
+│                                             │
+│         LOGO MOTOGUARD                      │
+│                                             │
+│    Welcome to MotoGuard IoT                 │
+│                                             │
+│  ┌──────────────────────────┐    │
+│  │ Email                              │    │
+│  │ [___________________]              │    │
+│  │                                    │    │
+│  │ Password                           │    │
+│  │ [___________________]              │    │
+│  │                                    │    │
+│  │ ☐ Remember me                     │    │
+│  │                                    │    │
+│  │  [  LOGIN  ]                       │    │
+│  │                                    │    │
+│  │  Don't have account?               │    │
+│  │  → Register here                   │    │
+│  └──────────────────────────┘    │
+│                                 │
+└─────────────────────────────────┘
+
+Componentes
+-Logo/Branding: Ícone + texto "MotoGuard IoT"
+-Título: "Welcome to MotoGuard IoT"
+-Form Fields:
+-Email input (placeholder: "seu@email.com")
+-Password input (masked)
+-"Remember me" checkbox
+-Botão Login: Submit, com estado loading
+-Link Registar: "Don't have account? Register here" (futura integração)
+
+Validações
+-Email válido (formato)
+-Password não vazio
+-Mensagem de erro se credenciais inválidas
+-Carregamento durante requisição ao backend
+
+Ações
+-Login Success: Redirect para /dashboard
+-Erro Autenticação: Mostrar mensagem de erro vermelha
+-Remember me: Guardar email no localStorage
+
+Dados
+-Enviado ao backend: { email, password }
+-Resposta esperada: { token, user: { id, name, email } }
+
+
+

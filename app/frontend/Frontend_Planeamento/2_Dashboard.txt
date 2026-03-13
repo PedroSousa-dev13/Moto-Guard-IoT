@@ -1,0 +1,223 @@
+Header Principal
+
+┌────────────────────────────────────────────────────────────┐
+│ 🏍 MOTOGUARD │ Moto: [Minha Yamaha ▼] │ 🔔 ⓵ │ 👤 ▼ │
+└────────────────────────────────────────────────────────────┘
+
+Área de Seletor de Motocicleta
+-Dropdown com todas as motos do utilizador
+-Ícone de moto + nome + modelo
+-"Online" / "Offline" badge
+-Última atualização de dados
+
+Layout Principal: 3 Filas de Cards
+
+FILA 1 — Métricas do Motor & IMU
+
+
+Card 1: GaugeCard (Velocidade)
+
+┌──────────────────┐
+│  VELOCIDADE             │
+│   ┌─────────────┐ │
+│   │    185           │ │
+│   │    km/h          │ │
+│   └─────────────┘ │
+│  Status: ✓ Normal      │
+└──────────────────┘
+
+Gauge visual (velocímetro tipo agulha)
+-Valor numérico grande (185 km/h)
+-Cor dinâmica: verde (normal), amarelo (warning), vermelho (crítico)
+-Velocidade máxima atingida na sessão
+-Trending: ↑ (acelerando) / ↓ (desacelerando) / → (constante)
+
+
+Card 2: GaugeCard (RPM)
+
+┌──────────────────┐
+│  RPM             	  │
+│   ┌─────────────┐ │
+│   │   7,500     	│ │
+│   │   rpm            │ │
+│   └─────────────┘ │
+│  Gear: 4 / 6   	  │
+└──────────────────┘
+
+-Gauge circular (mostrador RPM)
+-Indicador de gear (4/6)
+-Zona vermelha indicada
+-Comportamento: aceleração/desaceleração
+
+
+Card 3: TempVoltCard (Múltiplas Leituras)
+
+┌──────────────────┐
+│ TEMPERATURA     	  │
+│ Eng: 92°C ⚠️    	  │
+│ Oil: 85 bar    	  │
+│                 	  │
+│ VOLTAGEM       	  │
+│ Battery: 14.2V ✓	 	  │
+│                 	  │
+│ PNEUS           	  │
+│ Front: 2.0 bar  	  │
+│ Rear: 2.2 bar   	  │
+└──────────────────┘
+
+-Temperatura do motor: valor + cor (verde < 85°C, amarelo 85-100, vermelho > 100)
+-Pressão de óleo: bar
+-Voltagem da bateria: Volts com indicador de saúde
+-Pressões de pneu: Front + Rear (alerta se abaixo do normal)
+-Ícones de alerta(⚠️): para valores críticos
+
+
+Card 4: IMUCard (Acelerómetro/Giroscópio)
+
+┌──────────────────┐
+│ INCLINAÇÃO      	  │
+│ Roll: 35° 🟢     	  │
+│ Pitch: 5° 🟢   	  │
+│ Yaw: 180°       	  │
+│                	  │
+│ G-FORCE        	  │
+│ Atual: 1.2G 🟢  	  │
+│ Máximo: 2.1G 🟡 	  │
+│ Limite: 2.5G     	  │
+└──────────────────┘
+
+-Lean angle (Roll): graus com indicador visual (verde < 45°, amarelo 45-70°, vermelho > 70°)
+-Pitch & Yaw: ângulos complementares
+-G-force: Aceleração atual e máxima, com alerta de limiar crítico
+-Cores para estados de segurança
+
+
+FILA 2 — Localização & Estado
+
+
+Card 5: MapCard (Localização com Trajectória)
+
+┌────────────────────────┐
+│  LOCALIZAÇÃO       	          │
+│  ┌──────────────────┐   │
+│  │ 🗺️ [Mapa Leaflet]	      │  │
+│  │                         │  │
+│  │ ● (marcador)    	      │  │
+│  │ ╰─ trail (últi 	      │  │
+│  │    500 pontos)  	      │  │
+│  └──────────────────┘  │
+│  GPS: 38.72°N, 9.14°W 	 │
+│  Altitude: 42m         	 │
+│  Accuracy: ±5m         	 │
+└────────────────────────┘
+
+-Mapa Leaflet com 500 pontos de histórico (atualiza a cada 5 mensagens)
+-Marcador atual: posição GPS em tempo real
+-Trail (polyline): caminho percorrido em cor degradada
+-Info GPS: Latitude, longitude, altitude, precisão
+-Zoom controls e opção de fullscreen
+-Click no mapa → expandir para fullscreen
+
+
+Card 6: StatusCard (Estado & Sistemas)
+
+┌────────────────────────┐
+│ ESTADO GERAL        	          │
+│ Status: NORMAL ✓               │
+│ Eventos Ativos: Nenhum 	  │
+│                        	  │
+│ SISTEMAS DE SEGURANÇA  	  │
+│ ABS: ✓ Ativo           	  │
+│ TC: ✓ Ativo            	  │
+│ Side Stand: ↓ Down    	  │
+│                       	  │
+│ INFORMAÇÕES           	  │
+│ Modelo: Yamaha MT-09  	  │
+│ Device ID: ...01          	  │
+│ Odómetro: 12,450 km      	  │
+│ Última: 1s atrás       	  │
+└────────────────────────┘
+
+-Status Badge: NORMAL, QUEDA, ALTERNADOR, SOBREAQUECIMENTO
+-Eventos Ativos: Listagem de eventos críticos em curso
+-Sistemas ABS/TC: Status ativo/inativo
+-Side Stand: Posição (up/down)
+-Vehicle Info: Modelo, Device ID, odómetro total
+-Última atualização: Timestamp relativo (1s atrás, 30s atrás, etc)
+
+
+FILA 3 — Controles
+
+
+Card 7: CommandPanel (Controles & Eventos)
+
+┌──────────────────────────────────┐
+│ CONTROLE & SIMULAÇÃO           	        │
+│                               	        │
+│ Modelo da Moto:                	        │
+│ [Yamaha MT-09 ▼]               	        │
+│                                 	        │
+│ ┌────────────┬────────────┐        │
+│ │ Simular ⬇️		│Simular Alt ⚡  │        │
+│ │ Queda          │Alternador       │        │
+│ └────────────┴────────────┘        │
+│ ┌────────────┬────────────┐        │
+│ │Simular 🔥      │Reset Events    │        │
+│ │Overheating      │                │        │
+│ └────────────┴────────────┘        │
+│                                              │ 
+│ ┌──────────────────────────┐      │
+│ │ HISTÓRICO DE MENSAGENS   		│     │
+│ │                         		│     │
+│ │ 14:32:15 - Queda        		│     │
+│ │ 14:30:02 - Reset        		│     │
+│ │ 14:28:45 - Throttle 100%		│     │
+│ │ 14:25:10 - Speed 200km/h		│     │
+│ │ [scroll...]              		│     │
+│ └──────────────────────────┘      │
+└─────────────────────────────────┘
+
+-Modelo Selector: Dropdown com 8 modelos (Scooter, Naked, Desportiva, Trail, Cruiser, Motocross, Touring, Supermotard)
+
+-Botões de Evento:
+ -"Simular Queda" (Fall event)
+ -"Simular Alternador" (Alternator failure)
+ -"Simular Overheating" (Overheat event)
+ -"Reset Events" (Clear all)
+
+-Message Log: Últimas 100 mensagens, scroll automático, timestamp
+-Cards com ícones temáticos (⬇️ queda, ⚡ alternador, 🔥 calor, ✓ reset)
+
+-Estados Especiais
+ -Carregando: Skeleton loaders nos cards
+ -Sem conexão: Badge vermelha no header "OFFLINE"
+ -Evento crítico: Cards piscam ou mudam de cor
+ -Notificação: Toast/alert no topo se evento crítico detectado
+
+-Interações
+ -Clicar no selector de moto: muda toda a telemetria
+ -Clicar em botão de evento: envia comando ao backend via REST/WebSocket
+ -Clicar no mapa: expande fullscreen
+ -Clicar card individual: pode expandir para fullscreen
+
+Dados
+ -Actualizados via Socket.IO em tempo real (sub-segundo)
+ -Fallback para polling a cada 2s se WebSocket cair
+ -Data structures:
+
+{
+  "device_id": "MOTOGUARD-SIM-01",
+  "timestamp": "2026-03-12T14:32:15Z",
+  "speed_kmh": 185,
+  "rpm": 7500,
+  "engine_temp_c": 92,
+  "voltage": 14.2,
+  "roll_deg": 35,
+  "g_force": 1.2,
+  "latitude": 38.72,
+  "longitude": 9.14,
+  "event_status": "NORMAL"
+}
+
+
+

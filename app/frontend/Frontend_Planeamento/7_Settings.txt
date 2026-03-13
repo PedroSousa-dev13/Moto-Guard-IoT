@@ -1,0 +1,303 @@
+Layout Superior
+
+┌────────────────────────────────────────────────────────────┐
+│ 🏍 MOTOGUARD │ Configurações │ 👤 Nuno Gonçalves ▼        │
+└────────────────────────────────────────────────────────────┘
+
+
+Menu Lateral (Abas)
+
+┌──────────────────────┐
+│ CONFIGURAÇÕES        		│
+├──────────────────────┤
+│ 👤 Perfil            	│  ← Ativo
+│ ⚙️ Preferências       	│
+│ 🏍 Modelos Moto      	│
+│ 🔔 Notificações      	│
+│ 📊 Privacidade       	│
+│ 🔑 API & Tokens      	│
+│ ℹ️ Sobre             	│
+└──────────────────────┘
+
+
+Aba 1: Perfil do Utilizador
+
+┌──────────────────────────────────┐
+│ MINHA CONTA                                   │
+│ ─────────────────────────────────┤
+│                                               │
+│ Avatar:                                       │
+│ ┌──────────┐                              │
+│ │   👤        │  [Alterar Foto]              │
+│ └──────────┘                              │
+│                                               │
+│ Nome Completo:                                │
+│ [Nuno Gonçalves_____________________]         │
+│                                               │
+│ Email:                                        │
+│ [nuno.goncalves@email.com_________]           │
+│                                               │
+│ Telefone (opcional):                          │
+│ [+351 91 234 5678________________]            │
+│                                               │
+│ Data de Nascimento:                           │
+│ [12/05/1995]                                  │
+│                                               │
+│ Localização Padrão:                           │
+│ [Lisboa, Portugal________________]            │
+│                                               │
+│ CONTA & SEGURANÇA                             │
+│                                               │
+│ Palavra-passe:                                │
+│ [********] [Alterar]                          │
+│                                               │
+│ Two-Factor Authentication (2FA):              │
+│ ☐ Desativada  → [Ativar]                     │
+│                                               │
+│ Sesões Ativas:                                │
+│ • Chrome, Windows — Lisboa — Há 2 horas       │
+│ • Safari, iPhone — Porto — Há 1 dia           │
+│   [Terminar Sessão]                           │
+│                                               │
+│ [Guardar Alterações] [Cancelar] [Apagar Conta]│
+└──────────────────────────────────┘
+
+
+Aba 2: Preferências
+
+┌────────────────────────────────────┐
+│ PREFERÊNCIAS                                 	   │
+│ ───────────────────────────────────┤
+│                                                 │
+│ UNIDADES DE MEDIDA                              │
+│ Velocidade: [km/h ○ ○ mph]                     │
+│ Temperatura: [°C ○ ○ °F]                       │
+│ Distância: [km ○ ○ mi]                         │
+│ Pressão: [bar ○ ○ psi]                         │
+│                                                 │
+│ INTERFACE                                       │
+│ Tema: [🌙 Escuro (Ativo)]                       │
+│       [○ Claro] [○ Automático]                 │
+│                                                 │
+│ Linguagem: [Português ▼]                       │
+│                                                 │
+│ Tamanho Fonte:                                  │
+│ [Pequeno] [○ Médio] [○ Grande]                 │
+│                                                 │
+│ DASHBOARD                                       │
+│ Atualização em Tempo Real:                      │
+│ Frequência: [Sub-segundo] [1s] [2s] [5s]        │
+│                                                 │
+│ Cards Exibidas:                                 │
+│ ☑️ GaugeCard (Velocidade)                      │
+│ ☑️ GaugeCard (RPM)                             │
+│ ☑️ TempVoltCard                                │
+│ ☑️ IMUCard                                     │
+│ ☑️ MapCard                                     │
+│ ☑️ StatusCard                                  │
+│ ☑️ CommandPanel                                │
+│                                                 │
+│ Modo de Visualização:                           │
+│ [Tabs] [Cards Lado a Lado] [Fullscreen]         │
+│                                                 │
+│ [Guardar] [Resetar para Defaults]               │
+└────────────────────────────────────┘
+
+
+Aba 3: Modelos de Motocicleta
+
+┌──────────────────────────────────┐
+│ LIMIARES DE SEGURANÇA POR MODELO              │
+│ ─────────────────────────────────│
+│                                              │
+│ Modelo: [Naked ▼]                           │
+│                                              │
+│ ┌──────────────────────────────┐ │
+│ │ DESEMPENHO                              │ │
+│ │                                         │ │
+│ │ Velocidade Máxima:                      │ │
+│ │ [200] km/h                              │ │
+│ │                                         │ │
+│ │ RPM Máximo:                             │ │
+│ │ [12000] rpm                             │ │
+│ │                                         │ │
+│ │ QUEDAS & INCLINAÇÃO                     │ │
+│ │                                         │ │
+│ │ Limiar de Queda (Roll):                 │ │
+│ │ [70] graus                              │ │
+│ │                                         │ │
+│ │ G-Force Crítico:                        │ │
+│ │ [2.5] G                                 │ │
+│ │                                         │ │
+│ │ MOTOR & TEMPERATURA                     │ │
+│ │                                         │ │
+│ │ Temperatura Crítica:                    │ │
+│ │ [100] °C                                │ │
+│ │                                         │ │
+│ │ Pressão de Óleo Crítica:                │ │
+│ │ [3.0] bar (mínimo)                      │ │
+│ │                                         │ │
+│ │ PNEUS                                   │ │
+│ │                                         │ │
+│ │ Pressão Recomendada Frontal:            │ │
+│ │ [2.1] bar                               │ │
+│ │                                         │ │
+│ │ Pressão Recomendada Traseira:           │ │
+│ │ [2.3] bar                               │ │
+│ │                                         │ │
+│ │ [Guardar Alterações]                    │ │
+│ │ [Resetar para Defaults]                 │ │
+│ └──────────────────────────────┘ │
+│                                              │
+│ Modelos Disponíveis para Editar:             │
+│ Scooter / Naked / Desportiva / Trail         │
+│ Cruiser / Motocross / Touring / Supermotard  │
+└─────────────────────────────────┘
+
+
+Aba 4: Notificações
+
+┌──────────────────────────────────┐
+│ NOTIFICAÇÕES & ALERTAS                       │
+│ ─────────────────────────────────│
+│                                              │
+│ EVENTOS CRÍTICOS                             │
+│                                              │
+│ Queda Detectada:                             │
+│ ☑️ Dashboard  ☑️ Email  ☑️ Push Notification│
+│ Som: 🔔 [Teste]                              │
+│                                               │
+│ Sobreaquecimento:                             │
+│ ☑️ Dashboard  ☑️ Email  ○ Push Notification │
+│ Som: 🔔 [Teste]                              │
+│                                               │
+│ Falha de Alternador:                          │
+│ ☑️ Dashboard  ○ Email  ○ Push Notification  │
+│ Som: 🔔 [Teste]                              │
+│                                               │
+│ EVENTOS OPERACIONAIS                          │
+│                                               │
+│ Velocidade Alta (>250 km/h):                  │
+│ ☑️ Dashboard  ○ Email  ○ Push Notification  │
+│                                               │
+│ Pressão de Pneu Baixa:                        │
+│ ☑️ Dashboard  ○ Email  ○ Push Notification  │
+│                                               │
+│ Viagem Completada:                            │
+│ ○ Dashboard  ☑️ Email  ○ Push Notification  │
+│                                               │
+│ PREFERÊNCIAS GERAIS                           │
+│                                               │
+│ Silenciar Notificações Entre:                 │
+│ [22:00] e [08:00] (Modo Noturno)              │
+│                                               │
+│ Email de Sumário Diário:                      │
+│ ☑️ Ativado                                   │
+│ Horário: [20:00]                              │
+│                                               │
+│ [Guardar] [Teste de Notificação]              │
+└──────────────────────────────────┘
+
+Aba 5: Privacidade
+
+┌──────────────────────────────────┐
+│ PRIVACIDADE & DADOS                          │
+│ ─────────────────────────────────│
+│                                              │
+│ PARTILHA DE DADOS                            │
+│                                              │
+│ Localização:                                 │
+│ ☑️ Registar dados GPS (para relatórios)     │
+│ ○ Anonimizar localização                    │
+│                                              │
+│ Telemetria:                                  │
+│ ☑️ Enviar dados anónimos para análise       │
+│ (Ajuda a melhorar o serviço)                │
+│                                              │
+│ VISIBILIDADE SOCIAL (Futuro)                 │
+│                                              │
+│ Perfil Público:                              │
+│ ○ Não compartilhar (Padrão)                 │
+│ ○ Perfil público com estatísticas           │
+│ ○ Mostrar apenas nome                       │
+│                                              │
+│ POLÍTICA & TERMOS                            │
+│                                              │
+│ ☑️ Li e aceito os Termos de Serviço         │
+│ ☑️ Aceito a Política de Privacidade         │
+│                                              │
+│ [Ler Política Completa]                      │
+│ [Ler Termos & Condições]                     │
+│                                              │
+│ DADOS PESSOAIS                               │
+│                                              │
+│ [Descarregar Meus Dados (GDPR)]             │
+│ [Eliminar Dados Antigos (> 1 ano)]          │
+│                                              │
+│ [Guardar]                                    │
+└──────────────────────────────────┘
+
+
+Aba 6: API & Tokens
+
+┌──────────────────────────────────┐
+│ API & INTEGRAÇÕES (Futuro)                   │
+│ ─────────────────────────────────│
+│                                              │
+│ API ACCESS TOKENS                            │
+│                                              │
+│ ┌──────────────────────────────┐ │
+│ │ Token 1: motoguard_sk_2024_...          │ │
+│ │ Criado: 15/02/2024  │  Últimas 24h: 234 │ │
+│ │ [Revogar] [Copiar]                      │ │
+│ └──────────────────────────────┘ │
+│                                              │
+│ [Gerar Novo Token]                           │
+│                                              │
+│ WEBHOOKS (Futuro)                            │
+│                                              │
+│ [Adicionar Webhook]                          │
+│                                              │
+│ [Leia Documentação da API]                   │
+└─────────────────────────────────┘
+
+
+Aba 7: Sobre
+
+┌──────────────────────────────────┐
+│ SOBRE MOTOGUARD                              │
+│ ─────────────────────────────────│
+│                                              │
+│ 🏍 MotoGuard IoT v2.1.0                      │
+│                                              │
+│ Sistema de monitorização de motocicletas     │
+│ em tempo real com análise de telemetria.     │
+│                                              │
+│ © 2026 MotoGuard Project                     │
+│ Desenvolvido na Universidade de Lisboa       │
+│                                              │
+│ VERSÃO & ATUALIZAÇÕES                        │
+│                                              │
+│ Versão Instalada: 2.1.0                      │
+│ Última Verificação: 12/03/2026               │
+│ Versão Disponível: 2.1.0 (estás atualizado)  │
+│ [Verificar Atualizações]                     │
+│                                              │
+│ CRÉDITOS & DEPENDÊNCIAS                      │
+│                                              │
+│ Frontend: React 19, TypeScript, Vite         │
+│ Backend: Node.js, Express, TypeScript        │
+│ MQTT: Mosquitto 2.x                          │
+│ Mapa: Leaflet.js                             │
+│ Gráficos: Chart.js                           │
+│                                              │
+│ [Licenças] [Código Fonte] [Contactar Suporte]│
+│                                              │
+│ DATA DE CRIAÇÃO: 15/10/2025                  │
+│ STATUS: Beta — Feedback Bem-vindo!           │
+└─────────────────────────────────┘
+
+Dados Salvos
+Todas as configurações sincronizadas com backend e guardadas no localStorage para carregamento rápido.
+
+

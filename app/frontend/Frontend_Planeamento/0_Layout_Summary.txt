@@ -1,0 +1,40 @@
+LOGIN
+  ↓
+DASHBOARD (Telemetria Real-Time)
+  ├─ Seletor de Moto (dropdown)
+  ├─ GaugeCard x3 (Velocidade, RPM, Temp/Volt)
+  ├─ IMUCard (Lean, G-force)
+  ├─ MapCard (GPS + Trail)
+  ├─ StatusCard (Estado)
+  └─ CommandPanel (Controles)
+     │
+     ├─→ GARAGEM (Manage Motos)
+     │     ├─ Listagem de motos (cards/grid)
+     │     ├─ Add/Edit forms
+     │     └─ Detail modals
+     │
+     ├─→ VIAGENS (Trip History)
+     │     ├─ Listagem + filtros
+     │     ├─ Timeline & Mapa
+     │     └─ Gráficos embarcados
+     │
+     ├─→ ANALYTICS (Reports)
+     │     ├─ KPI Cards
+     │     ├─ Time-series charts (6+)
+     │     ├─ Análise detalhada
+     │     └─ Comparativas
+     │
+     ├─→ ALERTAS (Events)
+     │     ├─ Timeline de eventos
+     │     ├─ Detalhes com mapa
+     │     ├─ Configuração notificações
+     │     └─ Categorizado por tipo
+     │
+     └─→ CONFIGURAÇÕES (Settings)
+           ├─ Perfil
+           ├─ Preferências
+           ├─ Modelos (thresholds)
+           ├─ Notificações
+           ├─ Privacidade
+           ├─ API & Tokens
+           └─ Sobre
