@@ -149,6 +149,23 @@ model TripEvent {
   @@map("trip_events")
 }
 
+// ─── Dados GPX Importados ───────────────────────────────────────────────────
+model GpxData {
+  id          String   @id @default(uuid())
+  tripId      String   @unique @map("trip_id") // Um-para-um com Trip
+  filename    String   // Nome original do ficheiro
+  fileSize    Int      @map("file_size") // Tamanho em bytes
+  waypoints   Json     // Array de pontos {lat, lon, ele, time}
+  bounds      Json     // {minLat, maxLat, minLon, maxLon}
+  totalTime   Int?     @map("total_time") // Duração em segundos
+  importDate  DateTime @default(now()) @map("import_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("gpx_data")
+}
+
 enum EventType {
   HARD_BRAKING          // Travagem brusca
   EXCESSIVE_LEAN        // Inclinação excessiva
