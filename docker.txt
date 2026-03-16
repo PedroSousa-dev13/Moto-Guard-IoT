@@ -22,3 +22,5 @@ Backend (API): http://localhost:3000
 No backend, isso é iniciado em start dentro de index.ts, que
 
 
+docker compose logs -f backend (URLs da API)
+docker compose logs -f frontend (URL do Vite)
