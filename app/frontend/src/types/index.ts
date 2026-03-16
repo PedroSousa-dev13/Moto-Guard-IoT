@@ -20,6 +20,7 @@ export interface Trip {
   id: string;
   userId: string;
   motorcycleId: string;
+  source: 'SIMULATOR' | 'GPX_IMPORTED' | 'DEVICE_REAL';
   startedAt: string;
   endedAt?: string;
   distanceKm?: number;

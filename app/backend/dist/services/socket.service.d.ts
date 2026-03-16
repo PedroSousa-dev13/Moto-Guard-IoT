@@ -18,6 +18,7 @@ declare class SocketService {
     private handleTripLifecycle;
     private startTrip;
     private updateTripStats;
+    private flushTripStats;
     private endTrip;
     /** Calcula distância em km entre coordenadas GPS */
     private haversineDistance;

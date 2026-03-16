@@ -9,13 +9,27 @@ import { Response } from "express";
 import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
 
+const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
+type TripSourceFilter = (typeof VALID_TRIP_SOURCES)[number];
+
 // ─── Listar viagens ─────────────────────────────────────────────────────────
 export async function listTrips(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
+  const source = req.query.source as string | undefined;
+
+  if (source && !VALID_TRIP_SOURCES.includes(source as TripSourceFilter)) {
+    res.status(400).json({
+      error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+    });
+    return;
+  }
 
   try {
     const trips = await prisma.trip.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(source ? { source: source as TripSourceFilter } : {}),
+      },
       orderBy: { startedAt: "desc" },
       include: {
         motorcycle: { select: { id: true, name: true, brand: true } },

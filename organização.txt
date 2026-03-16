@@ -52,8 +52,10 @@
 #        → routes/, controllers/, services/, models/, middleware/
 #    [✔] Validação de payload de telemetria (6 blocos obrigatórios)
 #    [✔] InfluxDB — escrita e leitura de telemetria (17 campos por ponto)
-#    [✔] PostgreSQL — schema Prisma com 5 modelos, 2 migrations, seed
-#        → Users, Motorcycles, MotorcycleProfiles, Trips, TripEvents
+#    [✔] PostgreSQL — schema Prisma com 5 modelos, 4 migrations, seed
+#        → Users, Motorcycles, MotorcycleProfiles, Trips (+ source), TripEvents
+#        → Enum TripSource (SIMULATOR, GPX_IMPORTED, DEVICE_REAL)
+#        → Viagens simuladas persistidas e validadas (MOTOGUARD-SIM-01 → BD)
 #    [✔] API REST completa (auth, motorcycles, trips, telemetry, health, command)
 #    [✔] Middleware JWT para autenticação
 #    [✔] Socket.IO — reencaminha telemetria MQTT → WebSocket em tempo real
@@ -68,10 +70,11 @@
 #
 #    [✔] Backend — API REST + subscrição MQTT (Node.js)
 #    [✔] Base de dados — InfluxDB (telemetria) funcional
-#    [~] Base de dados — PostgreSQL parcial (migrations não executam no Docker,
-#        viagens e eventos de risco não são persistidos automaticamente)
+#    [~] Base de dados — PostgreSQL parcial (núcleo funcional; faltam melhorias
+#        de categorização de viagens e fluxos de importação GPX)
 #    [~] Plataforma Web — Dashboard tempo real existe, falta auth + gestão
-#    [✘] Registo e histórico de viagens (schema BD existe, falta persistência + UI)
+#    [✔] Registo e histórico de viagens (persistência automática confirmada;
+#        classificação por source implementada; UI de análise pós-viagem em falta)
 #    [✘] Lógica heurística de deteção de eventos no backend
 #    [~] Gráficos interativos e mapas (dashboard OK, falta análise pós-viagem)
 #    [✘] Análise pós-viagem e relatórios exportáveis
@@ -250,34 +253,32 @@
 #           → Eventos implementados: telemetry_update, alert, trip_started, trip_ended
 #
 #  ── 🔴 PRIORIDADE — Lacunas detetadas na auditoria (2026-03-11) ──────────
+#  Cleanup (concluído):
 #
-#  [✔] 1.9   Executar migrations automaticamente no Docker
-#            → Dockerfile faz prisma generate mas NÃO faz prisma migrate deploy
-#            → Tabelas (users, motorcycles, trips, etc.) não existem no PostgreSQL
-#            → Fix: adicionar "npx prisma migrate deploy" ao CMD ou entrypoint
+#  [✔] 1.9   Docker startup com migrations automáticas
+#  [✔] 1.10  Seed automática de motorcycle_profiles
+#  [✔] 1.11  Persistência automática de Trip no ciclo de viagem
+#  [✔] 1.12  Persistência automática de TripEvent por alerta
+#  [✔] 1.13  Endpoints sensíveis protegidos com JWT
+#  [✔] 1.14  Associação device_id -> mota/user com cache
 #
-#  [✔] 1.10  Executar seed dos perfis de moto
-#            → Correr "npx tsx prisma/seed.ts" após migrate deploy
-#            → Popula motorcycle_profiles com os 8 perfis do config.py
+#  [✔] 1.15  Categoria de origem da viagem (SIMULATOR | GPX_IMPORTED | DEVICE_REAL)
+#            → Enum TripSource no Prisma + campo source em trips
+#              ✔ Migration 20260313123000_add_trip_source aplicada na BD
+#              ✔ Backend trip controller com filtro ?source=SIMULATOR|GPX_IMPORTED|DEVICE_REAL
+#              ✔ socket.service.ts grava source: SIMULATOR nas viagens automáticas
+#              ✔ Frontend Trip interface + Trips.tsx com filtro e badges por source
+#              ✔ TypeScript compilado sem erros, Prisma Client regenerado
+#              ✔ Viagem simulada confirmada na BD: ACTIVE | SIMULATOR (2026-03-13)
 #
-#  [✔] 1.11  Persistir viagens no PostgreSQL
-#            → socket.service.ts deteta trip_started/trip_ended por velocidade
-#            → Cria viagem com prisma.trip.create() no trip_started
-#            → Atualiza com prisma.trip.update() no trip_ended (stats + distância)
-#
-#  [✔] 1.12  Persistir eventos de risco como TripEvents
-#            → socket.service.ts deteta alertas (CRASH, OVERHEAT, etc.)
-#            → Cria prisma.tripEvent.create() quando alerta detetado
-#            → Dados: GPS, speed, roll, G-force, temp, voltage + timestamp
-#
-#  [✔] 1.13  Proteger endpoints públicos com JWT
-#            → /api/telemetry/latest e /api/command agora protegidos
-#            → Auth middleware adicionado às rotas em telemetry.routes.ts e command.routes.ts
-#
-#  [✔] 1.14  Associar device_id do simulador a uma mota no PostgreSQL
-            → device-association.service.ts gere associação device_id -> mota
-            → Cache de 60s para evitar queries repetidas
-            → socket.service.ts usa serviço para ligar trip ao user correto
+#  ── 🐛 Bug corrigido (2026-03-13): viagens simuladas não eram gravadas ──────
+#            → Causa: motorcycle na BD tinha device_id='americo', simulador envia 'MOTOGUARD-SIM-01'
+#              deviceAssociationService.getAssociation() retornava null → trip.create() nunca corria
+#            → Fix: UPDATE motorcycles SET device_id='MOTOGUARD-SIM-01'
+#            → Fix adicional: rebuild do container backend (prisma/ não é volume-mounted;
+#              migration nova não estava no runtime até rebuild)
+#            → Nota: para novos utilizadores/motas, o device_id deve ser MOTOGUARD-SIM-01
+#              (definido no simulador como constante DEVICE_ID)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -307,9 +308,9 @@
 #           → ✔ StatusCard: device_id, modelo, evento, ABS/TC, descanso
 #           → ✔ CommandPanel: painel de comandos + log em tempo real
 #
-#  [ ] 2.4  Página — Histórico de Viagens
-#           → Lista de viagens com data, duração, distância, eventos
-#           → Filtros por data, modelo de mota, tipo de evento
+#  [~] 2.4  Página — Histórico de Viagens
+#           → Lista base já existe (estado, duração, distância e eventos)
+#           → Falta filtros (data/modelo/tipo/origem) e paginação
 #           → Backend pronto: GET /api/trips, GET /api/trips/:id
 #
 #  [ ] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
@@ -358,6 +359,11 @@
 #           → Export GPX das viagens registadas pelo sistema
 #             (para usar em apps externas: Strava, Relive, etc.)
 #           → Conversor: dados de telemetria MotoGuard → formato GPX
+#
+#  [ ] 2.12 UX de separação por origem no Histórico
+#           → Secções visuais: "Simuladas" e "GPX"
+#           → Toggle/filtro por source (com default em "Todas")
+#           → Badge por viagem: SIMULATOR, GPX_IMPORTED, DEVICE_REAL
 
 
 # ═════════════════════════════════════════════════════════════════════════════
