@@ -136,6 +136,7 @@ exports.TripScalarFieldEnum = {
     id: 'id',
     userId: 'userId',
     motorcycleId: 'motorcycleId',
+    source: 'source',
     startedAt: 'startedAt',
     endedAt: 'endedAt',
     distanceKm: 'distanceKm',

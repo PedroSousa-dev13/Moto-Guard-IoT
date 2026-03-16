@@ -89,6 +89,7 @@ export declare const TripScalarFieldEnum: {
     readonly id: "id";
     readonly userId: "userId";
     readonly motorcycleId: "motorcycleId";
+    readonly source: "source";
     readonly startedAt: "startedAt";
     readonly endedAt: "endedAt";
     readonly distanceKm: "distanceKm";

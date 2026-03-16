@@ -90,6 +90,7 @@ model Trip {
   id              String      @id @default(uuid())
   userId          String      @map("user_id")
   motorcycleId    String      @map("motorcycle_id")
+  source          TripSource  @default(SIMULATOR)
   startedAt       DateTime    @map("started_at")
   endedAt         DateTime?   @map("ended_at")
   distanceKm      Float?      @map("distance_km")
@@ -114,6 +115,12 @@ enum TripStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum TripSource {
+  SIMULATOR
+  GPX_IMPORTED
+  DEVICE_REAL
 }
 
 // ─── Eventos de Risco ───────────────────────────────────────────────────────

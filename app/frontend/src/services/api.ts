@@ -39,8 +39,10 @@ export const authAPI = {
 
 // Trips endpoints
 export const tripsAPI = {
-  getAll: () =>
-    api.get<Trip[]>('/trips'),
+  getAll: (source?: Trip['source']) =>
+    api.get<Trip[]>('/trips', {
+      params: source ? { source } : undefined,
+    }),
   
   getById: (id: string) =>
     api.get<Trip>(`/trips/${id}`),

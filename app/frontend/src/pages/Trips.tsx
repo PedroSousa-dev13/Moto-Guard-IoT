@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 import { tripsAPI } from "../services/api";
 import { Trip } from "../types";
+
+type TripSource = Trip["source"];
+type TripSourceFilter = "ALL" | TripSource;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,6 +49,19 @@ function statusBadge(status: string) {
   }
 }
 
+function sourceBadge(source: TripSource) {
+  switch (source) {
+    case "SIMULATOR":
+      return { bg: "rgba(14,165,233,0.15)", color: "#0ea5e9", label: "Simulador" };
+    case "GPX_IMPORTED":
+      return { bg: "rgba(16,185,129,0.15)", color: "#10b981", label: "GPX" };
+    case "DEVICE_REAL":
+      return { bg: "rgba(244,114,182,0.15)", color: "#f472b6", label: "Dispositivo" };
+    default:
+      return { bg: "rgba(113,113,122,0.15)", color: "#71717a", label: source };
+  }
+}
+
 function severityColor(severity: string) {
   switch (severity) {
     case "CRITICAL":
@@ -78,9 +95,18 @@ export default function Trips() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<TripSourceFilter>("ALL");
 
   useEffect(() => {
     loadTrips();
+  }, []);
+
+  // Auto-refresh quando uma viagem começa ou termina
+  useEffect(() => {
+    const socket = io();
+    socket.on("trip_started", () => loadTrips());
+    socket.on("trip_ended", () => loadTrips());
+    return () => { socket.disconnect(); };
   }, []);
 
   async function loadTrips() {
@@ -101,6 +127,11 @@ export default function Trips() {
   function toggle(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
+
+  const filteredTrips =
+    sourceFilter === "ALL"
+      ? trips
+      : trips.filter((trip) => trip.source === sourceFilter);
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -151,13 +182,33 @@ export default function Trips() {
         <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
           🛣️ Histórico de Viagens
         </h1>
-        <span style={{ color: "#71717a", fontSize: "0.875rem" }}>
-          {trips.length} viagem{trips.length !== 1 ? "s" : ""}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <label style={{ color: "#a1a1aa", fontSize: "0.8rem" }}>Origem</label>
+          <select
+            value={sourceFilter}
+            onChange={(event) => setSourceFilter(event.target.value as TripSourceFilter)}
+            style={{
+              backgroundColor: "#171923",
+              color: "#e4e4e7",
+              border: "1px solid #2a2d3a",
+              borderRadius: "8px",
+              padding: "6px 8px",
+              fontSize: "0.8rem",
+            }}
+          >
+            <option value="ALL">Todas</option>
+            <option value="SIMULATOR">Simulador</option>
+            <option value="GPX_IMPORTED">GPX</option>
+            <option value="DEVICE_REAL">Dispositivo</option>
+          </select>
+          <span style={{ color: "#71717a", fontSize: "0.875rem" }}>
+            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""}
+          </span>
+        </div>
       </div>
 
       {/* Empty state */}
-      {trips.length === 0 && (
+      {filteredTrips.length === 0 && (
         <div
           style={{
             backgroundColor: "#1a1d27",
@@ -178,16 +229,18 @@ export default function Trips() {
             Ainda não há viagens registadas
           </h2>
           <p style={{ color: "#52525b", fontSize: "0.875rem" }}>
-            As viagens são criadas automaticamente quando o simulador deteta
-            movimento.
+            {sourceFilter === "ALL"
+              ? "As viagens são criadas automaticamente quando o simulador deteta movimento."
+              : "Não há viagens para o filtro de origem selecionado."}
           </p>
         </div>
       )}
 
       {/* Trip list */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {trips.map((trip) => {
+        {filteredTrips.map((trip) => {
           const badge = statusBadge(trip.status);
+          const tripSourceBadge = sourceBadge(trip.source);
           const isOpen = expandedId === trip.id;
           const evCount =
             trip.events?.length ?? (trip as any)._count?.events ?? 0;
@@ -248,6 +301,18 @@ export default function Trips() {
                       }}
                     >
                       {badge.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: "20px",
+                        backgroundColor: tripSourceBadge.bg,
+                        color: tripSourceBadge.color,
+                      }}
+                    >
+                      {tripSourceBadge.label}
                     </span>
                     {evCount > 0 && (
                       <span style={{ fontSize: "0.75rem", color: "#f97316" }}>
@@ -320,35 +385,35 @@ export default function Trips() {
                         val:
                           trip.distanceKm != null
                             ? `${trip.distanceKm.toFixed(2)} km`
-                            : "—",
+                            : trip.status === "ACTIVE" ? "Em direto" : "—",
                       },
                       {
                         label: "Vel. Máxima",
                         val:
                           trip.maxSpeedKmh != null
                             ? `${trip.maxSpeedKmh.toFixed(1)} km/h`
-                            : "—",
+                            : trip.status === "ACTIVE" ? "Em direto" : "—",
                       },
                       {
                         label: "Vel. Média",
                         val:
                           trip.avgSpeedKmh != null
                             ? `${trip.avgSpeedKmh.toFixed(1)} km/h`
-                            : "—",
+                            : trip.status === "ACTIVE" ? "Em direto" : "—",
                       },
                       {
                         label: "Inclin. Máx.",
                         val:
                           trip.maxRollDeg != null
                             ? `${trip.maxRollDeg.toFixed(1)}°`
-                            : "—",
+                            : trip.status === "ACTIVE" ? "Em direto" : "—",
                       },
                       {
                         label: "G-Force Máx.",
                         val:
                           trip.maxGForce != null
                             ? `${trip.maxGForce.toFixed(2)} G`
-                            : "—",
+                            : trip.status === "ACTIVE" ? "Em direto" : "—",
                       },
                       {
                         label: "Duração",

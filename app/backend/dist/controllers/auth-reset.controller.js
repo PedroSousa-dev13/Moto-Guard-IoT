@@ -28,18 +28,24 @@ async function forgotPassword(req, res) {
         res.status(400).json({ error: "Email é obrigatório" });
         return;
     }
-    const user = await prisma_service_1.prisma.user.findUnique({ where: { email } });
-    if (!user) {
-        // Não revelar se email existe ou não por segurança
+    try {
+        const user = await prisma_service_1.prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            // Não revelar se email existe ou não por segurança
+            res.json({ message: "Se o email existir, receberá instruções de recuperação" });
+            return;
+        }
+        // Gerar token de reset
+        const resetToken = generateResetToken(email);
+        // TODO: Enviar email com token (implementar serviço de email)
+        // Por agora, apenas log do token para debug
+        console.log(`Reset token para ${email}: ${resetToken}`);
         res.json({ message: "Se o email existir, receberá instruções de recuperação" });
-        return;
     }
-    // Gerar token de reset
-    const resetToken = generateResetToken(email);
-    // TODO: Enviar email com token (implementar serviço de email)
-    // Por agora, apenas log do token para debug
-    console.log(`Reset token para ${email}: ${resetToken}`);
-    res.json({ message: "Se o email existir, receberá instruções de recuperação" });
+    catch (err) {
+        console.error("[forgotPassword] Erro interno:", err);
+        res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+    }
 }
 // ─── Verificar Token de Reset ───────────────────────────────────────────────────
 async function verifyResetToken(req, res) {
@@ -64,7 +70,8 @@ async function verifyResetToken(req, res) {
         res.json({ valid: true });
     }
     catch (err) {
-        // Token inválido ou expirado
+        // Token inválido, expirado, ou erro de base de dados
+        console.error("[verifyResetToken] Erro:", err);
         res.status(400).json({ valid: false });
     }
 }
@@ -96,13 +103,12 @@ async function resetPassword(req, res) {
         // Atualizar senha
         await prisma_service_1.prisma.user.update({
             where: { id: user.id },
-            data: {
-                passwordHash,
-            },
+            data: { passwordHash },
         });
         res.json({ message: "Senha redefinida com sucesso" });
     }
     catch (err) {
+        console.error("[resetPassword] Erro interno:", err);
         res.status(400).json({ error: "Token inválido ou expirado" });
     }
 }

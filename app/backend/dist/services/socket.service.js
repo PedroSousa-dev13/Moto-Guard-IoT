@@ -111,6 +111,7 @@ class SocketService {
                 data: {
                     userId: association.userId,
                     motorcycleId: association.motorcycleId,
+                    source: "SIMULATOR",
                     startedAt: new Date(timestamp),
                     status: "ACTIVE",
                 },
@@ -124,6 +125,9 @@ class SocketService {
                 maxGForce: payload.imu.g_force,
                 startLat: payload.location.latitude,
                 startLon: payload.location.longitude,
+                speedSum: payload.telemetry.speed_kmh,
+                speedTicks: 1,
+                ticks: 1,
             });
             this.io?.emit("trip_started", {
                 deviceId,
@@ -144,6 +148,33 @@ class SocketService {
         stats.maxSpeed = Math.max(stats.maxSpeed, payload.telemetry.speed_kmh);
         stats.maxRoll = Math.max(stats.maxRoll, Math.abs(payload.imu.roll_deg));
         stats.maxGForce = Math.max(stats.maxGForce, payload.imu.g_force);
+        stats.speedSum += payload.telemetry.speed_kmh;
+        stats.speedTicks++;
+        stats.ticks++;
+        // Flush parcial a cada 30 ticks (~30 segundos)
+        if (stats.ticks % 30 === 0) {
+            this.flushTripStats(deviceId);
+        }
+    }
+    async flushTripStats(deviceId) {
+        const tripId = this.activeTripIdByDevice.get(deviceId);
+        const stats = this.tripStatsByDevice.get(deviceId);
+        if (!tripId || !stats)
+            return;
+        try {
+            await prisma_service_1.prisma.trip.update({
+                where: { id: tripId },
+                data: {
+                    maxSpeedKmh: stats.maxSpeed,
+                    maxRollDeg: stats.maxRoll,
+                    maxGForce: stats.maxGForce,
+                    avgSpeedKmh: stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null,
+                },
+            });
+        }
+        catch (error) {
+            console.error("Erro ao atualizar estatísticas da viagem:", error);
+        }
     }
     async endTrip(payload) {
         const deviceId = payload.system.device_id;
@@ -166,6 +197,9 @@ class SocketService {
             if (stats) {
                 distanceKm = this.haversineDistance(stats.startLat, stats.startLon, payload.location.latitude, payload.location.longitude);
             }
+            const avgSpeedKmh = stats && stats.speedTicks > 0
+                ? stats.speedSum / stats.speedTicks
+                : null;
             await prisma_service_1.prisma.trip.update({
                 where: { id: tripId },
                 data: {
@@ -175,6 +209,7 @@ class SocketService {
                     maxSpeedKmh: stats?.maxSpeed ?? 0,
                     maxRollDeg: stats?.maxRoll ?? 0,
                     maxGForce: stats?.maxGForce ?? 0,
+                    avgSpeedKmh,
                 },
             });
             this.io?.emit("trip_ended", {

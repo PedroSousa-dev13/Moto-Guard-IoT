@@ -18,6 +18,15 @@ export const TripStatus = {
 export type TripStatus = (typeof TripStatus)[keyof typeof TripStatus]
 
 
+export const TripSource = {
+  SIMULATOR: 'SIMULATOR',
+  GPX_IMPORTED: 'GPX_IMPORTED',
+  DEVICE_REAL: 'DEVICE_REAL'
+} as const
+
+export type TripSource = (typeof TripSource)[keyof typeof TripSource]
+
+
 export const EventType = {
   HARD_BRAKING: 'HARD_BRAKING',
   EXCESSIVE_LEAN: 'EXCESSIVE_LEAN',

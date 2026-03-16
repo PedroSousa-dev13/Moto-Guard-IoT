@@ -36,7 +36,16 @@ class SocketService {
   private stationaryTicksByDevice = new Map<string, number>();
   private lastEventStatusByDevice = new Map<string, string>();
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
-  private tripStatsByDevice = new Map<string, { maxSpeed: number; maxRoll: number; maxGForce: number; startLat: number; startLon: number }>();
+  private tripStatsByDevice = new Map<string, {
+    maxSpeed: number;
+    maxRoll: number;
+    maxGForce: number;
+    startLat: number;
+    startLon: number;
+    speedSum: number;   // para avgSpeedKmh
+    speedTicks: number; // número de ticks acumulados
+    ticks: number;      // contador para flush periódico
+  }>();
 
   // Thresholds simples para ciclo de viagem em tempo real.
   private static readonly TRIP_START_SPEED_KMH = 5;
@@ -152,6 +161,7 @@ class SocketService {
         data: {
           userId: association.userId,
           motorcycleId: association.motorcycleId,
+          source: "SIMULATOR",
           startedAt: new Date(timestamp),
           status: "ACTIVE",
         },
@@ -167,6 +177,9 @@ class SocketService {
         maxGForce: payload.imu.g_force,
         startLat: payload.location.latitude,
         startLon: payload.location.longitude,
+        speedSum: payload.telemetry.speed_kmh,
+        speedTicks: 1,
+        ticks: 1,
       });
 
       this.io?.emit("trip_started", {
@@ -188,6 +201,34 @@ class SocketService {
     stats.maxSpeed = Math.max(stats.maxSpeed, payload.telemetry.speed_kmh);
     stats.maxRoll = Math.max(stats.maxRoll, Math.abs(payload.imu.roll_deg));
     stats.maxGForce = Math.max(stats.maxGForce, payload.imu.g_force);
+    stats.speedSum += payload.telemetry.speed_kmh;
+    stats.speedTicks++;
+    stats.ticks++;
+
+    // Flush parcial a cada 30 ticks (~30 segundos)
+    if (stats.ticks % 30 === 0) {
+      this.flushTripStats(deviceId);
+    }
+  }
+
+  private async flushTripStats(deviceId: string): Promise<void> {
+    const tripId = this.activeTripIdByDevice.get(deviceId);
+    const stats = this.tripStatsByDevice.get(deviceId);
+    if (!tripId || !stats) return;
+
+    try {
+      await prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          maxSpeedKmh: stats.maxSpeed,
+          maxRollDeg: stats.maxRoll,
+          maxGForce: stats.maxGForce,
+          avgSpeedKmh: stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar estatísticas da viagem:", error);
+    }
   }
 
   private async endTrip(payload: TelemetryPayload): Promise<void> {
@@ -218,6 +259,10 @@ class SocketService {
         );
       }
 
+      const avgSpeedKmh = stats && stats.speedTicks > 0
+        ? stats.speedSum / stats.speedTicks
+        : null;
+
       await prisma.trip.update({
         where: { id: tripId },
         data: {
@@ -227,6 +272,7 @@ class SocketService {
           maxSpeedKmh: stats?.maxSpeed ?? 0,
           maxRollDeg: stats?.maxRoll ?? 0,
           maxGForce: stats?.maxGForce ?? 0,
+          avgSpeedKmh,
         },
       });
 

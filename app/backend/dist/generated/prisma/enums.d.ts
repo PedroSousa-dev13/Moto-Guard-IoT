@@ -4,6 +4,12 @@ export declare const TripStatus: {
     readonly CANCELLED: "CANCELLED";
 };
 export type TripStatus = (typeof TripStatus)[keyof typeof TripStatus];
+export declare const TripSource: {
+    readonly SIMULATOR: "SIMULATOR";
+    readonly GPX_IMPORTED: "GPX_IMPORTED";
+    readonly DEVICE_REAL: "DEVICE_REAL";
+};
+export type TripSource = (typeof TripSource)[keyof typeof TripSource];
 export declare const EventType: {
     readonly HARD_BRAKING: "HARD_BRAKING";
     readonly EXCESSIVE_LEAN: "EXCESSIVE_LEAN";

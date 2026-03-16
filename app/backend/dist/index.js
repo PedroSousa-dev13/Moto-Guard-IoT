@@ -22,6 +22,16 @@ const routes_1 = __importDefault(require("./routes"));
 const mqtt_service_1 = require("./services/mqtt.service");
 const socket_service_1 = require("./services/socket.service");
 const prisma_service_1 = require("./services/prisma.service");
+// ─── Handlers globais de erros não capturados ────────────────────────────────
+// Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
+// stream, rejeição de Promise sem .catch(), etc.) mata o processo inteiro.
+// Com eles, o erro é registado e o servidor continua a correr.
+process.on("uncaughtException", (err) => {
+    console.error("[uncaughtException] Erro não capturado:", err);
+});
+process.on("unhandledRejection", (reason) => {
+    console.error("[unhandledRejection] Promise rejeitada sem handler:", reason);
+});
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 app.use((0, cors_1.default)());

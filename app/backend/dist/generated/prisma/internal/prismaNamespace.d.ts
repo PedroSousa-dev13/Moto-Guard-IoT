@@ -705,6 +705,7 @@ export declare const TripScalarFieldEnum: {
     readonly id: "id";
     readonly userId: "userId";
     readonly motorcycleId: "motorcycleId";
+    readonly source: "source";
     readonly startedAt: "startedAt";
     readonly endedAt: "endedAt";
     readonly distanceKm: "distanceKm";
@@ -783,6 +784,14 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Float[]'
  */
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>;
+/**
+ * Reference to a field of type 'TripSource'
+ */
+export type EnumTripSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripSource'>;
+/**
+ * Reference to a field of type 'TripSource[]'
+ */
+export type ListEnumTripSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripSource[]'>;
 /**
  * Reference to a field of type 'TripStatus'
  */
