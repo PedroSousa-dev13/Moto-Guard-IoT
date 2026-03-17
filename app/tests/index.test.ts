@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import express from 'express';
 import cors from 'cors';
-import http from 'http';
+import * as http from 'http';
 import path from 'path';
 import { setupStaticServing } from '../backend/src/utils/setup-static-serving';
 import { env } from '../backend/src/config/env';
@@ -15,8 +15,10 @@ vi.mock('express', () => {
     use: vi.fn(),
     listen: vi.fn()
   };
+  const expressMock: any = vi.fn(() => mockApp);
+  expressMock.json = vi.fn(() => 'json-middleware');
   return {
-    default: vi.fn(() => mockApp)
+    default: expressMock
   };
 });
 
@@ -24,15 +26,17 @@ vi.mock('cors', () => ({
   default: vi.fn(() => 'cors-middleware')
 }));
 
-vi.mock('http', () => ({
-  createServer: vi.fn(() => ({
+vi.mock('http', () => {
+  const createServer = vi.fn(() => ({
     listen: vi.fn()
-  }))
-}));
+  }));
+  return { default: { createServer }, createServer };
+});
 
-vi.mock('path', () => ({
-  join: vi.fn((...args) => args.join('/'))
-}));
+vi.mock('path', () => {
+  const join = vi.fn((...args) => args.join('/'));
+  return { default: { join }, join };
+});
 
 vi.mock('../backend/src/utils/setup-static-serving', () => ({
   setupStaticServing: vi.fn()
@@ -76,6 +80,7 @@ describe('src/index.ts', () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     
     mockApp = {
       use: vi.fn(),
@@ -88,7 +93,7 @@ describe('src/index.ts', () => {
       })
     };
     
-    (express.default as any).mockReturnValue(mockApp);
+    (express as any).mockReturnValue(mockApp);
     (http.createServer as any).mockReturnValue(mockServer);
     
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -120,9 +125,10 @@ describe('src/index.ts', () => {
   it('should create Express app with correct middleware', async () => {
     await import('../backend/src/index');
     
-    expect(express.default).toHaveBeenCalled();
+    expect(express).toHaveBeenCalled();
     expect(mockApp.use).toHaveBeenCalledWith('cors-middleware');
-    expect(mockApp.use).toHaveBeenCalledWith(express.json());
+    expect(express.json).toHaveBeenCalledWith({ limit: "10mb" });
+    expect(mockApp.use).toHaveBeenCalledWith('json-middleware');
     expect(mockApp.use).toHaveBeenCalledWith('/api', 'api-routes');
   });
 

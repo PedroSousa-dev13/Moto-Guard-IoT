@@ -10,14 +10,37 @@ export const api = axios.create({
   },
 });
 
+function getStoredToken(): string | null {
+  const rememberMe = localStorage.getItem("rememberMe") === "true";
+  if (rememberMe) {
+    return localStorage.getItem("token");
+  }
+  return (
+    sessionStorage.getItem("session_token") ||
+    sessionStorage.getItem("token") ||
+    localStorage.getItem("token")
+  );
+}
+
 // Interceptor para adicionar JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getStoredToken();
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
+    return Promise.reject(error);
+  },
+);
 
 // Auth endpoints
 export const authAPI = {
@@ -26,6 +49,9 @@ export const authAPI = {
   
   register: (email: string, password: string, name: string) =>
     api.post<{ user: User; token: string }>('/auth/register', { email, password, name }),
+
+  me: () =>
+    api.get<User>('/auth/me'),
 
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
@@ -58,6 +84,12 @@ export const motorcyclesAPI = {
   
   create: (data: Partial<Motorcycle>) =>
     api.post<Motorcycle>('/motorcycles', data),
+
+  update: (id: string, data: Partial<Motorcycle>) =>
+    api.put<Motorcycle>(`/motorcycles/${id}`, data),
+
+  remove: (id: string) =>
+    api.delete<{ success: true }>(`/motorcycles/${id}`),
   
   getProfiles: () =>
     api.get<any[]>('/motorcycle-profiles'),

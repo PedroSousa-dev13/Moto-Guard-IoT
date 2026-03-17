@@ -104,6 +104,7 @@ model Trip {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   motorcycle      Motorcycle  @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
   events          TripEvent[]
+  gpxData         GpxData?
 
   @@index([userId])
   @@index([motorcycleId])

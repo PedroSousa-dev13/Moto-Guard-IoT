@@ -388,7 +388,8 @@ export const ModelName = {
   MotorcycleProfile: 'MotorcycleProfile',
   Motorcycle: 'Motorcycle',
   Trip: 'Trip',
-  TripEvent: 'TripEvent'
+  TripEvent: 'TripEvent',
+  GpxData: 'GpxData'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -404,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "motorcycleProfile" | "motorcycle" | "trip" | "tripEvent"
+    modelProps: "user" | "motorcycleProfile" | "motorcycle" | "trip" | "tripEvent" | "gpxData"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -778,6 +779,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GpxData: {
+      payload: Prisma.$GpxDataPayload<ExtArgs>
+      fields: Prisma.GpxDataFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GpxDataFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GpxDataFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        findFirst: {
+          args: Prisma.GpxDataFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GpxDataFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        findMany: {
+          args: Prisma.GpxDataFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>[]
+        }
+        create: {
+          args: Prisma.GpxDataCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        createMany: {
+          args: Prisma.GpxDataCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GpxDataCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>[]
+        }
+        delete: {
+          args: Prisma.GpxDataDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        update: {
+          args: Prisma.GpxDataUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        deleteMany: {
+          args: Prisma.GpxDataDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GpxDataUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GpxDataUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>[]
+        }
+        upsert: {
+          args: Prisma.GpxDataUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GpxDataPayload>
+        }
+        aggregate: {
+          args: Prisma.GpxDataAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGpxData>
+        }
+        groupBy: {
+          args: Prisma.GpxDataGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GpxDataGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GpxDataCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GpxDataCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -910,12 +985,34 @@ export const TripEventScalarFieldEnum = {
 export type TripEventScalarFieldEnum = (typeof TripEventScalarFieldEnum)[keyof typeof TripEventScalarFieldEnum]
 
 
+export const GpxDataScalarFieldEnum = {
+  id: 'id',
+  tripId: 'tripId',
+  filename: 'filename',
+  fileSize: 'fileSize',
+  waypoints: 'waypoints',
+  bounds: 'bounds',
+  totalTime: 'totalTime',
+  importDate: 'importDate',
+  createdAt: 'createdAt'
+} as const
+
+export type GpxDataScalarFieldEnum = (typeof GpxDataScalarFieldEnum)[keyof typeof GpxDataScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -932,6 +1029,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -1051,6 +1157,20 @@ export type EnumEventSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
 export type ListEnumEventSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EventSeverity[]'>
     
 
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -1151,6 +1271,7 @@ export type GlobalOmitConfig = {
   motorcycle?: Prisma.MotorcycleOmit
   trip?: Prisma.TripOmit
   tripEvent?: Prisma.TripEventOmit
+  gpxData?: Prisma.GpxDataOmit
 }
 
 /* Types for Logging */

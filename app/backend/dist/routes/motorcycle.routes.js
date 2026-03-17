@@ -9,6 +9,8 @@ const motorcycle_controller_1 = require("../controllers/motorcycle.controller");
 const router = (0, express_1.Router)();
 router.post("/motorcycles", auth_middleware_1.authMiddleware, motorcycle_controller_1.createMotorcycle);
 router.get("/motorcycles", auth_middleware_1.authMiddleware, motorcycle_controller_1.listMotorcycles);
+router.put("/motorcycles/:id", auth_middleware_1.authMiddleware, motorcycle_controller_1.updateMotorcycle);
+router.delete("/motorcycles/:id", auth_middleware_1.authMiddleware, motorcycle_controller_1.deleteMotorcycle);
 router.get("/motorcycle-profiles", auth_middleware_1.authMiddleware, motorcycle_controller_1.listProfiles);
 exports.default = router;
 //# sourceMappingURL=motorcycle.routes.js.map

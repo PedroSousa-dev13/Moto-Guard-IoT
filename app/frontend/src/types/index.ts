@@ -9,10 +9,24 @@ export interface User {
 export interface Motorcycle {
   id: string;
   userId: string;
+  profileId?: string | null;
   name: string;
   brand?: string;
   year?: number;
   deviceId?: string;
+  createdAt: string;
+  profile?: { id: string; name: string } | null;
+}
+
+export interface GpxData {
+  id: string;
+  tripId: string;
+  filename: string;
+  fileSize: number;
+  waypoints: Array<{ lat: number; lon: number; ele?: number; time?: string }>;
+  bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+  totalTime?: number;
+  importDate: string;
   createdAt: string;
 }
 
@@ -31,6 +45,7 @@ export interface Trip {
   status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   motorcycle: Motorcycle;
+  gpxData?: GpxData | null;
   events: TripEvent[];
 }
 

@@ -6,30 +6,25 @@ import type { Application } from 'express';
 import { setupStaticServing } from '../backend/src/utils/setup-static-serving';
 
 vi.mock('fs');
-vi.mock('path', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('path')>();
-  return {
-    ...actual,
-    join: vi.fn((...args) => args.join('/'))
-  };
+vi.mock('path', () => {
+  const join = vi.fn((...args) => args.join('/'));
+  return { default: { join }, join };
 });
-vi.mock('express', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('express')>();
-  return {
-    ...actual,
-    default: {
-      ...actual.default,
-      static: vi.fn(() => 'static-middleware')
-    }
-  };
+vi.mock('express', () => {
+  const expressMock: any = Object.assign(vi.fn(), {
+    static: vi.fn(() => 'static-middleware'),
+  });
+  return { default: expressMock };
 });
 
 describe('setupStaticServing', () => {
   let mockApp: Application;
   let mockResponse: any;
+  let consoleLogSpy: any;
   
   beforeEach(() => {
     vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     
     mockResponse = {
       sendFile: vi.fn()
@@ -44,6 +39,7 @@ describe('setupStaticServing', () => {
   });
   
   afterEach(() => {
+    consoleLogSpy.mockRestore();
     vi.restoreAllMocks();
   });
 
@@ -55,7 +51,7 @@ describe('setupStaticServing', () => {
     expect(result).toBe(false);
     expect(mockApp.use).not.toHaveBeenCalled();
     expect(mockApp.get).not.toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith('Frontend estático não encontrado — modo dev (Vite separado).');
+    expect(consoleLogSpy).toHaveBeenCalledWith('Frontend estático não encontrado — modo dev (Vite separado).');
   });
 
   it('should return true when dist path exists', () => {
@@ -69,7 +65,7 @@ describe('setupStaticServing', () => {
     setupStaticServing(mockApp, '/path/to/dist');
     
     expect(mockApp.use).toHaveBeenCalledWith('static-middleware');
-    expect(express.default.static).toHaveBeenCalledWith('/path/to/dist');
+    expect((express as any).static).toHaveBeenCalledWith('/path/to/dist');
   });
 
   it('should setup SPA fallback route', () => {
@@ -97,13 +93,9 @@ describe('setupStaticServing', () => {
   });
 
   it('should log static serving setup', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    
     setupStaticServing(mockApp, '/path/to/dist');
     
     expect(consoleLogSpy).toHaveBeenCalledWith('Frontend estático: /path/to/dist');
-    
-    consoleLogSpy.mockRestore();
   });
 
   it('should handle different dist path formats', () => {
@@ -121,7 +113,7 @@ describe('setupStaticServing', () => {
       setupStaticServing(mockApp, distPath);
       
       expect(fs.existsSync).toHaveBeenCalledWith(distPath);
-      expect(express.default.static).toHaveBeenCalledWith(distPath);
+      expect((express as any).static).toHaveBeenCalledWith(distPath);
     });
   });
 });

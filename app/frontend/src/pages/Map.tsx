@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { useSocket } from "../hooks/useSocket";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -75,96 +75,51 @@ export default function Map() {
   }, [lat, lng, msgCount]);
 
   return (
-    <div
-      style={{
-        padding: "1.5rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        height: "calc(100vh - 60px)",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-          🗺️ Mapa em Tempo Real
-        </h1>
-        <div style={{ display: "flex", gap: "8px" }}>
+    <div className="page page-full map-page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">🗺️ Mapa em Tempo Real</div>
+          <div className="page-subtitle">Posição e trilho ao vivo</div>
+        </div>
+        <div className="page-actions">
           <StatusPill active={status.mqtt} label="MQTT" />
           <StatusPill active={status.ws} label="WebSocket" />
         </div>
       </div>
 
       {/* Info bar */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-          gap: "8px",
-        }}
-      >
+      <div className="tile-grid">
         {[
           {
             label: "Velocidade",
             val: telemetry
               ? `${telemetry.telemetry.speed_kmh.toFixed(0)} km/h`
               : "—",
-            color: "#3b82f6",
+            color: "var(--accent)",
           },
-          { label: "Latitude", val: lat.toFixed(6), color: "#e4e4e7" },
-          { label: "Longitude", val: lng.toFixed(6), color: "#e4e4e7" },
+          { label: "Latitude", val: lat.toFixed(6), color: "var(--text)" },
+          { label: "Longitude", val: lng.toFixed(6), color: "var(--text)" },
           {
             label: "Odometro",
             val: telemetry
               ? `${telemetry.telemetry.odometer_km.toFixed(2)} km`
               : "—",
-            color: "#e4e4e7",
+            color: "var(--text)",
           },
           {
             label: "Modelo",
             val: telemetry?.system?.moto_model ?? "—",
-            color: "#e4e4e7",
+            color: "var(--text)",
           },
           {
             label: "Msgs",
             val: msgCount.toString(),
-            color: "#22c55e",
+            color: "var(--green)",
           },
         ].map(({ label, val, color }) => (
-          <div
-            key={label}
-            style={{
-              backgroundColor: "#1a1d27",
-              border: "1px solid #2a2d3a",
-              borderRadius: "8px",
-              padding: "10px 12px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.68rem",
-                color: "#71717a",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "4px",
-              }}
-            >
-              {label}
-            </div>
-            <div
-              style={{
-                fontWeight: 700,
-                fontVariantNumeric: "tabular-nums",
-                color,
-                fontSize: "0.9rem",
-              }}
-            >
+          <div key={label} className="tile">
+            <div className="tile-k">{label}</div>
+            <div className="tile-v" style={{ color }}>
               {val}
             </div>
           </div>
@@ -172,54 +127,22 @@ export default function Map() {
       </div>
 
       {/* Mapa */}
-      <div
-        style={{
-          flex: 1,
-          position: "relative",
-          backgroundColor: "#1a1d27",
-          border: "1px solid #2a2d3a",
-          borderRadius: "12px",
-          overflow: "hidden",
-          minHeight: "350px",
-        }}
-      >
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      <div className="map-shell">
+        <div ref={containerRef} className="map-canvas" />
 
         {/* Overlay quando sem dados */}
         {!status.hasData && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "rgba(15,17,23,0.75)",
-              backdropFilter: "blur(4px)",
-              gap: "0.75rem",
-            }}
-          >
-            <div style={{ fontSize: "2.5rem" }}>📡</div>
-            <p style={{ color: "#71717a", fontWeight: 500 }}>
-              A aguardar dados de telemetria...
-            </p>
-            <p style={{ color: "#52525b", fontSize: "0.8rem" }}>
-              Garante que o simulador esta a correr.
-            </p>
+          <div className="map-overlay">
+            <div className="map-overlay-icon">📡</div>
+            <div className="map-overlay-title">A aguardar dados de telemetria...</div>
+            <div className="map-overlay-text">Garante que o simulador está a correr.</div>
           </div>
         )}
       </div>
 
       {/* Trail info */}
       {trailPointsRef.current.length > 0 && (
-        <div
-          style={{
-            fontSize: "0.75rem",
-            color: "#52525b",
-            textAlign: "center",
-          }}
-        >
+        <div className="map-trail">
           Trilho: {trailPointsRef.current.length} pontos registados
         </div>
       )}
@@ -236,16 +159,7 @@ function StatusPill({
 }) {
   return (
     <span
-      style={{
-        fontSize: "0.72rem",
-        fontWeight: 700,
-        padding: "4px 10px",
-        borderRadius: "20px",
-        backgroundColor: active
-          ? "rgba(34,197,94,0.15)"
-          : "rgba(239,68,68,0.15)",
-        color: active ? "#22c55e" : "#ef4444",
-      }}
+      className={`pill ${active ? "pill-success" : "pill-danger"}`}
     >
       {label} {active ? "✓" : "✗"}
     </span>

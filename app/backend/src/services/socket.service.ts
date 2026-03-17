@@ -35,6 +35,7 @@ class SocketService {
   private tripActiveByDevice = new Map<string, boolean>();
   private stationaryTicksByDevice = new Map<string, number>();
   private lastEventStatusByDevice = new Map<string, string>();
+  private lastTelemetryByDevice = new Map<string, TelemetryPayload>();
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
   private tripStatsByDevice = new Map<string, {
     maxSpeed: number;
@@ -78,6 +79,12 @@ class SocketService {
         const sent = mqttService.publishCommand(command);
         if (!sent) {
           socket.emit("error_msg", { message: "MQTT não está conectado" });
+          return;
+        }
+
+        if (command?.acao === "parar") {
+          void this.forceEndTripsOnStopCommand()
+            .catch((error) => console.error("Erro ao forçar fim de viagem:", error));
         }
       });
 
@@ -89,6 +96,7 @@ class SocketService {
 
     // Reencaminhar telemetria e derivar eventos em tempo real.
     mqttService.onTelemetry((payload: TelemetryPayload) => {
+      this.lastTelemetryByDevice.set(payload.system.device_id, payload);
       this.io?.emit("telemetry_update", payload);
       this.handleAlertEvent(payload);
       this.handleTripLifecycle(payload);
@@ -161,7 +169,7 @@ class SocketService {
         data: {
           userId: association.userId,
           motorcycleId: association.motorcycleId,
-          source: "SIMULATOR",
+          source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
           startedAt: new Date(timestamp),
           status: "ACTIVE",
         },
@@ -291,6 +299,82 @@ class SocketService {
     } catch (error) {
       console.error("Erro ao finalizar viagem:", error);
       this.io?.emit("trip_ended", { deviceId, motoModel: payload.system.moto_model, timestamp });
+    }
+  }
+
+  private async forceEndTripsOnStopCommand(): Promise<void> {
+    const activeDevices = Array.from(this.activeTripIdByDevice.keys());
+    if (activeDevices.length === 0) {
+      return;
+    }
+
+    const preferredDeviceId = telemetryStore.latest?.system?.device_id;
+    const devicesToEnd =
+      preferredDeviceId && activeDevices.includes(preferredDeviceId)
+        ? [preferredDeviceId]
+        : activeDevices;
+
+    await Promise.all(devicesToEnd.map((deviceId) => this.forceEndTrip(deviceId)));
+  }
+
+  private async forceEndTrip(deviceId: string): Promise<void> {
+    const tripId = this.activeTripIdByDevice.get(deviceId);
+    const stats = this.tripStatsByDevice.get(deviceId);
+    const lastPayload = this.lastTelemetryByDevice.get(deviceId);
+    const endedAt = new Date();
+
+    this.tripActiveByDevice.set(deviceId, false);
+    this.stationaryTicksByDevice.set(deviceId, 0);
+
+    if (!tripId) {
+      this.io?.emit("trip_ended", {
+        deviceId,
+        motoModel: lastPayload?.system.moto_model ?? "—",
+        timestamp: endedAt.toISOString(),
+      });
+      return;
+    }
+
+    let distanceKm = 0;
+    if (stats && lastPayload) {
+      distanceKm = this.haversineDistance(
+        stats.startLat,
+        stats.startLon,
+        lastPayload.location.latitude,
+        lastPayload.location.longitude,
+      );
+    }
+
+    const avgSpeedKmh =
+      stats && stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null;
+
+    try {
+      await prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          endedAt,
+          status: "COMPLETED",
+          distanceKm,
+          maxSpeedKmh: stats?.maxSpeed ?? 0,
+          maxRollDeg: stats?.maxRoll ?? 0,
+          maxGForce: stats?.maxGForce ?? 0,
+          avgSpeedKmh,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao finalizar viagem (forceEndTrip):", error);
+    } finally {
+      this.io?.emit("trip_ended", {
+        deviceId,
+        motoModel: lastPayload?.system.moto_model ?? "—",
+        timestamp: endedAt.toISOString(),
+        tripId,
+        distanceKm,
+        maxSpeedKmh: stats?.maxSpeed ?? 0,
+      });
+
+      this.activeTripIdByDevice.delete(deviceId);
+      this.tripStatsByDevice.delete(deviceId);
     }
   }
 

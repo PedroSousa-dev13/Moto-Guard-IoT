@@ -50,6 +50,7 @@ async function getTrip(req, res) {
                 motorcycle: {
                     select: { id: true, name: true, brand: true, profile: true },
                 },
+                gpxData: true,
                 events: { orderBy: { occurredAt: "asc" } },
             },
         });

@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
 
       {isAuthenticated && (
         <div className="sidebar-footer">
-          <button onClick={logout} className="logout-btn">
+          <button onClick={logout} className="sidebar-logout-btn">
             🚪 Sair
           </button>
         </div>

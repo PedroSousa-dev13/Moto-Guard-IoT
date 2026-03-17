@@ -11,6 +11,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = register;
 exports.login = login;
+exports.me = me;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_service_1 = require("../services/prisma.service");
@@ -71,6 +72,24 @@ async function login(req, res) {
     }
     catch (err) {
         console.error("[login] Erro interno:", err);
+        res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+    }
+}
+async function me(req, res) {
+    const userId = req.userId;
+    try {
+        const user = await prisma_service_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+        });
+        if (!user) {
+            res.status(404).json({ error: "Utilizador não encontrado" });
+            return;
+        }
+        res.json(user);
+    }
+    catch (err) {
+        console.error("[me] Erro interno:", err);
         res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
     }
 }
