@@ -37,6 +37,9 @@ class SocketService {
   private lastEventStatusByDevice = new Map<string, string>();
   private lastTelemetryByDevice = new Map<string, TelemetryPayload>();
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
+  private lastStopHandledAtByDevice = new Map<string, number>();
+  private lastUserIdByDevice = new Map<string, string>();
+  private lastMotoModelByDevice = new Map<string, string>();
   private tripStatsByDevice = new Map<string, {
     maxSpeed: number;
     maxRoll: number;
@@ -74,7 +77,7 @@ class SocketService {
         socket.emit("telemetry_update", telemetryStore.latest);
       }
 
-      socket.on("send_command", (command: SimulatorCommand) => {
+      socket.on("send_command", async (command: SimulatorCommand) => {
         console.log("Comando recebido do frontend:", JSON.stringify(command));
         const sent = mqttService.publishCommand(command);
         if (!sent) {
@@ -82,9 +85,33 @@ class SocketService {
           return;
         }
 
+        const preferredDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id ?? null;
+        const userId = command?.userId ?? null;
+        if (preferredDeviceId && userId) {
+          const motoModel =
+            command?.modelo ??
+            this.lastTelemetryByDevice.get(preferredDeviceId)?.system?.moto_model ??
+            telemetryStore.latest?.system?.moto_model ??
+            "Simulador";
+          try {
+            await this.ensureAssociationForDevice(preferredDeviceId, userId, motoModel);
+          } catch (error) {
+            console.error("Erro ao associar device ao utilizador:", error);
+          }
+        }
+
         if (command?.acao === "parar") {
-          void this.forceEndTripsOnStopCommand(command?.device_id ?? null)
-            .catch((error) => console.error("Erro ao forçar fim de viagem:", error));
+          try {
+            await this.forceEndTripsOnStopCommand(preferredDeviceId);
+            if (preferredDeviceId) {
+              telemetryStore.clearLatestIfDevice(preferredDeviceId);
+            } else {
+              telemetryStore.clearLatest();
+            }
+            this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
+          } catch (error) {
+            console.error("Erro ao forçar fim de viagem:", error);
+          }
         }
       });
 
@@ -304,14 +331,21 @@ class SocketService {
 
   private async forceEndTripsOnStopCommand(deviceId: string | null): Promise<void> {
     const activeDevices = Array.from(this.activeTripIdByDevice.keys());
+    const preferredDeviceId = deviceId ?? telemetryStore.latest?.system?.device_id ?? null;
     if (activeDevices.length === 0) {
+      const fallbackDeviceId =
+        preferredDeviceId ??
+        Array.from(this.lastTelemetryByDevice.keys()).slice(-1)[0] ??
+        null;
+      if (!fallbackDeviceId) return;
+      await this.forceEndTrip(fallbackDeviceId);
       return;
     }
 
-    const preferredDeviceId = deviceId ?? telemetryStore.latest?.system?.device_id ?? null;
-    const devicesToEnd = preferredDeviceId && activeDevices.includes(preferredDeviceId)
-      ? [preferredDeviceId]
-      : activeDevices;
+    const devicesToEnd =
+      preferredDeviceId && activeDevices.includes(preferredDeviceId)
+        ? [preferredDeviceId]
+        : activeDevices;
 
     await Promise.all(devicesToEnd.map((deviceId) => this.forceEndTrip(deviceId)));
   }
@@ -326,10 +360,23 @@ class SocketService {
     this.stationaryTicksByDevice.set(deviceId, 0);
 
     if (!tripId) {
+      const now = endedAt.getTime();
+      const lastHandledAt = this.lastStopHandledAtByDevice.get(deviceId) ?? 0;
+      if (now - lastHandledAt < 1500) {
+        return;
+      }
+      this.lastStopHandledAtByDevice.set(deviceId, now);
+
+      const created = lastPayload
+        ? await this.createCompletedTripFromLastPayload(deviceId, endedAt)
+        : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt);
       this.io?.emit("trip_ended", {
         deviceId,
-        motoModel: lastPayload?.system.moto_model ?? "—",
+        motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
         timestamp: endedAt.toISOString(),
+        tripId: created?.tripId,
+        distanceKm: created?.distanceKm,
+        maxSpeedKmh: created?.maxSpeedKmh,
       });
       return;
     }
@@ -375,6 +422,103 @@ class SocketService {
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
     }
+  }
+
+  private async createCompletedTripFromLastPayload(
+    deviceId: string,
+    endedAt: Date,
+  ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
+    const lastPayload = this.lastTelemetryByDevice.get(deviceId);
+    if (!lastPayload) return null;
+
+    let association = await deviceAssociationService.getAssociation(deviceId);
+    if (!association) {
+      const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+      if (userId) {
+        await deviceAssociationService.registerDevice(
+          deviceId,
+          userId,
+          lastPayload.system.moto_model || `Simulador ${deviceId}`,
+        );
+        association = await deviceAssociationService.getAssociation(deviceId);
+      }
+    }
+    if (!association) return null;
+
+    const rawStartedAt = new Date(lastPayload.system.timestamp);
+    const startedAtSafe = Number.isNaN(rawStartedAt.getTime()) ? endedAt : rawStartedAt;
+    const startedAt = startedAtSafe.getTime() > endedAt.getTime() ? endedAt : startedAtSafe;
+
+    const maxSpeedKmh = lastPayload.telemetry.speed_kmh ?? 0;
+    const maxRollDeg = Math.abs(lastPayload.imu.roll_deg ?? 0);
+    const maxGForce = lastPayload.imu.g_force ?? 0;
+    const distanceKm = 0;
+
+    const trip = await prisma.trip.create({
+      data: {
+        userId: association.userId,
+        motorcycleId: association.motorcycleId,
+        source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+        startedAt,
+        endedAt,
+        status: "COMPLETED",
+        distanceKm,
+        maxSpeedKmh,
+        maxRollDeg,
+        maxGForce,
+        avgSpeedKmh: maxSpeedKmh,
+      },
+    });
+
+    return { tripId: trip.id, distanceKm, maxSpeedKmh };
+  }
+
+  private async createCompletedTripWithoutTelemetry(
+    deviceId: string,
+    endedAt: Date,
+  ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
+    let association = await deviceAssociationService.getAssociation(deviceId);
+    if (!association) {
+      const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+      if (userId) {
+        await deviceAssociationService.registerDevice(
+          deviceId,
+          userId,
+          this.lastMotoModelByDevice.get(deviceId) ?? `Simulador ${deviceId}`,
+        );
+        association = await deviceAssociationService.getAssociation(deviceId);
+      }
+    }
+    if (!association) return null;
+
+    const distanceKm = 0;
+    const maxSpeedKmh = 0;
+
+    const trip = await prisma.trip.create({
+      data: {
+        userId: association.userId,
+        motorcycleId: association.motorcycleId,
+        source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+        startedAt: endedAt,
+        endedAt,
+        status: "COMPLETED",
+        distanceKm,
+        maxSpeedKmh,
+        maxRollDeg: 0,
+        maxGForce: 0,
+        avgSpeedKmh: 0,
+      },
+    });
+
+    return { tripId: trip.id, distanceKm, maxSpeedKmh };
+  }
+
+  private async ensureAssociationForDevice(deviceId: string, userId: string, motoModel: string): Promise<void> {
+    this.lastUserIdByDevice.set(deviceId, userId);
+    this.lastMotoModelByDevice.set(deviceId, motoModel);
+    const association = await deviceAssociationService.getAssociation(deviceId);
+    if (association) return;
+    await deviceAssociationService.registerDevice(deviceId, userId, motoModel || `Simulador ${deviceId}`);
   }
 
   /** Calcula distância em km entre coordenadas GPS */

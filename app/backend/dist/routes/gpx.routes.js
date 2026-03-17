@@ -12,7 +12,23 @@ const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits: { fileSize: 15 * 1024 * 1024 },
 });
-router.post("/gpx/import", auth_middleware_1.authMiddleware, upload.single("file"), gpx_controller_1.importGpx);
+const uploadSingle = upload.single("file");
+router.post("/gpx/import", auth_middleware_1.authMiddleware, (req, res, next) => {
+    uploadSingle(req, res, (err) => {
+        if (!err) {
+            next();
+            return;
+        }
+        if (err instanceof multer_1.default.MulterError) {
+            const message = err.code === "LIMIT_FILE_SIZE"
+                ? "Ficheiro demasiado grande (limite 15 MB)"
+                : `Erro no upload: ${err.code}`;
+            res.status(400).json({ error: message });
+            return;
+        }
+        res.status(400).json({ error: "Erro no upload do ficheiro" });
+    });
+}, gpx_controller_1.importGpx);
 router.get("/gpx/export/:tripId", auth_middleware_1.authMiddleware, gpx_controller_1.exportTripGpx);
 exports.default = router;
 //# sourceMappingURL=gpx.routes.js.map

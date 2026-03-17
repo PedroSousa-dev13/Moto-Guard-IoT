@@ -2,3 +2,11 @@
 
 
 ✔ o simulador mantém comandos funcionais ao sair e voltar ao dashboard (painel deixa de depender de estado local e envia comandos com device_id)
+
+
+
+ao importar 1 fiucheiro gpx a mota tambem vem junto oque nao deveria acontecer, o ficheiro gpx serve apenas para anlse de dados
+
+
+
+o mapa dos simulados tem que seguir estradas reais para que no resumo da viagem conste o trageto feito no mapa.

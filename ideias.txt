@@ -73,3 +73,7 @@ apos a mota ser definida pelo usuario, o simulador, exceto em modo admin trerá 
 
 
 será possivel fazer uma simulação do ficheiro gpx ? 
+
+
+
+acerca do projeto, ao carregar em parar simulador a simulacao deve parar a viagem deve se dar como terminada e ser amazenada nas viagens. apos isso o painel de simulador deve levar reset limpando o respetivo mapa e parametros

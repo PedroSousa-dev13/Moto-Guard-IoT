@@ -17,9 +17,9 @@ const MODELOS = [
   "Scooter",
   "Naked",
   "Desportiva",
-  "Trail",
-  "Cruiser",
-  "Motocross",
+  "Trail / Adventure",
+  "Custom / Cruiser",
+  "Motocross / Enduro",
   "Touring",
   "Supermotard",
 ];
