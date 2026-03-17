@@ -36,3 +36,12 @@ Em que é que isto tem impacto:
 
 Próximo passo recomendado:
 - Criar testes para routes + services críticos até atingir >=80% global em statements, branches, functions e lines.
+
+
+
+
+
+verificar o ficheiro gpx que tenho sacado, os graficos mostram dados estranhos tipo velocidade media de 8km por hora, secalhar o ideal seria basear o modelo no ultimo ficheiro
+
+
+acrescentar uma bandeira verde a simbolizar o inicio da rota e uma vermelha a simbolizar o fim

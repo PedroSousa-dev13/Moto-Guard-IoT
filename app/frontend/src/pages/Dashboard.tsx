@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
@@ -6,12 +6,24 @@ import IMUCard from "../components/IMUCard";
 import MapCard from "../components/MapCard";
 import StatusCard from "../components/StatusCard";
 import CommandPanel from "../components/CommandPanel";
+import Toast from "../components/ui/Toast";
 
 export default function Dashboard() {
-  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId } = useSocket();
+  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
+  const [mapResetSignal, setMapResetSignal] = useState(0);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const running = status.ws && !!telemetry;
+
+  useEffect(() => {
+    if (!tripEndedSignal) return;
+    if (!telemetry) return;
+    setToast({ message: "Simulação terminada", type: "success" });
+    setMapResetSignal((v) => v + 1);
+  }, [tripEndedSignal, telemetry]);
 
   return (
     <div className="page page-full">
@@ -87,6 +99,7 @@ export default function Dashboard() {
           location={telemetry?.location ?? null}
           telemetry={telemetry?.telemetry ?? null}
           msgCount={msgCount}
+          resetSignal={mapResetSignal}
         />
         <StatusCard
           system={telemetry?.system ?? null}
@@ -95,7 +108,16 @@ export default function Dashboard() {
           environment={telemetry?.environment ?? null}
         />
 
-        <CommandPanel sendCommand={sendCommand} addLog={addLog} logs={logs} />
+        <CommandPanel
+          sendCommand={sendCommand}
+          addLog={addLog}
+          logs={logs}
+          running={running}
+          onStop={() => {
+            setToast({ message: "Simulação terminada", type: "success" });
+            setMapResetSignal((v) => v + 1);
+          }}
+        />
       </div>
 
       <div className="stats-footer">
@@ -109,6 +131,14 @@ export default function Dashboard() {
           </strong>
         </span>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

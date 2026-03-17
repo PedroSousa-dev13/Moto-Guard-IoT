@@ -1,0 +1,4 @@
+✔ ao carregar em parar viagem na parte do painel de simulador, a viagem é declarada como terminada e aparece no painel de viagens com os respetivos detalhes. ao carregar em parar aparece um pop-up "simulação terminada" e dá clear ao mapa (viagem atual)
+
+
+✔ o simulador mantém comandos funcionais ao sair e voltar ao dashboard (painel deixa de depender de estado local e envia comandos com device_id)

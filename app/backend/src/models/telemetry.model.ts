@@ -65,6 +65,7 @@ export interface SimulatorCommand {
   acao: string;
   modelo?: string;
   tipo?: string;
+  device_id?: string;
 }
 
 /** Estado de ligação do backend (enviado ao frontend via Socket.IO) */
