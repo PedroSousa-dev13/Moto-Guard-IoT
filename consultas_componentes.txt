@@ -1,0 +1,120 @@
+================================================================================
+MotoGuard IoT — Consultas e Diagnóstico (componentes)
+================================================================================
+
+Este ficheiro serve para:
+- Ver dados (ex.: utilizadores) no PostgreSQL
+- Perceber o que está no InfluxDB (telemetria)
+- Usar Prisma (ORM) e Prisma Studio
+- Fazer diagnósticos rápidos via Docker Compose e API
+
+NOTA:
+- PostgreSQL = base de dados relacional (tabelas: users, trips, motorcycles, gpx_data, etc.)
+- InfluxDB = séries temporais (telemetria ao longo do tempo)
+- Prisma = camada/ORM para falar com o PostgreSQL (não é uma base de dados)
+
+================================================================================
+1) URLs e portas (Docker)
+================================================================================
+- Frontend (Vite):        http://localhost:5173
+- Backend (API):          http://localhost:3000
+- InfluxDB (UI):          http://localhost:8086
+- Postgres (porta host):  localhost:5432
+- MQTT (broker):          localhost:1883
+- MQTT (WebSocket):       ws://localhost:9001
+
+Dica: ignora IPs 172.18.x.x (rede interna Docker). No browser usa localhost.
+
+================================================================================
+2) Ver utilizadores no PostgreSQL (recomendado)
+================================================================================
+
+Opção A — Via script (mais simples, já pronto no projeto)
+1) cd app
+2) npm run db:users
+
+Outros scripts úteis:
+- npm run db:view
+- npm run db:trips
+- npm run db:events
+- npm run db:motas
+
+Opção B — Prisma Studio (UI web)
+1) cd app
+2) copy .env.example .env  (se ainda não tens .env)
+3) npm run prisma:studio
+4) abrir: http://localhost:5555
+
+Opção C — Via psql dentro do container do Postgres (Docker)
+1) entrar no psql:
+   docker compose exec postgres psql -U motoguard -d motoguard
+
+2) comandos úteis:
+   \dt
+   select id, email, name, created_at from users order by created_at desc limit 50;
+   select id, source, status, started_at, ended_at from trips order by started_at desc limit 20;
+   select id, trip_id, type, severity, occurred_at from trip_events order by occurred_at desc limit 20;
+   select id, trip_id, filename, file_size, created_at from gpx_data order by created_at desc limit 20;
+
+================================================================================
+3) Ver telemetria no InfluxDB
+================================================================================
+
+Opção A — UI do InfluxDB (mais prático)
+1) abrir: http://localhost:8086
+2) usar o org/bucket definidos no teu .env / docker-compose
+3) no Data Explorer, exemplo de query (Flux):
+
+from(bucket: "<INFLUX_BUCKET>")
+  |> range(start: -30m)
+  |> filter(fn: (r) => r._measurement == "telemetry")
+  |> filter(fn: (r) => r.device_id == "<DEVICE_ID>")
+  |> filter(fn: (r) => r._field == "speed_kmh")
+
+Notas:
+- <INFLUX_BUCKET>, <ORG> e token vêm das variáveis de ambiente (não hardcoded aqui).
+- Telemetria é ideal para viagens SIMULATOR e DEVICE_REAL.
+
+Opção B — Validar pelo endpoint do backend (mais rápido)
+- GET http://localhost:3000/api/telemetry/latest
+- GET http://localhost:3000/api/telemetry/<tripId>
+
+Notas:
+- Para viagens GPX_IMPORTED, /api/telemetry/<tripId> devolve lista vazia (porque não há sensores).
+
+================================================================================
+4) MQTT (mosquitto) — ver se há dados a entrar
+================================================================================
+
+Logs:
+- docker compose logs -f mosquitto
+- docker compose logs -f backend
+
+Subscrever tópicos (dentro do container mosquitto):
+- docker compose exec mosquitto sh
+- mosquitto_sub -t "motoguard/#" -v -u "$MQTT_USER" -P "$MQTT_PASS"
+
+================================================================================
+5) Diagnóstico rápido (quando algo “não aparece”)
+================================================================================
+
+- Confirmar que estás a abrir o frontend certo:
+  http://localhost:5173
+
+- Confirmar que os serviços estão a correr:
+  docker compose ps
+
+- Ver logs em tempo real:
+  docker compose logs -f
+
+- Quando muda código no frontend dentro do Docker e não reflete:
+  docker compose restart frontend
+  (se persistir: docker compose down -v && docker compose up -d --build)
+
+================================================================================
+6) Referências no repositório
+================================================================================
+- docker.txt                    → comandos Docker base
+- visualizar_db_prisma.txt      → atalhos Prisma + scripts db:*
+- app/scripts/view-database.ts  → script que imprime dados da BD
+================================================================================

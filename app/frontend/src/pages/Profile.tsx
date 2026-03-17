@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+﻿﻿﻿﻿﻿﻿import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import { Motorcycle } from "../types";
@@ -18,6 +18,9 @@ export default function Profile() {
     deviceId: "",
     profileId: "",
   });
+
+  const selectedProfile =
+    form.profileId ? profiles.find((p) => p.id === form.profileId) ?? null : null;
 
   useEffect(() => {
     loadData();
@@ -182,6 +185,9 @@ export default function Profile() {
                 </select>
               </FormField>
             </div>
+            {selectedProfile && (
+              <ProfileDetails profile={selectedProfile} />
+            )}
             {addError && (
               <div className="alert alert-danger" style={{ marginBottom: 12 }}>
                 {addError}
@@ -289,6 +295,9 @@ function MotoRow({
     profileId: moto.profileId ?? "",
   });
 
+  const selectedProfile =
+    edit.profileId ? profiles.find((p) => p.id === edit.profileId) ?? null : null;
+
   function setField(field: keyof typeof edit) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setEdit((prev) => ({ ...prev, [field]: e.target.value }));
@@ -388,6 +397,11 @@ function MotoRow({
                 ))}
               </select>
             </div>
+            {selectedProfile && (
+              <div className="field-span-2">
+                <ProfileDetails profile={selectedProfile} />
+              </div>
+            )}
             {error && (
               <div className="alert alert-danger field-span-2">
                 {error}
@@ -443,6 +457,40 @@ function MotoRow({
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ProfileDetails({ profile }: { profile: any }) {
+  const items = [
+    { label: "Cilindrada", val: `${profile.ccMin}–${profile.ccMax} cc` },
+    { label: "Velocidade máx.", val: `${profile.maxSpeedKmh} km/h` },
+    { label: "RPM máx.", val: `${profile.maxRpm} rpm` },
+    { label: "Temperatura", val: `${profile.engineTempMin}–${profile.engineTempMax} °C` },
+    { label: "Voltagem", val: `${profile.voltageMin}–${profile.voltageMax} V` },
+    { label: "Roll típico", val: `${profile.typicalMaxRollDeg}°` },
+    { label: "Queda (roll)", val: `${profile.crashRollThreshold}°` },
+    { label: "Queda (pitch)", val: `${profile.crashPitchThreshold}°` },
+    { label: "Queda (G)", val: `${profile.crashGForce} G` },
+    { label: "Confirmar queda", val: `${profile.crashConfirmSec} s` },
+    { label: "RPM crítico", val: `${profile.criticalRpm} rpm` },
+    { label: "Temp. crítica", val: `${profile.criticalTemp} °C` },
+    { label: "Voltagem crítica", val: `${profile.criticalVoltage} V` },
+  ];
+
+  return (
+    <div className="subpanel" style={{ marginBottom: 12 }}>
+      <div className="panel-title" style={{ marginBottom: 10 }}>
+        Thresholds do perfil
+      </div>
+      <div className="tile-grid">
+        {items.map((it) => (
+          <div key={it.label} className="tile">
+            <div className="tile-k">{it.label}</div>
+            <div className="tile-v">{it.val}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

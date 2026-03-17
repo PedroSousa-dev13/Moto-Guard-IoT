@@ -8,6 +8,10 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3000";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  },
   server: {
     port: 5173,
     host: true, // escutar em 0.0.0.0 para funcionar dentro de Docker

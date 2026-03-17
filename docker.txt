@@ -8,6 +8,29 @@ docker compose logs -f
 # Ver só os logs do backend
 docker compose logs -f backend
 
+# Reiniciar só o frontend (quando alterações não aparecem no browser)
+docker compose restart frontend
+
+# Reiniciar só o backend (quando mudanças no código/API não refletem)
+docker compose restart backend
+
+# Reset do frontend (limpar cache/node_modules do container)
+# Útil quando Vite fica com deps em cache (ex.: erro de prebundle) ou quando mudas package.json
+docker compose down
+docker compose up -d --build frontend
+
+# Reset completo do frontend (apaga volumes, incluindo frontend-node-modules)
+# ATENÇÃO: também apaga volumes de outras coisas se usares -v (inclui Postgres/Influx)
+docker compose down -v
+docker compose up -d --build
+
+# Reset completo só dos node_modules do frontend (sem apagar Postgres/Influx)
+# 1) parar e remover só o volume de node_modules do frontend
+docker compose down
+docker volume rm Moto-Guard-IoT_frontend-node-modules
+# 2) voltar a subir (vai reinstalar deps)
+docker compose up -d --build frontend
+
 # Parar tudo
 docker compose down
 

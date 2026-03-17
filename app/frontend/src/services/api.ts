@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Motorcycle, Trip, TripEvent } from '../types';
+import type { User, Motorcycle, Trip, TripTelemetryResponse, GpxImportResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -74,7 +74,7 @@ export const tripsAPI = {
     api.get<Trip>(`/trips/${id}`),
   
   getTelemetry: (tripId: string) =>
-    api.get<any[]>(`/telemetry/${tripId}`),
+    api.get<TripTelemetryResponse>(`/telemetry/${tripId}`),
 };
 
 // Motorcycles endpoints
@@ -99,4 +99,19 @@ export const motorcyclesAPI = {
 export const telemetryAPI = {
   getLatest: () =>
     api.get<any>('/telemetry/latest'),
+};
+
+export const gpxAPI = {
+  import: (file: File, motorcycleId?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (motorcycleId) {
+      form.append("motorcycleId", motorcycleId);
+    }
+    return api.post<GpxImportResponse>("/gpx/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  exportTrip: (tripId: string) =>
+    api.get(`/gpx/export/${tripId}`, { responseType: "blob" }),
 };

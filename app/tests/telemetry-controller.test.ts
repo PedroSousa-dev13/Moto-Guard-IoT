@@ -95,6 +95,7 @@ describe("getTripTelemetry", () => {
       startedAt: new Date("2026-03-15T08:00:00.000Z"),
       endedAt: new Date("2026-03-15T09:00:00.000Z"),
       status: "COMPLETED",
+      source: "SIMULATOR",
     };
     vi.mocked(prisma.trip.findFirst).mockResolvedValue(trip as any);
     vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ deviceId: "dev-42" } as any);
@@ -125,9 +126,10 @@ describe("getTripTelemetry", () => {
       startedAt: new Date("2026-03-15T10:00:00.000Z"),
       endedAt: null,
       status: "ACTIVE",
+      source: "SIMULATOR",
     };
     vi.mocked(prisma.trip.findFirst).mockResolvedValue(trip as any);
-    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ deviceId: "dev-99" } as any);
     vi.mocked(influxService.queryTripTelemetry).mockRejectedValue(new Error("influx unavailable"));
     const req = { userId: "u1", params: { tripId: "t2" } } as any;
     const res = mockResponse();
@@ -137,6 +139,51 @@ describe("getTripTelemetry", () => {
     expect(res.status).toHaveBeenCalledWith(503);
     expect(res.json).toHaveBeenCalledWith({
       error: "Não foi possível consultar o InfluxDB",
+    });
+  });
+
+  it("returns empty data for GPX_IMPORTED trips", async () => {
+    const trip = {
+      id: "t3",
+      startedAt: new Date("2026-03-15T10:00:00.000Z"),
+      endedAt: new Date("2026-03-15T10:10:00.000Z"),
+      status: "COMPLETED",
+      source: "GPX_IMPORTED",
+    };
+    vi.mocked(prisma.trip.findFirst).mockResolvedValue(trip as any);
+    const req = { userId: "u1", params: { tripId: "t3" } } as any;
+    const res = mockResponse();
+
+    await getTripTelemetry(req, res as any);
+
+    expect(influxService.queryTripTelemetry).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      trip,
+      total_points: 0,
+      data: [],
+    });
+  });
+
+  it("returns empty data when trip has no deviceId", async () => {
+    const trip = {
+      id: "t4",
+      startedAt: new Date("2026-03-15T10:00:00.000Z"),
+      endedAt: new Date("2026-03-15T10:10:00.000Z"),
+      status: "COMPLETED",
+      source: "SIMULATOR",
+    };
+    vi.mocked(prisma.trip.findFirst).mockResolvedValue(trip as any);
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ deviceId: null } as any);
+    const req = { userId: "u1", params: { tripId: "t4" } } as any;
+    const res = mockResponse();
+
+    await getTripTelemetry(req, res as any);
+
+    expect(influxService.queryTripTelemetry).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      trip,
+      total_points: 0,
+      data: [],
     });
   });
 });

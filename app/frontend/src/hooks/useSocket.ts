@@ -5,7 +5,7 @@
 // mantém o estado de ligação e expõe funções para enviar comandos.
 // =============================================================================
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import type {
   TelemetryPayload,
@@ -18,7 +18,9 @@ import type {
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
-  const [telemetry, setTelemetry] = useState<TelemetryPayload | null>(null);
+  const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
+  const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [msgCount, setMsgCount] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>({
@@ -43,6 +45,16 @@ export function useSocket() {
     },
     [addLog]
   );
+
+  const devices = useMemo(() => {
+    return Object.keys(telemetryByDevice).sort((a, b) => a.localeCompare(b));
+  }, [telemetryByDevice]);
+
+  const telemetry = useMemo(() => {
+    const deviceId = activeDeviceId ?? lastDeviceId;
+    if (!deviceId) return null;
+    return telemetryByDevice[deviceId] ?? null;
+  }, [activeDeviceId, lastDeviceId, telemetryByDevice]);
 
   // ── Efeito: ligar Socket.IO ao montar ─────────────────────────────────
   useEffect(() => {
@@ -72,7 +84,10 @@ export function useSocket() {
     });
 
     socket.on("telemetry_update", (data: TelemetryPayload) => {
-      setTelemetry(data);
+      const deviceId = data.system.device_id;
+      setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: data }));
+      setLastDeviceId(deviceId);
+      setActiveDeviceId((prev) => (prev ? prev : deviceId));
       setMsgCount((prev) => prev + 1);
       setStatus((prev) => ({ ...prev, mqtt: true, hasData: true }));
     });
@@ -118,5 +133,5 @@ export function useSocket() {
     };
   }, [addLog]);
 
-  return { telemetry, msgCount, logs, status, sendCommand, addLog };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, msgCount, logs, status, sendCommand, addLog };
 }

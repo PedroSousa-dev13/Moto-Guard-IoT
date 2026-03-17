@@ -13,5 +13,6 @@ const upload = (0, multer_1.default)({
     limits: { fileSize: 15 * 1024 * 1024 },
 });
 router.post("/gpx/import", auth_middleware_1.authMiddleware, upload.single("file"), gpx_controller_1.importGpx);
+router.get("/gpx/export/:tripId", auth_middleware_1.authMiddleware, gpx_controller_1.exportTripGpx);
 exports.default = router;
 //# sourceMappingURL=gpx.routes.js.map
