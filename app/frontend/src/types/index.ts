@@ -18,6 +18,13 @@ export interface Motorcycle {
   profile?: { id: string; name: string } | null;
 }
 
+export interface MotorcycleSummary {
+  id: string;
+  name: string;
+  brand?: string | null;
+  profile?: { id: string; name: string } | null;
+}
+
 export interface GpxData {
   id: string;
   tripId: string;
@@ -30,11 +37,14 @@ export interface GpxData {
   createdAt: string;
 }
 
+export type TripSource = "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL";
+export type TripStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+
 export interface Trip {
   id: string;
   userId: string;
   motorcycleId: string;
-  source: 'SIMULATOR' | 'GPX_IMPORTED' | 'DEVICE_REAL';
+  source: TripSource;
   startedAt: string;
   endedAt?: string;
   distanceKm?: number;
@@ -42,11 +52,12 @@ export interface Trip {
   avgSpeedKmh?: number;
   maxRollDeg?: number;
   maxGForce?: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: TripStatus;
   createdAt: string;
-  motorcycle: Motorcycle;
+  motorcycle: MotorcycleSummary;
   gpxData?: GpxData | null;
-  events: TripEvent[];
+  events?: TripEvent[];
+  _count?: { events: number };
 }
 
 export interface TripEvent {
@@ -64,4 +75,45 @@ export interface TripEvent {
   voltage?: number;
   occurredAt: string;
   createdAt: string;
+}
+
+export interface TripTelemetryPoint {
+  time: string;
+  device_id?: string;
+  moto_model?: string;
+  speed_kmh?: number;
+  rpm?: number;
+  gear?: number;
+  throttle_pct?: number;
+  engine_temp_c?: number;
+  voltage?: number;
+  brake_front_pct?: number;
+  brake_rear_pct?: number;
+  roll_deg?: number;
+  pitch_deg?: number;
+  yaw_deg?: number;
+  g_force?: number;
+  latitude?: number;
+  longitude?: number;
+  oil_pressure_bar?: number;
+  tire_pressure_front_bar?: number;
+  tire_pressure_rear_bar?: number;
+}
+
+export interface TripTelemetryResponse {
+  trip: { id: string; startedAt: string; endedAt: string | null; status: TripStatus };
+  total_points: number;
+  data: TripTelemetryPoint[];
+}
+
+export interface GpxImportResponse {
+  tripId: string;
+  gpxDataId: string;
+  stats: {
+    points: number;
+    distanceKm: number;
+    totalTimeSec: number;
+    avgSpeedKmh: number;
+    maxSpeedKmh: number;
+  };
 }

@@ -8,7 +8,7 @@ import StatusCard from "../components/StatusCard";
 import CommandPanel from "../components/CommandPanel";
 
 export default function Dashboard() {
-  const { telemetry, msgCount, logs, status, sendCommand, addLog } = useSocket();
+  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
@@ -23,6 +23,25 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="page-actions">
+          {devices.length > 1 && (
+            <>
+              <span className="field-label" style={{ marginTop: 10 }}>
+                Dispositivo
+              </span>
+              <select
+                className="control control-sm"
+                value={activeDeviceId ?? ""}
+                onChange={(e) => setActiveDeviceId(e.target.value)}
+                style={{ width: 220 }}
+              >
+                {devices.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <span
             className={`pill ${status.mqtt ? "pill-success" : "pill-danger"}`}
             title={

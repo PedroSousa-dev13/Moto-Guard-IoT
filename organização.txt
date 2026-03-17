@@ -282,7 +282,7 @@
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [~20% — dashboard básico existe]
+#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [~85% — histórico/análise/GPX/export ok]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 2 da proposta (parte frontend).
 #
@@ -308,62 +308,59 @@
 #           → ✔ StatusCard: device_id, modelo, evento, ABS/TC, descanso
 #           → ✔ CommandPanel: painel de comandos + log em tempo real
 #
-#  [~] 2.4  Página — Histórico de Viagens
-#           → Lista base já existe (estado, duração, distância e eventos)
-#           → Falta filtros (data/modelo/tipo/origem) e paginação
-#           → Backend pronto: GET /api/trips, GET /api/trips/:id
+#  [✔] 2.4  Página — Histórico de Viagens
+#           → ✔ Filtros: origem (server-side via ?source), estado, mota, datas, “só com eventos”
+#           → ✔ Paginação (client-side) + UX de separação por origem quando “Todas”
+#           → ✔ Expand carrega detalhe real (GET /api/trips/:id) para mostrar eventos corretamente
+#           → ✔ Link direto para análise pós-viagem (/trips/:id)
 #
-#  [ ] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
-#           → Gráficos interativos (Recharts ou Chart.js):
-#             · Velocidade ao longo do tempo
-#             · RPM vs velocidade  
-#             · Temperatura do motor
-#             · Ângulo de inclinação (roll) por curva
-#             · Pressão dos pneus e óleo
-#           → Mapa com rota percorrida + pontos de evento marcados
-#           → Resumo: velocidade média/máx, inclinação máx por curva, eventos
-#           → Backend pronto: GET /api/telemetry/:tripId (query InfluxDB)
+#  [✔] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
+#           → ✔ Nova rota: /trips/:id
+#           → ✔ Mapa com rota + marcadores de eventos (TripEvents)
+#           → ✔ Resumo calculado (pontos, GPS, vel. média/máx, roll máx, temp máx)
+#           → ✔ Gráficos interativos (Recharts): velocidade, RPM vs velocidade, temperatura, roll,
+#             pressão do óleo, pressão pneus (frente/trás)
+#           → Nota: para viagens SIMULATOR/DEVICE_REAL, gráficos/rota dependem do InfluxDB
+#             (GET /api/telemetry/:tripId). Para GPX_IMPORTED usa gpxData (PostgreSQL).
 #
-#  [ ] 2.6  Exportação de Relatórios
-#           → PDF com resumo da viagem + gráficos
-#           → CSV com dados brutos de telemetria
+#  [✔] 2.6  Exportação de Relatórios
+#           → ✔ CSV com dados brutos de telemetria (download no detalhe da viagem)
+#           → ✔ PDF com resumo + mapa + gráficos (gerado no frontend via captura da página)
 #
-#  [ ] 2.7  Autenticação — Login/Registo
-#           → Formulários de login e registo
-#           → Armazenamento de JWT, refresh automático
-#           → Backend pronto: POST /api/auth/register, POST /api/auth/login
-#           → Middleware JWT já existe (auth.middleware.ts)
+#  [✔] 2.7  Autenticação — Login/Registo
+#           → ✔ UI login/registo + “forgot password”/reset
+#           → ✔ Armazenamento de JWT (session/local via “remember me”)
+#           → Backend: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
 #
-#  [ ] 2.8  Página — Gestão de Motas
-#           → Listar motas do utilizador, associar mota a perfil
-#           → Ver thresholds de deteção do perfil selecionado
-#           → Backend pronto: POST/GET /api/motorcycles,
-#             GET /api/motorcycle-profiles
+#  [✔] 2.8  Página — Gestão de Motas
+#           → ✔ Listar/criar/editar/apagar motas
+#           → ✔ Associar perfil + mostrar thresholds do perfil (para validação rápida)
+#           → Backend: POST/GET/PUT/DELETE /api/motorcycles, GET /api/motorcycle-profiles
 #
-#  [ ] 2.9  Dashboard multi-dispositivo
-#           → Suportar múltiplos simuladores / dispositivos em simultâneo
-#           → Selector de dispositivo no header
+#  [✔] 2.9  Dashboard multi-dispositivo
+#           → ✔ Suporte multi-device no tempo real (Dashboard e Mapa)
+#           → ✔ Selector de device (aparece quando chegam dados de >1 device_id)
 #
-#  [ ] 2.10 Página — Explicação dos Contextos do Simulador
+#  [~] 2.10 Página — Explicação dos Contextos do Simulador
 #           → Página educativa sobre como cada contexto gerado pelo simulador
 #             influencia o comportamento da mota
 #           → Ex: como a aceleração afeta o pitch, como o yaw afeta o roll,
 #             como a temperatura sobe com RPM alto, etc.
-#           → Diagrama visual dos 18 subsistemas interligados
+#           → ✔ Página criada com explicação + blocos do payload
+#           → [pendente] Diagrama visual dos 18 subsistemas interligados
 #           → Útil para documentação e para compreensão do sistema
 #
-#  [ ] 2.11 Página — Viagens Reais (GPX)
-#           → Nova aba/página focada em viagens reais
-#           → Import de ficheiros GPX (viagens reais de apps externas)
-#           → Visualizar rotas importadas no mapa com dados de percurso
-#           → Export GPX das viagens registadas pelo sistema
-#             (para usar em apps externas: Strava, Relive, etc.)
-#           → Conversor: dados de telemetria MotoGuard → formato GPX
+#  [✔] 2.11 Página — Viagens Reais (GPX)
+#           → ✔ Página /gpx para import (upload) + listagem de viagens importadas
+#           → ✔ Visualização de rota importada no detalhe/análise (/trips/:id)
+#           → ✔ Export GPX: GET /api/gpx/export/:tripId (download)
+#             · Se a viagem tiver gpxData → exporta a rota do GPX importado (PostgreSQL)
+#             · Se não tiver gpxData → reconstrói GPX a partir da telemetria (InfluxDB)
 #
-#  [ ] 2.12 UX de separação por origem no Histórico
-#           → Secções visuais: "Simuladas" e "GPX"
-#           → Toggle/filtro por source (com default em "Todas")
-#           → Badge por viagem: SIMULATOR, GPX_IMPORTED, DEVICE_REAL
+#  [✔] 2.12 UX de separação por origem no Histórico
+#           → ✔ Secções visuais por origem quando “Todas”: Simuladas / GPX / Dispositivo
+#           → ✔ Toggle/filtro por source (default em “Todas”)
+#           → ✔ Badge por viagem: SIMULATOR, GPX_IMPORTED, DEVICE_REAL
 
 
 # ═════════════════════════════════════════════════════════════════════════════

@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.importGpx = importGpx;
+exports.exportTripGpx = exportTripGpx;
 const prisma_service_1 = require("../services/prisma.service");
 const gpx_import_service_1 = require("../services/gpx-import.service");
+const influx_service_1 = require("../services/influx.service");
 async function importGpx(req, res) {
     const userId = req.userId;
     const file = req.file;
@@ -69,5 +71,103 @@ async function importGpx(req, res) {
         console.error("[importGpx] Erro interno:", err);
         res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
     }
+}
+function safeFilename(name) {
+    const trimmed = (name || "export.gpx").trim();
+    const sanitized = trimmed.replace(/[/\\?%*:|"<>]/g, "-").replace(/\s+/g, " ");
+    return sanitized.toLowerCase().endsWith(".gpx") ? sanitized : `${sanitized}.gpx`;
+}
+function toIsoTime(value) {
+    if (typeof value === "string" && value) {
+        const d = new Date(value);
+        if (!Number.isNaN(d.getTime()))
+            return d.toISOString();
+    }
+    return null;
+}
+function buildGpx(params) {
+    const header = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<gpx version="1.1" creator="MotoGuard IoT" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+    const metaTime = params.startedAt ? `<time>${params.startedAt}</time>` : "";
+    const metadata = `<metadata><name>${escapeXml(params.name)}</name>${metaTime}</metadata>\n`;
+    const seg = `<trk><name>${escapeXml(params.name)}</name><trkseg>\n` +
+        params.waypoints
+            .map((p) => {
+            const ele = typeof p.ele === "number" ? `<ele>${p.ele}</ele>` : "";
+            const t = p.time ? `<time>${p.time}</time>` : "";
+            return `<trkpt lat="${p.lat}" lon="${p.lon}">${ele}${t}</trkpt>`;
+        })
+            .join("\n") +
+        `\n</trkseg></trk>\n`;
+    const footer = `</gpx>\n`;
+    return header + metadata + seg + footer;
+}
+function escapeXml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+}
+async function exportTripGpx(req, res) {
+    const userId = req.userId;
+    const tripId = req.params.tripId;
+    const trip = await prisma_service_1.prisma.trip.findFirst({
+        where: { id: tripId, userId },
+        include: {
+            gpxData: true,
+            motorcycle: { select: { deviceId: true, name: true, brand: true } },
+        },
+    });
+    if (!trip) {
+        res.status(404).json({ error: "Viagem não encontrada" });
+        return;
+    }
+    const nameParts = [
+        "MotoGuard",
+        trip.motorcycle?.name || null,
+        trip.motorcycle?.brand || null,
+    ].filter(Boolean);
+    const gpxName = nameParts.join(" · ");
+    const startedAtIso = trip.startedAt ? trip.startedAt.toISOString() : null;
+    let filename = trip.gpxData?.filename || `trip-${trip.id}.gpx`;
+    let waypoints = [];
+    if (trip.gpxData?.waypoints) {
+        const raw = trip.gpxData.waypoints;
+        if (Array.isArray(raw)) {
+            waypoints = raw
+                .map((p) => ({
+                lat: typeof p?.lat === "number" ? p.lat : null,
+                lon: typeof p?.lon === "number" ? p.lon : null,
+                ele: typeof p?.ele === "number" ? p.ele : null,
+                time: toIsoTime(p?.time),
+            }))
+                .filter((p) => typeof p.lat === "number" && typeof p.lon === "number");
+        }
+    }
+    else {
+        const points = await influx_service_1.influxService.queryTripTelemetry(trip.startedAt, trip.endedAt, trip.motorcycle?.deviceId);
+        waypoints = points
+            .map((p) => ({
+            lat: typeof p?.latitude === "number" ? p.latitude : null,
+            lon: typeof p?.longitude === "number" ? p.longitude : null,
+            time: toIsoTime(p?.time),
+        }))
+            .filter((p) => typeof p.lat === "number" && typeof p.lon === "number");
+        filename = `motoguard-trip-${trip.id}.gpx`;
+    }
+    if (waypoints.length === 0) {
+        res.status(400).json({ error: "Não há pontos GPS suficientes para exportar GPX" });
+        return;
+    }
+    const gpx = buildGpx({
+        name: gpxName || "MotoGuard Trip",
+        startedAt: startedAtIso,
+        waypoints,
+    });
+    res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename(filename)}"`);
+    res.status(200).send(gpx);
 }
 //# sourceMappingURL=gpx.controller.js.map

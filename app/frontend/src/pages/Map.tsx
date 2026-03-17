@@ -18,7 +18,7 @@ const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
 export default function Map() {
-  const { telemetry, msgCount, status } = useSocket();
+  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId } = useSocket();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -74,6 +74,12 @@ export default function Map() {
     }
   }, [lat, lng, msgCount]);
 
+  useEffect(() => {
+    if (!trailRef.current) return;
+    trailPointsRef.current = [];
+    trailRef.current.setLatLngs([]);
+  }, [activeDeviceId]);
+
   return (
     <div className="page page-full map-page">
       <div className="page-header">
@@ -82,6 +88,20 @@ export default function Map() {
           <div className="page-subtitle">Posição e trilho ao vivo</div>
         </div>
         <div className="page-actions">
+          {devices.length > 1 && (
+            <select
+              className="control control-sm"
+              value={activeDeviceId ?? ""}
+              onChange={(e) => setActiveDeviceId(e.target.value)}
+              style={{ width: 220 }}
+            >
+              {devices.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
           <StatusPill active={status.mqtt} label="MQTT" />
           <StatusPill active={status.ws} label="WebSocket" />
         </div>

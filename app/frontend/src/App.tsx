@@ -6,8 +6,11 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
+import TripDetail from './pages/TripDetail';
 import Map from './pages/Map';
 import Profile from './pages/Profile';
+import Gpx from './pages/Gpx';
+import SimulatorContexts from './pages/SimulatorContexts';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import './App.css';
@@ -33,9 +36,24 @@ function App() {
                   <Trips />
                 </ProtectedRoute>
               } />
+              <Route path="/trips/:id" element={
+                <ProtectedRoute>
+                  <TripDetail />
+                </ProtectedRoute>
+              } />
               <Route path="/map" element={
                 <ProtectedRoute>
                   <Map />
+                </ProtectedRoute>
+              } />
+              <Route path="/gpx" element={
+                <ProtectedRoute>
+                  <Gpx />
+                </ProtectedRoute>
+              } />
+              <Route path="/simulator-contexts" element={
+                <ProtectedRoute>
+                  <SimulatorContexts />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

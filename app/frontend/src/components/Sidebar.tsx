@@ -9,7 +9,9 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/trips', label: 'Viagens', icon: '🛣️' },
+    { path: '/gpx', label: 'GPX', icon: '🧭' },
     { path: '/map', label: 'Mapa', icon: '🗺️' },
+    { path: '/simulator-contexts', label: 'Simulador', icon: '🧠' },
     { path: '/profile', label: 'Perfil', icon: '👤' },
   ];
 
