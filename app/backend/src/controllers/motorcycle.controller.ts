@@ -91,3 +91,68 @@ export async function listProfiles(
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
 }
+
+export async function updateMotorcycle(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const id = req.params.id as string;
+  const { name, brand, year, profileId, deviceId } = req.body;
+
+  if (name !== undefined && (!name || typeof name !== "string")) {
+    res.status(400).json({ error: "Campo 'name' é inválido" });
+    return;
+  }
+
+  try {
+    const existing = await prisma.motorcycle.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: "Mota não encontrada" });
+      return;
+    }
+
+    if (profileId) {
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: profileId } });
+      if (!profile) {
+        res.status(400).json({ error: "Perfil de mota não encontrado" });
+        return;
+      }
+    }
+
+    const motorcycle = await prisma.motorcycle.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(brand !== undefined ? { brand: brand || null } : {}),
+        ...(year !== undefined
+          ? { year: year ? parseInt(year, 10) : null }
+          : {}),
+        ...(deviceId !== undefined ? { deviceId: deviceId || null } : {}),
+        ...(profileId !== undefined ? { profileId: profileId || null } : {}),
+      },
+      include: { profile: true },
+    });
+
+    res.json(motorcycle);
+  } catch (err) {
+    console.error("[updateMotorcycle] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}
+
+export async function deleteMotorcycle(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const id = req.params.id as string;
+
+  try {
+    const existing = await prisma.motorcycle.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: "Mota não encontrada" });
+      return;
+    }
+
+    await prisma.motorcycle.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[deleteMotorcycle] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}

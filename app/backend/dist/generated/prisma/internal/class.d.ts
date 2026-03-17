@@ -170,6 +170,17 @@ export interface PrismaClient<in LogOpts extends Prisma.LogLevel = never, in out
     get tripEvent(): Prisma.TripEventDelegate<ExtArgs, {
         omit: OmitOpts;
     }>;
+    /**
+     * `prisma.gpxData`: Exposes CRUD operations for the **GpxData** model.
+      * Example usage:
+      * ```ts
+      * // Fetch zero or more GpxData
+      * const gpxData = await prisma.gpxData.findMany()
+      * ```
+      */
+    get gpxData(): Prisma.GpxDataDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
 }
 export declare function getPrismaClientClass(): PrismaClientConstructor;
 //# sourceMappingURL=class.d.ts.map

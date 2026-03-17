@@ -55,6 +55,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      clearAuth();
+    };
+    window.addEventListener("auth:unauthorized", handler);
+    return () => window.removeEventListener("auth:unauthorized", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    authAPI
+      .me()
+      .then((res) => {
+        if (cancelled) return;
+        const userData = res.data;
+        setUser(userData);
+
+        const storageKey = getStorageKey("user");
+        const storage =
+          storageKey.startsWith("session_") ? sessionStorage : localStorage;
+        storage.setItem(storageKey, JSON.stringify(userData));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const clearAuth = () => {
     setUser(null);
     setToken(null);

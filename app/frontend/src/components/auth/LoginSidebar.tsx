@@ -5,9 +5,10 @@ import { authAPI } from "../../services/api";
 interface LoginSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
+const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,9 +59,17 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
     try {
       if (isLogin) {
         await login(email, password, rememberMe);
+        if (onSuccess) {
+          onSuccess();
+          return;
+        }
         onClose();
       } else {
         await register(email, password, name);
+        if (onSuccess) {
+          onSuccess();
+          return;
+        }
         onClose();
       }
     } catch (err) {
@@ -72,65 +81,17 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="auth-overlay"
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          backdropFilter: "blur(4px)",
-          zIndex: 1000,
-        }}
-      />
+      <div className="auth-overlay" onClick={onClose} />
 
-      {/* Sidebar */}
       <div
-        className="auth-sidebar"
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          width: "400px",
-          height: "100%",
-          backgroundColor: "white",
-          boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.1)",
-          zIndex: 1001,
-          transform: isOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.3s ease-in-out",
-        }}
+        className={`auth-sidebar ${isOpen ? "auth-sidebar-open" : ""}`}
       >
-        <div className="auth-content" style={{ padding: "2rem" }}>
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "2rem",
-            }}
-          >
-            <h2 style={{ margin: 0, color: "#1f2937" }}>
-              {showForgotPassword
-                ? "Recuperar Senha"
-                : isLogin
-                  ? "Login"
-                  : "Registar"}
-            </h2>
-            <button
-              onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "1.5rem",
-                cursor: "pointer",
-                color: "#6b7280",
-              }}
-            >
+        <div className="auth-content">
+          <div className="auth-header">
+            <div className="auth-title">
+              {showForgotPassword ? "Recuperar Senha" : isLogin ? "Login" : "Registar"}
+            </div>
+            <button type="button" onClick={onClose} className="auth-close" aria-label="Fechar">
               ×
             </button>
           </div>
@@ -138,112 +99,50 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
           {/* Forgot Password */}
           {showForgotPassword ? (
             <div>
-              {/* Botão voltar */}
               <button
                 type="button"
                 onClick={closeForgotPassword}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#667eea",
-                  cursor: "pointer",
-                  fontSize: "0.875rem",
-                  marginBottom: "1rem",
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
+                className="auth-link"
               >
                 ← Voltar ao login
               </button>
 
               {forgotSuccess ? (
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: "8px",
-                    color: "#15803d",
-                    fontSize: "0.9rem",
-                    lineHeight: 1.5,
-                  }}
-                >
+                <div className="alert alert-success">
                   <strong>Email enviado!</strong>
-                  <p style={{ marginTop: "0.5rem" }}>
+                  <div style={{ marginTop: 8 }}>
                     Se o endereço existir na nossa base de dados, receberás
                     instruções de recuperação em breve.
-                  </p>
+                  </div>
                 </div>
               ) : (
                 <>
-                  <p
-                    style={{
-                      color: "#6b7280",
-                      marginBottom: "1.5rem",
-                      fontSize: "0.9rem",
-                    }}
-                  >
+                  <div className="page-subtitle" style={{ marginBottom: 12 }}>
                     Introduz o teu email para receberes instruções de
                     recuperação de senha.
-                  </p>
-                  <form onSubmit={handleForgotPasswordSubmit}>
-                    <div style={{ marginBottom: "1rem" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "0.5rem",
-                          color: "#374151",
-                        }}
-                      >
-                        Email
-                      </label>
+                  </div>
+                  <form onSubmit={handleForgotPasswordSubmit} className="auth-form">
+                    <div className="field">
+                      <div className="field-label">Email</div>
                       <input
+                        className="control"
                         type="email"
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         required
                         autoFocus
                         autoComplete="email"
-                        style={{
-                          width: "100%",
-                          padding: "0.75rem",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "1rem",
-                        }}
                       />
                     </div>
                     {forgotError && (
-                      <div
-                        style={{
-                          marginBottom: "1rem",
-                          padding: "0.75rem",
-                          backgroundColor: "#fef2f2",
-                          border: "1px solid #fecaca",
-                          borderRadius: "6px",
-                          color: "#dc2626",
-                          fontSize: "0.875rem",
-                        }}
-                      >
+                      <div className="alert alert-danger">
                         {forgotError}
                       </div>
                     )}
                     <button
                       type="submit"
                       disabled={forgotLoading}
-                      style={{
-                        width: "100%",
-                        padding: "0.75rem",
-                        backgroundColor: "#667eea",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "1rem",
-                        cursor: forgotLoading ? "not-allowed" : "pointer",
-                        opacity: forgotLoading ? 0.7 : 1,
-                      }}
+                      className="btn btn-primary btn-block"
                     >
                       {forgotLoading ? "A enviar..." : "Enviar Email"}
                     </button>
@@ -252,124 +151,63 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="auth-form">
               {/* Register Name Field */}
               {!isLogin && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "0.5rem",
-                      color: "#374151",
-                    }}
-                  >
-                    Nome
-                  </label>
+                <div className="field">
+                  <div className="field-label">Nome</div>
                   <input
+                    className="control"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required={!isLogin}
                     autoComplete="name"
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      fontSize: "1rem",
-                    }}
                   />
                 </div>
               )}
 
               {/* Email Field */}
-              <div style={{ marginBottom: "1rem" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "0.5rem",
-                    color: "#374151",
-                  }}
-                >
-                  Email
-                </label>
+              <div className="field">
+                <div className="field-label">Email</div>
                 <input
+                  className="control"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "1rem",
-                  }}
                 />
               </div>
 
               {/* Password Field */}
-              <div style={{ marginBottom: "1rem" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "0.5rem",
-                    color: "#374151",
-                  }}
-                >
-                  Senha
-                </label>
+              <div className="field">
+                <div className="field-label">Senha</div>
                 <input
+                  className="control"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete={isLogin ? "current-password" : "new-password"}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "1rem",
-                  }}
                 />
               </div>
 
               {/* Remember Me (Login only) */}
               {isLogin && (
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      color: "#374151",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      style={{ marginRight: "0.5rem" }}
-                    />
-                    Lembrar de mim
-                  </label>
-                </div>
+                <label className="auth-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span>Lembrar de mim</span>
+                </label>
               )}
 
               {/* Error Message */}
               {error && (
-                <div
-                  style={{
-                    marginBottom: "1rem",
-                    padding: "0.75rem",
-                    backgroundColor: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    borderRadius: "6px",
-                    color: "#dc2626",
-                    fontSize: "0.875rem",
-                  }}
-                >
+                <div className="alert alert-danger">
                   {error}
                 </div>
               )}
@@ -378,18 +216,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  backgroundColor: "#667eea",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "1rem",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  opacity: isLoading ? 0.7 : 1,
-                  marginBottom: "1rem",
-                }}
+                className="btn btn-primary btn-block"
               >
                 {isLoading
                   ? isLogin
@@ -402,26 +229,17 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
 
               {/* Forgot Password Link (Login only) */}
               {isLogin && (
-                <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-                  <button
-                    type="button"
-                    onClick={openForgotPassword}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#667eea",
-                      cursor: "pointer",
-                      fontSize: "0.875rem",
-                    }}
-                  >
+                <div className="auth-row">
+                  <span />
+                  <button type="button" onClick={openForgotPassword} className="auth-link">
                     Esqueci a senha
                   </button>
                 </div>
               )}
 
               {/* Toggle Login/Register */}
-              <div style={{ textAlign: "center", color: "#6b7280" }}>
-                {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}
+              <div className="auth-footer">
+                <span>{isLogin ? "Não tem conta?" : "Já tem conta?"}</span>{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -429,13 +247,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose }) => {
                     clearError();
                     closeForgotPassword();
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#667eea",
-                    cursor: "pointer",
-                    fontWeight: "500",
-                  }}
+                  className="auth-link"
                 >
                   {isLogin ? "Criar conta" : "Login"}
                 </button>

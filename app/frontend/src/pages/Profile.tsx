@@ -3,16 +3,6 @@ import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import { Motorcycle } from "../types";
 
-const INPUT: React.CSSProperties = {
-  width: "100%",
-  padding: "0.6rem 0.75rem",
-  backgroundColor: "#0f1117",
-  border: "1px solid #2a2d3a",
-  borderRadius: "6px",
-  color: "#e4e4e7",
-  fontSize: "0.875rem",
-};
-
 export default function Profile() {
   const { user, logout } = useAuth();
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
@@ -77,29 +67,26 @@ export default function Profile() {
     }
   }
 
+  function onMotorcycleUpdated(updated: Motorcycle) {
+    setMotorcycles((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+  }
+
+  function onMotorcycleDeleted(id: string) {
+    setMotorcycles((prev) => prev.filter((m) => m.id !== id));
+  }
+
   return (
-    <div
-      style={{
-        padding: "1.5rem",
-        maxWidth: "800px",
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1.5rem",
-      }}
-    >
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>👤 Perfil</h1>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">👤 Perfil</div>
+          <div className="page-subtitle">Conta e motas associadas</div>
+        </div>
+      </div>
 
       {/* ── User info ─────────────────────────────────────────────────── */}
       <Section title="Informacoes da Conta">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "10px",
-            marginBottom: "1.25rem",
-          }}
-        >
+        <div className="tile-grid" style={{ marginBottom: 16 }}>
           {[
             { label: "Nome", val: user?.name ?? "—" },
             { label: "Email", val: user?.email ?? "—" },
@@ -111,43 +98,13 @@ export default function Profile() {
                 : "—",
             },
           ].map(({ label, val }) => (
-            <div
-              key={label}
-              style={{
-                padding: "10px 12px",
-                backgroundColor: "#0f1117",
-                borderRadius: "8px",
-                border: "1px solid #2a2d3a",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.68rem",
-                  color: "#71717a",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginBottom: "4px",
-                }}
-              >
-                {label}
-              </div>
-              <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{val}</div>
+            <div key={label} className="tile">
+              <div className="tile-k">{label}</div>
+              <div className="tile-v">{val}</div>
             </div>
           ))}
         </div>
-        <button
-          onClick={logout}
-          style={{
-            padding: "0.55rem 1.25rem",
-            backgroundColor: "rgba(239,68,68,0.1)",
-            color: "#ef4444",
-            border: "1px solid rgba(239,68,68,0.3)",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: 600,
-            fontSize: "0.875rem",
-          }}
-        >
+        <button onClick={logout} className="btn btn-danger">
           🚪 Terminar Sessao
         </button>
       </Section>
@@ -161,16 +118,7 @@ export default function Profile() {
               setIsAdding((v) => !v);
               setAddError(null);
             }}
-            style={{
-              padding: "0.35rem 0.875rem",
-              backgroundColor: isAdding ? "transparent" : "#3b82f6",
-              color: isAdding ? "#71717a" : "white",
-              border: isAdding ? "1px solid #2a2d3a" : "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-            }}
+            className={`btn btn-sm ${isAdding ? "btn-ghost" : "btn-primary"}`}
           >
             {isAdding ? "✕ Cancelar" : "+ Adicionar"}
           </button>
@@ -180,25 +128,12 @@ export default function Profile() {
         {isAdding && (
           <form
             onSubmit={handleAddMotorcycle}
-            style={{
-              backgroundColor: "#0f1117",
-              border: "1px solid #2a2d3a",
-              borderRadius: "8px",
-              padding: "1rem",
-              marginBottom: "1rem",
-            }}
+            className="subpanel"
           >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="form-grid" style={{ marginBottom: 12 }}>
               <FormField label="Nome *">
                 <input
-                  style={INPUT}
+                  className="control"
                   value={form.name}
                   onChange={setField("name")}
                   required
@@ -207,7 +142,7 @@ export default function Profile() {
               </FormField>
               <FormField label="Marca">
                 <input
-                  style={INPUT}
+                  className="control"
                   value={form.brand}
                   onChange={setField("brand")}
                   placeholder="Ex: Honda"
@@ -215,7 +150,7 @@ export default function Profile() {
               </FormField>
               <FormField label="Ano">
                 <input
-                  style={INPUT}
+                  className="control"
                   type="number"
                   value={form.year}
                   onChange={setField("year")}
@@ -226,7 +161,7 @@ export default function Profile() {
               </FormField>
               <FormField label="Device ID">
                 <input
-                  style={INPUT}
+                  className="control"
                   value={form.deviceId}
                   onChange={setField("deviceId")}
                   placeholder="Ex: MOTOGUARD-SIM-01"
@@ -234,7 +169,7 @@ export default function Profile() {
               </FormField>
               <FormField label="Perfil de Mota" span>
                 <select
-                  style={{ ...INPUT, cursor: "pointer" }}
+                  className="control"
                   value={form.profileId}
                   onChange={setField("profileId")}
                 >
@@ -248,29 +183,14 @@ export default function Profile() {
               </FormField>
             </div>
             {addError && (
-              <p
-                style={{
-                  color: "#ef4444",
-                  fontSize: "0.8rem",
-                  marginBottom: "8px",
-                }}
-              >
+              <div className="alert alert-danger" style={{ marginBottom: 12 }}>
                 {addError}
-              </p>
+              </div>
             )}
             <button
               type="submit"
               disabled={isSubmitting}
-              style={{
-                padding: "0.55rem 1.5rem",
-                backgroundColor: isSubmitting ? "#2a2d3a" : "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
+              className="btn btn-primary"
             >
               {isSubmitting ? "A guardar..." : "Guardar Mota"}
             </button>
@@ -279,21 +199,26 @@ export default function Profile() {
 
         {/* List */}
         {isLoading ? (
-          <p style={{ color: "#71717a", textAlign: "center", padding: "2rem" }}>
-            A carregar...
-          </p>
+          <div className="empty-state" style={{ padding: "32px 18px" }}>
+            <div className="empty-state-icon">⏳</div>
+            <div className="empty-state-title">A carregar...</div>
+          </div>
         ) : motorcycles.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "2.5rem" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>🏍️</div>
-            <p style={{ color: "#71717a" }}>Ainda nao adicionaste nenhuma mota.</p>
-            <p style={{ color: "#52525b", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Clica em "+ Adicionar" para comecar.
-            </p>
+          <div className="empty-state" style={{ padding: "32px 18px" }}>
+            <div className="empty-state-icon">🏍️</div>
+            <div className="empty-state-title">Ainda não adicionaste nenhuma mota</div>
+            <div className="empty-state-text">Clica em "+ Adicionar" para começar.</div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="profile-moto-list">
             {motorcycles.map((moto) => (
-              <MotoRow key={moto.id} moto={moto} />
+              <MotoRow
+                key={moto.id}
+                moto={moto}
+                profiles={profiles}
+                onUpdated={onMotorcycleUpdated}
+                onDeleted={onMotorcycleDeleted}
+              />
             ))}
           </div>
         )}
@@ -314,36 +239,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        backgroundColor: "#1a1d27",
-        border: "1px solid #2a2d3a",
-        borderRadius: "12px",
-        padding: "1.5rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "0.72rem",
-            fontWeight: 700,
-            color: "#71717a",
-            textTransform: "uppercase",
-            letterSpacing: "0.8px",
-          }}
-        >
-          {title}
-        </h2>
+    <div className="panel">
+      <div className="panel-header">
+        <div className="panel-title">{title}</div>
         {action}
       </div>
-      {children}
+      <div className="panel-body">{children}</div>
     </div>
   );
 }
@@ -358,73 +259,190 @@ function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div style={span ? { gridColumn: "span 2" } : {}}>
-      <label
-        style={{
-          display: "block",
-          fontSize: "0.72rem",
-          color: "#71717a",
-          marginBottom: "4px",
-        }}
-      >
-        {label}
-      </label>
+    <div className={`field ${span ? "field-span-2" : ""}`}>
+      <div className="field-label">{label}</div>
       {children}
     </div>
   );
 }
 
-function MotoRow({ moto }: { moto: Motorcycle }) {
+function MotoRow({
+  moto,
+  profiles,
+  onUpdated,
+  onDeleted,
+}: {
+  moto: Motorcycle;
+  profiles: any[];
+  onUpdated: (m: Motorcycle) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [edit, setEdit] = useState({
+    name: moto.name,
+    brand: moto.brand ?? "",
+    year: moto.year ? String(moto.year) : "",
+    deviceId: moto.deviceId ?? "",
+    profileId: moto.profileId ?? "",
+  });
+
+  function setField(field: keyof typeof edit) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setEdit((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+  }
+
+  async function save() {
+    setError(null);
+    setIsSaving(true);
+    try {
+      const payload: any = { name: edit.name };
+      payload.brand = edit.brand ? edit.brand : null;
+      payload.year = edit.year ? parseInt(edit.year, 10) : null;
+      payload.deviceId = edit.deviceId ? edit.deviceId : null;
+      payload.profileId = edit.profileId ? edit.profileId : null;
+
+      const res = await motorcyclesAPI.update(moto.id, payload);
+      onUpdated(res.data);
+      setIsEditing(false);
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? "Erro ao guardar alterações");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm(`Apagar a mota "${moto.name}"?`)) return;
+    setError(null);
+    setIsDeleting(true);
+    try {
+      await motorcyclesAPI.remove(moto.id);
+      onDeleted(moto.id);
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? "Erro ao apagar mota");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "14px",
-        padding: "12px 14px",
-        backgroundColor: "#0f1117",
-        borderRadius: "8px",
-        border: "1px solid #2a2d3a",
-      }}
-    >
-      <span style={{ fontSize: "1.5rem" }}>🏍️</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: "0.925rem" }}>
-          {moto.name}
-          {moto.brand && (
-            <span style={{ color: "#71717a", fontWeight: 400 }}>
-              {" "}
-              · {moto.brand}
-            </span>
-          )}
-          {moto.year && (
-            <span style={{ color: "#71717a", fontWeight: 400 }}>
-              {" "}
-              · {moto.year}
-            </span>
-          )}
-        </div>
-        {moto.deviceId && (
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "#3b82f6",
-              marginTop: "2px",
-              fontFamily: "monospace",
-            }}
-          >
-            📡 {moto.deviceId}
+    <div className="moto-row">
+      <span className="moto-icon">🏍️</span>
+      <div className="moto-main">
+        {!isEditing ? (
+          <>
+            <div className="moto-name">
+              {moto.name}
+              {moto.brand && (
+                <span className="moto-muted">
+                  {" "}
+                  · {moto.brand}
+                </span>
+              )}
+              {moto.year && (
+                <span className="moto-muted">
+                  {" "}
+                  · {moto.year}
+                </span>
+              )}
+            </div>
+            <div className="moto-meta">
+              {moto.deviceId && (
+                <div className="moto-device">
+                  📡 {moto.deviceId}
+                </div>
+              )}
+              {moto.profile?.name && (
+                <div className="moto-profile">
+                  🏷️ {moto.profile.name}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="form-grid">
+            <div className="field-span-2">
+              <input className="control" value={edit.name} onChange={setField("name")} required />
+            </div>
+            <input className="control" value={edit.brand} onChange={setField("brand")} placeholder="Marca" />
+            <input className="control" value={edit.year} onChange={setField("year")} placeholder="Ano" type="number" />
+            <div className="field-span-2">
+              <input
+                className="control"
+                value={edit.deviceId}
+                onChange={setField("deviceId")}
+                placeholder="Device ID"
+              />
+            </div>
+            <div className="field-span-2">
+              <select className="control" value={edit.profileId} onChange={setField("profileId")}>
+                <option value="">— Sem perfil —</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.ccMin}–{p.ccMax} cc)
+                  </option>
+                ))}
+              </select>
+            </div>
+            {error && (
+              <div className="alert alert-danger field-span-2">
+                {error}
+              </div>
+            )}
+            <div className="moto-edit-actions field-span-2">
+              <button
+                onClick={save}
+                disabled={isSaving}
+                className="btn btn-primary btn-sm"
+              >
+                {isSaving ? "A guardar..." : "Guardar"}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setError(null);
+                  setEdit({
+                    name: moto.name,
+                    brand: moto.brand ?? "",
+                    year: moto.year ? String(moto.year) : "",
+                    deviceId: moto.deviceId ?? "",
+                    profileId: moto.profileId ?? "",
+                  });
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
       </div>
-      <div
-        style={{
-          fontSize: "0.7rem",
-          color: "#52525b",
-          textAlign: "right",
-        }}
-      >
+      <div className="moto-aside">
         {new Date(moto.createdAt).toLocaleDateString("pt-PT")}
+        {!isEditing && (
+          <div className="moto-actions">
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                setError(null);
+              }}
+              className="btn btn-ghost btn-sm"
+            >
+              Editar
+            </button>
+            <button
+              onClick={remove}
+              disabled={isDeleting}
+              className="btn btn-danger btn-sm"
+            >
+              {isDeleting ? "..." : "Apagar"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

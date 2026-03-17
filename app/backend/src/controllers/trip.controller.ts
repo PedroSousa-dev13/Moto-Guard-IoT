@@ -56,6 +56,7 @@ export async function getTrip(req: AuthRequest, res: Response): Promise<void> {
         motorcycle: {
           select: { id: true, name: true, brand: true, profile: true },
         },
+        gpxData: true,
         events: { orderBy: { occurredAt: "asc" } },
       },
     });

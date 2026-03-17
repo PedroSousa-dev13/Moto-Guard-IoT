@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../services/prisma.service";
 import { env } from "../config/env";
+import type { AuthRequest } from "../middleware/auth.middleware";
 
 // ─── Registo ────────────────────────────────────────────────────────────────
 export async function register(req: Request, res: Response): Promise<void> {
@@ -78,6 +79,27 @@ export async function login(req: Request, res: Response): Promise<void> {
     });
   } catch (err) {
     console.error("[login] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}
+
+export async function me(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "Utilizador não encontrado" });
+      return;
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error("[me] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
 }

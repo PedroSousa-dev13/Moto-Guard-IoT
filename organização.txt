@@ -70,9 +70,9 @@
 #
 #    [✔] Backend — API REST + subscrição MQTT (Node.js)
 #    [✔] Base de dados — InfluxDB (telemetria) funcional
-#    [~] Base de dados — PostgreSQL parcial (núcleo funcional; faltam melhorias
-#        de categorização de viagens e fluxos de importação GPX)
-#    [~] Plataforma Web — Dashboard tempo real existe, falta auth + gestão
+#    [✔] Base de dados — PostgreSQL (núcleo funcional + categorização por source
+#        + fluxo de importação GPX)
+#    [✔] Plataforma Web — Dashboard tempo real + auth + gestão (perfil/motas)
 #    [✔] Registo e histórico de viagens (persistência automática confirmada;
 #        classificação por source implementada; UI de análise pós-viagem em falta)
 #    [✘] Lógica heurística de deteção de eventos no backend

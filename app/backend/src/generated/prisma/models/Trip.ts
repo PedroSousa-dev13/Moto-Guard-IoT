@@ -299,6 +299,7 @@ export type TripWhereInput = {
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>
   events?: Prisma.TripEventListRelationFilter
+  gpxData?: Prisma.XOR<Prisma.GpxDataNullableScalarRelationFilter, Prisma.GpxDataWhereInput> | null
 }
 
 export type TripOrderByWithRelationInput = {
@@ -318,6 +319,7 @@ export type TripOrderByWithRelationInput = {
   user?: Prisma.UserOrderByWithRelationInput
   motorcycle?: Prisma.MotorcycleOrderByWithRelationInput
   events?: Prisma.TripEventOrderByRelationAggregateInput
+  gpxData?: Prisma.GpxDataOrderByWithRelationInput
 }
 
 export type TripWhereUniqueInput = Prisma.AtLeast<{
@@ -340,6 +342,7 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>
   events?: Prisma.TripEventListRelationFilter
+  gpxData?: Prisma.XOR<Prisma.GpxDataNullableScalarRelationFilter, Prisma.GpxDataWhereInput> | null
 }, "id">
 
 export type TripOrderByWithAggregationInput = {
@@ -397,6 +400,7 @@ export type TripCreateInput = {
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
   events?: Prisma.TripEventCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataCreateNestedOneWithoutTripInput
 }
 
 export type TripUncheckedCreateInput = {
@@ -414,6 +418,7 @@ export type TripUncheckedCreateInput = {
   status?: $Enums.TripStatus
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
 }
 
 export type TripUpdateInput = {
@@ -431,6 +436,7 @@ export type TripUpdateInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
   events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateInput = {
@@ -448,6 +454,7 @@ export type TripUncheckedUpdateInput = {
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
 }
 
 export type TripCreateManyInput = {
@@ -693,6 +700,20 @@ export type TripUpdateOneRequiredWithoutEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TripUpdateToOneWithWhereWithoutEventsInput, Prisma.TripUpdateWithoutEventsInput>, Prisma.TripUncheckedUpdateWithoutEventsInput>
 }
 
+export type TripCreateNestedOneWithoutGpxDataInput = {
+  create?: Prisma.XOR<Prisma.TripCreateWithoutGpxDataInput, Prisma.TripUncheckedCreateWithoutGpxDataInput>
+  connectOrCreate?: Prisma.TripCreateOrConnectWithoutGpxDataInput
+  connect?: Prisma.TripWhereUniqueInput
+}
+
+export type TripUpdateOneRequiredWithoutGpxDataNestedInput = {
+  create?: Prisma.XOR<Prisma.TripCreateWithoutGpxDataInput, Prisma.TripUncheckedCreateWithoutGpxDataInput>
+  connectOrCreate?: Prisma.TripCreateOrConnectWithoutGpxDataInput
+  upsert?: Prisma.TripUpsertWithoutGpxDataInput
+  connect?: Prisma.TripWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TripUpdateToOneWithWhereWithoutGpxDataInput, Prisma.TripUpdateWithoutGpxDataInput>, Prisma.TripUncheckedUpdateWithoutGpxDataInput>
+}
+
 export type TripCreateWithoutUserInput = {
   id?: string
   source?: $Enums.TripSource
@@ -707,6 +728,7 @@ export type TripCreateWithoutUserInput = {
   createdAt?: Date | string
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
   events?: Prisma.TripEventCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataCreateNestedOneWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutUserInput = {
@@ -723,6 +745,7 @@ export type TripUncheckedCreateWithoutUserInput = {
   status?: $Enums.TripStatus
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutUserInput = {
@@ -784,6 +807,7 @@ export type TripCreateWithoutMotorcycleInput = {
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   events?: Prisma.TripEventCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataCreateNestedOneWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutMotorcycleInput = {
@@ -800,6 +824,7 @@ export type TripUncheckedCreateWithoutMotorcycleInput = {
   status?: $Enums.TripStatus
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
+  gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutMotorcycleInput = {
@@ -842,6 +867,7 @@ export type TripCreateWithoutEventsInput = {
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
+  gpxData?: Prisma.GpxDataCreateNestedOneWithoutTripInput
 }
 
 export type TripUncheckedCreateWithoutEventsInput = {
@@ -858,6 +884,7 @@ export type TripUncheckedCreateWithoutEventsInput = {
   maxGForce?: number | null
   status?: $Enums.TripStatus
   createdAt?: Date | string
+  gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
 }
 
 export type TripCreateOrConnectWithoutEventsInput = {
@@ -890,6 +917,7 @@ export type TripUpdateWithoutEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
+  gpxData?: Prisma.GpxDataUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutEventsInput = {
@@ -906,6 +934,91 @@ export type TripUncheckedUpdateWithoutEventsInput = {
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
+}
+
+export type TripCreateWithoutGpxDataInput = {
+  id?: string
+  source?: $Enums.TripSource
+  startedAt: Date | string
+  endedAt?: Date | string | null
+  distanceKm?: number | null
+  maxSpeedKmh?: number | null
+  avgSpeedKmh?: number | null
+  maxRollDeg?: number | null
+  maxGForce?: number | null
+  status?: $Enums.TripStatus
+  createdAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTripsInput
+  motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
+  events?: Prisma.TripEventCreateNestedManyWithoutTripInput
+}
+
+export type TripUncheckedCreateWithoutGpxDataInput = {
+  id?: string
+  userId: string
+  motorcycleId: string
+  source?: $Enums.TripSource
+  startedAt: Date | string
+  endedAt?: Date | string | null
+  distanceKm?: number | null
+  maxSpeedKmh?: number | null
+  avgSpeedKmh?: number | null
+  maxRollDeg?: number | null
+  maxGForce?: number | null
+  status?: $Enums.TripStatus
+  createdAt?: Date | string
+  events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
+}
+
+export type TripCreateOrConnectWithoutGpxDataInput = {
+  where: Prisma.TripWhereUniqueInput
+  create: Prisma.XOR<Prisma.TripCreateWithoutGpxDataInput, Prisma.TripUncheckedCreateWithoutGpxDataInput>
+}
+
+export type TripUpsertWithoutGpxDataInput = {
+  update: Prisma.XOR<Prisma.TripUpdateWithoutGpxDataInput, Prisma.TripUncheckedUpdateWithoutGpxDataInput>
+  create: Prisma.XOR<Prisma.TripCreateWithoutGpxDataInput, Prisma.TripUncheckedCreateWithoutGpxDataInput>
+  where?: Prisma.TripWhereInput
+}
+
+export type TripUpdateToOneWithWhereWithoutGpxDataInput = {
+  where?: Prisma.TripWhereInput
+  data: Prisma.XOR<Prisma.TripUpdateWithoutGpxDataInput, Prisma.TripUncheckedUpdateWithoutGpxDataInput>
+}
+
+export type TripUpdateWithoutGpxDataInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.EnumTripSourceFieldUpdateOperationsInput | $Enums.TripSource
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  distanceKm?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxSpeedKmh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  avgSpeedKmh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
+  motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
+  events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
+}
+
+export type TripUncheckedUpdateWithoutGpxDataInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  motorcycleId?: Prisma.StringFieldUpdateOperationsInput | string
+  source?: Prisma.EnumTripSourceFieldUpdateOperationsInput | $Enums.TripSource
+  startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  distanceKm?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxSpeedKmh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  avgSpeedKmh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
 }
 
 export type TripCreateManyUserInput = {
@@ -937,6 +1050,7 @@ export type TripUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
   events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutUserInput = {
@@ -953,6 +1067,7 @@ export type TripUncheckedUpdateWithoutUserInput = {
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateManyWithoutUserInput = {
@@ -999,6 +1114,7 @@ export type TripUpdateWithoutMotorcycleInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateWithoutMotorcycleInput = {
@@ -1015,6 +1131,7 @@ export type TripUncheckedUpdateWithoutMotorcycleInput = {
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
+  gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
 }
 
 export type TripUncheckedUpdateManyWithoutMotorcycleInput = {
@@ -1080,6 +1197,7 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
   events?: boolean | Prisma.Trip$eventsArgs<ExtArgs>
+  gpxData?: boolean | Prisma.Trip$gpxDataArgs<ExtArgs>
   _count?: boolean | Prisma.TripCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["trip"]>
 
@@ -1140,6 +1258,7 @@ export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
   events?: boolean | Prisma.Trip$eventsArgs<ExtArgs>
+  gpxData?: boolean | Prisma.Trip$gpxDataArgs<ExtArgs>
   _count?: boolean | Prisma.TripCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TripIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1157,6 +1276,7 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     user: Prisma.$UserPayload<ExtArgs>
     motorcycle: Prisma.$MotorcyclePayload<ExtArgs>
     events: Prisma.$TripEventPayload<ExtArgs>[]
+    gpxData: Prisma.$GpxDataPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1569,6 +1689,7 @@ export interface Prisma__TripClient<T, Null = never, ExtArgs extends runtime.Typ
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   motorcycle<T extends Prisma.MotorcycleDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MotorcycleDefaultArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   events<T extends Prisma.Trip$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  gpxData<T extends Prisma.Trip$gpxDataArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Trip$gpxDataArgs<ExtArgs>>): Prisma.Prisma__GpxDataClient<runtime.Types.Result.GetResult<Prisma.$GpxDataPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2028,6 +2149,25 @@ export type Trip$eventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   distinct?: Prisma.TripEventScalarFieldEnum | Prisma.TripEventScalarFieldEnum[]
+}
+
+/**
+ * Trip.gpxData
+ */
+export type Trip$gpxDataArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GpxData
+   */
+  select?: Prisma.GpxDataSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GpxData
+   */
+  omit?: Prisma.GpxDataOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GpxDataInclude<ExtArgs> | null
+  where?: Prisma.GpxDataWhereInput
 }
 
 /**

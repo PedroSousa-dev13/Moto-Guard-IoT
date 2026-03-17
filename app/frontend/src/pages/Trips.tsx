@@ -136,9 +136,12 @@ export default function Trips() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div style={{ padding: "3rem", textAlign: "center", color: "#71717a" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>⏳</div>
-        <p>A carregar viagens...</p>
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-state-icon">⏳</div>
+          <div className="empty-state-title">A carregar viagens...</div>
+          <div className="empty-state-text">Pode demorar alguns segundos.</div>
+        </div>
       </div>
     );
   }
@@ -146,98 +149,66 @@ export default function Trips() {
   // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div style={{ padding: "3rem", textAlign: "center" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>⚠️</div>
-        <p style={{ color: "#ef4444", marginBottom: "1rem" }}>{error}</p>
-        <button
-          onClick={loadTrips}
-          style={{
-            padding: "0.6rem 1.5rem",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Tentar novamente
-        </button>
+      <div className="page">
+        <div className="empty-state">
+          <div className="empty-state-icon">⚠️</div>
+          <div className="empty-state-title">Erro ao carregar viagens</div>
+          <div className="empty-state-text" style={{ marginBottom: 14 }}>
+            {error}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button className="btn btn-primary" onClick={loadTrips}>
+              Tentar novamente
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   // ── Main ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ padding: "1.5rem", maxWidth: "1000px", margin: "0 auto" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-          🛣️ Histórico de Viagens
-        </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <label style={{ color: "#a1a1aa", fontSize: "0.8rem" }}>Origem</label>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title">🛣️ Histórico de Viagens</div>
+          <div className="page-subtitle">
+            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+        <div className="page-actions">
+          <span className="field-label" style={{ marginTop: 10 }}>
+            Origem
+          </span>
           <select
+            className="control control-sm"
             value={sourceFilter}
             onChange={(event) => setSourceFilter(event.target.value as TripSourceFilter)}
-            style={{
-              backgroundColor: "#171923",
-              color: "#e4e4e7",
-              border: "1px solid #2a2d3a",
-              borderRadius: "8px",
-              padding: "6px 8px",
-              fontSize: "0.8rem",
-            }}
+            style={{ width: 180 }}
           >
             <option value="ALL">Todas</option>
             <option value="SIMULATOR">Simulador</option>
             <option value="GPX_IMPORTED">GPX</option>
             <option value="DEVICE_REAL">Dispositivo</option>
           </select>
-          <span style={{ color: "#71717a", fontSize: "0.875rem" }}>
-            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""}
-          </span>
         </div>
       </div>
 
       {/* Empty state */}
       {filteredTrips.length === 0 && (
-        <div
-          style={{
-            backgroundColor: "#1a1d27",
-            border: "1px solid #2a2d3a",
-            borderRadius: "12px",
-            padding: "4rem",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛣️</div>
-          <h2
-            style={{
-              color: "#71717a",
-              fontWeight: 400,
-              marginBottom: "0.5rem",
-            }}
-          >
-            Ainda não há viagens registadas
-          </h2>
-          <p style={{ color: "#52525b", fontSize: "0.875rem" }}>
+        <div className="empty-state">
+          <div className="empty-state-icon">🛣️</div>
+          <div className="empty-state-title">Ainda não há viagens registadas</div>
+          <div className="empty-state-text">
             {sourceFilter === "ALL"
               ? "As viagens são criadas automaticamente quando o simulador deteta movimento."
               : "Não há viagens para o filtro de origem selecionado."}
-          </p>
+          </div>
         </div>
       )}
 
       {/* Trip list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div className="trip-list">
         {filteredTrips.map((trip) => {
           const badge = statusBadge(trip.status);
           const tripSourceBadge = sourceBadge(trip.source);
@@ -248,66 +219,32 @@ export default function Trips() {
           return (
             <div
               key={trip.id}
-              style={{
-                backgroundColor: "#1a1d27",
-                border: `1px solid ${isOpen ? "#3b82f6" : "#2a2d3a"}`,
-                borderRadius: "12px",
-                overflow: "hidden",
-                transition: "border-color 0.2s",
-              }}
+              className={`trip-card ${isOpen ? "trip-card-open" : ""}`}
             >
               {/* ── Row ── */}
-              <div
+              <button
+                type="button"
                 onClick={() => toggle(trip.id)}
-                style={{
-                  padding: "14px 20px",
-                  cursor: "pointer",
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "16px",
-                  alignItems: "center",
-                }}
+                className="trip-row"
               >
                 {/* Left: moto + date */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "5px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                <div className="trip-left">
+                  <div className="trip-title-row">
+                    <span className="trip-title">
                       🏍️ {trip.motorcycle?.name ?? "—"}
                       {trip.motorcycle?.brand
                         ? ` (${trip.motorcycle.brand})`
                         : ""}
                     </span>
                     <span
-                      style={{
-                        fontSize: "0.72rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: "20px",
-                        backgroundColor: badge.bg,
-                        color: badge.color,
-                      }}
+                      className="badge-pill"
+                      style={{ backgroundColor: badge.bg, color: badge.color }}
                     >
                       {badge.label}
                     </span>
                     <span
+                      className="badge-pill"
                       style={{
-                        fontSize: "0.72rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: "20px",
                         backgroundColor: tripSourceBadge.bg,
                         color: tripSourceBadge.color,
                       }}
@@ -315,20 +252,16 @@ export default function Trips() {
                       {tripSourceBadge.label}
                     </span>
                     {evCount > 0 && (
-                      <span style={{ fontSize: "0.75rem", color: "#f97316" }}>
+                      <span className="trip-warning">
                         ⚠️ {evCount} evento{evCount !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
-                  <span style={{ fontSize: "0.78rem", color: "#71717a" }}>
-                    {formatDate(trip.startedAt)}
-                  </span>
+                  <span className="trip-date">{formatDate(trip.startedAt)}</span>
                 </div>
 
                 {/* Right: stats + chevron */}
-                <div
-                  style={{ display: "flex", gap: "24px", alignItems: "center" }}
-                >
+                <div className="trip-right">
                   {trip.distanceKm != null && (
                     <Stat
                       value={`${trip.distanceKm.toFixed(1)} km`}
@@ -339,7 +272,7 @@ export default function Trips() {
                     <Stat
                       value={`${trip.maxSpeedKmh.toFixed(0)} km/h`}
                       label="Vel. Máx."
-                      color="#3b82f6"
+                      color="var(--accent)"
                     />
                   )}
                   <Stat
@@ -347,38 +280,18 @@ export default function Trips() {
                     label="Duração"
                   />
                   <span
-                    style={{
-                      color: "#71717a",
-                      fontSize: "1rem",
-                      display: "inline-block",
-                      transform: isOpen ? "rotate(180deg)" : "none",
-                      transition: "transform 0.2s",
-                    }}
+                    className={`trip-chevron ${isOpen ? "trip-chevron-open" : ""}`}
                   >
                     ▾
                   </span>
                 </div>
-              </div>
+              </button>
 
               {/* ── Expanded detail ── */}
               {isOpen && (
-                <div
-                  style={{
-                    borderTop: "1px solid #2a2d3a",
-                    padding: "16px 20px",
-                    backgroundColor: "rgba(0,0,0,0.18)",
-                  }}
-                >
+                <div className="trip-details">
                   {/* Stats grid */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(130px, 1fr))",
-                      gap: "10px",
-                      marginBottom: "16px",
-                    }}
-                  >
+                  <div className="tile-grid" style={{ marginBottom: 16 }}>
                     {[
                       {
                         label: "Distância",
@@ -420,34 +333,9 @@ export default function Trips() {
                         val: formatDuration(trip.startedAt, trip.endedAt),
                       },
                     ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        style={{
-                          backgroundColor: "#1a1d27",
-                          border: "1px solid #2a2d3a",
-                          borderRadius: "8px",
-                          padding: "10px 12px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "0.68rem",
-                            color: "#71717a",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.5px",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {val}
-                        </div>
+                      <div key={label} className="tile">
+                        <div className="tile-k">{label}</div>
+                        <div className="tile-v">{val}</div>
                       </div>
                     ))}
                   </div>
@@ -455,66 +343,37 @@ export default function Trips() {
                   {/* Events */}
                   {trip.events && trip.events.length > 0 ? (
                     <div>
-                      <h3
-                        style={{
-                          fontSize: "0.72rem",
-                          color: "#71717a",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.5px",
-                          marginBottom: "8px",
-                        }}
-                      >
+                      <div className="trip-events-title">
                         Eventos de Risco ({trip.events.length})
-                      </h3>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "5px",
-                        }}
-                      >
+                      </div>
+                      <div className="trip-events">
                         {trip.events.map((ev) => (
                           <div
                             key={ev.id}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                              padding: "8px 12px",
-                              backgroundColor: "#0f1117",
-                              borderRadius: "6px",
-                              borderLeft: `3px solid ${severityColor(ev.severity)}`,
-                            }}
+                            className="trip-event"
+                            style={{ borderLeftColor: severityColor(ev.severity) }}
                           >
-                            <span style={{ fontSize: "1rem" }}>
+                            <span className="trip-event-icon">
                               {eventTypeIcon(ev.type)}
                             </span>
                             <span
-                              style={{
-                                fontSize: "0.72rem",
-                                fontWeight: 700,
-                                color: severityColor(ev.severity),
-                                minWidth: "58px",
-                              }}
+                              className="trip-event-severity"
+                              style={{ color: severityColor(ev.severity) }}
                             >
                               {ev.severity}
                             </span>
-                            <span style={{ fontSize: "0.85rem", flex: 1 }}>
+                            <span className="trip-event-message">
                               {ev.message}
                             </span>
                             {ev.speedKmh != null && (
                               <span
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "#3b82f6",
-                                  fontVariantNumeric: "tabular-nums",
-                                }}
+                                className="trip-event-speed"
                               >
                                 {ev.speedKmh.toFixed(0)} km/h
                               </span>
                             )}
                             <span
-                              style={{ fontSize: "0.72rem", color: "#71717a" }}
+                              className="trip-event-time"
                             >
                               {new Date(ev.occurredAt).toLocaleTimeString(
                                 "pt-PT",
@@ -525,16 +384,9 @@ export default function Trips() {
                       </div>
                     </div>
                   ) : (
-                    <p
-                      style={{
-                        color: "#52525b",
-                        fontSize: "0.875rem",
-                        textAlign: "center",
-                        padding: "0.5rem 0",
-                      }}
-                    >
+                    <div className="trip-events-empty">
                       ✅ Sem eventos de risco nesta viagem
-                    </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -550,25 +402,18 @@ export default function Trips() {
 function Stat({
   value,
   label,
-  color = "#e4e4e7",
+  color = "var(--text)",
 }: {
   value: string;
   label: string;
   color?: string;
 }) {
   return (
-    <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          fontWeight: 700,
-          fontVariantNumeric: "tabular-nums",
-          color,
-          fontSize: "0.9rem",
-        }}
-      >
+    <div className="mini-stat">
+      <div className="mini-stat-value" style={{ color }}>
         {value}
       </div>
-      <div style={{ fontSize: "0.68rem", color: "#71717a", marginTop: "2px" }}>
+      <div className="mini-stat-label">
         {label}
       </div>
     </div>

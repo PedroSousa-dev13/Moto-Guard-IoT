@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import LoginSidebar from './components/auth/LoginSidebar';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
@@ -15,21 +14,6 @@ import './App.css';
 import './Layout.css';
 
 function App() {
-  const [isLoginSidebarOpen, setIsLoginSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    // Listener para abrir login sidebar da HomePage
-    const handleOpenLoginSidebar = () => {
-      setIsLoginSidebarOpen(true);
-    };
-
-    window.addEventListener('openLoginSidebar', handleOpenLoginSidebar);
-
-    return () => {
-      window.removeEventListener('openLoginSidebar', handleOpenLoginSidebar);
-    };
-  }, []);
-
   return (
     <AuthProvider>
       <Router>
@@ -59,14 +43,9 @@ function App() {
                   <Profile />
                 </ProtectedRoute>
               } />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
-          
-          {/* Login Sidebar Modal */}
-          <LoginSidebar 
-            isOpen={isLoginSidebarOpen} 
-            onClose={() => setIsLoginSidebarOpen(false)} 
-          />
         </div>
       </Router>
     </AuthProvider>

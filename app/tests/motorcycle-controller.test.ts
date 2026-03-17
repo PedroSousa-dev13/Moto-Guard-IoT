@@ -8,7 +8,10 @@ vi.mock("../backend/src/services/prisma.service", () => ({
     },
     motorcycle: {
       create: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -18,6 +21,8 @@ import {
   createMotorcycle,
   listMotorcycles,
   listProfiles,
+  updateMotorcycle,
+  deleteMotorcycle,
 } from "../backend/src/controllers/motorcycle.controller";
 
 function mockResponse() {
@@ -166,5 +171,93 @@ describe("listProfiles", () => {
     expect(res.json).toHaveBeenCalledWith({
       error: "Erro interno do servidor. Tente novamente mais tarde.",
     });
+  });
+});
+
+describe("updateMotorcycle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 404 when motorcycle is not found for user", async () => {
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue(null);
+    const req = { userId: "u1", params: { id: "m1" }, body: { name: "X" } } as any;
+    const res = mockResponse();
+
+    await updateMotorcycle(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: "Mota não encontrada" });
+    expect(prisma.motorcycle.update).not.toHaveBeenCalled();
+  });
+
+  it("validates profileId when provided", async () => {
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ id: "m1" } as any);
+    vi.mocked(prisma.motorcycleProfile.findUnique).mockResolvedValue(null);
+    const req = { userId: "u1", params: { id: "m1" }, body: { profileId: "p-missing" } } as any;
+    const res = mockResponse();
+
+    await updateMotorcycle(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: "Perfil de mota não encontrado" });
+    expect(prisma.motorcycle.update).not.toHaveBeenCalled();
+  });
+
+  it("updates motorcycle with nullable fields", async () => {
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ id: "m1" } as any);
+    vi.mocked(prisma.motorcycleProfile.findUnique).mockResolvedValue({ id: "p1" } as any);
+    vi.mocked(prisma.motorcycle.update).mockResolvedValue({ id: "m1" } as any);
+    const req = {
+      userId: "u1",
+      params: { id: "m1" },
+      body: { name: "Nova", brand: "", year: "", deviceId: "", profileId: "p1" },
+    } as any;
+    const res = mockResponse();
+
+    await updateMotorcycle(req, res as any);
+
+    expect(prisma.motorcycle.update).toHaveBeenCalledWith({
+      where: { id: "m1" },
+      data: {
+        name: "Nova",
+        brand: null,
+        year: null,
+        deviceId: null,
+        profileId: "p1",
+      },
+      include: { profile: true },
+    });
+    expect(res.json).toHaveBeenCalledWith({ id: "m1" });
+  });
+});
+
+describe("deleteMotorcycle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 404 when motorcycle is not found for user", async () => {
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue(null);
+    const req = { userId: "u1", params: { id: "m1" } } as any;
+    const res = mockResponse();
+
+    await deleteMotorcycle(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: "Mota não encontrada" });
+    expect(prisma.motorcycle.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes motorcycle and returns success", async () => {
+    vi.mocked(prisma.motorcycle.findFirst).mockResolvedValue({ id: "m1" } as any);
+    vi.mocked(prisma.motorcycle.delete).mockResolvedValue({ id: "m1" } as any);
+    const req = { userId: "u1", params: { id: "m1" } } as any;
+    const res = mockResponse();
+
+    await deleteMotorcycle(req, res as any);
+
+    expect(prisma.motorcycle.delete).toHaveBeenCalledWith({ where: { id: "m1" } });
+    expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 });

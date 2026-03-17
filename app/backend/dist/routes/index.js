@@ -16,6 +16,7 @@ const auth_routes_1 = __importDefault(require("./auth.routes"));
 const auth_reset_routes_1 = __importDefault(require("./auth-reset.routes"));
 const trip_routes_1 = __importDefault(require("./trip.routes"));
 const motorcycle_routes_1 = __importDefault(require("./motorcycle.routes"));
+const gpx_routes_1 = __importDefault(require("./gpx.routes"));
 const router = (0, express_1.Router)();
 router.use(health_routes_1.default);
 router.use(auth_routes_1.default);
@@ -24,5 +25,6 @@ router.use(telemetry_routes_1.default);
 router.use(command_routes_1.default);
 router.use(trip_routes_1.default);
 router.use(motorcycle_routes_1.default);
+router.use(gpx_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

@@ -18,6 +18,7 @@ class SocketService {
     tripActiveByDevice = new Map();
     stationaryTicksByDevice = new Map();
     lastEventStatusByDevice = new Map();
+    lastTelemetryByDevice = new Map();
     activeTripIdByDevice = new Map(); // Persistência: tripId atual
     tripStatsByDevice = new Map();
     // Thresholds simples para ciclo de viagem em tempo real.
@@ -45,6 +46,11 @@ class SocketService {
                 const sent = mqtt_service_1.mqttService.publishCommand(command);
                 if (!sent) {
                     socket.emit("error_msg", { message: "MQTT não está conectado" });
+                    return;
+                }
+                if (command?.acao === "parar") {
+                    void this.forceEndTripsOnStopCommand()
+                        .catch((error) => console.error("Erro ao forçar fim de viagem:", error));
                 }
             });
             socket.on("disconnect", () => {
@@ -54,6 +60,7 @@ class SocketService {
         });
         // Reencaminhar telemetria e derivar eventos em tempo real.
         mqtt_service_1.mqttService.onTelemetry((payload) => {
+            this.lastTelemetryByDevice.set(payload.system.device_id, payload);
             this.io?.emit("telemetry_update", payload);
             this.handleAlertEvent(payload);
             this.handleTripLifecycle(payload);
@@ -111,7 +118,7 @@ class SocketService {
                 data: {
                     userId: association.userId,
                     motorcycleId: association.motorcycleId,
-                    source: "SIMULATOR",
+                    source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
                     startedAt: new Date(timestamp),
                     status: "ACTIVE",
                 },
@@ -227,6 +234,67 @@ class SocketService {
         catch (error) {
             console.error("Erro ao finalizar viagem:", error);
             this.io?.emit("trip_ended", { deviceId, motoModel: payload.system.moto_model, timestamp });
+        }
+    }
+    async forceEndTripsOnStopCommand() {
+        const activeDevices = Array.from(this.activeTripIdByDevice.keys());
+        if (activeDevices.length === 0) {
+            return;
+        }
+        const preferredDeviceId = telemetry_store_1.telemetryStore.latest?.system?.device_id;
+        const devicesToEnd = preferredDeviceId && activeDevices.includes(preferredDeviceId)
+            ? [preferredDeviceId]
+            : activeDevices;
+        await Promise.all(devicesToEnd.map((deviceId) => this.forceEndTrip(deviceId)));
+    }
+    async forceEndTrip(deviceId) {
+        const tripId = this.activeTripIdByDevice.get(deviceId);
+        const stats = this.tripStatsByDevice.get(deviceId);
+        const lastPayload = this.lastTelemetryByDevice.get(deviceId);
+        const endedAt = new Date();
+        this.tripActiveByDevice.set(deviceId, false);
+        this.stationaryTicksByDevice.set(deviceId, 0);
+        if (!tripId) {
+            this.io?.emit("trip_ended", {
+                deviceId,
+                motoModel: lastPayload?.system.moto_model ?? "—",
+                timestamp: endedAt.toISOString(),
+            });
+            return;
+        }
+        let distanceKm = 0;
+        if (stats && lastPayload) {
+            distanceKm = this.haversineDistance(stats.startLat, stats.startLon, lastPayload.location.latitude, lastPayload.location.longitude);
+        }
+        const avgSpeedKmh = stats && stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null;
+        try {
+            await prisma_service_1.prisma.trip.update({
+                where: { id: tripId },
+                data: {
+                    endedAt,
+                    status: "COMPLETED",
+                    distanceKm,
+                    maxSpeedKmh: stats?.maxSpeed ?? 0,
+                    maxRollDeg: stats?.maxRoll ?? 0,
+                    maxGForce: stats?.maxGForce ?? 0,
+                    avgSpeedKmh,
+                },
+            });
+        }
+        catch (error) {
+            console.error("Erro ao finalizar viagem (forceEndTrip):", error);
+        }
+        finally {
+            this.io?.emit("trip_ended", {
+                deviceId,
+                motoModel: lastPayload?.system.moto_model ?? "—",
+                timestamp: endedAt.toISOString(),
+                tripId,
+                distanceKm,
+                maxSpeedKmh: stats?.maxSpeed ?? 0,
+            });
+            this.activeTripIdByDevice.delete(deviceId);
+            this.tripStatsByDevice.delete(deviceId);
         }
     }
     /** Calcula distância em km entre coordenadas GPS */

@@ -28,7 +28,7 @@ vi.mock("../backend/src/services/prisma.service", () => ({
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../backend/src/services/prisma.service";
-import { register, login } from "../backend/src/controllers/auth.controller";
+import { register, login, me } from "../backend/src/controllers/auth.controller";
 
 function mockResponse() {
   return {
@@ -198,5 +198,43 @@ describe("login", () => {
     expect(res.json).toHaveBeenCalledWith({
       error: "Erro interno do servidor. Tente novamente mais tarde.",
     });
+  });
+});
+
+describe("me", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 404 when user is not found", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    const req = { userId: "u1" } as any;
+    const res = mockResponse();
+
+    await me(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: "Utilizador não encontrado" });
+  });
+
+  it("returns current user details", async () => {
+    const user = {
+      id: "u1",
+      email: "a@b.com",
+      name: "Ana",
+      createdAt: new Date("2026-03-16T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+    };
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(user as any);
+    const req = { userId: "u1" } as any;
+    const res = mockResponse();
+
+    await me(req, res as any);
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+    });
+    expect(res.json).toHaveBeenCalledWith(user);
   });
 });

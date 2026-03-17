@@ -1,16 +1,19 @@
 import React from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const handleGetStarted = () => {
-    // Tentar navegar para dashboard ou abrir login
-    try {
-      const event = new CustomEvent('openLoginSidebar');
-      window.dispatchEvent(event);
-    } catch (error) {
-      console.log('Navigation fallback - trying direct navigation');
-      window.location.href = '/dashboard';
+    if (isAuthenticated) {
+      navigate("/dashboard");
+      return;
     }
+    navigate("/login", { state: { from: location } });
   };
 
   return (
