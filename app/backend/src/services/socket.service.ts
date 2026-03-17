@@ -83,7 +83,7 @@ class SocketService {
         }
 
         if (command?.acao === "parar") {
-          void this.forceEndTripsOnStopCommand()
+          void this.forceEndTripsOnStopCommand(command?.device_id ?? null)
             .catch((error) => console.error("Erro ao forçar fim de viagem:", error));
         }
       });
@@ -302,17 +302,16 @@ class SocketService {
     }
   }
 
-  private async forceEndTripsOnStopCommand(): Promise<void> {
+  private async forceEndTripsOnStopCommand(deviceId: string | null): Promise<void> {
     const activeDevices = Array.from(this.activeTripIdByDevice.keys());
     if (activeDevices.length === 0) {
       return;
     }
 
-    const preferredDeviceId = telemetryStore.latest?.system?.device_id;
-    const devicesToEnd =
-      preferredDeviceId && activeDevices.includes(preferredDeviceId)
-        ? [preferredDeviceId]
-        : activeDevices;
+    const preferredDeviceId = deviceId ?? telemetryStore.latest?.system?.device_id ?? null;
+    const devicesToEnd = preferredDeviceId && activeDevices.includes(preferredDeviceId)
+      ? [preferredDeviceId]
+      : activeDevices;
 
     await Promise.all(devicesToEnd.map((deviceId) => this.forceEndTrip(deviceId)));
   }

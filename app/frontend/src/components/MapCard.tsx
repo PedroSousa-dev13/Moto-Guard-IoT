@@ -22,12 +22,13 @@ interface MapCardProps {
   location: LocationData | null;
   telemetry: TelemetryData | null;
   msgCount: number;
+  resetSignal?: number;
 }
 
 const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
-export default function MapCard({ location, telemetry, msgCount }: MapCardProps) {
+export default function MapCard({ location, telemetry, msgCount, resetSignal }: MapCardProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
@@ -82,6 +83,15 @@ export default function MapCard({ location, telemetry, msgCount }: MapCardProps)
       mapRef.current.panTo([lat, lng], { animate: true, duration: 0.5 });
     }
   }, [lat, lng, msgCount]);
+
+  useEffect(() => {
+    if (!mapRef.current || !markerRef.current || !trailRef.current) return;
+    trailPointsRef.current = [];
+    trailRef.current.setLatLngs([]);
+    markerRef.current.setLatLng([DEFAULT_LAT, DEFAULT_LNG]);
+    mapRef.current.setView([DEFAULT_LAT, DEFAULT_LNG], 15);
+    setTimeout(() => mapRef.current?.invalidateSize(), 200);
+  }, [resetSignal]);
 
   return (
     <div className="card map-card">

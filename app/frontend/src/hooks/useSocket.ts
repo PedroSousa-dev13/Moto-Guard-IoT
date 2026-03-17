@@ -21,6 +21,7 @@ export function useSocket() {
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
   const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
+  const [tripEndedSignal, setTripEndedSignal] = useState(0);
   const [msgCount, setMsgCount] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>({
@@ -39,11 +40,13 @@ export function useSocket() {
   const sendCommand = useCallback(
     (cmd: SimulatorCommand) => {
       if (socketRef.current) {
-        socketRef.current.emit("send_command", cmd);
-        addLog(`Comando enviado: ${JSON.stringify(cmd)}`, "#3b82f6");
+        const device_id = cmd.device_id ?? activeDeviceId ?? lastDeviceId ?? undefined;
+        const payload = device_id ? { ...cmd, device_id } : cmd;
+        socketRef.current.emit("send_command", payload);
+        addLog(`Comando enviado: ${JSON.stringify(payload)}`, "#3b82f6");
       }
     },
-    [addLog]
+    [addLog, activeDeviceId, lastDeviceId]
   );
 
   const devices = useMemo(() => {
@@ -106,6 +109,7 @@ export function useSocket() {
 
     socket.on("trip_ended", (data: TripSocketEvent) => {
       addLog(`Viagem terminada: ${data.motoModel} (${data.deviceId})`, "#eab308");
+      setTripEndedSignal((v) => v + 1);
     });
 
     socket.on("error_msg", (data: { message: string }) => {
@@ -133,5 +137,5 @@ export function useSocket() {
     };
   }, [addLog]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, msgCount, logs, status, sendCommand, addLog };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog };
 }
