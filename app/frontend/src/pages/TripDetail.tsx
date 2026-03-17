@@ -217,10 +217,14 @@ export default function TripDetail() {
   }, [gpxSeries, telemetryRes, trip]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!mapContainerRef.current) return;
     if (mapRef.current) return;
 
-    const map = L.map(mapContainerRef.current, { zoomControl: true });
+    const map = L.map(mapContainerRef.current, { zoomControl: true }).setView(
+      [41.2951, -7.7463],
+      13,
+    );
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap",
       maxZoom: 19,
@@ -230,7 +234,7 @@ export default function TripDetail() {
     eventsLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    setTimeout(() => map.invalidateSize(), 200);
+    setTimeout(() => map.invalidateSize(), 300);
 
     return () => {
       map.remove();
@@ -238,7 +242,7 @@ export default function TripDetail() {
       routeLayerRef.current = null;
       eventsLayerRef.current = null;
     };
-  }, []);
+  }, [isLoading]);
 
   useEffect(() => {
     if (!mapRef.current || !routeLayerRef.current || !eventsLayerRef.current) return;
