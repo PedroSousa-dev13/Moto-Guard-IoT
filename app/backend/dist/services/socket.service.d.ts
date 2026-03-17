@@ -7,6 +7,9 @@ declare class SocketService {
     private lastEventStatusByDevice;
     private lastTelemetryByDevice;
     private activeTripIdByDevice;
+    private lastStopHandledAtByDevice;
+    private lastUserIdByDevice;
+    private lastMotoModelByDevice;
     private tripStatsByDevice;
     private static readonly TRIP_START_SPEED_KMH;
     private static readonly TRIP_END_SPEED_KMH;
@@ -23,6 +26,9 @@ declare class SocketService {
     private endTrip;
     private forceEndTripsOnStopCommand;
     private forceEndTrip;
+    private createCompletedTripFromLastPayload;
+    private createCompletedTripWithoutTelemetry;
+    private ensureAssociationForDevice;
     /** Calcula distância em km entre coordenadas GPS */
     private haversineDistance;
     private toRad;

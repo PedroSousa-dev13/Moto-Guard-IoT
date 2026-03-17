@@ -319,7 +319,7 @@ export default function Trips() {
           <div className="empty-state-title">Ainda não há viagens registadas</div>
           <div className="empty-state-text">
             {sourceFilter === "ALL"
-              ? "As viagens são criadas automaticamente quando o simulador deteta movimento."
+              ? "As viagens são criadas automaticamente quando a simulação termina (mesmo que seja curta)."
               : "Não há viagens para o filtro de origem selecionado."}
           </div>
         </div>

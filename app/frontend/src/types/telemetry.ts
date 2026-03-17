@@ -84,6 +84,7 @@ export interface SimulatorCommand {
   modelo?: string;
   tipo?: string;
   device_id?: string;
+  userId?: string;
 }
 
 /** Evento de alerta emitido por WebSocket */

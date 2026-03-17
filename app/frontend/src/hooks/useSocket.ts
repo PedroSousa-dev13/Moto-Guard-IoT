@@ -16,6 +16,20 @@ import type {
   TripSocketEvent,
 } from "../types/telemetry";
 
+function getStoredUserId(): string | null {
+  const rememberMe = localStorage.getItem("rememberMe") === "true";
+  const storage = rememberMe ? localStorage : sessionStorage;
+  const key = rememberMe ? "user" : "session_user";
+  const raw = storage.getItem(key) || localStorage.getItem(key) || sessionStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { id?: string };
+    return parsed?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
@@ -30,6 +44,14 @@ export function useSocket() {
     hasData: false,
   });
 
+  const resetSimulationView = useCallback(() => {
+    setTelemetryByDevice({});
+    setLastDeviceId(null);
+    setActiveDeviceId(null);
+    setMsgCount(0);
+    setStatus((prev) => ({ ...prev, hasData: false }));
+  }, []);
+
   // ── Adicionar entrada ao log ──────────────────────────────────────────
   const addLog = useCallback((message: string, color: string = "#aaa") => {
     const time = new Date().toLocaleTimeString("pt-PT");
@@ -40,8 +62,19 @@ export function useSocket() {
   const sendCommand = useCallback(
     (cmd: SimulatorCommand) => {
       if (socketRef.current) {
-        const device_id = cmd.device_id ?? activeDeviceId ?? lastDeviceId ?? undefined;
-        const payload = device_id ? { ...cmd, device_id } : cmd;
+        const shouldDefaultToSimulatorDevice =
+          cmd.acao === "definir_modelo" ||
+          cmd.acao === "parar" ||
+          cmd.acao === "evento" ||
+          cmd.acao === "reset_eventos" ||
+          cmd.acao === "arrancar";
+        const device_id =
+          cmd.device_id ??
+          activeDeviceId ??
+          lastDeviceId ??
+          (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined);
+        const userId = cmd.userId ?? getStoredUserId() ?? undefined;
+        const payload = { ...cmd, ...(device_id ? { device_id } : {}), ...(userId ? { userId } : {}) };
         socketRef.current.emit("send_command", payload);
         addLog(`Comando enviado: ${JSON.stringify(payload)}`, "#3b82f6");
       }
@@ -137,5 +170,5 @@ export function useSocket() {
     };
   }, [addLog]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView };
 }

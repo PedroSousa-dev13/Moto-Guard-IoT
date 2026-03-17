@@ -20,6 +20,9 @@ class SocketService {
     lastEventStatusByDevice = new Map();
     lastTelemetryByDevice = new Map();
     activeTripIdByDevice = new Map(); // Persistência: tripId atual
+    lastStopHandledAtByDevice = new Map();
+    lastUserIdByDevice = new Map();
+    lastMotoModelByDevice = new Map();
     tripStatsByDevice = new Map();
     // Thresholds simples para ciclo de viagem em tempo real.
     static TRIP_START_SPEED_KMH = 5;
@@ -41,16 +44,41 @@ class SocketService {
             if (telemetry_store_1.telemetryStore.latest) {
                 socket.emit("telemetry_update", telemetry_store_1.telemetryStore.latest);
             }
-            socket.on("send_command", (command) => {
+            socket.on("send_command", async (command) => {
                 console.log("Comando recebido do frontend:", JSON.stringify(command));
                 const sent = mqtt_service_1.mqttService.publishCommand(command);
                 if (!sent) {
                     socket.emit("error_msg", { message: "MQTT não está conectado" });
                     return;
                 }
+                const preferredDeviceId = command?.device_id ?? telemetry_store_1.telemetryStore.latest?.system?.device_id ?? null;
+                const userId = command?.userId ?? null;
+                if (preferredDeviceId && userId) {
+                    const motoModel = command?.modelo ??
+                        this.lastTelemetryByDevice.get(preferredDeviceId)?.system?.moto_model ??
+                        telemetry_store_1.telemetryStore.latest?.system?.moto_model ??
+                        "Simulador";
+                    try {
+                        await this.ensureAssociationForDevice(preferredDeviceId, userId, motoModel);
+                    }
+                    catch (error) {
+                        console.error("Erro ao associar device ao utilizador:", error);
+                    }
+                }
                 if (command?.acao === "parar") {
-                    void this.forceEndTripsOnStopCommand()
-                        .catch((error) => console.error("Erro ao forçar fim de viagem:", error));
+                    try {
+                        await this.forceEndTripsOnStopCommand(preferredDeviceId);
+                        if (preferredDeviceId) {
+                            telemetry_store_1.telemetryStore.clearLatestIfDevice(preferredDeviceId);
+                        }
+                        else {
+                            telemetry_store_1.telemetryStore.clearLatest();
+                        }
+                        this.io?.emit("status", telemetry_store_1.telemetryStore.getStatus(mqtt_service_1.mqttService.connected));
+                    }
+                    catch (error) {
+                        console.error("Erro ao forçar fim de viagem:", error);
+                    }
                 }
             });
             socket.on("disconnect", () => {
@@ -236,12 +264,18 @@ class SocketService {
             this.io?.emit("trip_ended", { deviceId, motoModel: payload.system.moto_model, timestamp });
         }
     }
-    async forceEndTripsOnStopCommand() {
+    async forceEndTripsOnStopCommand(deviceId) {
         const activeDevices = Array.from(this.activeTripIdByDevice.keys());
+        const preferredDeviceId = deviceId ?? telemetry_store_1.telemetryStore.latest?.system?.device_id ?? null;
         if (activeDevices.length === 0) {
+            const fallbackDeviceId = preferredDeviceId ??
+                Array.from(this.lastTelemetryByDevice.keys()).slice(-1)[0] ??
+                null;
+            if (!fallbackDeviceId)
+                return;
+            await this.forceEndTrip(fallbackDeviceId);
             return;
         }
-        const preferredDeviceId = telemetry_store_1.telemetryStore.latest?.system?.device_id;
         const devicesToEnd = preferredDeviceId && activeDevices.includes(preferredDeviceId)
             ? [preferredDeviceId]
             : activeDevices;
@@ -255,10 +289,22 @@ class SocketService {
         this.tripActiveByDevice.set(deviceId, false);
         this.stationaryTicksByDevice.set(deviceId, 0);
         if (!tripId) {
+            const now = endedAt.getTime();
+            const lastHandledAt = this.lastStopHandledAtByDevice.get(deviceId) ?? 0;
+            if (now - lastHandledAt < 1500) {
+                return;
+            }
+            this.lastStopHandledAtByDevice.set(deviceId, now);
+            const created = lastPayload
+                ? await this.createCompletedTripFromLastPayload(deviceId, endedAt)
+                : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt);
             this.io?.emit("trip_ended", {
                 deviceId,
-                motoModel: lastPayload?.system.moto_model ?? "—",
+                motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
                 timestamp: endedAt.toISOString(),
+                tripId: created?.tripId,
+                distanceKm: created?.distanceKm,
+                maxSpeedKmh: created?.maxSpeedKmh,
             });
             return;
         }
@@ -296,6 +342,82 @@ class SocketService {
             this.activeTripIdByDevice.delete(deviceId);
             this.tripStatsByDevice.delete(deviceId);
         }
+    }
+    async createCompletedTripFromLastPayload(deviceId, endedAt) {
+        const lastPayload = this.lastTelemetryByDevice.get(deviceId);
+        if (!lastPayload)
+            return null;
+        let association = await device_association_service_1.deviceAssociationService.getAssociation(deviceId);
+        if (!association) {
+            const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+            if (userId) {
+                await device_association_service_1.deviceAssociationService.registerDevice(deviceId, userId, lastPayload.system.moto_model || `Simulador ${deviceId}`);
+                association = await device_association_service_1.deviceAssociationService.getAssociation(deviceId);
+            }
+        }
+        if (!association)
+            return null;
+        const rawStartedAt = new Date(lastPayload.system.timestamp);
+        const startedAtSafe = Number.isNaN(rawStartedAt.getTime()) ? endedAt : rawStartedAt;
+        const startedAt = startedAtSafe.getTime() > endedAt.getTime() ? endedAt : startedAtSafe;
+        const maxSpeedKmh = lastPayload.telemetry.speed_kmh ?? 0;
+        const maxRollDeg = Math.abs(lastPayload.imu.roll_deg ?? 0);
+        const maxGForce = lastPayload.imu.g_force ?? 0;
+        const distanceKm = 0;
+        const trip = await prisma_service_1.prisma.trip.create({
+            data: {
+                userId: association.userId,
+                motorcycleId: association.motorcycleId,
+                source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+                startedAt,
+                endedAt,
+                status: "COMPLETED",
+                distanceKm,
+                maxSpeedKmh,
+                maxRollDeg,
+                maxGForce,
+                avgSpeedKmh: maxSpeedKmh,
+            },
+        });
+        return { tripId: trip.id, distanceKm, maxSpeedKmh };
+    }
+    async createCompletedTripWithoutTelemetry(deviceId, endedAt) {
+        let association = await device_association_service_1.deviceAssociationService.getAssociation(deviceId);
+        if (!association) {
+            const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+            if (userId) {
+                await device_association_service_1.deviceAssociationService.registerDevice(deviceId, userId, this.lastMotoModelByDevice.get(deviceId) ?? `Simulador ${deviceId}`);
+                association = await device_association_service_1.deviceAssociationService.getAssociation(deviceId);
+            }
+        }
+        if (!association)
+            return null;
+        const distanceKm = 0;
+        const maxSpeedKmh = 0;
+        const trip = await prisma_service_1.prisma.trip.create({
+            data: {
+                userId: association.userId,
+                motorcycleId: association.motorcycleId,
+                source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+                startedAt: endedAt,
+                endedAt,
+                status: "COMPLETED",
+                distanceKm,
+                maxSpeedKmh,
+                maxRollDeg: 0,
+                maxGForce: 0,
+                avgSpeedKmh: 0,
+            },
+        });
+        return { tripId: trip.id, distanceKm, maxSpeedKmh };
+    }
+    async ensureAssociationForDevice(deviceId, userId, motoModel) {
+        this.lastUserIdByDevice.set(deviceId, userId);
+        this.lastMotoModelByDevice.set(deviceId, motoModel);
+        const association = await device_association_service_1.deviceAssociationService.getAssociation(deviceId);
+        if (association)
+            return;
+        await device_association_service_1.deviceAssociationService.registerDevice(deviceId, userId, motoModel || `Simulador ${deviceId}`);
     }
     /** Calcula distância em km entre coordenadas GPS */
     haversineDistance(lat1, lon1, lat2, lon2) {

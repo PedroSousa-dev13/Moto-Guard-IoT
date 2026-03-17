@@ -9,7 +9,7 @@ import CommandPanel from "../components/CommandPanel";
 import Toast from "../components/ui/Toast";
 
 export default function Dashboard() {
-  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal } = useSocket();
+  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
@@ -20,10 +20,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!tripEndedSignal) return;
-    if (!telemetry) return;
-    setToast({ message: "Simulação terminada", type: "success" });
+    setToast((prev) =>
+      prev?.message === "Simulação terminada"
+        ? prev
+        : { message: "Simulação terminada", type: "success" }
+    );
     setMapResetSignal((v) => v + 1);
-  }, [tripEndedSignal, telemetry]);
+    resetSimulationView();
+  }, [tripEndedSignal, resetSimulationView]);
 
   return (
     <div className="page page-full">
@@ -116,6 +120,7 @@ export default function Dashboard() {
           onStop={() => {
             setToast({ message: "Simulação terminada", type: "success" });
             setMapResetSignal((v) => v + 1);
+            resetSimulationView();
           }}
         />
       </div>

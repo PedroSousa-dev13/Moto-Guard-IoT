@@ -5,6 +5,11 @@ exports.exportTripGpx = exportTripGpx;
 const prisma_service_1 = require("../services/prisma.service");
 const gpx_import_service_1 = require("../services/gpx-import.service");
 const influx_service_1 = require("../services/influx.service");
+function badRequest(message) {
+    const err = new Error(message);
+    err.statusCode = 400;
+    return err;
+}
 async function importGpx(req, res) {
     const userId = req.userId;
     const file = req.file;
@@ -14,13 +19,6 @@ async function importGpx(req, res) {
     }
     const requestedMotorcycleId = typeof req.body?.motorcycleId === "string" ? req.body.motorcycleId : null;
     try {
-        const motorcycle = requestedMotorcycleId
-            ? await prisma_service_1.prisma.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
-            : await prisma_service_1.prisma.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
-        if (!motorcycle) {
-            res.status(400).json({ error: "O utilizador não tem motas associadas" });
-            return;
-        }
         const xml = file.buffer.toString("utf8");
         const parsed = (0, gpx_import_service_1.parseGpx)(xml);
         if (parsed.waypoints.length === 0) {
@@ -30,10 +28,28 @@ async function importGpx(req, res) {
         const startedAt = parsed.startedAt ?? new Date();
         const endedAt = parsed.endedAt ?? startedAt;
         const result = await prisma_service_1.prisma.$transaction(async (tx) => {
+            const motorcycle = requestedMotorcycleId
+                ? await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
+                : await tx.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
+            const ensuredMotorcycle = motorcycle
+                ? motorcycle
+                : await tx.motorcycle.create({
+                    data: {
+                        userId,
+                        name: "GPX Import",
+                        brand: null,
+                        year: null,
+                        profileId: null,
+                        deviceId: null,
+                    },
+                });
+            if (requestedMotorcycleId && !motorcycle) {
+                throw badRequest("Mota selecionada não encontrada");
+            }
             const trip = await tx.trip.create({
                 data: {
                     userId,
-                    motorcycleId: motorcycle.id,
+                    motorcycleId: ensuredMotorcycle.id,
                     source: "GPX_IMPORTED",
                     startedAt,
                     endedAt,
@@ -68,6 +84,11 @@ async function importGpx(req, res) {
         });
     }
     catch (err) {
+        const statusCode = typeof err?.statusCode === "number" ? err.statusCode : null;
+        if (statusCode) {
+            res.status(statusCode).json({ error: err.message });
+            return;
+        }
         console.error("[importGpx] Erro interno:", err);
         res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
     }
