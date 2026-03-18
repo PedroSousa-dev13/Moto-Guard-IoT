@@ -295,6 +295,51 @@ button {
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.sim-banner {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.sim-banner-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--red);
+}
+
+.sim-banner-warning {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.22);
+  color: var(--yellow);
+}
+
+.simulator-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.simulator-left,
+.simulator-right {
+  min-width: 0;
+}
+
+.simulator-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .simulator-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Trips Page Styles */
 .filter-card {
   margin-bottom: 24px;

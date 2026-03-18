@@ -243,9 +243,12 @@ export default function TripDetail() {
     eventsLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    setTimeout(() => map.invalidateSize(), 300);
+    const invalidateTimeout = window.setTimeout(() => {
+      if (mapRef.current) map.invalidateSize();
+    }, 300);
 
     return () => {
+      window.clearTimeout(invalidateTimeout);
       map.remove();
       mapRef.current = null;
       routeLayerRef.current = null;
@@ -713,4 +716,3 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
     </div>
   );
 }
-
