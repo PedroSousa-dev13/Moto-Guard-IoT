@@ -81,8 +81,8 @@ class TelemetriaState:
         self.pitch: float = 0.0
         self.yaw: float = 0.0
         self.g_force: float = 0.0
-        self.lat: float = DEFAULT_LAT
-        self.lng: float = DEFAULT_LNG
+        self.lat: float = 0.0
+        self.lng: float = 0.0
 
         self.gear: int = 0
         self.throttle_pct: float = 0.0
@@ -155,7 +155,7 @@ class HeadlessSimulator:
         self.perfil_nome: str | None = None
         self._tick_count = 0
         self._generation_paused: bool = False  # True após queda confirmada; retoma com reset_eventos/arrancar
-        self.route_cursor: RouteCursor = RouteCursor(get_route(ROUTE_NAME))
+        self.route_cursor: RouteCursor | None = None
         self._route_override = False
         self._route_override_waypoints: list[tuple[float, float]] | None = None
         self._route_override_loop: bool = False
@@ -234,10 +234,7 @@ class HeadlessSimulator:
         if self._route_override and self._route_override_waypoints:
             self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
         else:
-            self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
-            self._route_override = False
-            self._route_override_waypoints = None
-            self._route_override_loop = False
+            self.route_cursor = None
         return True
 
     # ========================================================================
@@ -353,10 +350,9 @@ class HeadlessSimulator:
             self._route_override = False
             self._route_override_waypoints = None
             self._route_override_loop = False
-            self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
-            self.route_cursor.reset(0)
-            self.tele.lat = self.route_cursor.waypoints[0][0]
-            self.tele.lng = self.route_cursor.waypoints[0][1]
+            self.route_cursor = None
+            self.tele._target_vel = 0.0
+            self.tele.velocidade = 0.0
             log("Comando: reset_rota")
         else:
             log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
@@ -388,21 +384,23 @@ class HeadlessSimulator:
         # DEBUG: Verificar estado da rota antes de aplicar
         log(f"DEBUG _aplicar_modelo: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
         if self._route_override and self._route_override_waypoints:
-            log(f"DEBUG: Usando rota customizada com {len(self._route_override_waypoints)} waypoints")
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
         else:
-            log(f"DEBUG: Usando rota padrão")
+            self.route_cursor = None
 
-        # Iniciar GPS no ponto de partida da rota
-        self.route_cursor.reset(0)
-        rota_start = self.route_cursor.waypoints[0]
-        log(f"DEBUG: GPS inicializado em ({rota_start[0]:.6f}, {rota_start[1]:.6f})")
-        self.tele.lat = rota_start[0]
-        self.tele.lng = rota_start[1]
+        if self.route_cursor is not None:
+            self.route_cursor.reset(0)
+            rota_start = self.route_cursor.waypoints[0]
+            self.tele.lat = rota_start[0]
+            self.tele.lng = rota_start[1]
 
         self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
         self._tick_count = 0
         log(f"Perfil '{modelo}' carregado — Vel máx: {self.vel_max} km/h | RPM máx: {self.rpm_max}")
-        log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
+        if self.route_cursor is None:
+            log("Modelo carregado — aguarda rota do mapa")
+        else:
+            log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
 
     def _aplicar_evento(self, tipo: str):
         if tipo == "queda":
@@ -427,12 +425,11 @@ class HeadlessSimulator:
         self._route_override = False
         self._route_override_waypoints = None
         self._route_override_loop = False
-        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
-        self.route_cursor.reset(0)
-        self.tele.lat = self.route_cursor.waypoints[0][0]
-        self.tele.lng = self.route_cursor.waypoints[0][1]
+        self.route_cursor = None
 
     def _arrival_speed_cap_kmh(self) -> float | None:
+        if self.route_cursor is None:
+            return None
         dist_to_end_m = self.route_cursor.distance_to_end_m()
         if dist_to_end_m is None:
             return None
@@ -455,22 +452,26 @@ class HeadlessSimulator:
 
         # ── 1. Intenção do motociclista (guiada pela rota) ────────────────
         #  Velocidade alvo: ajuste suave a cada 8s + limites de curva
-        if self._tick_count % 8 == 0:
-            s._target_vel = clamp(
-                s._target_vel + random.uniform(-5, 5),
-                30, self.vel_max * 0.7
-            )
-        s._target_yaw = self.route_cursor.bearing_deg()
-        speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
-        if speed_limit is not None:
-            s._target_vel = min(s._target_vel, speed_limit)
-
-        arrival_speed_cap = self._arrival_speed_cap_kmh()
-        if arrival_speed_cap is not None:
-            s._target_vel = min(s._target_vel, arrival_speed_cap)
-
-        if self.route_cursor.finished:
+        if self.route_cursor is None:
             s._target_vel = 0.0
+            s._target_yaw = s.yaw
+        else:
+            if self._tick_count % 8 == 0:
+                s._target_vel = clamp(
+                    s._target_vel + random.uniform(-5, 5),
+                    30, self.vel_max * 0.7
+                )
+            s._target_yaw = self.route_cursor.bearing_deg()
+            speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
+            if speed_limit is not None:
+                s._target_vel = min(s._target_vel, speed_limit)
+
+            arrival_speed_cap = self._arrival_speed_cap_kmh()
+            if arrival_speed_cap is not None:
+                s._target_vel = min(s._target_vel, arrival_speed_cap)
+
+            if self.route_cursor.finished:
+                s._target_vel = 0.0
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
@@ -630,7 +631,7 @@ class HeadlessSimulator:
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
         # ── 16. GPS ──────────────────────────────────────────────────
-        if s.velocidade > 1:
+        if self.route_cursor is not None and s.velocidade > 1:
             speed_ms = s.velocidade / 3.6
             dist_m = speed_ms * PUBLISH_INTERVAL
             lat, lng, bearing = self.route_cursor.step(dist_m)
@@ -743,7 +744,7 @@ class HeadlessSimulator:
 
         # Loop principal
         while self.running:
-            if self.connected and self.perfil_nome and not self._generation_paused:
+            if self.connected and self.perfil_nome and (self.route_cursor is not None) and not self._generation_paused:
                 payload = self._sim_tick()
                 self._publicar(payload)
 

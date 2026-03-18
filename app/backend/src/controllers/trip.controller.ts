@@ -8,6 +8,7 @@
 import { Response } from "express";
 import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
+import { runTripMlPipeline } from "../services/trip-ml-pipeline.service";
 
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
 type TripSourceFilter = (typeof VALID_TRIP_SOURCES)[number];
@@ -69,6 +70,23 @@ export async function getTrip(req: AuthRequest, res: Response): Promise<void> {
     res.json(trip);
   } catch (err) {
     console.error("[getTrip] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}
+
+export async function getTripEvaluation(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const id = req.params.id as string;
+
+  try {
+    const evaluation = await runTripMlPipeline(id, userId);
+    if (!evaluation) {
+      res.status(404).json({ error: "Viagem não encontrada" });
+      return;
+    }
+    res.json(evaluation);
+  } catch (err) {
+    console.error("[getTripEvaluation] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
 }

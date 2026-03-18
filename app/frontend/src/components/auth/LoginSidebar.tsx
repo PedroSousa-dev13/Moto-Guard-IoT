@@ -7,10 +7,11 @@ interface LoginSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  defaultMode?: "login" | "register";
 }
 
-const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess }) => {
-  const [isLogin, setIsLogin] = useState(true);
+const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess, defaultMode = "login" }) => {
+  const [isLogin, setIsLogin] = useState(defaultMode === "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

@@ -42,6 +42,88 @@ export default function SimulatorContexts() {
     "system: device_id, modelo, evento, tick, timestamp",
   ];
 
+  const nodes = [
+    { id: "route", label: "Rota (OSRM/GPX)" },
+    { id: "targets", label: "Targets (vel/yaw)" },
+    { id: "speed", label: "Velocidade + acel." },
+    { id: "controls", label: "Throttle + travões" },
+    { id: "pitch", label: "Pitch" },
+    { id: "rollYaw", label: "Roll + Yaw" },
+    { id: "rpm", label: "RPM" },
+    { id: "temp", label: "Temp. motor" },
+    { id: "volt", label: "Voltagem" },
+    { id: "gear", label: "Mudança + embraiagem" },
+    { id: "odo", label: "Odómetro" },
+    { id: "safety", label: "ABS/TC/descanso" },
+    { id: "oil", label: "Pressão óleo" },
+    { id: "tires", label: "Pressão pneus" },
+    { id: "lux", label: "Luminosidade" },
+    { id: "events", label: "Eventos (queda/etc.)" },
+    { id: "gps", label: "GPS (lat/lng)" },
+    { id: "publish", label: "Payload + MQTT" },
+  ];
+
+  const edges = [
+    ["route", "targets"],
+    ["targets", "speed"],
+    ["speed", "controls"],
+    ["controls", "pitch"],
+    ["targets", "rollYaw"],
+    ["speed", "rpm"],
+    ["rpm", "temp"],
+    ["rpm", "oil"],
+    ["temp", "tires"],
+    ["controls", "safety"],
+    ["speed", "odo"],
+    ["speed", "gps"],
+    ["rollYaw", "gps"],
+    ["pitch", "events"],
+    ["rollYaw", "events"],
+    ["temp", "events"],
+    ["volt", "events"],
+    ["oil", "events"],
+    ["tires", "events"],
+    ["lux", "publish"],
+    ["events", "publish"],
+    ["gps", "publish"],
+    ["speed", "publish"],
+    ["rpm", "publish"],
+    ["pitch", "publish"],
+    ["rollYaw", "publish"],
+    ["safety", "publish"],
+    ["oil", "publish"],
+    ["tires", "publish"],
+    ["volt", "publish"],
+    ["gear", "publish"],
+    ["odo", "publish"],
+  ] as const;
+
+  const nodeById = Object.fromEntries(nodes.map((n) => [n.id, n])) as Record<
+    string,
+    { id: string; label: string }
+  >;
+
+  const layout = {
+    route: { x: 60, y: 60 },
+    targets: { x: 230, y: 60 },
+    speed: { x: 400, y: 60 },
+    controls: { x: 570, y: 60 },
+    pitch: { x: 740, y: 60 },
+    rollYaw: { x: 570, y: 150 },
+    rpm: { x: 400, y: 150 },
+    temp: { x: 230, y: 150 },
+    volt: { x: 60, y: 150 },
+    gear: { x: 400, y: 240 },
+    odo: { x: 570, y: 240 },
+    gps: { x: 740, y: 240 },
+    safety: { x: 60, y: 240 },
+    oil: { x: 230, y: 240 },
+    tires: { x: 60, y: 330 },
+    lux: { x: 230, y: 330 },
+    events: { x: 400, y: 330 },
+    publish: { x: 740, y: 330 },
+  } as const;
+
   return (
     <div className="page">
       <div className="page-header">
@@ -90,7 +172,97 @@ export default function SimulatorContexts() {
           </div>
         </div>
       </div>
+
+      <div className="panel" style={{ marginTop: 14 }}>
+        <div className="panel-header">
+          <div className="panel-title">Diagrama dos 18 subsistemas</div>
+        </div>
+        <div className="panel-body">
+          <div style={{ overflowX: "auto" }}>
+            <svg
+              viewBox="0 0 860 420"
+              width="100%"
+              style={{
+                minWidth: 860,
+                background:
+                  "linear-gradient(180deg, rgba(15, 23, 42, 0.06) 0%, rgba(15, 23, 42, 0.02) 100%)",
+                border: "1px solid rgba(15, 23, 42, 0.12)",
+                borderRadius: 14,
+              }}
+            >
+              <defs>
+                <marker
+                  id="arrow"
+                  markerWidth="8"
+                  markerHeight="8"
+                  refX="7"
+                  refY="3"
+                  orient="auto"
+                >
+                  <path d="M0,0 L0,6 L8,3 z" fill="rgba(100, 116, 139, 0.95)" />
+                </marker>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow
+                    dx="0"
+                    dy="2"
+                    stdDeviation="2"
+                    floodColor="rgba(0,0,0,0.5)"
+                  />
+                </filter>
+              </defs>
+
+              {edges.map(([from, to]) => {
+                const a = (layout as any)[from] as { x: number; y: number };
+                const b = (layout as any)[to] as { x: number; y: number };
+                const ax = a.x + 60;
+                const ay = a.y + 18;
+                const bx = b.x;
+                const by = b.y + 18;
+                const mx = (ax + bx) / 2;
+                const path = `M ${ax} ${ay} C ${mx} ${ay}, ${mx} ${by}, ${bx} ${by}`;
+                return (
+                  <path
+                    key={`${from}-${to}`}
+                    d={path}
+                    stroke="rgba(100, 116, 139, 0.75)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                    markerEnd="url(#arrow)"
+                  />
+                );
+              })}
+
+              {nodes.map((n) => {
+                const p = (layout as any)[n.id] as { x: number; y: number };
+                return (
+                  <g key={n.id} transform={`translate(${p.x}, ${p.y})`} filter="url(#shadow)">
+                    <rect
+                      x="0"
+                      y="0"
+                      width="120"
+                      height="36"
+                      rx="10"
+                      fill="rgba(15, 23, 42, 0.9)"
+                      stroke="rgba(255,255,255,0.12)"
+                    />
+                    <text
+                      x="60"
+                      y="22"
+                      textAnchor="middle"
+                      fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+                      fontSize="11.5"
+                      fill="rgba(255,255,255,0.9)"
+                    >
+                      {nodeById[n.id]?.label ?? n.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
