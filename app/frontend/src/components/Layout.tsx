@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../hooks/useAuth';
@@ -9,9 +9,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
   // Se não estiver autenticado, mostrar apenas o conteúdo sem sidebar
   if (!isAuthenticated) {

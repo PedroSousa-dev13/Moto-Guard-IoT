@@ -90,6 +90,7 @@ model Trip {
   id              String      @id @default(uuid())
   userId          String      @map("user_id")
   motorcycleId    String      @map("motorcycle_id")
+  source          TripSource  @default(SIMULATOR)
   startedAt       DateTime    @map("started_at")
   endedAt         DateTime?   @map("ended_at")
   distanceKm      Float?      @map("distance_km")
@@ -103,6 +104,7 @@ model Trip {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   motorcycle      Motorcycle  @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
   events          TripEvent[]
+  gpxData         GpxData?
 
   @@index([userId])
   @@index([motorcycleId])
@@ -114,6 +116,12 @@ enum TripStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum TripSource {
+  SIMULATOR
+  GPX_IMPORTED
+  DEVICE_REAL
 }
 
 // ─── Eventos de Risco ───────────────────────────────────────────────────────
@@ -140,6 +148,23 @@ model TripEvent {
   @@index([severity])
   @@index([occurredAt])
   @@map("trip_events")
+}
+
+// ─── Dados GPX Importados ───────────────────────────────────────────────────
+model GpxData {
+  id          String   @id @default(uuid())
+  tripId      String   @unique @map("trip_id") // Um-para-um com Trip
+  filename    String   // Nome original do ficheiro
+  fileSize    Int      @map("file_size") // Tamanho em bytes
+  waypoints   Json     // Array de pontos {lat, lon, ele, time}
+  bounds      Json     // {minLat, maxLat, minLon, maxLon}
+  totalTime   Int?     @map("total_time") // Duração em segundos
+  importDate  DateTime @default(now()) @map("import_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("gpx_data")
 }
 
 enum EventType {

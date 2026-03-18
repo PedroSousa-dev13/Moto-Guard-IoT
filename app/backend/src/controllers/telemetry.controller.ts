@@ -38,11 +38,20 @@ export async function getTripTelemetry(
   // Verificar que a viagem pertence ao utilizador
   const trip = await prisma.trip.findFirst({
     where: { id: tripId, userId },
-    select: { id: true, startedAt: true, endedAt: true, status: true },
+    select: { id: true, startedAt: true, endedAt: true, status: true, source: true },
   });
 
   if (!trip) {
     res.status(404).json({ error: "Viagem não encontrada" });
+    return;
+  }
+
+  if (trip.source === "GPX_IMPORTED") {
+    res.json({
+      trip,
+      total_points: 0,
+      data: [],
+    });
     return;
   }
 
@@ -51,6 +60,15 @@ export async function getTripTelemetry(
     where: { trips: { some: { id: tripId } } },
     select: { deviceId: true },
   });
+
+  if (!motorcycle?.deviceId) {
+    res.json({
+      trip,
+      total_points: 0,
+      data: [],
+    });
+    return;
+  }
 
   try {
     const points = await influxService.queryTripTelemetry(

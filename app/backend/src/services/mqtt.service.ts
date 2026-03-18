@@ -101,10 +101,13 @@ class MqttService {
     if (!this.client || !this._connected) {
       return false;
     }
+
+    const acao = (command as any)?.acao;
+    const retain = acao === "definir_rota" || acao === "reset_rota";
     this.client.publish(
       env.MQTT_TOPIC_COMANDO,
       JSON.stringify(command),
-      { qos: 1 }
+      { qos: 1, retain }
     );
     return true;
   }

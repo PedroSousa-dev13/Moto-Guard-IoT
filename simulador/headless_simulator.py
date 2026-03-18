@@ -29,8 +29,8 @@ from config import (
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
     PERFIS_MOTO, ROUTE_NAME,
-)
-from routes import RouteFollower, ROTAS, ROTA_PADRAO
+                   )
+from routes import RouteCursor, get_route, get_route_between
 
 # ── Constantes de interpolação (suavidade por tick de 1s) ─────────────────────
 LERP_VEL   = 0.15
@@ -39,6 +39,11 @@ LERP_ROLL  = 0.12
 LERP_PITCH = 0.18
 LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
+
+# Redução progressiva de velocidade perto do destino final (rotas não-loop).
+ARRIVAL_SLOWDOWN_START_M = 2000.0
+ARRIVAL_FULL_STOP_M = 12.0
+ARRIVAL_MIN_CRUISE_KMH = 6.0
 
 
 # =============================================================================
@@ -50,6 +55,11 @@ def lerp(current: float, target: float, factor: float) -> float:
 
 def clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
+
+
+def lerp_angle_deg(current: float, target: float, factor: float) -> float:
+    diff = (target - current + 180) % 360 - 180
+    return (current + diff * factor) % 360
 
 
 def log(msg: str):
@@ -71,8 +81,8 @@ class TelemetriaState:
         self.pitch: float = 0.0
         self.yaw: float = 0.0
         self.g_force: float = 0.0
-        self.lat: float = DEFAULT_LAT
-        self.lng: float = DEFAULT_LNG
+        self.lat: float = 0.0
+        self.lng: float = 0.0
 
         self.gear: int = 0
         self.throttle_pct: float = 0.0
@@ -145,9 +155,10 @@ class HeadlessSimulator:
         self.perfil_nome: str | None = None
         self._tick_count = 0
         self._generation_paused: bool = False  # True após queda confirmada; retoma com reset_eventos/arrancar
-        self.route_follower: RouteFollower = RouteFollower(
-            ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
-        )
+        self.route_cursor: RouteCursor | None = None
+        self._route_override = False
+        self._route_override_waypoints: list[tuple[float, float]] | None = None
+        self._route_override_loop: bool = False
 
         # Limites do perfil
         self.vel_max = 200
@@ -220,9 +231,10 @@ class HeadlessSimulator:
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
 
-        # Re-inicializar seguidor de rota ao carregar novo perfil
-        rota = ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
-        self.route_follower = RouteFollower(rota)
+        if self._route_override and self._route_override_waypoints:
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
+        else:
+            self.route_cursor = None
         return True
 
     # ========================================================================
@@ -267,13 +279,22 @@ class HeadlessSimulator:
         log("MQTT desconectado — a tentar reconectar…")
 
     def _on_message(self, client, userdata, msg):
+        log(f"DEBUG: Mensagem MQTT recebida - topic={msg.topic}, payload={msg.payload}")
         try:
             dados = json.loads(msg.payload.decode("utf-8"))
         except Exception:
             log(f"Comando inválido (não é JSON): {msg.payload}")
             return
 
-        acao = dados.get("acao", "")
+        device_id = dados.get("device_id")
+        log(f"DEBUG: Comando recebido - device_id={device_id}, acao={dados.get('acao')}, DEVICE_ID={DEVICE_ID}")
+        if device_id and device_id != DEVICE_ID:
+            log(f"DEBUG: Comando ignorado - device_id {device_id} != {DEVICE_ID}")
+            return
+
+        acao_raw = dados.get("acao", "")
+        acao = str(acao_raw).strip().lower()
+        log(f"DEBUG: Processando acao='{acao}' (raw={acao_raw!r})")
         if acao == "definir_modelo":
             modelo = dados.get("modelo", "")
             log(f"Comando: definir_modelo → '{modelo}'")
@@ -300,12 +321,41 @@ class HeadlessSimulator:
                 log("Arrancar: geração já activa.")
         elif acao == "parar":
             log("Comando: parar — simulador a ficar inactivo (aguarda novo 'definir_modelo')")
-            self.perfil_nome = None
-            self._generation_paused = False
-            self.tele = TelemetriaState()
-            self._tick_count = 0
+            self._clear_simulator_state()
+        elif acao in ("definir_rota", "set_route", "set-rota"):
+            route = dados.get("route") or {}
+            start = route.get("start") or {}
+            end = route.get("end") or {}
+            start_lat = start.get("latitude")
+            start_lng = start.get("longitude")
+            end_lat = end.get("latitude")
+            end_lng = end.get("longitude")
+            loop = bool(route.get("loop", False))
+            if not all(isinstance(v, (int, float)) for v in (start_lat, start_lng, end_lat, end_lng)):
+                log("Comando: definir_rota inválido — faltam coordenadas (latitude/longitude)")
+                return
+            wps = get_route_between((float(start_lat), float(start_lng)), (float(end_lat), float(end_lng)))
+            log(f"DEBUG _aplicar_rota: Gerados {len(wps)} waypoints da rota")
+            self.route_cursor = RouteCursor(wps, close_loop=loop)
+            self.route_cursor.reset(0)
+            start_point = self.route_cursor.waypoints[0]
+            log(f"DEBUG: Primeiro waypoint da rota: ({start_point[0]:.6f}, {start_point[1]:.6f})")
+            self.tele.lat = start_point[0]
+            self.tele.lng = start_point[1]
+            self._route_override = True
+            self._route_override_waypoints = wps
+            self._route_override_loop = loop
+            log(f"Comando: definir_rota → start=({start_lat:.6f},{start_lng:.6f}) end=({end_lat:.6f},{end_lng:.6f}) loop={'on' if loop else 'off'}")
+        elif acao in ("reset_rota", "clear_route", "clear-rota"):
+            self._route_override = False
+            self._route_override_waypoints = None
+            self._route_override_loop = False
+            self.route_cursor = None
+            self.tele._target_vel = 0.0
+            self.tele.velocidade = 0.0
+            log("Comando: reset_rota")
         else:
-            log(f"Comando desconhecido: {acao}")
+            log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
 
     # ========================================================================
     #  Processar comandos
@@ -314,18 +364,43 @@ class HeadlessSimulator:
         if not self._carregar_perfil(modelo):
             return
         self._generation_paused = False
+        
+        # Preservar rota customizada durante reset
+        rota_salva = self._route_override_waypoints
+        loop_salvo = self._route_override_loop
+        override_salvo = self._route_override
+        
         self.tele = TelemetriaState()
         self._carregar_perfil(modelo)  # re-propagar thresholds após reset
+        
+        # Restaurar rota customizada se existia
+        if override_salvo and rota_salva:
+            self._route_override = override_salvo
+            self._route_override_waypoints = rota_salva
+            self._route_override_loop = loop_salvo
+            self.route_cursor = RouteCursor(rota_salva, close_loop=loop_salvo)
+            log(f"DEBUG: Rota customizada restaurada após reset")
 
-        # Iniciar GPS no ponto de partida da rota
-        rota_start = self.route_follower.waypoints[0]
-        self.tele.lat = rota_start[0]
-        self.tele.lng = rota_start[1]
+        # DEBUG: Verificar estado da rota antes de aplicar
+        log(f"DEBUG _aplicar_modelo: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
+        if self._route_override and self._route_override_waypoints:
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
+        else:
+            self.route_cursor = None
+
+        if self.route_cursor is not None:
+            self.route_cursor.reset(0)
+            rota_start = self.route_cursor.waypoints[0]
+            self.tele.lat = rota_start[0]
+            self.tele.lng = rota_start[1]
 
         self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
         self._tick_count = 0
         log(f"Perfil '{modelo}' carregado — Vel máx: {self.vel_max} km/h | RPM máx: {self.rpm_max}")
-        log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
+        if self.route_cursor is None:
+            log("Modelo carregado — aguarda rota do mapa")
+        else:
+            log(f"A gerar telemetria ({PUBLISH_INTERVAL}s/tick)…")
 
     def _aplicar_evento(self, tipo: str):
         if tipo == "queda":
@@ -342,6 +417,32 @@ class HeadlessSimulator:
         else:
             log(f"Tipo de evento desconhecido: {tipo}")
 
+    def _clear_simulator_state(self):
+        self.perfil_nome = None
+        self._generation_paused = False
+        self.tele = TelemetriaState()
+        self._tick_count = 0
+        self._route_override = False
+        self._route_override_waypoints = None
+        self._route_override_loop = False
+        self.route_cursor = None
+
+    def _arrival_speed_cap_kmh(self) -> float | None:
+        if self.route_cursor is None:
+            return None
+        dist_to_end_m = self.route_cursor.distance_to_end_m()
+        if dist_to_end_m is None:
+            return None
+        if dist_to_end_m <= ARRIVAL_FULL_STOP_M:
+            return 0.0
+        if dist_to_end_m >= ARRIVAL_SLOWDOWN_START_M:
+            return None
+
+        ratio = (dist_to_end_m - ARRIVAL_FULL_STOP_M) / (ARRIVAL_SLOWDOWN_START_M - ARRIVAL_FULL_STOP_M)
+        ratio = clamp(ratio, 0.0, 1.0)
+        max_approach_kmh = min(self.vel_max * 0.35, 60.0)
+        return ARRIVAL_MIN_CRUISE_KMH + (max_approach_kmh - ARRIVAL_MIN_CRUISE_KMH) * (ratio ** 1.35)
+
     # ========================================================================
     #  LOOP CENTRAL (idêntico ao simulador GUI)
     # ========================================================================
@@ -351,39 +452,54 @@ class HeadlessSimulator:
 
         # ── 1. Intenção do motociclista (guiada pela rota) ────────────────
         #  Velocidade alvo: ajuste suave a cada 8s + limites de curva
-        if self._tick_count % 8 == 0:
-            s._target_vel = clamp(
-                s._target_vel + random.uniform(-5, 5),
-                30, self.vel_max * 0.7
-            )
-        #  Yaw alvo derivado da rota pré-definida (substitui random walk)
-        route_info = self.route_follower.update(s.lat, s.lng)
-        s._target_yaw = route_info["target_yaw_deg"]
-        #  Reduzir velocidade antes de curvas fechadas
-        if route_info["speed_limit_kmh"] is not None:
-            s._target_vel = min(s._target_vel, route_info["speed_limit_kmh"])
+        if self.route_cursor is None:
+            s._target_vel = 0.0
+            s._target_yaw = s.yaw
+        else:
+            if self._tick_count % 8 == 0:
+                s._target_vel = clamp(
+                    s._target_vel + random.uniform(-5, 5),
+                    30, self.vel_max * 0.7
+                )
+            s._target_yaw = self.route_cursor.bearing_deg()
+            speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
+            if speed_limit is not None:
+                if speed_limit < s._target_vel:
+                    s._target_vel = lerp(s._target_vel, speed_limit, 0.35)
+                else:
+                    s._target_vel = min(s._target_vel, speed_limit)
+
+            arrival_speed_cap = self._arrival_speed_cap_kmh()
+            if arrival_speed_cap is not None:
+                if arrival_speed_cap < s._target_vel:
+                    dist_to_end_m = self.route_cursor.distance_to_end_m() or 0.0
+                    closeness = clamp(1.0 - (dist_to_end_m / ARRIVAL_SLOWDOWN_START_M), 0.0, 1.0)
+                    factor = clamp(0.12 + closeness * 0.55, 0.12, 0.80)
+                    s._target_vel = lerp(s._target_vel, arrival_speed_cap, factor)
+                else:
+                    s._target_vel = min(s._target_vel, arrival_speed_cap)
+
+            if self.route_cursor.finished:
+                s._target_vel = 0.0
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
-        s._acceleration = clamp(vel_diff * 0.15, -15, 15)
-        s.velocidade = lerp(s.velocidade, s._target_vel, LERP_VEL)
-        s.velocidade += random.uniform(-0.3, 0.3)
-        s.velocidade = clamp(s.velocidade, 0, self.vel_max)
+        s._acceleration = clamp(vel_diff * 0.22, -18, 12)
+        s.velocidade = clamp(s.velocidade + s._acceleration, 0, self.vel_max)
 
         # ── 3. Throttle e Brakes ─────────────────────────────────────
-        if vel_diff > 2:
-            s.throttle_pct = clamp(vel_diff * 3 + random.uniform(5, 15), 5, 100)
-            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.5)
-            s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.5)
-        elif vel_diff < -5:
-            s.throttle_pct = lerp(s.throttle_pct, 0, 0.5)
-            brake_force = clamp(abs(vel_diff) * 2, 0, 100)
-            s.brake_front_pct = lerp(s.brake_front_pct,
-                brake_force * random.uniform(0.5, 0.8), 0.4)
-            s.brake_rear_pct  = lerp(s.brake_rear_pct,
-                brake_force * random.uniform(0.2, 0.5), 0.4)
+        if vel_diff > 1.5:
+            s.throttle_pct = clamp(lerp(s.throttle_pct, clamp(vel_diff * 5.0, 18, 100), 0.35), 0, 100)
+            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.6)
+            s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.6)
+        elif vel_diff < -1.5:
+            s.throttle_pct = lerp(s.throttle_pct, 0, 0.6)
+            brake_force = clamp(abs(vel_diff) * 6.0, 0, 100)
+            s.brake_front_pct = lerp(s.brake_front_pct, brake_force * 0.75, 0.45)
+            s.brake_rear_pct  = lerp(s.brake_rear_pct, brake_force * 0.35, 0.45)
         else:
-            s.throttle_pct = lerp(s.throttle_pct, random.uniform(15, 30), 0.2)
+            cruise = clamp(12 + (s.velocidade / max(1, self.vel_max)) * 18, 10, 35)
+            s.throttle_pct = lerp(s.throttle_pct, cruise, 0.18)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.3)
             s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.3)
         s.throttle_pct    = clamp(s.throttle_pct, 0, 100)
@@ -412,13 +528,6 @@ class HeadlessSimulator:
             s.yaw = (s.yaw + yaw_rate) % 360
         s.yaw += random.uniform(-0.3, 0.3)
         s.yaw = s.yaw % 360
-
-        # ── 6. RPM ───────────────────────────────────────────────────
-        target_rpm = (s.velocidade * (self.rpm_max / self.vel_max)
-                      + random.uniform(-100, 100))
-        s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
-        s.rpm += random.uniform(-15, 15)
-        s.rpm = clamp(s.rpm, 0, self.rpm_max)
 
         # ── 7. Temperatura ───────────────────────────────────────────
         target_temp = (self.temp_min
@@ -450,6 +559,20 @@ class HeadlessSimulator:
             else:
                 s.clutch_engaged = False
 
+        idle_rpm = max(900, int(self.rpm_max * 0.08))
+        if s.gear <= 0 or s.velocidade < 1:
+            target_rpm = idle_rpm + s.throttle_pct * 8
+        else:
+            redline_speeds = { 1: 0.18, 2: 0.30, 3: 0.44, 4: 0.60, 5: 0.78, 6: 1.00 }
+            red_speed = max(1.0, self.vel_max * redline_speeds.get(s.gear, 1.0))
+            ratio = clamp(s.velocidade / red_speed, 0.0, 1.15)
+            target_rpm = idle_rpm + (self.rpm_max - idle_rpm) * ratio
+            if s.clutch_engaged:
+                target_rpm = max(idle_rpm, target_rpm - 900)
+        s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
+        s.rpm += random.uniform(-20, 20)
+        s.rpm = clamp(s.rpm, 0, self.rpm_max)
+
         # ── 10. Odómetro ─────────────────────────────────────────────
         s.odometer_km += s.velocidade / 3600.0
 
@@ -468,14 +591,14 @@ class HeadlessSimulator:
         # ── 13. Pressão pneus (base específica por perfil + calor) ───────────
         temp_factor = ((s.temp_motor - self.temp_min)
                       / max(1, self.temp_max - self.temp_min))
-        s.tire_pressure_front = clamp(
-            self.tire_front_base + temp_factor * self.tire_front_base * 0.08
-            + random.uniform(-0.02, 0.02),
-            self.tire_front_base * 0.85, self.tire_front_base * 1.15)
-        s.tire_pressure_rear = clamp(
-            self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
-            + random.uniform(-0.02, 0.02),
-            self.tire_rear_base * 0.85, self.tire_rear_base * 1.15)
+        target_tire_front = self.tire_front_base + temp_factor * self.tire_front_base * 0.08
+        target_tire_rear = self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
+        s.tire_pressure_front = lerp(s.tire_pressure_front, target_tire_front, 0.06)
+        s.tire_pressure_rear = lerp(s.tire_pressure_rear, target_tire_rear, 0.06)
+        s.tire_pressure_front += random.uniform(-0.003, 0.003)
+        s.tire_pressure_rear += random.uniform(-0.003, 0.003)
+        s.tire_pressure_front = clamp(s.tire_pressure_front, self.tire_front_base * 0.90, self.tire_front_base * 1.15)
+        s.tire_pressure_rear = clamp(s.tire_pressure_rear, self.tire_rear_base * 0.90, self.tire_rear_base * 1.15)
 
         # ── 14. Luminosidade ─────────────────────────────────────────
         hour_sim = (self._tick_count % 1800) / 1800.0
@@ -521,13 +644,19 @@ class HeadlessSimulator:
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
         # ── 16. GPS ──────────────────────────────────────────────────
-        if s.velocidade > 1:
+        if self.route_cursor is not None and s.velocidade > 1:
             speed_ms = s.velocidade / 3.6
-            yaw_rad = math.radians(s.yaw)
-            s.lat += (speed_ms * math.cos(yaw_rad)) / 111320.0
-            s.lng += (speed_ms * math.sin(yaw_rad)) / (
-                111320.0 * math.cos(math.radians(s.lat)))
-            # Sem ruído aleatório — posição segue a física da rota
+            dist_m = speed_ms * PUBLISH_INTERVAL
+            lat, lng, bearing = self.route_cursor.step(dist_m)
+            # DEBUG: Verificar se GPS está a avançar
+            if self._tick_count % 50 == 0:  # Log a cada 50 ticks (~5 segundos)
+                log(f"DEBUG GPS: vel={s.velocidade:.1f}km/h dist={dist_m:.1f}m lat={lat:.6f} lng={lng:.6f} bearing={bearing:.1f}°")
+            s.lat = lat
+            s.lng = lng
+            s._target_yaw = bearing
+            s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+            if self.route_cursor.finished:
+                s._target_vel = 0.0
 
         # ── 17. Arredondar ───────────────────────────────────────────
         vel_out   = round(s.velocidade, 1)
@@ -628,7 +757,7 @@ class HeadlessSimulator:
 
         # Loop principal
         while self.running:
-            if self.connected and self.perfil_nome and not self._generation_paused:
+            if self.connected and self.perfil_nome and (self.route_cursor is not None) and not self._generation_paused:
                 payload = self._sim_tick()
                 self._publicar(payload)
 

@@ -26,21 +26,26 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    // Não revelar se email existe ou não por segurança
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Não revelar se email existe ou não por segurança
+      res.json({ message: "Se o email existir, receberá instruções de recuperação" });
+      return;
+    }
+
+    // Gerar token de reset
+    const resetToken = generateResetToken(email);
+
+    // TODO: Enviar email com token (implementar serviço de email)
+    // Por agora, apenas log do token para debug
+    console.log(`Reset token para ${email}: ${resetToken}`);
+
     res.json({ message: "Se o email existir, receberá instruções de recuperação" });
-    return;
+  } catch (err) {
+    console.error("[forgotPassword] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
-
-  // Gerar token de reset
-  const resetToken = generateResetToken(email);
-
-  // TODO: Enviar email com token (implementar serviço de email)
-  // Por agora, apenas log do token para debug
-  console.log(`Reset token para ${email}: ${resetToken}`);
-
-  res.json({ message: "Se o email existir, receberá instruções de recuperação" });
 }
 
 // ─── Verificar Token de Reset ───────────────────────────────────────────────────
@@ -55,7 +60,7 @@ export async function verifyResetToken(req: Request, res: Response): Promise<voi
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-    
+
     if (decoded.type !== 'reset') {
       res.status(400).json({ valid: false });
       return;
@@ -70,7 +75,8 @@ export async function verifyResetToken(req: Request, res: Response): Promise<voi
 
     res.json({ valid: true });
   } catch (err) {
-    // Token inválido ou expirado
+    // Token inválido, expirado, ou erro de base de dados
+    console.error("[verifyResetToken] Erro:", err);
     res.status(400).json({ valid: false });
   }
 }
@@ -91,7 +97,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-    
+
     if (decoded.type !== 'reset') {
       res.status(400).json({ error: "Token inválido" });
       return;
@@ -110,13 +116,12 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     // Atualizar senha
     await prisma.user.update({
       where: { id: user.id },
-      data: { 
-        passwordHash,
-      },
+      data: { passwordHash },
     });
 
     res.json({ message: "Senha redefinida com sucesso" });
   } catch (err) {
+    console.error("[resetPassword] Erro interno:", err);
     res.status(400).json({ error: "Token inválido ou expirado" });
   }
 }

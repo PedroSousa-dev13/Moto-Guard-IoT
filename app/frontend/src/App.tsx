@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import LoginSidebar from './components/auth/LoginSidebar';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import Trips from './pages/Trips';
+import TripDetail from './pages/TripDetail';
+import Gpx from './pages/Gpx';
 import Map from './pages/Map';
+import SimulatorContexts from './pages/SimulatorContexts';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -15,21 +17,6 @@ import './App.css';
 import './Layout.css';
 
 function App() {
-  const [isLoginSidebarOpen, setIsLoginSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    // Listener para abrir login sidebar da HomePage
-    const handleOpenLoginSidebar = () => {
-      setIsLoginSidebarOpen(true);
-    };
-
-    window.addEventListener('openLoginSidebar', handleOpenLoginSidebar);
-
-    return () => {
-      window.removeEventListener('openLoginSidebar', handleOpenLoginSidebar);
-    };
-  }, []);
-
   return (
     <AuthProvider>
       <Router>
@@ -49,9 +36,24 @@ function App() {
                   <Trips />
                 </ProtectedRoute>
               } />
+              <Route path="/trips/:id" element={
+                <ProtectedRoute>
+                  <TripDetail />
+                </ProtectedRoute>
+              } />
               <Route path="/map" element={
                 <ProtectedRoute>
                   <Map />
+                </ProtectedRoute>
+              } />
+              <Route path="/gpx" element={
+                <ProtectedRoute>
+                  <Gpx />
+                </ProtectedRoute>
+              } />
+              <Route path="/simulator-contexts" element={
+                <ProtectedRoute>
+                  <SimulatorContexts />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={
@@ -59,14 +61,9 @@ function App() {
                   <Profile />
                 </ProtectedRoute>
               } />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
-          
-          {/* Login Sidebar Modal */}
-          <LoginSidebar 
-            isOpen={isLoginSidebarOpen} 
-            onClose={() => setIsLoginSidebarOpen(false)} 
-          />
         </div>
       </Router>
     </AuthProvider>

@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../services/prisma.service";
 import { env } from "../config/env";
+import type { AuthRequest } from "../middleware/auth.middleware";
 
 // ─── Registo ────────────────────────────────────────────────────────────────
 export async function register(req: Request, res: Response): Promise<void> {
@@ -25,22 +26,27 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    res.status(409).json({ error: "Email já registado" });
-    return;
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      res.status(409).json({ error: "Email já registado" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: { email, passwordHash, name },
+      select: { id: true, email: true, name: true, createdAt: true },
+    });
+
+    const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.status(201).json({ user, token });
+  } catch (err) {
+    console.error("[register] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const user = await prisma.user.create({
-    data: { email, passwordHash, name },
-    select: { id: true, email: true, name: true, createdAt: true },
-  });
-
-  const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
-
-  res.status(201).json({ user, token });
 }
 
 // ─── Login ──────────────────────────────────────────────────────────────────
@@ -52,22 +58,48 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    res.status(401).json({ error: "Credenciais inválidas" });
-    return;
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      res.status(401).json({ error: "Credenciais inválidas" });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Credenciais inválidas" });
+      return;
+    }
+
+    const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({
+      user: { id: user.id, email: user.email, name: user.name },
+      token,
+    });
+  } catch (err) {
+    console.error("[login] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
+}
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    res.status(401).json({ error: "Credenciais inválidas" });
-    return;
+export async function me(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "Utilizador não encontrado" });
+      return;
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error("[me] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
-
-  const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
-
-  res.json({
-    user: { id: user.id, email: user.email, name: user.name },
-    token,
-  });
 }

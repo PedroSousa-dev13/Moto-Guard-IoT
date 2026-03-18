@@ -9,11 +9,16 @@
 * 🟢 You can import this file directly.
 */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EventSeverity = exports.EventType = exports.TripStatus = void 0;
+exports.EventSeverity = exports.EventType = exports.TripSource = exports.TripStatus = void 0;
 exports.TripStatus = {
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED'
+};
+exports.TripSource = {
+    SIMULATOR: 'SIMULATOR',
+    GPX_IMPORTED: 'GPX_IMPORTED',
+    DEVICE_REAL: 'DEVICE_REAL'
 };
 exports.EventType = {
     HARD_BRAKING: 'HARD_BRAKING',

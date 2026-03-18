@@ -68,6 +68,11 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - motoguard-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-motoguard} -d ${POSTGRES_DB:-motoguard}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   # ─── Backend Node.js ───────────────────────────────────────────────────
   backend:
@@ -97,9 +102,12 @@ services:
       # JWT
       JWT_SECRET: ${JWT_SECRET:-motoguard-dev-secret-change-in-prod}
     depends_on:
-      - mosquitto
-      - influxdb
-      - postgres
+      mosquitto:
+        condition: service_started
+      influxdb:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     volumes:
       - ./app/backend:/app/backend
     networks:
@@ -119,8 +127,11 @@ services:
       MQTT_PASS: ${MQTT_SIM_PASS:-simulator123}
       SIM_MODELO: ${SIM_MODELO:-Naked}
       ROUTE_NAME: ${ROUTE_NAME:-vila_real_estrada}
+      ROUTE_SNAP_TO_ROADS: ${ROUTE_SNAP_TO_ROADS:-true}
+      OSRM_URL: ${OSRM_URL:-https://router.project-osrm.org}
     depends_on:
-      - mosquitto
+      mosquitto:
+        condition: service_started
     networks:
       - motoguard-net
 
@@ -136,7 +147,8 @@ services:
     environment:
       BACKEND_URL: http://backend:3000
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     volumes:
       - ./app/frontend:/app
       - frontend-node-modules:/app/node_modules

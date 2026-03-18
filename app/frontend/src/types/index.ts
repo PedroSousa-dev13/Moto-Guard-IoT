@@ -9,17 +9,42 @@ export interface User {
 export interface Motorcycle {
   id: string;
   userId: string;
+  profileId?: string | null;
   name: string;
   brand?: string;
   year?: number;
   deviceId?: string;
   createdAt: string;
+  profile?: { id: string; name: string } | null;
 }
+
+export interface MotorcycleSummary {
+  id: string;
+  name: string;
+  brand?: string | null;
+  profile?: { id: string; name: string } | null;
+}
+
+export interface GpxData {
+  id: string;
+  tripId: string;
+  filename: string;
+  fileSize: number;
+  waypoints: Array<{ lat: number; lon: number; ele?: number; time?: string }>;
+  bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+  totalTime?: number;
+  importDate: string;
+  createdAt: string;
+}
+
+export type TripSource = "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL";
+export type TripStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export interface Trip {
   id: string;
   userId: string;
   motorcycleId: string;
+  source: TripSource;
   startedAt: string;
   endedAt?: string;
   distanceKm?: number;
@@ -27,10 +52,12 @@ export interface Trip {
   avgSpeedKmh?: number;
   maxRollDeg?: number;
   maxGForce?: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: TripStatus;
   createdAt: string;
-  motorcycle: Motorcycle;
-  events: TripEvent[];
+  motorcycle: MotorcycleSummary;
+  gpxData?: GpxData | null;
+  events?: TripEvent[];
+  _count?: { events: number };
 }
 
 export interface TripEvent {
@@ -48,4 +75,68 @@ export interface TripEvent {
   voltage?: number;
   occurredAt: string;
   createdAt: string;
+}
+
+export interface TripTelemetryPoint {
+  time: string;
+  device_id?: string;
+  moto_model?: string;
+  speed_kmh?: number;
+  rpm?: number;
+  gear?: number;
+  throttle_pct?: number;
+  engine_temp_c?: number;
+  voltage?: number;
+  brake_front_pct?: number;
+  brake_rear_pct?: number;
+  roll_deg?: number;
+  pitch_deg?: number;
+  yaw_deg?: number;
+  g_force?: number;
+  latitude?: number;
+  longitude?: number;
+  oil_pressure_bar?: number;
+  tire_pressure_front_bar?: number;
+  tire_pressure_rear_bar?: number;
+}
+
+export interface TripTelemetryResponse {
+  trip: { id: string; startedAt: string; endedAt: string | null; status: TripStatus };
+  total_points: number;
+  data: TripTelemetryPoint[];
+}
+
+export interface GpxImportResponse {
+  tripId: string;
+  gpxDataId: string;
+  stats: {
+    points: number;
+    distanceKm: number;
+    totalTimeSec: number;
+    avgSpeedKmh: number;
+    maxSpeedKmh: number;
+  };
+}
+
+export type TripScoreBucket = "good" | "warn" | "bad";
+
+export interface TripFeedItem {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: TripStatus;
+  source: TripSource;
+  distanceKm: number | null;
+  avgSpeedKmh: number | null;
+  maxSpeedKmh: number | null;
+  motorcycle: MotorcycleSummary | null;
+  eventCounts: {
+    total: number;
+    bySeverity: { INFO: number; WARNING: number; CRITICAL: number };
+    byType: Record<string, number>;
+  };
+  safetyScore: number;
+  performanceScore: number;
+  labels: string[];
+  buckets: { safety: TripScoreBucket; performance: TripScoreBucket };
 }

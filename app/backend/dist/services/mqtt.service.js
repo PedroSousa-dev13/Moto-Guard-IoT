@@ -89,7 +89,9 @@ class MqttService {
         if (!this.client || !this._connected) {
             return false;
         }
-        this.client.publish(env_1.env.MQTT_TOPIC_COMANDO, JSON.stringify(command), { qos: 1 });
+        const acao = command?.acao;
+        const retain = acao === "definir_rota" || acao === "reset_rota";
+        this.client.publish(env_1.env.MQTT_TOPIC_COMANDO, JSON.stringify(command), { qos: 1, retain });
         return true;
     }
 }

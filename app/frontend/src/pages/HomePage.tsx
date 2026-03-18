@@ -1,17 +1,51 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+
   const handleGetStarted = () => {
-    // Tentar navegar para dashboard ou abrir login
-    try {
-      const event = new CustomEvent('openLoginSidebar');
-      window.dispatchEvent(event);
-    } catch (error) {
-      console.log('Navigation fallback - trying direct navigation');
-      window.location.href = '/dashboard';
+    if (isAuthenticated) {
+      navigate("/dashboard");
+      return;
     }
+    navigate("/login", { state: { from: location } });
   };
+
+  const handleCreateAccount = () => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+      return;
+    }
+    navigate("/login?mode=register", { state: { from: location } });
+  };
+
+  const demoSteps = useMemo(
+    () => [
+      {
+        title: "1) Simulador (Python) gera um tick",
+        body: `PUBLISH_INTERVAL = 1s\n\ntick=42\ntelemetry.speed_kmh=68.4\ntelemetry.rpm=6120\nimu.roll_deg=14.2\nimu.g_force=1.31\nlocation.lat=41.55...\nlocation.lng=-8.42...`,
+      },
+      {
+        title: "2) Backend processa e publica",
+        body: `[MQTT] motoguard/telemetria\n[InfluxDB] writeTelemetry()\n[Socket.IO] emit telemetry_update`,
+      },
+      {
+        title: "3) Heurísticas detetam risco (exemplo)",
+        body: `HARD_BRAKING\nseverity=WARNING\nmsg=\"Travagem brusca (≈0.58G)\"`,
+      },
+      {
+        title: "4) Frontend atualiza UI",
+        body: `Dashboard: cards + mapa\nTrips: eventos e score (0–100)`,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="home-page">
@@ -32,7 +66,7 @@ const HomePage: React.FC = () => {
             <button className="btn-primary" onClick={handleGetStarted}>
               🚀 Começar Agora
             </button>
-            <button className="btn-secondary">
+            <button className="btn-secondary" onClick={() => setIsDemoOpen(true)}>
               📖 Ver Demonstração
             </button>
           </div>
@@ -262,11 +296,8 @@ const HomePage: React.FC = () => {
             <h2>Pronto para Revolucionar sua Pilotagem?</h2>
             <p>Junte-se a milhares de motociclistas que já usam MotoGuard para uma pilotagem mais segura e inteligente.</p>
             <div className="cta-actions">
-              <button className="btn-primary btn-large">
+              <button className="btn-primary btn-large" onClick={handleCreateAccount}>
                 🚀 Criar Conta Gratuita
-              </button>
-              <button className="btn-outline btn-large">
-                📈 Ver Planos
               </button>
             </div>
           </div>
@@ -287,6 +318,41 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {isDemoOpen && (
+        <div className="demo-overlay" role="dialog" aria-modal="true">
+          <div className="demo-backdrop" onClick={() => setIsDemoOpen(false)} />
+          <div className="demo-modal">
+            <div className="demo-header">
+              <div className="demo-title">Demonstração (Simulador por passos)</div>
+              <button className="demo-close" type="button" onClick={() => setIsDemoOpen(false)} aria-label="Fechar">
+                ✕
+              </button>
+            </div>
+            <div className="demo-body">
+              <div className="demo-lead">
+                Exemplo de execução para explicar o fluxo de dados. Os valores são ilustrativos.
+              </div>
+              <div className="demo-steps">
+                {demoSteps.map((s) => (
+                  <div key={s.title} className="demo-step">
+                    <div className="demo-step-title">{s.title}</div>
+                    <pre className="demo-code">{s.body}</pre>
+                  </div>
+                ))}
+              </div>
+              <div className="demo-actions">
+                <button className="btn-primary" onClick={handleCreateAccount}>
+                  🚀 Criar Conta Gratuita
+                </button>
+                <button className="btn-secondary" onClick={() => setIsDemoOpen(false)}>
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

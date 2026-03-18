@@ -14,6 +14,10 @@
 # =============================================================================
 
 import math
+import os
+import json
+import urllib.request
+import urllib.parse
 
 
 # =============================================================================
@@ -122,6 +126,168 @@ class RouteFollower:
         self._idx = start_idx % len(self.waypoints)
 
 
+class RouteCursor:
+    def __init__(self, waypoints: list[tuple[float, float]], close_loop: bool = True):
+        pts: list[tuple[float, float]] = []
+        for p in waypoints:
+            if not pts or p != pts[-1]:
+                pts.append(p)
+        if len(pts) < 2:
+            raise ValueError("Rota precisa de pelo menos 2 waypoints.")
+        self._close_loop = bool(close_loop)
+        if self._close_loop and pts[0] != pts[-1]:
+            pts.append(pts[0])
+        self.waypoints = pts
+        self._idx = 0
+        self._seg_pos_m = 0.0
+        self._finished = False
+
+    @property
+    def segment_index(self) -> int:
+        return self._idx
+
+    @property
+    def finished(self) -> bool:
+        return self._finished
+
+    def reset(self, start_idx: int = 0):
+        n_segments = max(1, len(self.waypoints) - 1)
+        self._idx = start_idx % n_segments
+        self._seg_pos_m = 0.0
+        self._finished = False
+
+    def bearing_deg(self) -> float:
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 0:
+            return 0.0
+        idx = self._idx
+        if not self._close_loop:
+            idx = max(0, min(idx, n_segments - 1))
+        a = self.waypoints[idx]
+        b = self.waypoints[idx + 1]
+        return RouteFollower._bearing_deg(a[0], a[1], b[0], b[1])
+
+    def _segment_len_m(self, idx: int) -> float:
+        a = self.waypoints[idx]
+        b = self.waypoints[idx + 1]
+        return RouteFollower._haversine_m(a[0], a[1], b[0], b[1])
+
+    def max_curve_deg(self, steps: int = 8) -> float:
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 1:
+            return 0.0
+        steps = max(1, int(steps))
+        bearings: list[float] = []
+        for i in range(steps + 1):
+            if self._close_loop:
+                idx = (self._idx + i) % n_segments
+            else:
+                idx = min(self._idx + i, n_segments - 1)
+            a = self.waypoints[idx]
+            b = self.waypoints[idx + 1]
+            bearings.append(RouteFollower._bearing_deg(a[0], a[1], b[0], b[1]))
+        max_angle = 0.0
+        for i in range(len(bearings) - 1):
+            diff = abs((bearings[i + 1] - bearings[i] + 180) % 360 - 180)
+            max_angle = max(max_angle, diff)
+        return max_angle
+
+    def speed_limit_kmh(self, steps: int = 8) -> float | None:
+        max_curve = self.max_curve_deg(steps=steps)
+        if max_curve > 65:
+            return 40.0
+        if max_curve > 40:
+            return 65.0
+        if max_curve > 22:
+            return 90.0
+        return None
+
+    def distance_to_end_m(self) -> float | None:
+        """
+        Distância restante (metros) até ao destino final quando a rota não é loop.
+        Retorna None para rotas em loop.
+        """
+        if self._close_loop:
+            return None
+
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 0:
+            return 0.0
+        if self._finished:
+            return 0.0
+
+        idx = max(0, min(self._idx, n_segments - 1))
+        current_seg_len = self._segment_len_m(idx)
+        remaining = max(0.0, current_seg_len - self._seg_pos_m)
+
+        for seg_idx in range(idx + 1, n_segments):
+            remaining += self._segment_len_m(seg_idx)
+
+        return float(max(0.0, remaining))
+
+    def step(self, distance_m: float) -> tuple[float, float, float]:
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 0:
+            p = self.waypoints[0]
+            return p[0], p[1], 0.0
+
+        if self._finished and not self._close_loop:
+            a = self.waypoints[n_segments - 1]
+            b = self.waypoints[n_segments]
+            bearing = RouteFollower._bearing_deg(a[0], a[1], b[0], b[1])
+            return float(b[0]), float(b[1]), float(bearing)
+
+        remaining = float(distance_m)
+        if remaining < 0:
+            remaining = 0.0
+
+        guard = 0
+        while remaining > 0 and guard < (n_segments + 5):
+            guard += 1
+            seg_len = self._segment_len_m(self._idx)
+            if seg_len <= 0.001:
+                if self._close_loop:
+                    self._idx = (self._idx + 1) % n_segments
+                    self._seg_pos_m = 0.0
+                    continue
+                if self._idx >= n_segments - 1:
+                    self._seg_pos_m = 0.0
+                    self._finished = True
+                    remaining = 0.0
+                    break
+                self._idx += 1
+                self._seg_pos_m = 0.0
+                continue
+
+            seg_remaining = seg_len - self._seg_pos_m
+            if remaining >= seg_remaining:
+                remaining -= seg_remaining
+                if self._close_loop:
+                    self._idx = (self._idx + 1) % n_segments
+                    self._seg_pos_m = 0.0
+                    continue
+                if self._idx >= n_segments - 1:
+                    self._seg_pos_m = seg_len
+                    self._finished = True
+                    remaining = 0.0
+                    break
+                self._idx += 1
+                self._seg_pos_m = 0.0
+                continue
+
+            self._seg_pos_m += remaining
+            remaining = 0.0
+
+        a = self.waypoints[self._idx]
+        b = self.waypoints[self._idx + 1]
+        seg_len = self._segment_len_m(self._idx)
+        t = (self._seg_pos_m / seg_len) if seg_len > 0 else 0.0
+        lat = a[0] + (b[0] - a[0]) * t
+        lng = a[1] + (b[1] - a[1]) * t
+        bearing = RouteFollower._bearing_deg(a[0], a[1], b[0], b[1])
+        return float(lat), float(lng), float(bearing)
+
+
 # =============================================================================
 #  ROTAS PRÉ-DEFINIDAS (estradas reais de Vila Real, Portugal)
 # =============================================================================
@@ -193,3 +359,101 @@ ROTAS: dict[str, list[tuple[float, float]]] = {
 
 # Rota padrão
 ROTA_PADRAO = "vila_real_estrada"
+
+
+def get_route(name: str) -> list[tuple[float, float]]:
+    base = ROTAS.get(name, ROTAS[ROTA_PADRAO])
+    snap = os.environ.get("ROUTE_SNAP_TO_ROADS", "true").strip().lower() in ("1", "true", "yes", "y", "on")
+    if not snap:
+        return base
+    osrm_url = os.environ.get("OSRM_URL", "https://router.project-osrm.org").strip().rstrip("/")
+    snapped = _osrm_route(base, osrm_url, timeout_s=12)
+    if not snapped and osrm_url.startswith("https://"):
+        snapped = _osrm_route(base, "http://" + osrm_url[len("https://"):], timeout_s=12)
+    return snapped if snapped else base
+
+
+def get_route_between(
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> list[tuple[float, float]]:
+    snap = os.environ.get("ROUTE_SNAP_TO_ROADS", "true").strip().lower() in ("1", "true", "yes", "y", "on")
+    if not snap:
+        return [start, end]
+    osrm_url = os.environ.get("OSRM_URL", "https://router.project-osrm.org").strip().rstrip("/")
+
+    start_snapped = _osrm_nearest(start, osrm_url, timeout_s=8)
+    end_snapped = _osrm_nearest(end, osrm_url, timeout_s=8)
+    if not start_snapped and osrm_url.startswith("https://"):
+        start_snapped = _osrm_nearest(start, "http://" + osrm_url[len("https://"):], timeout_s=8)
+    if not end_snapped and osrm_url.startswith("https://"):
+        end_snapped = _osrm_nearest(end, "http://" + osrm_url[len("https://"):], timeout_s=8)
+
+    s = start_snapped if start_snapped else start
+    e = end_snapped if end_snapped else end
+
+    snapped = _osrm_route([s, e], osrm_url, timeout_s=12)
+    if not snapped and osrm_url.startswith("https://"):
+        snapped = _osrm_route([s, e], "http://" + osrm_url[len("https://"):], timeout_s=12)
+    return snapped if snapped else [s, e]
+
+
+def _osrm_nearest(
+    point: tuple[float, float],
+    osrm_url: str,
+    timeout_s: float = 8,
+) -> tuple[float, float] | None:
+    try:
+        lat, lng = point
+        url = f"{osrm_url}/nearest/v1/driving/{lng},{lat}?" + urllib.parse.urlencode({
+            "number": "1",
+        })
+        req = urllib.request.Request(url, headers={"User-Agent": "MotoGuard-IoT/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout_s) as res:
+            raw = res.read().decode("utf-8")
+        data = json.loads(raw)
+        if data.get("code") != "Ok":
+            return None
+        wps = data.get("waypoints") or []
+        if not wps:
+            return None
+        loc = (wps[0] or {}).get("location") or []
+        if not isinstance(loc, list) or len(loc) < 2:
+            return None
+        lng2, lat2 = float(loc[0]), float(loc[1])
+        return (lat2, lng2)
+    except Exception:
+        return None
+
+
+def _osrm_route(
+    waypoints: list[tuple[float, float]],
+    osrm_url: str,
+    timeout_s: float = 8,
+) -> list[tuple[float, float]] | None:
+    try:
+        coords = ";".join([f"{lng},{lat}" for (lat, lng) in waypoints])
+        url = f"{osrm_url}/route/v1/driving/{coords}?" + urllib.parse.urlencode({
+            "overview": "full",
+            "geometries": "geojson",
+            "steps": "false",
+        })
+        req = urllib.request.Request(url, headers={"User-Agent": "MotoGuard-IoT/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout_s) as res:
+            raw = res.read().decode("utf-8")
+        data = json.loads(raw)
+        if data.get("code") != "Ok":
+            return None
+        routes = data.get("routes") or []
+        if not routes:
+            return None
+        geom = routes[0].get("geometry") or {}
+        coords_out = geom.get("coordinates") or []
+        if len(coords_out) < 2:
+            return None
+        snapped = [(float(lat), float(lng)) for (lng, lat) in coords_out]
+        if snapped[0] != snapped[-1] and waypoints and waypoints[0] == waypoints[-1]:
+            snapped.append(snapped[0])
+        return snapped
+    except Exception:
+        return None

@@ -46,4 +46,9 @@ export type Trip = Prisma.TripModel;
  *
  */
 export type TripEvent = Prisma.TripEventModel;
+/**
+ * Model GpxData
+ *
+ */
+export type GpxData = Prisma.GpxDataModel;
 //# sourceMappingURL=client.d.ts.map

@@ -1,20 +1,29 @@
-import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import LoginSidebar from "../components/auth/LoginSidebar";
 
 export default function Login() {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname as string | undefined;
+  const redirectTo = from && from !== "/login" ? from : "/dashboard";
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode");
+  const defaultMode = mode === "register" ? "register" : "login";
 
   // Se já estiver autenticado, redirecionar para dashboard
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   return (
-    <div className="page">
-      <h1>Login</h1>
-      <p>Por favor, use o botão "Entrar" na barra superior para aceder à sua conta.</p>
-      <p>Se não tiver conta, pode criar uma através do mesmo menu.</p>
-    </div>
+    <LoginSidebar
+      isOpen
+      defaultMode={defaultMode}
+      onClose={() => navigate("/", { replace: true })}
+      onSuccess={() => navigate(redirectTo, { replace: true })}
+    />
   );
 }

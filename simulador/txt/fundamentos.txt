@@ -1,9 +1,0 @@
-| **Componente do Projeto** | **Linguagem / Tecnologia** | **Motivo da Escolha (Foco Técnico)** |
-| --- | --- | --- |
-| **Simulador (Gerador de Dados)** | **Python** (com *Streamlit* ou *CustomTkinter*) | Excelente para criar scripts rápidos, lidar com funções matemáticas (para simular a física da mota) e gerar interfaces simples de controlo. |
-| **Broker de Mensagens** | **Eclipse Mosquitto** | É o *standard* da indústria para IoT. Leve, *open-source* e incrivelmente rápido a reencaminhar mensagens MQTT. |
-| **Backend (API & Lógica)** | **Node.js** (com *TypeScript*) ou **Python** (*FastAPI*) | Node.js lida na perfeição com milhares de eventos em tempo real (assíncrono). FastAPI é uma excelente alternativa se quiseres manter tudo no ecossistema Python. |
-| **Base de Dados (Telemetria)** | **InfluxDB** | Base de dados otimizada especificamente para *Time-Series* (séries temporais), ideal para guardar milhares de pontos de GPS e velocidade por segundo. |
-| **Base de Dados (Relacional)** | **PostgreSQL** | Para guardar a informação mais estática: dados dos utilizadores, perfis das motas e configurações do sistema. |
-| **Frontend (Dashboard)** | **React.js** (com *TypeScript*) | A melhor opção para criar *dashboards* dinâmicos que precisam de atualizar gráficos e mapas em tempo real sem recarregar a página. |
-| **Infraestrutura** | **Docker** | Permite colocar o Backend, o Frontend, o Broker e as Bases de Dados em contentores isolados, garantindo que o projeto corre em qualquer computador. |
