@@ -97,15 +97,25 @@ export default function MapCard({ location, telemetry, msgCount, resetSignal, se
     };
     map.on("click", onClick);
 
-    // Fix tamanho do mapa (bug Leaflet em containers hidden)
-    const timeoutId = setTimeout(() => {
+    // Fix tamanho do mapa (bug Leaflet em containers hidden ou com animações)
+    const handleResize = () => {
       if (mapRef.current) {
         mapRef.current.invalidateSize();
       }
-    }, 300);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    window.addEventListener('resize', handleResize);
+    const timeoutId = setTimeout(handleResize, 500);
 
     return () => {
       clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       map.off("click", onClick);
       map.remove();
       mapRef.current = null;

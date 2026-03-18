@@ -1348,55 +1348,47 @@ button {
   color: var(--yellow);
 }
 
-/* Dashboard layout specific */
+/* ── Dashboard Layout (50/50 Split Focus) ────────────────────────── */
 .dashboard {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   padding: 0;
 }
 
-@media (max-width: 1200px) {
-  .dashboard {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.hero-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  min-height: 500px;
 }
 
-@media (max-width: 768px) {
-  .dashboard {
+.twin-card-container, .map-card-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.data-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 20px;
+  border-radius: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.command-card-full {
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .hero-row {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
-}
-
-.map-card {
-  grid-column: span 2;
-}
-
-@media (max-width: 1200px) {
-  .map-card {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 768px) {
-  .map-card {
-    grid-column: span 1;
-  }
-}
-
-.command-card {
-  grid-column: span 3;
-}
-
-@media (max-width: 1200px) {
-  .command-card {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 768px) {
-  .command-card {
-    grid-column: span 1;
+  .twin-card-container, .map-card-container {
+    height: 450px;
   }
 }
 
@@ -1611,16 +1603,34 @@ button {
 }
 
 #map {
-  height: 320px;
+  flex: 1 1 0%;
+  width: 100%;
+  min-height: 300px;
   border-radius: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   border: 1px solid var(--border);
+  z-index: 1;
+}
+
+.map-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-card .ui-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* Reduzi ainda mais */
+  overflow: hidden;
 }
 
 .map-controls {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 @media (max-width: 640px) {
@@ -1631,15 +1641,18 @@ button {
 
 .map-coordinates {
   display: flex;
-  flex-direction: column;
   gap: 8px;
+  margin-bottom: 4px;
 }
 
 .coord-item {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: rgba(17, 24, 39, 0.02);
-  padding: 8px 12px;
+  padding: 4px 8px;
   border-radius: 8px;
   border: 1px solid var(--border);
 }
@@ -1659,26 +1672,27 @@ button {
 .route-selection {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .route-points {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .route-point {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: rgba(17, 24, 39, 0.02);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .route-point.active {
