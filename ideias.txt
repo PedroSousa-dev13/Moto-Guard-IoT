@@ -77,3 +77,7 @@ será possivel fazer uma simulação do ficheiro gpx ?
 
 
 acerca do projeto, ao carregar em parar simulador a simulacao deve parar a viagem deve se dar como terminada e ser amazenada nas viagens. apos isso o painel de simulador deve levar reset limpando o respetivo mapa e parametros
+
+
+quando a mota chegar ao ponto de chegada da simulacao
+devera surgir uma notificao viagem terminada e suceder á gravacao do trajeto
