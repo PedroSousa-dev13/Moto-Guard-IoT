@@ -84,9 +84,12 @@ export default function Map() {
     };
     map.on("click", onClick);
 
-    setTimeout(() => map.invalidateSize(), 300);
+    const invalidateTimeout = window.setTimeout(() => {
+      if (mapRef.current) map.invalidateSize();
+    }, 300);
 
     return () => {
+      window.clearTimeout(invalidateTimeout);
       map.off("click", onClick);
       map.remove();
       mapRef.current = null;

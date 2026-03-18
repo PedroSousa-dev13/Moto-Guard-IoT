@@ -7,7 +7,16 @@ vi.mock("jsonwebtoken", () => ({
   verify: vi.fn(),
 }));
 
+vi.mock("../backend/src/services/prisma.service", () => ({
+  prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
+}));
+
 import jwt from "jsonwebtoken";
+import { prisma } from "../backend/src/services/prisma.service";
 import { authMiddleware } from "../backend/src/middleware/auth.middleware";
 
 function mockResponse() {
@@ -22,37 +31,38 @@ describe("authMiddleware", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 401 when authorization header is missing", () => {
+  it("returns 401 when authorization header is missing", async () => {
     const req = { headers: {} } as any;
     const res = mockResponse();
     const next = vi.fn();
 
-    authMiddleware(req, res as any, next);
+    await authMiddleware(req, res as any, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: "Token não fornecido" });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("returns 401 when authorization header is not bearer", () => {
+  it("returns 401 when authorization header is not bearer", async () => {
     const req = { headers: { authorization: "Basic abc" } } as any;
     const res = mockResponse();
     const next = vi.fn();
 
-    authMiddleware(req, res as any, next);
+    await authMiddleware(req, res as any, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: "Token não fornecido" });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("sets req.userId and calls next for valid token", () => {
+  it("sets req.userId and calls next for valid token", async () => {
     vi.mocked(jwt.verify).mockReturnValue({ sub: "user-123" } as any);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: "user-123" } as any);
     const req = { headers: { authorization: "Bearer valid-token" } } as any;
     const res = mockResponse();
     const next = vi.fn();
 
-    authMiddleware(req, res as any, next);
+    await authMiddleware(req, res as any, next);
 
     expect(jwt.verify).toHaveBeenCalledWith(
       "valid-token",
@@ -63,7 +73,7 @@ describe("authMiddleware", () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it("returns 401 when token verification throws", () => {
+  it("returns 401 when token verification throws", async () => {
     vi.mocked(jwt.verify).mockImplementation(() => {
       throw new Error("invalid token");
     });
@@ -71,7 +81,21 @@ describe("authMiddleware", () => {
     const res = mockResponse();
     const next = vi.fn();
 
-    authMiddleware(req, res as any, next);
+    await authMiddleware(req, res as any, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: "Token inválido ou expirado" });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when token is valid but user does not exist", async () => {
+    vi.mocked(jwt.verify).mockReturnValue({ sub: "user-missing" } as any);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    const req = { headers: { authorization: "Bearer valid-but-stale" } } as any;
+    const res = mockResponse();
+    const next = vi.fn();
+
+    await authMiddleware(req, res as any, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: "Token inválido ou expirado" });

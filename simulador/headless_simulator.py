@@ -41,7 +41,7 @@ LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
 
 # Redução progressiva de velocidade perto do destino final (rotas não-loop).
-ARRIVAL_SLOWDOWN_START_M = 1200.0
+ARRIVAL_SLOWDOWN_START_M = 2000.0
 ARRIVAL_FULL_STOP_M = 12.0
 ARRIVAL_MIN_CRUISE_KMH = 6.0
 
@@ -440,8 +440,8 @@ class HeadlessSimulator:
 
         ratio = (dist_to_end_m - ARRIVAL_FULL_STOP_M) / (ARRIVAL_SLOWDOWN_START_M - ARRIVAL_FULL_STOP_M)
         ratio = clamp(ratio, 0.0, 1.0)
-        max_approach_kmh = min(self.vel_max * 0.45, 70.0)
-        return ARRIVAL_MIN_CRUISE_KMH + (max_approach_kmh - ARRIVAL_MIN_CRUISE_KMH) * (ratio ** 1.2)
+        max_approach_kmh = min(self.vel_max * 0.35, 60.0)
+        return ARRIVAL_MIN_CRUISE_KMH + (max_approach_kmh - ARRIVAL_MIN_CRUISE_KMH) * (ratio ** 1.35)
 
     # ========================================================================
     #  LOOP CENTRAL (idêntico ao simulador GUI)
