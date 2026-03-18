@@ -41,9 +41,9 @@ LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
 
 # Redução progressiva de velocidade perto do destino final (rotas não-loop).
-ARRIVAL_SLOWDOWN_START_M = 220.0
+ARRIVAL_SLOWDOWN_START_M = 1200.0
 ARRIVAL_FULL_STOP_M = 12.0
-ARRIVAL_MIN_CRUISE_KMH = 8.0
+ARRIVAL_MIN_CRUISE_KMH = 6.0
 
 
 # =============================================================================
@@ -464,36 +464,42 @@ class HeadlessSimulator:
             s._target_yaw = self.route_cursor.bearing_deg()
             speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
             if speed_limit is not None:
-                s._target_vel = min(s._target_vel, speed_limit)
+                if speed_limit < s._target_vel:
+                    s._target_vel = lerp(s._target_vel, speed_limit, 0.35)
+                else:
+                    s._target_vel = min(s._target_vel, speed_limit)
 
             arrival_speed_cap = self._arrival_speed_cap_kmh()
             if arrival_speed_cap is not None:
-                s._target_vel = min(s._target_vel, arrival_speed_cap)
+                if arrival_speed_cap < s._target_vel:
+                    dist_to_end_m = self.route_cursor.distance_to_end_m() or 0.0
+                    closeness = clamp(1.0 - (dist_to_end_m / ARRIVAL_SLOWDOWN_START_M), 0.0, 1.0)
+                    factor = clamp(0.12 + closeness * 0.55, 0.12, 0.80)
+                    s._target_vel = lerp(s._target_vel, arrival_speed_cap, factor)
+                else:
+                    s._target_vel = min(s._target_vel, arrival_speed_cap)
 
             if self.route_cursor.finished:
                 s._target_vel = 0.0
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
-        s._acceleration = clamp(vel_diff * 0.15, -15, 15)
-        s.velocidade = lerp(s.velocidade, s._target_vel, LERP_VEL)
-        s.velocidade += random.uniform(-0.3, 0.3)
-        s.velocidade = clamp(s.velocidade, 0, self.vel_max)
+        s._acceleration = clamp(vel_diff * 0.22, -18, 12)
+        s.velocidade = clamp(s.velocidade + s._acceleration, 0, self.vel_max)
 
         # ── 3. Throttle e Brakes ─────────────────────────────────────
-        if vel_diff > 2:
-            s.throttle_pct = clamp(vel_diff * 3 + random.uniform(5, 15), 5, 100)
-            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.5)
-            s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.5)
-        elif vel_diff < -5:
-            s.throttle_pct = lerp(s.throttle_pct, 0, 0.5)
-            brake_force = clamp(abs(vel_diff) * 2, 0, 100)
-            s.brake_front_pct = lerp(s.brake_front_pct,
-                brake_force * random.uniform(0.5, 0.8), 0.4)
-            s.brake_rear_pct  = lerp(s.brake_rear_pct,
-                brake_force * random.uniform(0.2, 0.5), 0.4)
+        if vel_diff > 1.5:
+            s.throttle_pct = clamp(lerp(s.throttle_pct, clamp(vel_diff * 5.0, 18, 100), 0.35), 0, 100)
+            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.6)
+            s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.6)
+        elif vel_diff < -1.5:
+            s.throttle_pct = lerp(s.throttle_pct, 0, 0.6)
+            brake_force = clamp(abs(vel_diff) * 6.0, 0, 100)
+            s.brake_front_pct = lerp(s.brake_front_pct, brake_force * 0.75, 0.45)
+            s.brake_rear_pct  = lerp(s.brake_rear_pct, brake_force * 0.35, 0.45)
         else:
-            s.throttle_pct = lerp(s.throttle_pct, random.uniform(15, 30), 0.2)
+            cruise = clamp(12 + (s.velocidade / max(1, self.vel_max)) * 18, 10, 35)
+            s.throttle_pct = lerp(s.throttle_pct, cruise, 0.18)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.3)
             s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.3)
         s.throttle_pct    = clamp(s.throttle_pct, 0, 100)
@@ -522,13 +528,6 @@ class HeadlessSimulator:
             s.yaw = (s.yaw + yaw_rate) % 360
         s.yaw += random.uniform(-0.3, 0.3)
         s.yaw = s.yaw % 360
-
-        # ── 6. RPM ───────────────────────────────────────────────────
-        target_rpm = (s.velocidade * (self.rpm_max / self.vel_max)
-                      + random.uniform(-100, 100))
-        s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
-        s.rpm += random.uniform(-15, 15)
-        s.rpm = clamp(s.rpm, 0, self.rpm_max)
 
         # ── 7. Temperatura ───────────────────────────────────────────
         target_temp = (self.temp_min
@@ -559,6 +558,20 @@ class HeadlessSimulator:
                 s._clutch_timer -= 1
             else:
                 s.clutch_engaged = False
+
+        idle_rpm = max(900, int(self.rpm_max * 0.08))
+        if s.gear <= 0 or s.velocidade < 1:
+            target_rpm = idle_rpm + s.throttle_pct * 8
+        else:
+            redline_speeds = { 1: 0.18, 2: 0.30, 3: 0.44, 4: 0.60, 5: 0.78, 6: 1.00 }
+            red_speed = max(1.0, self.vel_max * redline_speeds.get(s.gear, 1.0))
+            ratio = clamp(s.velocidade / red_speed, 0.0, 1.15)
+            target_rpm = idle_rpm + (self.rpm_max - idle_rpm) * ratio
+            if s.clutch_engaged:
+                target_rpm = max(idle_rpm, target_rpm - 900)
+        s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
+        s.rpm += random.uniform(-20, 20)
+        s.rpm = clamp(s.rpm, 0, self.rpm_max)
 
         # ── 10. Odómetro ─────────────────────────────────────────────
         s.odometer_km += s.velocidade / 3600.0
