@@ -98,9 +98,14 @@ export default function MapCard({ location, telemetry, msgCount, resetSignal, se
     map.on("click", onClick);
 
     // Fix tamanho do mapa (bug Leaflet em containers hidden)
-    setTimeout(() => map.invalidateSize(), 300);
+    const timeoutId = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 300);
 
     return () => {
+      clearTimeout(timeoutId);
       map.off("click", onClick);
       map.remove();
       mapRef.current = null;

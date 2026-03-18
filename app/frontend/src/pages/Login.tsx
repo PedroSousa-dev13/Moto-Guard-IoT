@@ -9,6 +9,9 @@ export default function Login() {
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname as string | undefined;
   const redirectTo = from && from !== "/login" ? from : "/dashboard";
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode");
+  const defaultMode = mode === "register" ? "register" : "login";
 
   // Se já estiver autenticado, redirecionar para dashboard
   if (isAuthenticated) {
@@ -18,6 +21,7 @@ export default function Login() {
   return (
     <LoginSidebar
       isOpen
+      defaultMode={defaultMode}
       onClose={() => navigate("/", { replace: true })}
       onSuccess={() => navigate(redirectTo, { replace: true })}
     />

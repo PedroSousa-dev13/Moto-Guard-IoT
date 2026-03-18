@@ -16,6 +16,13 @@ import type {
   TelemetryPayload,
   SimulatorCommand,
 } from "../models/telemetry.model";
+import {
+  createInitialHeuristicState,
+  evaluateTelemetryRisk,
+  type HeuristicState,
+  type MotorcycleProfileThresholds,
+} from "./heuristics.service";
+import { EventType } from "../generated/prisma/enums";
 
 interface AlertEvent {
   status: string;
@@ -51,6 +58,8 @@ class SocketService {
     speedTicks: number; // número de ticks acumulados
     ticks: number;      // contador para flush periódico
   }>();
+  private heuristicStateByDevice = new Map<string, HeuristicState>();
+  private profileThresholdsCacheByDevice = new Map<string, { expiresAt: number; thresholds: MotorcycleProfileThresholds }>();
 
   // Thresholds simples para ciclo de viagem em tempo real.
   private static readonly TRIP_START_SPEED_KMH = 5;
@@ -119,13 +128,135 @@ class SocketService {
     });
 
     // Reencaminhar telemetria e derivar eventos em tempo real.
-    mqttService.onTelemetry((payload: TelemetryPayload) => {
+    mqttService.onTelemetry(async (payload: TelemetryPayload) => {
       this.lastTelemetryByDevice.set(payload.system.device_id, payload);
       influxService.writeTelemetry(payload);
       this.io?.emit("telemetry_update", payload);
       this.handleAlertEvent(payload);
       this.handleTripLifecycle(payload);
+      await this.handleHeuristicEvents(payload);
     });
+  }
+
+  private async getProfileThresholds(deviceId: string, motoModel: string): Promise<MotorcycleProfileThresholds> {
+    const cached = this.profileThresholdsCacheByDevice.get(deviceId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.thresholds;
+    }
+
+    const fallback: MotorcycleProfileThresholds = {
+      maxSpeedKmh: 200,
+      typicalMaxRollDeg: 40,
+      crashRollThreshold: 70,
+      crashGForce: 2.5,
+      criticalTemp: 110,
+      criticalVoltage: 11.0,
+    };
+
+    try {
+      const motorcycle = await prisma.motorcycle.findFirst({
+        where: { deviceId },
+        include: { profile: true },
+      });
+
+      const profile =
+        motorcycle?.profile ??
+        (motoModel
+          ? await prisma.motorcycleProfile.findFirst({ where: { name: motoModel } })
+          : null);
+
+      if (!profile) {
+        this.profileThresholdsCacheByDevice.set(deviceId, {
+          expiresAt: Date.now() + 60_000,
+          thresholds: fallback,
+        });
+        return fallback;
+      }
+
+      const thresholds: MotorcycleProfileThresholds = {
+        maxSpeedKmh: profile.maxSpeedKmh,
+        typicalMaxRollDeg: profile.typicalMaxRollDeg,
+        crashRollThreshold: profile.crashRollThreshold,
+        crashGForce: profile.crashGForce,
+        criticalTemp: profile.criticalTemp,
+        criticalVoltage: profile.criticalVoltage,
+      };
+
+      this.profileThresholdsCacheByDevice.set(deviceId, {
+        expiresAt: Date.now() + 60_000,
+        thresholds,
+      });
+
+      return thresholds;
+    } catch {
+      this.profileThresholdsCacheByDevice.set(deviceId, {
+        expiresAt: Date.now() + 30_000,
+        thresholds: fallback,
+      });
+      return fallback;
+    }
+  }
+
+  private async handleHeuristicEvents(payload: TelemetryPayload): Promise<void> {
+    const deviceId = payload.system.device_id;
+    const tripId = this.activeTripIdByDevice.get(deviceId) ?? null;
+    if (!tripId) {
+      return;
+    }
+
+    const state = this.heuristicStateByDevice.get(deviceId) ?? createInitialHeuristicState();
+    this.heuristicStateByDevice.set(deviceId, state);
+
+    const nowMs = Date.now();
+
+    let dtSec = 1;
+    const prevTimestamp = state.prevPayload?.system?.timestamp ?? null;
+    const currentTimestamp = payload.system.timestamp ?? null;
+    if (prevTimestamp && currentTimestamp) {
+      const prev = new Date(prevTimestamp).getTime();
+      const cur = new Date(currentTimestamp).getTime();
+      if (!Number.isNaN(prev) && !Number.isNaN(cur) && cur > prev) {
+        dtSec = Math.min(5, Math.max(0.2, (cur - prev) / 1000));
+      }
+    }
+
+    const thresholds = await this.getProfileThresholds(deviceId, payload.system.moto_model);
+
+    const evaluation = evaluateTelemetryRisk(payload, state, thresholds, nowMs, dtSec);
+
+    if (evaluation.events.length === 0) {
+      return;
+    }
+
+    const occurredAtSafe = new Date(payload.system.timestamp);
+    const occurredAt = Number.isNaN(occurredAtSafe.getTime()) ? new Date() : occurredAtSafe;
+
+    for (const ev of evaluation.events) {
+      if (ev.type === EventType.CRASH_DETECTED) {
+        continue;
+      }
+
+      try {
+        await prisma.tripEvent.create({
+          data: {
+            tripId,
+            type: ev.type as any,
+            severity: ev.severity as any,
+            message: ev.message,
+            latitude: payload.location.latitude,
+            longitude: payload.location.longitude,
+            speedKmh: payload.telemetry.speed_kmh,
+            rollDeg: payload.imu.roll_deg,
+            gForce: payload.imu.g_force,
+            engineTempC: payload.telemetry.engine_temp_c,
+            voltage: payload.telemetry.voltage,
+            occurredAt,
+          },
+        });
+      } catch (error) {
+        console.error("Erro ao persistir evento heurístico:", error);
+      }
+    }
   }
 
   private async handleAlertEvent(payload: TelemetryPayload): Promise<void> {

@@ -33,7 +33,7 @@
 #  O que JÁ TEMOS (concluído):
 # ─────────────────────────────────────────────────────────────────────────────
 #
-#    [✔] Simulador Python completo (motoguard_simulator.py)
+#    [✔] Simulador Python headless completo (headless_simulator.py)
 #        → Gera telemetria realista: velocidade, RPM, temp, IMU, GPS, etc.
 #        → 18 subsistemas físicos interligados (aceleração→pitch, yaw→roll, etc.)
 #    [✔] Configuração com 8 perfis de mota (config.py)
@@ -43,7 +43,7 @@
 #    [✔] Comunicação MQTT funcional (broker.hivemq.com)
 #        → Publica telemetria 1x/segundo, recebe comandos
 #    [✔] Deteção de queda com thresholds específicos por modelo
-#    [✔] Mini-GUI debug com customtkinter
+#    [✔] Simulador headless para Docker (sem GUI)
 #    [✔] Documentação do data contract de telemetria
 #    [✔] Docker Compose com 6 serviços (Mosquitto, InfluxDB, PostgreSQL,
 #        Backend, Simulador, Frontend)
@@ -341,13 +341,13 @@
 #           → ✔ Suporte multi-device no tempo real (Dashboard e Mapa)
 #           → ✔ Selector de device (aparece quando chegam dados de >1 device_id)
 #
-#  [~] 2.10 Página — Explicação dos Contextos do Simulador
+#  [✔] 2.10 Página — Explicação dos Contextos do Simulador
 #           → Página educativa sobre como cada contexto gerado pelo simulador
 #             influencia o comportamento da mota
 #           → Ex: como a aceleração afeta o pitch, como o yaw afeta o roll,
 #             como a temperatura sobe com RPM alto, etc.
 #           → ✔ Página criada com explicação + blocos do payload
-#           → [pendente] Diagrama visual dos 18 subsistemas interligados
+#           → ✔ Diagrama visual dos 18 subsistemas interligados
 #           → Útil para documentação e para compreensão do sistema
 #
 #  [✔] 2.11 Página — Viagens Reais (GPX)
@@ -364,15 +364,15 @@
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [POR FAZER]
+#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [CONCLUÍDA ✔]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 3 da proposta.
 #
-#  [ ] 3.1  Motor de regras heurísticas no backend
+#  [✔] 3.1  Motor de regras heurísticas no backend
 #           → Recebe telemetria em tempo real e aplica regras
 #           → Configurável por modelo de mota (thresholds do config.py)
 #
-#  [ ] 3.2  Deteção de eventos de risco
+#  [✔] 3.2  Deteção de eventos de risco
 #           → Travagem brusca: desaceleração > X G + brakes > 80%
 #           → Vibração anómala: picos em accel_z fora do padrão
 #           → Inclinação excessiva: roll > threshold do modelo
@@ -380,12 +380,12 @@
 #           → Falha de alternador: voltagem a descer progressivamente
 #           → Queda confirmada: G-force + roll + imobilidade
 #
-#  [ ] 3.3  Classificação de severidade
+#  [✔] 3.3  Classificação de severidade
 #           → INFO: leituras fora do habitual mas não perigosas
 #           → WARNING: valores em zona de atenção
 #           → CRITICAL: evento de risco confirmado
 #
-#  [ ] 3.4  Análise preditiva simples
+#  [✔] 3.4  Análise preditiva simples
 #           → Tendência de temperatura (vai sobreadecer em X minutos?)
 #           → Padrão de voltagem (alternador a falhar?)
 #           → Desgaste de pneus (pressão a descer consistentemente?)
@@ -395,7 +395,7 @@
 #
 #  ── Inteligência Artificial — Avaliação de Viagens (ideias.txt) ─────────
 #
-#  [ ] 3.6  Sistema de pontuação de viagens (Score 0–100)
+#  [✔] 3.6  Sistema de pontuação de viagens (Score 0–100)
 #           → Avaliar qualidade da condução com base nos dados capturados:
 #             · Suavidade (aceleração/travagem brusca via IMU)
 #             · Comportamento em curvas (lean angle + velocidade)
@@ -406,7 +406,7 @@
 #           → Dados disponíveis já são muito mais ricos que GPX puro
 #             (GPS + IMU + velocidade + temperatura + voltagem + TripEvents)
 #
-#  [ ] 3.7  Pipeline ML para avaliação de viagens
+#  [✔] 3.7  Pipeline ML para avaliação de viagens
 #           → Arquitetura:
 #             Telemetria (tempo real) → BD (Trip + TripEvent)
 #                                          ↓
@@ -523,7 +523,7 @@
 #  ┌───────────────────────┬──────────────────────────────────┐
 #  │ Componente            │ Tecnologia                       │
 #  ├───────────────────────┼──────────────────────────────────┤
-#  │ Simulador             │ Python + CustomTkinter           │
+#  │ Simulador             │ Python (headless)                │
 #  │ Broker MQTT           │ Eclipse Mosquitto (Docker)       │
 #  │ Backend               │ Node.js + TypeScript (Express)   │
 #  │ BD Telemetria         │ InfluxDB                         │
