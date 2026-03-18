@@ -37,7 +37,7 @@ from config import (
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
     PERFIS_MOTO, ROUTE_NAME,
 )
-from routes import RouteFollower, ROTAS, ROTA_PADRAO
+from routes import RouteCursor, get_route
 
 # ── Tema ──────────────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
@@ -67,6 +67,11 @@ def lerp(current: float, target: float, factor: float) -> float:
 
 def clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
+
+
+def lerp_angle_deg(current: float, target: float, factor: float) -> float:
+    diff = (target - current + 180) % 360 - 180
+    return (current + diff * factor) % 360
 
 
 # =============================================================================
@@ -172,9 +177,7 @@ class MotoGuardGenerator(ctk.CTk):
         self._tick_count = 0
         self._sim_running = False
         self._sim_thread: threading.Thread | None = None
-        self.route_follower: RouteFollower = RouteFollower(
-            ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
-        )
+        self.route_cursor: RouteCursor = RouteCursor(get_route(ROUTE_NAME))
 
         # Limites do perfil activo (preenchidos por _carregar_perfil)
         self.vel_max = 200
@@ -244,9 +247,7 @@ class MotoGuardGenerator(ctk.CTk):
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
 
-        # Re-inicializar seguidor de rota ao carregar novo perfil
-        rota = ROTAS.get(ROUTE_NAME, ROTAS[ROTA_PADRAO])
-        self.route_follower = RouteFollower(rota)
+        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
         return True
 
     # ========================================================================
@@ -414,7 +415,8 @@ class MotoGuardGenerator(ctk.CTk):
         self._carregar_perfil(modelo)  # re-propagar thresholds após reset
 
         # Iniciar GPS no ponto de partida da rota
-        rota_start = self.route_follower.waypoints[0]
+        self.route_cursor.reset(0)
+        rota_start = self.route_cursor.waypoints[0]
         self.tele.lat = rota_start[0]
         self.tele.lng = rota_start[1]
 
@@ -502,12 +504,10 @@ class MotoGuardGenerator(ctk.CTk):
                     s._target_vel + random.uniform(-5, 5),
                     30, self.vel_max * 0.7
                 )
-            #  Yaw alvo derivado da rota pré-definida (substitui random walk)
-            route_info = self.route_follower.update(s.lat, s.lng)
-            s._target_yaw = route_info["target_yaw_deg"]
-            #  Reduzir velocidade antes de curvas fechadas
-            if route_info["speed_limit_kmh"] is not None:
-                s._target_vel = min(s._target_vel, route_info["speed_limit_kmh"])
+            s._target_yaw = self.route_cursor.bearing_deg()
+            speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
+            if speed_limit is not None:
+                s._target_vel = min(s._target_vel, speed_limit)
 
             # ── 2. Velocidade e Aceleração ────────────────────────────────
             vel_diff = s._target_vel - s.velocidade
@@ -681,12 +681,13 @@ class MotoGuardGenerator(ctk.CTk):
 
             # ── 15. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
             if s.velocidade > 1:
-                speed_ms = s.velocidade / 3.6          # km/h → m/s
-                yaw_rad  = math.radians(s.yaw)
-                s.lat += (speed_ms * math.cos(yaw_rad)) / 111320.0
-                s.lng += (speed_ms * math.sin(yaw_rad)) / (
-                    111320.0 * math.cos(math.radians(s.lat)))
-                # Sem ruído aleatório — posição segue a física da rota
+                speed_ms = s.velocidade / 3.6
+                dist_m = speed_ms * PUBLISH_INTERVAL
+                lat, lng, bearing = self.route_cursor.step(dist_m)
+                s.lat = lat
+                s.lng = lng
+                s._target_yaw = bearing
+                s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
 
             # ── 16. Arredondar para output ───────────────────────────────
             vel_out   = round(s.velocidade, 1)

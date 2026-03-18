@@ -11,6 +11,7 @@ const socket_io_1 = require("socket.io");
 const mqtt_service_1 = require("./mqtt.service");
 const telemetry_store_1 = require("./telemetry.store");
 const prisma_service_1 = require("./prisma.service");
+const influx_service_1 = require("./influx.service");
 const device_association_service_1 = require("./device-association.service");
 class SocketService {
     io = null;
@@ -89,6 +90,7 @@ class SocketService {
         // Reencaminhar telemetria e derivar eventos em tempo real.
         mqtt_service_1.mqttService.onTelemetry((payload) => {
             this.lastTelemetryByDevice.set(payload.system.device_id, payload);
+            influx_service_1.influxService.writeTelemetry(payload);
             this.io?.emit("telemetry_update", payload);
             this.handleAlertEvent(payload);
             this.handleTripLifecycle(payload);
