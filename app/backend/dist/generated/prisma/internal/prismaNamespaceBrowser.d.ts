@@ -31,6 +31,7 @@ export declare const ModelName: {
     readonly Motorcycle: "Motorcycle";
     readonly Trip: "Trip";
     readonly TripEvent: "TripEvent";
+    readonly GpxData: "GpxData";
 };
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
 export declare const TransactionIsolationLevel: {
@@ -89,6 +90,7 @@ export declare const TripScalarFieldEnum: {
     readonly id: "id";
     readonly userId: "userId";
     readonly motorcycleId: "motorcycleId";
+    readonly source: "source";
     readonly startedAt: "startedAt";
     readonly endedAt: "endedAt";
     readonly distanceKm: "distanceKm";
@@ -117,11 +119,27 @@ export declare const TripEventScalarFieldEnum: {
     readonly createdAt: "createdAt";
 };
 export type TripEventScalarFieldEnum = (typeof TripEventScalarFieldEnum)[keyof typeof TripEventScalarFieldEnum];
+export declare const GpxDataScalarFieldEnum: {
+    readonly id: "id";
+    readonly tripId: "tripId";
+    readonly filename: "filename";
+    readonly fileSize: "fileSize";
+    readonly waypoints: "waypoints";
+    readonly bounds: "bounds";
+    readonly totalTime: "totalTime";
+    readonly importDate: "importDate";
+    readonly createdAt: "createdAt";
+};
+export type GpxDataScalarFieldEnum = (typeof GpxDataScalarFieldEnum)[keyof typeof GpxDataScalarFieldEnum];
 export declare const SortOrder: {
     readonly asc: "asc";
     readonly desc: "desc";
 };
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder];
+export declare const JsonNullValueInput: {
+    readonly JsonNull: import("@prisma/client-runtime-utils").JsonNullClass;
+};
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput];
 export declare const QueryMode: {
     readonly default: "default";
     readonly insensitive: "insensitive";
@@ -132,4 +150,10 @@ export declare const NullsOrder: {
     readonly last: "last";
 };
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder];
+export declare const JsonNullValueFilter: {
+    readonly DbNull: import("@prisma/client-runtime-utils").DbNullClass;
+    readonly JsonNull: import("@prisma/client-runtime-utils").JsonNullClass;
+    readonly AnyNull: import("@prisma/client-runtime-utils").AnyNullClass;
+};
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter];
 //# sourceMappingURL=prismaNamespaceBrowser.d.ts.map

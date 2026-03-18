@@ -83,6 +83,13 @@ export interface SimulatorCommand {
   acao: string;
   modelo?: string;
   tipo?: string;
+  device_id?: string;
+  userId?: string;
+  route?: {
+    start: { latitude: number; longitude: number };
+    end: { latitude: number; longitude: number };
+    loop?: boolean;
+  };
 }
 
 /** Evento de alerta emitido por WebSocket */

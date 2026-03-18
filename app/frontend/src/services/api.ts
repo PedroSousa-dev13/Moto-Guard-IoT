@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Motorcycle, Trip, TripEvent } from '../types';
+import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -10,14 +10,37 @@ export const api = axios.create({
   },
 });
 
+function getStoredToken(): string | null {
+  const rememberMe = localStorage.getItem("rememberMe") === "true";
+  if (rememberMe) {
+    return localStorage.getItem("token");
+  }
+  return (
+    sessionStorage.getItem("session_token") ||
+    sessionStorage.getItem("token") ||
+    localStorage.getItem("token")
+  );
+}
+
 // Interceptor para adicionar JWT token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getStoredToken();
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
+    return Promise.reject(error);
+  },
+);
 
 // Auth endpoints
 export const authAPI = {
@@ -26,6 +49,9 @@ export const authAPI = {
   
   register: (email: string, password: string, name: string) =>
     api.post<{ user: User; token: string }>('/auth/register', { email, password, name }),
+
+  me: () =>
+    api.get<User>('/auth/me'),
 
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
@@ -39,14 +65,24 @@ export const authAPI = {
 
 // Trips endpoints
 export const tripsAPI = {
-  getAll: () =>
-    api.get<Trip[]>('/trips'),
+  getAll: (source?: Trip['source']) =>
+    api.get<Trip[]>('/trips', {
+      params: source ? { source } : undefined,
+    }),
   
+  getFeed: (source?: Trip["source"], limit?: number) =>
+    api.get<TripFeedItem[]>("/trips/feed", {
+      params: {
+        ...(source ? { source } : {}),
+        ...(limit ? { limit } : {}),
+      },
+    }),
+
   getById: (id: string) =>
     api.get<Trip>(`/trips/${id}`),
   
   getTelemetry: (tripId: string) =>
-    api.get<any[]>(`/telemetry/${tripId}`),
+    api.get<TripTelemetryResponse>(`/telemetry/${tripId}`),
 };
 
 // Motorcycles endpoints
@@ -56,6 +92,12 @@ export const motorcyclesAPI = {
   
   create: (data: Partial<Motorcycle>) =>
     api.post<Motorcycle>('/motorcycles', data),
+
+  update: (id: string, data: Partial<Motorcycle>) =>
+    api.put<Motorcycle>(`/motorcycles/${id}`, data),
+
+  remove: (id: string) =>
+    api.delete<{ success: true }>(`/motorcycles/${id}`),
   
   getProfiles: () =>
     api.get<any[]>('/motorcycle-profiles'),
@@ -65,4 +107,19 @@ export const motorcyclesAPI = {
 export const telemetryAPI = {
   getLatest: () =>
     api.get<any>('/telemetry/latest'),
+};
+
+export const gpxAPI = {
+  import: (file: File, motorcycleId?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (motorcycleId) {
+      form.append("motorcycleId", motorcycleId);
+    }
+    return api.post<GpxImportResponse>("/gpx/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  exportTrip: (tripId: string) =>
+    api.get(`/gpx/export/${tripId}`, { responseType: "blob" }),
 };

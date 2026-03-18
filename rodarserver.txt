@@ -1,4 +1,0 @@
-# Fluxo 100% Docker (sem correr nada localmente)
-docker compose down --remove-orphans
-docker compose up -d --build
-docker compose logs -f backend

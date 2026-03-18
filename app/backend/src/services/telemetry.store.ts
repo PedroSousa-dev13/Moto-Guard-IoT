@@ -40,6 +40,18 @@ class TelemetryStore {
       hasData: this.hasData,
     };
   }
+
+  clearLatest(): void {
+    this._latest = null;
+  }
+
+  clearLatestIfDevice(deviceId: string | null): void {
+    if (!deviceId) return;
+    const latestDeviceId = this._latest?.system?.device_id ?? null;
+    if (latestDeviceId === deviceId) {
+      this._latest = null;
+    }
+  }
 }
 
 // Exporta instância singleton

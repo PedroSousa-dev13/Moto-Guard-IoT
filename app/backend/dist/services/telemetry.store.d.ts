@@ -12,6 +12,8 @@ declare class TelemetryStore {
     get hasData(): boolean;
     /** Estado resumido para enviar ao frontend */
     getStatus(mqttConnected: boolean): BackendStatus;
+    clearLatest(): void;
+    clearLatestIfDevice(deviceId: string | null): void;
 }
 export declare const telemetryStore: TelemetryStore;
 export {};

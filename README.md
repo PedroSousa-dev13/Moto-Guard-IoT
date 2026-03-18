@@ -24,7 +24,6 @@ Foca-se **exclusivamente na geração de dados simulados**, sendo dependente de 
 | Componente | Tecnologia |
 |---|---|
 | Linguagem | Python 3.10+ |
-| Mini-GUI Debug | `customtkinter` |
 | Comunicação | `paho-mqtt` |
 | Lógica | `math`, `random`, `time`, `json` |
 
@@ -32,7 +31,7 @@ Foca-se **exclusivamente na geração de dados simulados**, sendo dependente de 
 ```
 Moto-Guard-IoT/
 ├── config.py               # Configurações MQTT, detecção queda, perfis de modelos
-├── motoguard_simulator.py  # Gerador de telemetria + mini-GUI de debug
+├── headless_simulator.py   # Gerador de telemetria headless (sem GUI)
 ├── diversos_modelos.txt    # Documentação dos 8 perfis suportados
 ├── requirements.txt        # Dependências Python
 ├── README.md               # Este ficheiro
@@ -73,14 +72,10 @@ A cada segundo:
 | Arrancar | `{"acao": "arrancar"}` | Retoma geração após queda confirmada, sem alterar o modelo |
 | Parar | `{"acao": "parar"}` | Para a geração de dados |
 
-## Mini-GUI de Debug
-O gerador inclui uma janela mínima com:
-- **Barra de estado**: MQTT conectado/desconectado, modelo activo, estado da geração
-- **Telemetria em tempo real**: Valores actuais de todos os sensores (read-only)
-- **Eventos debug**: Botões locais para testar eventos sem a app principal
-- **Log/Payload**: Último payload JSON publicado
+## Modo de Execução
+O gerador corre em modo **headless** (sem interface gráfica), ideal para Docker e execução contínua.
 
-> A visualização completa dos dados será feita na **app principal**, não aqui.
+> A visualização dos dados é feita na **app principal**.
 
 ## Detecção de Queda (por modelo)
 Cada modelo tem thresholds específicos:
@@ -150,7 +145,7 @@ Publicado a cada 1 segundo via MQTT no tópico `motoguard/telemetria`:
 ## Como Executar
 ```bash
 pip install -r requirements.txt
-python motoguard_simulator.py
+python headless_simulator.py
 ```
 
 O gerador liga-se automaticamente ao broker MQTT e fica à escuta.

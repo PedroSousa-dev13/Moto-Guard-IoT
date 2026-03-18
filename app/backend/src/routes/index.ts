@@ -12,6 +12,7 @@ import authRoutes from "./auth.routes";
 import authResetRoutes from "./auth-reset.routes";
 import tripRoutes from "./trip.routes";
 import motorcycleRoutes from "./motorcycle.routes";
+import gpxRoutes from "./gpx.routes";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use(telemetryRoutes);
 router.use(commandRoutes);
 router.use(tripRoutes);
 router.use(motorcycleRoutes);
+router.use(gpxRoutes);
 
 export default router;

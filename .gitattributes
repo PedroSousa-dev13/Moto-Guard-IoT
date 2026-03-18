@@ -1,0 +1,59 @@
+# =============================================================================
+# MotoGuard IoT - Git Attributes
+# =============================================================================
+# Prevents Windows CRLF line endings from breaking shell scripts in Docker.
+# On Windows, Git converts LF to CRLF on checkout by default. Shell scripts
+# with CRLF break on Linux because the \r makes the shebang line invalid and
+# causes "command not found" errors with trailing \r in script commands.
+# =============================================================================
+
+# Default: normalise all text files to LF on commit
+* text=auto eol=lf
+
+# Shell scripts: always LF (critical for Docker/Linux execution)
+*.sh text eol=lf
+
+# JSON and config files: always LF
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.env text eol=lf
+*.env.* text eol=lf
+
+# TypeScript / JavaScript source
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+
+# Web assets
+*.html text eol=lf
+*.css text eol=lf
+
+# Python (simulador)
+*.py text eol=lf
+
+# SQL migrations
+*.sql text eol=lf
+
+# Markdown and docs
+*.md text eol=lf
+*.txt text eol=lf
+
+# Docker
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+
+# Binary files: never convert line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary

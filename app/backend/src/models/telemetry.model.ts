@@ -65,6 +65,13 @@ export interface SimulatorCommand {
   acao: string;
   modelo?: string;
   tipo?: string;
+  device_id?: string;
+  userId?: string;
+  route?: {
+    start: { latitude: number; longitude: number };
+    end: { latitude: number; longitude: number };
+    loop?: boolean;
+  };
 }
 
 /** Estado de ligação do backend (enviado ao frontend via Socket.IO) */
