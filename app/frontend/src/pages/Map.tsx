@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { useSocket } from "../hooks/useSocket";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -18,16 +18,32 @@ const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
 export default function Map() {
-  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId } = useSocket();
+  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId, sendCommand } = useSocket();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
   const trailPointsRef = useRef<L.LatLngTuple[]>([]);
+  const startMarkerRef = useRef<L.CircleMarker | null>(null);
+  const endMarkerRef = useRef<L.CircleMarker | null>(null);
+  const selectionLineRef = useRef<L.Polyline | null>(null);
+
+  const [routeStart, setRouteStart] = useState<L.LatLngTuple | null>(null);
+  const [routeEnd, setRouteEnd] = useState<L.LatLngTuple | null>(null);
+  const routeStartRef = useRef<L.LatLngTuple | null>(null);
+  const routeEndRef = useRef<L.LatLngTuple | null>(null);
 
   const lat = telemetry?.location?.latitude ?? DEFAULT_LAT;
   const lng = telemetry?.location?.longitude ?? DEFAULT_LNG;
+
+  useEffect(() => {
+    routeStartRef.current = routeStart;
+  }, [routeStart]);
+
+  useEffect(() => {
+    routeEndRef.current = routeEnd;
+  }, [routeEnd]);
 
   // Inicializar mapa uma vez
   useEffect(() => {
@@ -51,9 +67,27 @@ export default function Map() {
     markerRef.current = marker;
     trailRef.current = trail;
 
+    const onClick = (e: L.LeafletMouseEvent) => {
+      const next: L.LatLngTuple = [e.latlng.lat, e.latlng.lng];
+      const start = routeStartRef.current;
+      const end = routeEndRef.current;
+      if (!start) {
+        setRouteStart(next);
+        setRouteEnd(null);
+        return;
+      }
+      if (!end) {
+        setRouteEnd(next);
+        return;
+      }
+      setRouteEnd(next);
+    };
+    map.on("click", onClick);
+
     setTimeout(() => map.invalidateSize(), 300);
 
     return () => {
+      map.off("click", onClick);
       map.remove();
       mapRef.current = null;
     };
@@ -79,6 +113,67 @@ export default function Map() {
     trailPointsRef.current = [];
     trailRef.current.setLatLngs([]);
   }, [activeDeviceId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (startMarkerRef.current) {
+      startMarkerRef.current.remove();
+      startMarkerRef.current = null;
+    }
+    if (endMarkerRef.current) {
+      endMarkerRef.current.remove();
+      endMarkerRef.current = null;
+    }
+    if (selectionLineRef.current) {
+      selectionLineRef.current.remove();
+      selectionLineRef.current = null;
+    }
+
+    if (routeStart) {
+      startMarkerRef.current = L.circleMarker(routeStart, {
+        radius: 7,
+        color: "#16a34a",
+        fillColor: "#22c55e",
+        fillOpacity: 0.9,
+        weight: 2,
+      }).addTo(map);
+    }
+    if (routeEnd) {
+      endMarkerRef.current = L.circleMarker(routeEnd, {
+        radius: 7,
+        color: "#b91c1c",
+        fillColor: "#ef4444",
+        fillOpacity: 0.9,
+        weight: 2,
+      }).addTo(map);
+    }
+    if (routeStart && routeEnd) {
+      selectionLineRef.current = L.polyline([routeStart, routeEnd], {
+        color: "#f97316",
+        weight: 3,
+        dashArray: "6 6",
+      }).addTo(map);
+    }
+  }, [routeEnd, routeStart]);
+
+  function clearRouteSelection() {
+    setRouteStart(null);
+    setRouteEnd(null);
+  }
+
+  function sendRouteToSimulator() {
+    if (!routeStart || !routeEnd) return;
+    sendCommand({
+      acao: "definir_rota",
+      route: {
+        start: { latitude: routeStart[0], longitude: routeStart[1] },
+        end: { latitude: routeEnd[0], longitude: routeEnd[1] },
+        loop: false,
+      },
+    });
+  }
 
   return (
     <div className="page page-full map-page">
@@ -158,6 +253,42 @@ export default function Map() {
             <div className="map-overlay-text">Garante que o simulador está a correr.</div>
           </div>
         )}
+      </div>
+
+      <div className="panel" style={{ marginTop: 12 }}>
+        <div className="panel-header">
+          <div className="panel-title">Trajeto do Simulador</div>
+        </div>
+        <div className="panel-body">
+          <div className="page-subtitle" style={{ marginTop: 0 }}>
+            Clique no mapa: 1º clique = início, 2º clique = fim. Se clicar de novo, redefine o fim.
+          </div>
+          <div className="tile-grid" style={{ marginTop: 12 }}>
+            <div className="tile">
+              <div className="tile-k">Início</div>
+              <div className="tile-v">
+                {routeStart ? `${routeStart[0].toFixed(6)}, ${routeStart[1].toFixed(6)}` : "—"}
+              </div>
+            </div>
+            <div className="tile">
+              <div className="tile-k">Fim</div>
+              <div className="tile-v">
+                {routeEnd ? `${routeEnd[0].toFixed(6)}, ${routeEnd[1].toFixed(6)}` : "—"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button className="cmd-btn" onClick={clearRouteSelection}>
+              Limpar seleção
+            </button>
+            <button className="cmd-btn" onClick={() => sendCommand({ acao: "reset_rota" })}>
+              Usar rota padrão
+            </button>
+            <button className="cmd-btn" onClick={sendRouteToSimulator} disabled={!routeStart || !routeEnd}>
+              Enviar trajeto (OSRM)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Trail info */}

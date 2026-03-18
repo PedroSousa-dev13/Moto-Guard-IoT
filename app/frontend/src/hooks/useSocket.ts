@@ -67,12 +67,13 @@ export function useSocket() {
           cmd.acao === "parar" ||
           cmd.acao === "evento" ||
           cmd.acao === "reset_eventos" ||
-          cmd.acao === "arrancar";
-        const device_id =
-          cmd.device_id ??
-          activeDeviceId ??
-          lastDeviceId ??
-          (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined);
+          cmd.acao === "arrancar" ||
+          cmd.acao === "definir_rota" ||
+          cmd.acao === "reset_rota";
+        const device_id = cmd.device_id
+          ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined)
+          ?? activeDeviceId
+          ?? lastDeviceId;
         const userId = cmd.userId ?? getStoredUserId() ?? undefined;
         const payload = { ...cmd, ...(device_id ? { device_id } : {}), ...(userId ? { userId } : {}) };
         socketRef.current.emit("send_command", payload);
