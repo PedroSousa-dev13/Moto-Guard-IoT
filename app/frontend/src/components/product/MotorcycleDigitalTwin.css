@@ -1,0 +1,207 @@
+.digital-twin-container {
+  background: rgba(20, 20, 25, 0.85);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.digital-twin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.digital-twin-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--blue-primary, #33b5e5);
+}
+
+.overall-health {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+}
+
+.overall-health span {
+  opacity: 0.7;
+}
+
+.visual-center {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1rem 0;
+  min-height: 0;
+  cursor: grab;
+}
+
+.visual-center:active {
+  cursor: grabbing;
+}
+
+.three-canvas-container {
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+.model-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--blue-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.twin-zone {
+  transition: all 0.5s ease;
+  fill-opacity: 0.4;
+  stroke-width: 2;
+}
+
+.twin-zone.ok {
+  fill: #00C851;
+  stroke: #00C851;
+}
+
+.twin-zone.warning {
+  fill: #ffbb33;
+  stroke: #ffbb33;
+  animation: pulse-warning 2s infinite ease-in-out;
+}
+
+.twin-zone.critical {
+  fill: #ff4444;
+  stroke: #ff4444;
+  animation: blink-critical 0.8s infinite step-end;
+}
+
+.overlay-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+}
+
+.overlay-label .label {
+  opacity: 0.6;
+}
+
+.overlay-label .value {
+  font-weight: 800;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.health-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.health-item .icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.health-item.critical .icon-wrap { background: rgba(255, 68, 68, 0.1); color: #ff4444; }
+.health-item.warning .icon-wrap { background: rgba(255, 187, 51, 0.1); color: #ffbb33; }
+.health-item.ok .icon-wrap { background: rgba(0, 200, 81, 0.1); color: #00C851; }
+
+.health-item .info {
+  display: flex;
+  flex-direction: column;
+}
+
+.health-item .title {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+
+.health-item .val {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@keyframes pulse-warning {
+  0% { fill-opacity: 0.4; }
+  50% { fill-opacity: 0.8; }
+  100% { fill-opacity: 0.4; }
+}
+
+@keyframes blink-critical {
+  0% { fill-opacity: 0.2; stroke-opacity: 0.2; }
+  50% { fill-opacity: 1; stroke-opacity: 1; }
+  100% { fill-opacity: 0.2; stroke-opacity: 0.2; }
+}
+
+.blink {
+  animation: blink-critical 1s infinite step-end;
+}
+
+.text-danger { color: #ff4444; }
+.text-success { color: #00C851; }
+
+.digital-twin-empty {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}

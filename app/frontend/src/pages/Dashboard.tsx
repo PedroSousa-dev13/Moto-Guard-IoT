@@ -6,6 +6,7 @@ import IMUCard from "../components/IMUCard";
 import MapCard from "../components/MapCard";
 import StatusCard from "../components/StatusCard";
 import CommandPanel from "../components/CommandPanel";
+import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
 import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
 
@@ -89,38 +90,49 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard">
-        <GaugeCard data={telemetry?.telemetry ?? null} />
-        <TempVoltCard
-          telemetry={telemetry?.telemetry ?? null}
-          health={telemetry?.health ?? null}
-        />
-        <IMUCard data={telemetry?.imu ?? null} />
+        <div className="hero-row">
+          <div className="twin-card-container">
+            <MotorcycleDigitalTwin data={telemetry} />
+          </div>
+          <div className="map-card-container">
+            <MapCard
+              location={telemetry?.location ?? null}
+              telemetry={telemetry?.telemetry ?? null}
+              msgCount={msgCount}
+              resetSignal={mapResetSignal}
+              sendCommand={sendCommand}
+            />
+          </div>
+        </div>
 
-        <MapCard
-          location={telemetry?.location ?? null}
-          telemetry={telemetry?.telemetry ?? null}
-          msgCount={msgCount}
-          resetSignal={mapResetSignal}
-          sendCommand={sendCommand}
-        />
-        <StatusCard
-          system={telemetry?.system ?? null}
-          safety={telemetry?.active_safety ?? null}
-          health={telemetry?.health ?? null}
-          environment={telemetry?.environment ?? null}
-        />
+        <div className="data-hub-grid">
+          <GaugeCard data={telemetry?.telemetry ?? null} />
+          <TempVoltCard
+            telemetry={telemetry?.telemetry ?? null}
+            health={telemetry?.health ?? null}
+          />
+          <IMUCard data={telemetry?.imu ?? null} />
+          <StatusCard
+            system={telemetry?.system ?? null}
+            safety={telemetry?.active_safety ?? null}
+            health={telemetry?.health ?? null}
+            environment={telemetry?.environment ?? null}
+          />
+        </div>
 
-        <CommandPanel
-          sendCommand={sendCommand}
-          addLog={addLog}
-          logs={logs}
-          running={running}
-          onStop={() => {
-            setToast({ message: "Simulação terminada", type: "success" });
-            setMapResetSignal((v) => v + 1);
-            resetSimulationView();
-          }}
-        />
+        <div className="command-card-full">
+          <CommandPanel
+            sendCommand={sendCommand}
+            addLog={addLog}
+            logs={logs}
+            running={running}
+            onStop={() => {
+              setToast({ message: "Simulação terminada", type: "success" });
+              setMapResetSignal((v) => v + 1);
+              resetSimulationView();
+            }}
+          />
+        </div>
       </div>
 
       <div className="stats-footer">
