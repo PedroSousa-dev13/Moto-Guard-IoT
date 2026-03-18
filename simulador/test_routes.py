@@ -15,7 +15,7 @@
 import math
 import unittest
 
-from routes import ROTA_PADRAO, ROTAS, RouteFollower
+from routes import ROTA_PADRAO, ROTAS, RouteFollower, RouteCursor
 
 
 # ─── auxiliares locais ────────────────────────────────────────────────────────
@@ -393,6 +393,37 @@ class TestUpdateContinuo(unittest.TestCase):
             self.assertLess(info["target_yaw_deg"], 360.0)
 
         self.assertGreater(len(visited), 1, "RouteFollower nunca avançou de waypoint")
+
+
+class TestRouteCursor(unittest.TestCase):
+
+    def test_init_fecha_loop_se_necessario(self):
+        rc = RouteCursor([(0.0, 0.0), (0.0, 1.0)])
+        self.assertEqual(rc.waypoints[0], rc.waypoints[-1])
+        self.assertGreaterEqual(len(rc.waypoints), 3)
+
+    def test_step_zero_mantem_posicao_inicial(self):
+        rc = RouteCursor([(0.0, 0.0), (0.0, 0.01), (0.0, 0.0)])
+        lat, lng, bearing = rc.step(0)
+        self.assertAlmostEqual(lat, 0.0, places=8)
+        self.assertAlmostEqual(lng, 0.0, places=8)
+        self.assertGreaterEqual(bearing, 0.0)
+        self.assertLess(bearing, 360.0)
+
+    def test_step_avanca_e_faz_loop(self):
+        rc = RouteCursor([(0.0, 0.0), (0.0, 0.001), (0.0, 0.0)])
+        lat1, lng1, _ = rc.step(200)
+        self.assertNotEqual((lat1, lng1), (0.0, 0.0))
+        lat2, lng2, _ = rc.step(50_000)
+        self.assertGreaterEqual(lat2, -1.0)
+        self.assertLessEqual(lat2, 1.0)
+        self.assertGreaterEqual(lng2, -1.0)
+        self.assertLessEqual(lng2, 1.0)
+
+    def test_speed_limit_retorna_none_ou_numero(self):
+        rc = RouteCursor(_square_route())
+        v = rc.speed_limit_kmh(steps=4)
+        self.assertTrue(v is None or isinstance(v, (int, float)))
 
 
 if __name__ == "__main__":

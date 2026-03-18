@@ -127,6 +127,8 @@ services:
       MQTT_PASS: ${MQTT_SIM_PASS:-simulator123}
       SIM_MODELO: ${SIM_MODELO:-Naked}
       ROUTE_NAME: ${ROUTE_NAME:-vila_real_estrada}
+      ROUTE_SNAP_TO_ROADS: ${ROUTE_SNAP_TO_ROADS:-true}
+      OSRM_URL: ${OSRM_URL:-https://router.project-osrm.org}
     depends_on:
       mosquitto:
         condition: service_started

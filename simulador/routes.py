@@ -14,6 +14,10 @@
 # =============================================================================
 
 import math
+import os
+import json
+import urllib.request
+import urllib.parse
 
 
 # =============================================================================
@@ -122,6 +126,107 @@ class RouteFollower:
         self._idx = start_idx % len(self.waypoints)
 
 
+class RouteCursor:
+    def __init__(self, waypoints: list[tuple[float, float]]):
+        pts: list[tuple[float, float]] = []
+        for p in waypoints:
+            if not pts or p != pts[-1]:
+                pts.append(p)
+        if len(pts) < 2:
+            raise ValueError("Rota precisa de pelo menos 2 waypoints.")
+        if pts[0] != pts[-1]:
+            pts.append(pts[0])
+        if len(pts) < 2:
+            raise ValueError("Rota precisa de pelo menos 2 waypoints.")
+        self.waypoints = pts
+        self._idx = 0
+        self._seg_pos_m = 0.0
+
+    @property
+    def segment_index(self) -> int:
+        return self._idx
+
+    def reset(self, start_idx: int = 0):
+        n_segments = max(1, len(self.waypoints) - 1)
+        self._idx = start_idx % n_segments
+        self._seg_pos_m = 0.0
+
+    def bearing_deg(self) -> float:
+        a = self.waypoints[self._idx]
+        b = self.waypoints[self._idx + 1]
+        return RouteFollower._bearing_deg(a[0], a[1], b[0], b[1])
+
+    def _segment_len_m(self, idx: int) -> float:
+        a = self.waypoints[idx]
+        b = self.waypoints[idx + 1]
+        return RouteFollower._haversine_m(a[0], a[1], b[0], b[1])
+
+    def max_curve_deg(self, steps: int = 8) -> float:
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 1:
+            return 0.0
+        steps = max(1, int(steps))
+        bearings: list[float] = []
+        for i in range(steps + 1):
+            idx = (self._idx + i) % n_segments
+            a = self.waypoints[idx]
+            b = self.waypoints[idx + 1]
+            bearings.append(RouteFollower._bearing_deg(a[0], a[1], b[0], b[1]))
+        max_angle = 0.0
+        for i in range(len(bearings) - 1):
+            diff = abs((bearings[i + 1] - bearings[i] + 180) % 360 - 180)
+            max_angle = max(max_angle, diff)
+        return max_angle
+
+    def speed_limit_kmh(self, steps: int = 8) -> float | None:
+        max_curve = self.max_curve_deg(steps=steps)
+        if max_curve > 65:
+            return 40.0
+        if max_curve > 40:
+            return 65.0
+        if max_curve > 22:
+            return 90.0
+        return None
+
+    def step(self, distance_m: float) -> tuple[float, float, float]:
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 0:
+            p = self.waypoints[0]
+            return p[0], p[1], 0.0
+
+        remaining = float(distance_m)
+        if remaining < 0:
+            remaining = 0.0
+
+        guard = 0
+        while remaining > 0 and guard < (n_segments + 5):
+            guard += 1
+            seg_len = self._segment_len_m(self._idx)
+            if seg_len <= 0.001:
+                self._idx = (self._idx + 1) % n_segments
+                self._seg_pos_m = 0.0
+                continue
+
+            seg_remaining = seg_len - self._seg_pos_m
+            if remaining >= seg_remaining:
+                remaining -= seg_remaining
+                self._idx = (self._idx + 1) % n_segments
+                self._seg_pos_m = 0.0
+                continue
+
+            self._seg_pos_m += remaining
+            remaining = 0.0
+
+        a = self.waypoints[self._idx]
+        b = self.waypoints[self._idx + 1]
+        seg_len = self._segment_len_m(self._idx)
+        t = (self._seg_pos_m / seg_len) if seg_len > 0 else 0.0
+        lat = a[0] + (b[0] - a[0]) * t
+        lng = a[1] + (b[1] - a[1]) * t
+        bearing = RouteFollower._bearing_deg(a[0], a[1], b[0], b[1])
+        return float(lat), float(lng), float(bearing)
+
+
 # =============================================================================
 #  ROTAS PRÉ-DEFINIDAS (estradas reais de Vila Real, Portugal)
 # =============================================================================
@@ -193,3 +298,42 @@ ROTAS: dict[str, list[tuple[float, float]]] = {
 
 # Rota padrão
 ROTA_PADRAO = "vila_real_estrada"
+
+
+def get_route(name: str) -> list[tuple[float, float]]:
+    base = ROTAS.get(name, ROTAS[ROTA_PADRAO])
+    snap = os.environ.get("ROUTE_SNAP_TO_ROADS", "true").strip().lower() in ("1", "true", "yes", "y", "on")
+    if not snap:
+        return base
+    osrm_url = os.environ.get("OSRM_URL", "https://router.project-osrm.org").strip().rstrip("/")
+    snapped = _osrm_route(base, osrm_url)
+    return snapped if snapped else base
+
+
+def _osrm_route(waypoints: list[tuple[float, float]], osrm_url: str) -> list[tuple[float, float]] | None:
+    try:
+        coords = ";".join([f"{lng},{lat}" for (lat, lng) in waypoints])
+        url = f"{osrm_url}/route/v1/driving/{coords}?" + urllib.parse.urlencode({
+            "overview": "full",
+            "geometries": "geojson",
+            "steps": "false",
+        })
+        req = urllib.request.Request(url, headers={"User-Agent": "MotoGuard-IoT/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as res:
+            raw = res.read().decode("utf-8")
+        data = json.loads(raw)
+        if data.get("code") != "Ok":
+            return None
+        routes = data.get("routes") or []
+        if not routes:
+            return None
+        geom = routes[0].get("geometry") or {}
+        coords_out = geom.get("coordinates") or []
+        if len(coords_out) < 2:
+            return None
+        snapped = [(float(lat), float(lng)) for (lng, lat) in coords_out]
+        if snapped[0] != snapped[-1] and waypoints and waypoints[0] == waypoints[-1]:
+            snapped.append(snapped[0])
+        return snapped
+    except Exception:
+        return None

@@ -10,6 +10,7 @@ import http from "http";
 import { mqttService } from "./mqtt.service";
 import { telemetryStore } from "./telemetry.store";
 import { prisma } from "./prisma.service";
+import { influxService } from "./influx.service";
 import { deviceAssociationService } from "./device-association.service";
 import type {
   TelemetryPayload,
@@ -124,6 +125,7 @@ class SocketService {
     // Reencaminhar telemetria e derivar eventos em tempo real.
     mqttService.onTelemetry((payload: TelemetryPayload) => {
       this.lastTelemetryByDevice.set(payload.system.device_id, payload);
+      influxService.writeTelemetry(payload);
       this.io?.emit("telemetry_update", payload);
       this.handleAlertEvent(payload);
       this.handleTripLifecycle(payload);
