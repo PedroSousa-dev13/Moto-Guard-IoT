@@ -56,6 +56,11 @@ LERP_PITCH = 0.18
 LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
 
+# Redução progressiva de velocidade perto do destino final (rotas não-loop).
+ARRIVAL_SLOWDOWN_START_M = 220.0
+ARRIVAL_FULL_STOP_M = 12.0
+ARRIVAL_MIN_CRUISE_KMH = 8.0
+
 
 # =============================================================================
 #  Funções utilitárias
@@ -534,10 +539,41 @@ class MotoGuardGenerator(ctk.CTk):
 
     def _parar_geracao(self):
         self._sim_running = False
-        self.perfil_nome = None
+        self._limpar_estado_simulador()
         self.lbl_modelo.configure(text="Nenhum", text_color="gray")
         self.lbl_estado.configure(text="Parado — à espera de modelo via MQTT", text_color="gray")
         self._log("Geração parada")
+
+    def _limpar_estado_simulador(self):
+        self.tele = TelemetriaState()
+        self._tick_count = 0
+        self.perfil_nome = None
+
+        self._route_override = False
+        self._route_override_waypoints = None
+        self._route_override_loop = False
+        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+        self.route_cursor.reset(0)
+        self.tele.lat = self.route_cursor.waypoints[0][0]
+        self.tele.lng = self.route_cursor.waypoints[0][1]
+
+        for label in self.tele_labels.values():
+            label.configure(text="---")
+        self.lbl_evento.configure(text="")
+
+    def _arrival_speed_cap_kmh(self) -> float | None:
+        dist_to_end_m = self.route_cursor.distance_to_end_m()
+        if dist_to_end_m is None:
+            return None
+        if dist_to_end_m <= ARRIVAL_FULL_STOP_M:
+            return 0.0
+        if dist_to_end_m >= ARRIVAL_SLOWDOWN_START_M:
+            return None
+
+        ratio = (dist_to_end_m - ARRIVAL_FULL_STOP_M) / (ARRIVAL_SLOWDOWN_START_M - ARRIVAL_FULL_STOP_M)
+        ratio = clamp(ratio, 0.0, 1.0)
+        max_approach_kmh = min(self.vel_max * 0.45, 70.0)
+        return ARRIVAL_MIN_CRUISE_KMH + (max_approach_kmh - ARRIVAL_MIN_CRUISE_KMH) * (ratio ** 1.2)
 
     def _pausar_apos_queda(self):
         """Para a geração após queda confirmada, mantendo o perfil activo para retoma."""
@@ -591,6 +627,11 @@ class MotoGuardGenerator(ctk.CTk):
             speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
             if speed_limit is not None:
                 s._target_vel = min(s._target_vel, speed_limit)
+
+            arrival_speed_cap = self._arrival_speed_cap_kmh()
+            if arrival_speed_cap is not None:
+                s._target_vel = min(s._target_vel, arrival_speed_cap)
+
             if self.route_cursor.finished:
                 s._target_vel = 0.0
 

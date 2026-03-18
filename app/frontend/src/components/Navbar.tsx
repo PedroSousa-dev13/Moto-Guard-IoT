@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Bike, User, Settings, LogOut, LogIn } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -11,7 +12,7 @@ const Navbar: React.FC = () => {
     <nav className="navbar">
       <div className="navbar-brand">
         <Link to="/" className="brand-link">
-          <span className="brand-icon">🏍️</span>
+          <Bike size={24} className="brand-icon" />
           <span className="brand-name">MotoGuard</span>
         </Link>
       </div>
@@ -20,28 +21,32 @@ const Navbar: React.FC = () => {
         {isAuthenticated ? (
           <>
             <div className="navbar-user">
-              <span className="user-avatar">👤</span>
+              <div className="user-avatar">
+                <User size={16} />
+              </div>
               <span className="user-name">{user?.name}</span>
             </div>
-            <Link to="/profile" className="nav-link">
-              ⚙️
+            <Link to="/profile" className="nav-icon-link" title="Perfil">
+              <Settings size={20} />
             </Link>
             <button
               onClick={() => {
                 logout();
                 navigate("/", { replace: true });
               }}
-              className="nav-link logout-btn"
+              className="nav-icon-link logout-btn"
+              title="Sair"
             >
-              🚪 Sair
+              <LogOut size={20} />
             </button>
           </>
         ) : (
           <button
             onClick={() => navigate("/login", { state: { from: location } })}
-            className="nav-link login-btn"
+            className="btn btn-primary login-btn"
           >
-            Entrar
+            <LogIn size={18} />
+            <span>Entrar</span>
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { authAPI } from "../../services/api";
+import { X, Mail, Lock, User, ArrowLeft, Bike } from 'lucide-react';
 
 interface LoginSidebarProps {
   isOpen: boolean;
@@ -87,24 +88,30 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
         className={`auth-sidebar ${isOpen ? "auth-sidebar-open" : ""}`}
       >
         <div className="auth-content">
+          <div className="auth-brand">
+            <Bike size={32} className="brand-icon" />
+            <h2>MotoGuard</h2>
+          </div>
+
           <div className="auth-header">
             <div className="auth-title">
-              {showForgotPassword ? "Recuperar Senha" : isLogin ? "Login" : "Registar"}
+              {showForgotPassword ? "Recuperar Senha" : isLogin ? "Bem-vindo de volta" : "Criar nova conta"}
             </div>
             <button type="button" onClick={onClose} className="auth-close" aria-label="Fechar">
-              ×
+              <X size={20} />
             </button>
           </div>
 
           {/* Forgot Password */}
           {showForgotPassword ? (
-            <div>
+            <div className="forgot-password-container">
               <button
                 type="button"
                 onClick={closeForgotPassword}
-                className="auth-link"
+                className="auth-link-back"
               >
-                ← Voltar ao login
+                <ArrowLeft size={16} />
+                <span>Voltar ao login</span>
               </button>
 
               {forgotSuccess ? (
@@ -117,22 +124,26 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
                 </div>
               ) : (
                 <>
-                  <div className="page-subtitle" style={{ marginBottom: 12 }}>
+                  <p className="auth-subtitle">
                     Introduz o teu email para receberes instruções de
                     recuperação de senha.
-                  </div>
+                  </p>
                   <form onSubmit={handleForgotPasswordSubmit} className="auth-form">
                     <div className="field">
                       <div className="field-label">Email</div>
-                      <input
-                        className="control"
-                        type="email"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        required
-                        autoFocus
-                        autoComplete="email"
-                      />
+                      <div className="input-with-icon">
+                        <Mail size={18} className="input-icon" />
+                        <input
+                          className="control"
+                          type="email"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          required
+                          autoFocus
+                          placeholder="teu@email.com"
+                          autoComplete="email"
+                        />
+                      </div>
                     </div>
                     {forgotError && (
                       <div className="alert alert-danger">
@@ -142,9 +153,9 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
                     <button
                       type="submit"
                       disabled={forgotLoading}
-                      className="btn btn-primary btn-block"
+                      className="btn btn-primary btn-block btn-large"
                     >
-                      {forgotLoading ? "A enviar..." : "Enviar Email"}
+                      {forgotLoading ? "A enviar..." : "Enviar Email de Recuperação"}
                     </button>
                   </form>
                 </>
@@ -152,57 +163,78 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="auth-form">
+              <p className="auth-subtitle">
+                {isLogin ? "Introduz os teus dados para aceder à tua conta." : "Regista-te para começar a monitorizar a tua mota."}
+              </p>
+
               {/* Register Name Field */}
               {!isLogin && (
                 <div className="field">
                   <div className="field-label">Nome</div>
-                  <input
-                    className="control"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required={!isLogin}
-                    autoComplete="name"
-                  />
+                  <div className="input-with-icon">
+                    <User size={18} className="input-icon" />
+                    <input
+                      className="control"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={!isLogin}
+                      placeholder="Teu nome completo"
+                      autoComplete="name"
+                    />
+                  </div>
                 </div>
               )}
 
               {/* Email Field */}
               <div className="field">
                 <div className="field-label">Email</div>
-                <input
-                  className="control"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
+                <div className="input-with-icon">
+                  <Mail size={18} className="input-icon" />
+                  <input
+                    className="control"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="teu@email.com"
+                    autoComplete="email"
+                  />
+                </div>
               </div>
 
               {/* Password Field */}
               <div className="field">
                 <div className="field-label">Senha</div>
-                <input
-                  className="control"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                />
+                <div className="input-with-icon">
+                  <Lock size={18} className="input-icon" />
+                  <input
+                    className="control"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                  />
+                </div>
               </div>
 
               {/* Remember Me (Login only) */}
               {isLogin && (
-                <label className="auth-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Lembrar de mim</span>
-                </label>
+                <div className="auth-row">
+                  <label className="auth-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <span>Lembrar de mim</span>
+                  </label>
+                  <button type="button" onClick={openForgotPassword} className="auth-link-forgot">
+                    Esqueci a senha
+                  </button>
+                </div>
               )}
 
               {/* Error Message */}
@@ -216,29 +248,19 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn btn-primary btn-block"
+                className="btn btn-primary btn-block btn-large"
               >
                 {isLoading
                   ? isLogin
                     ? "A entrar..."
                     : "A criar conta..."
                   : isLogin
-                    ? "Entrar"
-                    : "Criar Conta"}
+                    ? "Entrar na Conta"
+                    : "Criar Minha Conta"}
               </button>
 
-              {/* Forgot Password Link (Login only) */}
-              {isLogin && (
-                <div className="auth-row">
-                  <span />
-                  <button type="button" onClick={openForgotPassword} className="auth-link">
-                    Esqueci a senha
-                  </button>
-                </div>
-              )}
-
               {/* Toggle Login/Register */}
-              <div className="auth-footer">
+              <div className="auth-footer-toggle">
                 <span>{isLogin ? "Não tem conta?" : "Já tem conta?"}</span>{" "}
                 <button
                   type="button"
@@ -247,9 +269,9 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess 
                     clearError();
                     closeForgotPassword();
                   }}
-                  className="auth-link"
+                  className="auth-link-switch"
                 >
-                  {isLogin ? "Criar conta" : "Login"}
+                  {isLogin ? "Criar conta agora" : "Fazer login"}
                 </button>
               </div>
             </form>

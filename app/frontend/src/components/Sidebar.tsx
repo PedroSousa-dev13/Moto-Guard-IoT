@@ -1,24 +1,37 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { 
+  LayoutDashboard, 
+  Map as MapIcon, 
+  Route, 
+  Compass, 
+  Settings, 
+  User as UserIcon,
+  LogOut,
+  Bike
+} from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
 
   const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/trips', label: 'Viagens', icon: '🛣️' },
-    { path: '/gpx', label: 'GPX', icon: '🧭' },
-    { path: '/map', label: 'Mapa', icon: '🗺️' },
-    { path: '/simulator-contexts', label: 'Simulador', icon: '🧠' },
-    { path: '/profile', label: 'Perfil', icon: '👤' },
+    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/trips', label: 'Viagens', icon: <Route size={20} /> },
+    { path: '/gpx', label: 'GPX', icon: <Compass size={20} /> },
+    { path: '/map', label: 'Mapa', icon: <MapIcon size={20} /> },
+    { path: '/simulator-contexts', label: 'Simulador', icon: <Settings size={20} /> },
+    { path: '/profile', label: 'Perfil', icon: <UserIcon size={20} /> },
   ];
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2>MotoGuard</h2>
+        <div className="brand-logo">
+          <Bike size={28} />
+          <h2>MotoGuard</h2>
+        </div>
         {isAuthenticated && (
           <div className="user-info">
             <span className="user-name">{user?.name}</span>
@@ -43,7 +56,8 @@ const Sidebar: React.FC = () => {
       {isAuthenticated && (
         <div className="sidebar-footer">
           <button onClick={logout} className="sidebar-logout-btn">
-            🚪 Sair
+            <LogOut size={18} />
+            <span>Sair</span>
           </button>
         </div>
       )}

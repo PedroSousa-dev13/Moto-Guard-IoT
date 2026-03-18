@@ -1,8 +1,7 @@
-// =============================================================================
-// GaugeCard — Velocidade, RPM, Mudança, Acelerador
-// =============================================================================
-
+import React from 'react';
 import type { TelemetryData } from "../types/telemetry";
+import Card from "./ui/Card";
+import { Gauge, Zap, Disc, ArrowUpCircle } from 'lucide-react';
 
 interface GaugeCardProps {
   data: TelemetryData | null;
@@ -21,10 +20,10 @@ export default function GaugeCard({ data }: GaugeCardProps) {
   const throttle = Math.round(data?.throttle_pct ?? 0);
 
   return (
-    <div className="card">
-      <h2>🏎️ Motor &amp; Velocidade</h2>
+    <Card title="Motor & Velocidade">
       <div className="gauge-grid">
         <div className="gauge">
+          <div className="gauge-icon"><Gauge size={16} /></div>
           <div className="value" style={{ color: speedColor(speed) }}>
             {speed}
           </div>
@@ -32,21 +31,24 @@ export default function GaugeCard({ data }: GaugeCardProps) {
           <div className="label">Velocidade</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><Zap size={16} /></div>
           <div className="value">{rpm}</div>
           <div className="unit">RPM</div>
           <div className="label">Rotações</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><Disc size={16} /></div>
           <div className="value">{gear}</div>
           <div className="unit">&nbsp;</div>
           <div className="label">Mudança</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><ArrowUpCircle size={16} /></div>
           <div className="value">{throttle}</div>
           <div className="unit">%</div>
           <div className="label">Acelerador</div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

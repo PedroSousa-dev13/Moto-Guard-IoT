@@ -207,12 +207,21 @@ export default function TripDetail() {
     return {
       points: points.length,
       gpsPoints: validGps,
-      avgSpeed: speedCount > 0 ? speedSum / speedCount : null,
-      maxSpeed: Number.isFinite(maxSpeed) ? maxSpeed : null,
-      maxRoll: maxAbsRoll > 0 ? maxAbsRoll : null,
+      avgSpeed:
+        speedCount > 0
+          ? speedSum / speedCount
+          : (typeof trip?.avgSpeedKmh === "number" ? trip.avgSpeedKmh : null),
+      maxSpeed:
+        Number.isFinite(maxSpeed)
+          ? maxSpeed
+          : (typeof trip?.maxSpeedKmh === "number" ? trip.maxSpeedKmh : null),
+      maxRoll:
+        maxAbsRoll > 0
+          ? maxAbsRoll
+          : (typeof trip?.maxRollDeg === "number" ? trip.maxRollDeg : null),
       maxTemp: Number.isFinite(maxTemp) ? maxTemp : null,
       maxEle: null,
-      distanceKm: null,
+      distanceKm: typeof trip?.distanceKm === "number" ? trip.distanceKm : null,
     };
   }, [gpxSeries, telemetryRes, trip]);
 
@@ -448,7 +457,7 @@ export default function TripDetail() {
             { label: "Estado", val: trip.status },
             { label: "Pontos", val: summary.points.toString() },
             { label: "GPS", val: summary.gpsPoints.toString() },
-            ...(trip.source === "GPX_IMPORTED" && summary.distanceKm != null
+            ...(summary.distanceKm != null
               ? [{ label: "Distância", val: `${summary.distanceKm.toFixed(2)} km` }]
               : []),
             {

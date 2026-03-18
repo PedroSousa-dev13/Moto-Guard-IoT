@@ -1,0 +1,59 @@
+.ui-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-card:hover {
+  box-shadow: 0 10px 40px rgba(17, 24, 39, 0.1);
+}
+
+.ui-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ui-card-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-card-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ui-card-subtitle {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 4px 0 0 0;
+}
+
+.ui-card-body {
+  padding: 16px 20px;
+  flex: 1;
+}
+
+.ui-card-footer {
+  padding: 12px 20px;
+  background: rgba(17, 24, 39, 0.015);
+  border-top: 1px solid var(--border);
+}
+
+.ui-card-actions {
+  display: flex;
+  gap: 8px;
+}

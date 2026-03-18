@@ -40,6 +40,11 @@ LERP_PITCH = 0.18
 LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
 
+# Redução progressiva de velocidade perto do destino final (rotas não-loop).
+ARRIVAL_SLOWDOWN_START_M = 220.0
+ARRIVAL_FULL_STOP_M = 12.0
+ARRIVAL_MIN_CRUISE_KMH = 8.0
+
 
 # =============================================================================
 #  Funções utilitárias
@@ -319,16 +324,7 @@ class HeadlessSimulator:
                 log("Arrancar: geração já activa.")
         elif acao == "parar":
             log("Comando: parar — simulador a ficar inactivo (aguarda novo 'definir_modelo')")
-            self.perfil_nome = None
-            self._generation_paused = False
-            self.tele = TelemetriaState()
-            self._tick_count = 0
-            if self._route_override:
-                self._route_override = False
-                self._route_override_waypoints = None
-                self._route_override_loop = False
-                self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
-                self.route_cursor.reset(0)
+            self._clear_simulator_state()
         elif acao in ("definir_rota", "set_route", "set-rota"):
             route = dados.get("route") or {}
             start = route.get("start") or {}
@@ -423,6 +419,33 @@ class HeadlessSimulator:
         else:
             log(f"Tipo de evento desconhecido: {tipo}")
 
+    def _clear_simulator_state(self):
+        self.perfil_nome = None
+        self._generation_paused = False
+        self.tele = TelemetriaState()
+        self._tick_count = 0
+        self._route_override = False
+        self._route_override_waypoints = None
+        self._route_override_loop = False
+        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+        self.route_cursor.reset(0)
+        self.tele.lat = self.route_cursor.waypoints[0][0]
+        self.tele.lng = self.route_cursor.waypoints[0][1]
+
+    def _arrival_speed_cap_kmh(self) -> float | None:
+        dist_to_end_m = self.route_cursor.distance_to_end_m()
+        if dist_to_end_m is None:
+            return None
+        if dist_to_end_m <= ARRIVAL_FULL_STOP_M:
+            return 0.0
+        if dist_to_end_m >= ARRIVAL_SLOWDOWN_START_M:
+            return None
+
+        ratio = (dist_to_end_m - ARRIVAL_FULL_STOP_M) / (ARRIVAL_SLOWDOWN_START_M - ARRIVAL_FULL_STOP_M)
+        ratio = clamp(ratio, 0.0, 1.0)
+        max_approach_kmh = min(self.vel_max * 0.45, 70.0)
+        return ARRIVAL_MIN_CRUISE_KMH + (max_approach_kmh - ARRIVAL_MIN_CRUISE_KMH) * (ratio ** 1.2)
+
     # ========================================================================
     #  LOOP CENTRAL (idêntico ao simulador GUI)
     # ========================================================================
@@ -441,6 +464,11 @@ class HeadlessSimulator:
         speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
         if speed_limit is not None:
             s._target_vel = min(s._target_vel, speed_limit)
+
+        arrival_speed_cap = self._arrival_speed_cap_kmh()
+        if arrival_speed_cap is not None:
+            s._target_vel = min(s._target_vel, arrival_speed_cap)
+
         if self.route_cursor.finished:
             s._target_vel = 0.0
 

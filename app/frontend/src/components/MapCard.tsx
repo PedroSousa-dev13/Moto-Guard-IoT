@@ -1,10 +1,8 @@
-// =============================================================================
-// MapCard — Mapa GPS com Leaflet (marcador + trilho da rota)
-// =============================================================================
-
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import type { LocationData, TelemetryData, SimulatorCommand } from "../types/telemetry";
+import Card from "./ui/Card";
+import { MapPin, Navigation, Trash2, Map as MapIcon, Send } from 'lucide-react';
 
 // Fix ícone default do Leaflet (bug conhecido com bundlers)
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -30,6 +28,7 @@ const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
 export default function MapCard({ location, telemetry, msgCount, resetSignal, sendCommand }: MapCardProps) {
+  // ... (keep refs and logic)
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
@@ -233,55 +232,70 @@ export default function MapCard({ location, telemetry, msgCount, resetSignal, se
   }
 
   return (
-    <div className="card map-card">
-      <h2>📍 Localização GPS</h2>
+    <Card 
+      title="Localização & Rota" 
+      className="map-card"
+      headerActions={
+        <div className="map-badges">
+          <span className="pill pill-success">
+            <Navigation size={12} />
+            {(telemetry?.odometer_km ?? 0).toFixed(2)} km
+          </span>
+        </div>
+      }
+    >
       <div ref={containerRef} id="map" />
-      <div className="map-info">
-        <div className="info-row">
-          <span className="key">Latitude</span>
-          <span className="val">{lat.toFixed(6)}</span>
+      
+      <div className="map-controls">
+        <div className="map-coordinates">
+          <div className="coord-item">
+            <span className="coord-label">LAT</span>
+            <span className="coord-value">{lat.toFixed(6)}</span>
+          </div>
+          <div className="coord-item">
+            <span className="coord-label">LNG</span>
+            <span className="coord-value">{lng.toFixed(6)}</span>
+          </div>
         </div>
-        <div className="info-row">
-          <span className="key">Longitude</span>
-          <span className="val">{lng.toFixed(6)}</span>
-        </div>
-        <div className="info-row">
-          <span className="key">Odómetro</span>
-          <span className="val">{(telemetry?.odometer_km ?? 0).toFixed(2)} km</span>
+
+        <div className="route-selection">
+          <div className="route-points">
+            <div className={`route-point ${routeStart ? 'active' : ''}`}>
+              <MapPin size={14} className="start-icon" />
+              <span>{routeStart ? 'Início Definido' : 'Definir Início'}</span>
+            </div>
+            <div className={`route-point ${routeEnd ? 'active' : ''}`}>
+              <MapPin size={14} className="end-icon" />
+              <span>{routeEnd ? 'Fim Definido' : 'Definir Fim'}</span>
+            </div>
+          </div>
+          
+          <div className="route-actions">
+            <button className="btn btn-sm btn-ghost" onClick={clearRouteSelection} title="Limpar">
+              <Trash2 size={16} />
+            </button>
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                sendCommand({ acao: "reset_rota" });
+                localStorage.removeItem("sim_route");
+                clearRouteSelection();
+              }}
+            >
+              <MapIcon size={16} />
+              <span>Padrão</span>
+            </button>
+            <button 
+              className="btn btn-sm btn-primary" 
+              onClick={sendRouteToSimulator} 
+              disabled={!routeStart || !routeEnd}
+            >
+              <Send size={16} />
+              <span>Enviar Rota</span>
+            </button>
+          </div>
         </div>
       </div>
-      <div style={{ marginTop: 12 }}>
-        <div className="info-row">
-          <span className="key">Início</span>
-          <span className="val">
-            {routeStart ? `${routeStart[0].toFixed(6)}, ${routeStart[1].toFixed(6)}` : "—"}
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="key">Fim</span>
-          <span className="val">
-            {routeEnd ? `${routeEnd[0].toFixed(6)}, ${routeEnd[1].toFixed(6)}` : "—"}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <button className="cmd-btn" onClick={clearRouteSelection}>
-            Limpar seleção
-          </button>
-          <button
-            className="cmd-btn"
-            onClick={() => {
-              sendCommand({ acao: "reset_rota" });
-              localStorage.removeItem("sim_route");
-              clearRouteSelection();
-            }}
-          >
-            Usar rota padrão
-          </button>
-          <button className="cmd-btn" onClick={sendRouteToSimulator} disabled={!routeStart || !routeEnd}>
-            Enviar trajeto (OSRM)
-          </button>
-        </div>
-      </div>
-    </div>
+    </Card>
   );
 }

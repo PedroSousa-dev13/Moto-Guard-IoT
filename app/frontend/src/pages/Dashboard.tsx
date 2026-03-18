@@ -7,6 +7,7 @@ import MapCard from "../components/MapCard";
 import StatusCard from "../components/StatusCard";
 import CommandPanel from "../components/CommandPanel";
 import Toast from "../components/ui/Toast";
+import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
@@ -32,23 +33,25 @@ export default function Dashboard() {
   return (
     <div className="page page-full">
       <div className="page-header">
-        <div>
-          <div className="page-title">📊 Dashboard</div>
+        <div className="header-main">
+          <div className="page-title">
+            <Activity className="title-icon" size={24} />
+            Dashboard
+          </div>
           <div className="page-subtitle">
+            <Clock size={14} style={{ marginRight: 4 }} />
             {lastUpdate ? `Último update às ${lastUpdate}` : "A aguardar dados..."}
           </div>
         </div>
+        
         <div className="page-actions">
           {devices.length > 1 && (
-            <>
-              <span className="field-label" style={{ marginTop: 10 }}>
-                Dispositivo
-              </span>
+            <div className="device-selector">
+              <Settings2 size={16} className="selector-icon" />
               <select
                 className="control control-sm"
                 value={activeDeviceId ?? ""}
                 onChange={(e) => setActiveDeviceId(e.target.value)}
-                style={{ width: 220 }}
               >
                 {devices.map((d) => (
                   <option key={d} value={d}>
@@ -56,38 +59,32 @@ export default function Dashboard() {
                   </option>
                 ))}
               </select>
-            </>
+            </div>
           )}
-          <span
-            className={`pill ${status.mqtt ? "pill-success" : "pill-danger"}`}
-            title={
-              status.mqtt
-                ? "MQTT ligado: o backend está a comunicar com o broker e a receber/publicar tópicos."
-                : "MQTT desligado: verificar docker do Mosquitto, credenciais MQTT e portas 1883/9001."
-            }
-          >
-            MQTT {status.mqtt ? "✓" : "✗"}
-          </span>
-          <span
-            className={`pill ${status.ws ? "pill-success" : "pill-danger"}`}
-            title={
-              status.ws
-                ? "WebSocket ligado: o frontend está conectado ao backend em tempo real."
-                : "WebSocket desligado: verificar se o backend está a correr e se /socket.io está acessível."
-            }
-          >
-            WebSocket {status.ws ? "✓" : "✗"}
-          </span>
-          <span
-            className={`pill ${status.hasData ? "pill-success" : "pill-warning"}`}
-            title={
-              status.hasData
-                ? "Com dados: já chegou telemetria ao dashboard."
-                : "Sem dados: a ligação existe, mas ainda não chegou telemetria. Verificar simulador, tópico motoguard/telemetria e estado MQTT."
-            }
-          >
-            {status.hasData ? `Dados ✓ #${msgCount}` : "Sem dados"}
-          </span>
+          
+          <div className="status-group">
+            <span
+              className={`pill ${status.mqtt ? "pill-success" : "pill-danger"}`}
+              title={status.mqtt ? "MQTT Conectado" : "MQTT Desconectado"}
+            >
+              <Wifi size={14} />
+              MQTT
+            </span>
+            <span
+              className={`pill ${status.ws ? "pill-success" : "pill-danger"}`}
+              title={status.ws ? "WebSocket Conectado" : "WebSocket Desconectado"}
+            >
+              <Activity size={14} />
+              WS
+            </span>
+            <span
+              className={`pill ${status.hasData ? "pill-success" : "pill-warning"}`}
+              title={status.hasData ? "Recebendo dados" : "Sem dados"}
+            >
+              <Database size={14} />
+              {status.hasData ? `#${msgCount}` : "Sem dados"}
+            </span>
+          </div>
         </div>
       </div>
 
