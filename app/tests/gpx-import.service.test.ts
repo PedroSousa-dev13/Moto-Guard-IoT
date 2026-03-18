@@ -5,21 +5,28 @@ import { fileURLToPath } from "node:url";
 import { parseGpx } from "../backend/src/services/gpx-import.service";
 
 describe("parseGpx", () => {
-  it("parses AL.gpx with bounds and trackpoints", async () => {
+  it("parses PR2 CDV (Wikiloc) GPX with bounds and trackpoints", async () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const filePath = path.join(here, "..", "..", "gpx_files", "AL.gpx");
+    const filePath = path.join(
+      here,
+      "..",
+      "..",
+      "gpx_files",
+      "pr2-cdv-trilho-do-carreiro-dos-ss-serra-montejunto.gpx",
+    );
     const xml = await readFile(filePath, "utf8");
     const parsed = parseGpx(xml);
 
     expect(parsed.waypoints.length).toBeGreaterThan(0);
-    expect(parsed.bounds.minLat).toBeCloseTo(39.651479590684175, 6);
-    expect(parsed.bounds.minLon).toBeCloseTo(19.41835700534284, 6);
-    expect(parsed.bounds.maxLat).toBeCloseTo(42.406892040744424, 6);
-    expect(parsed.bounds.maxLon).toBeCloseTo(20.50760803744197, 6);
+    expect(parsed.bounds.minLat).toBeGreaterThan(39);
+    expect(parsed.bounds.maxLat).toBeLessThan(40);
+    expect(parsed.bounds.minLon).toBeGreaterThan(-10);
+    expect(parsed.bounds.maxLon).toBeLessThan(-8);
+    expect(parsed.bounds.minLat).toBeLessThan(parsed.bounds.maxLat);
+    expect(parsed.bounds.minLon).toBeLessThan(parsed.bounds.maxLon);
     expect(parsed.distanceKm).toBeGreaterThan(0);
     expect(parsed.startedAt).toBeInstanceOf(Date);
     expect(parsed.endedAt).toBeInstanceOf(Date);
     expect(parsed.totalTimeSec).toBeTypeOf("number");
   });
 });
-

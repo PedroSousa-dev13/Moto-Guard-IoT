@@ -83,9 +83,11 @@ export function parseGpx(xml: string): ParsedGpx {
   const trkpts = trks.flatMap((trk) =>
     asArray(trk?.trkseg).flatMap((seg) => asArray(seg?.trkpt)),
   );
+  const wpts = asArray(gpx?.wpt);
+  const pts = trkpts.length > 0 ? trkpts : wpts;
 
   const waypoints: GpxWaypoint[] = [];
-  for (const pt of trkpts) {
+  for (const pt of pts) {
     const lat = toNumber(pt?.["@_lat"]);
     const lon = toNumber(pt?.["@_lon"]);
     if (lat === null || lon === null) continue;
@@ -162,4 +164,3 @@ export function parseGpx(xml: string): ParsedGpx {
     maxSpeedKmh,
   };
 }
-

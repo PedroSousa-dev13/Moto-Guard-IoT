@@ -9,21 +9,29 @@ export interface TripEvaluation {
   penalties: Array<{ reason: string; points: number }>;
 }
 
+export type TripEvaluationInput = {
+  trip: {
+    maxSpeedKmh?: number | null;
+    maxRollDeg?: number | null;
+    maxGForce?: number | null;
+  };
+  profile?: {
+    maxSpeedKmh: number;
+    typicalMaxRollDeg: number;
+    crashRollThreshold: number;
+    crashGForce: number;
+  } | null;
+  events: Array<{
+    severity: EventSeverity;
+    type: EventType;
+  }>;
+};
+
 function clamp(value: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, value));
 }
 
-export async function evaluateTrip(tripId: string, userId: string): Promise<TripEvaluation | null> {
-  const trip = await prisma.trip.findFirst({
-    where: { id: tripId, userId },
-    include: {
-      motorcycle: { include: { profile: true } },
-      events: true,
-    },
-  });
-
-  if (!trip) return null;
-
+export function evaluateTripHeuristic(input: TripEvaluationInput): TripEvaluation {
   const severityCounts: Record<EventSeverity, number> = {
     INFO: 0,
     WARNING: 0,
@@ -31,7 +39,7 @@ export async function evaluateTrip(tripId: string, userId: string): Promise<Trip
   };
 
   const typeCounts: Partial<Record<EventType, number>> = {};
-  for (const ev of trip.events) {
+  for (const ev of input.events) {
     severityCounts[ev.severity] = (severityCounts[ev.severity] ?? 0) + 1;
     typeCounts[ev.type] = (typeCounts[ev.type] ?? 0) + 1;
   }
@@ -43,21 +51,21 @@ export async function evaluateTrip(tripId: string, userId: string): Promise<Trip
   score -= severityCounts.WARNING * 12;
   score -= severityCounts.INFO * 5;
 
-  const profile = trip.motorcycle.profile;
+  const profile = input.profile;
   if (profile) {
-    const maxSpeed = trip.maxSpeedKmh ?? 0;
+    const maxSpeed = input.trip.maxSpeedKmh ?? 0;
     if (maxSpeed > 0 && profile.maxSpeedKmh > 0) {
       if (maxSpeed > profile.maxSpeedKmh * 1.05) penalties.push({ reason: "Velocidade acima do limite do perfil", points: 20 });
       else if (maxSpeed > profile.maxSpeedKmh * 0.9) penalties.push({ reason: "Velocidade muito alta para o perfil", points: 10 });
     }
 
-    const maxRoll = Math.abs(trip.maxRollDeg ?? 0);
+    const maxRoll = Math.abs(input.trip.maxRollDeg ?? 0);
     if (maxRoll > 0 && profile.typicalMaxRollDeg > 0) {
       if (maxRoll > profile.crashRollThreshold * 0.9) penalties.push({ reason: "Inclinação próxima de queda", points: 20 });
       else if (maxRoll > profile.typicalMaxRollDeg * 1.15) penalties.push({ reason: "Inclinação acima do típico", points: 10 });
     }
 
-    const maxG = trip.maxGForce ?? 0;
+    const maxG = input.trip.maxGForce ?? 0;
     if (maxG > 0) {
       if (maxG >= profile.crashGForce) penalties.push({ reason: "Picos de G-force elevados", points: 12 });
       else if (maxG >= profile.crashGForce * 0.7) penalties.push({ reason: "G-force acima do normal", points: 6 });
@@ -77,3 +85,24 @@ export async function evaluateTrip(tripId: string, userId: string): Promise<Trip
   };
 }
 
+export async function evaluateTrip(tripId: string, userId: string): Promise<TripEvaluation | null> {
+  const trip = await prisma.trip.findFirst({
+    where: { id: tripId, userId },
+    include: {
+      motorcycle: { include: { profile: true } },
+      events: true,
+    },
+  });
+
+  if (!trip) return null;
+
+  return evaluateTripHeuristic({
+    trip: {
+      maxSpeedKmh: trip.maxSpeedKmh,
+      maxRollDeg: trip.maxRollDeg,
+      maxGForce: trip.maxGForce,
+    },
+    profile: trip.motorcycle.profile,
+    events: trip.events,
+  });
+}
