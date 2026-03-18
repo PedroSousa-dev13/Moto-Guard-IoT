@@ -45,6 +45,8 @@ export default function MotorcycleDigitalTwin({ data }: DigitalTwinProps) {
             roll={imu.roll_deg} 
             pitch={imu.pitch_deg} 
             yaw={imu.yaw_deg}
+            speed={telemetry.speed_kmh}
+            rpm={telemetry.rpm}
             engineTempStatus={engineTempStatus}
           />
         </Suspense>

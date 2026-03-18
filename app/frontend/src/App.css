@@ -1597,19 +1597,84 @@ button {
 }
 
 /* Map Card Specific */
-.map-badges {
+.map-toolbar {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-#map {
-  flex: 1 1 0%;
+.btn-icon {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.btn-icon.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.map-badge-odometer {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.map-container-wrapper {
+  position: relative;
+  flex: 1;
   width: 100%;
   min-height: 300px;
-  border-radius: 12px;
   margin-bottom: 12px;
-  border: 1px solid var(--border);
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 1;
+  background-color: #1a1a1a; /* Cor de fundo para evitar o cinza claro */
+}
+
+.pilot-center-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.bike-arrow {
+  font-size: 24px;
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 0 5px var(--accent));
 }
 
 .map-card {
@@ -1693,6 +1758,23 @@ button {
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.route-point.draggable {
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.route-point.draggable:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.route-point.draggable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
 }
 
 .route-point.active {

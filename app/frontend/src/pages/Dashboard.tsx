@@ -98,6 +98,7 @@ export default function Dashboard() {
             <MapCard
               location={telemetry?.location ?? null}
               telemetry={telemetry?.telemetry ?? null}
+              imu={telemetry?.imu ?? null}
               msgCount={msgCount}
               resetSignal={mapResetSignal}
               sendCommand={sendCommand}
