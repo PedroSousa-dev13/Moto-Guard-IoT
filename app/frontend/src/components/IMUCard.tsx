@@ -1,8 +1,7 @@
-// =============================================================================
-// IMUCard — Roll, Pitch, Yaw, G-Force
-// =============================================================================
-
+import React from 'react';
 import type { IMUData } from "../types/telemetry";
+import Card from "./ui/Card";
+import { Compass, MoveHorizontal, MoveVertical, Activity } from 'lucide-react';
 
 interface IMUCardProps {
   data: IMUData | null;
@@ -28,10 +27,10 @@ export default function IMUCard({ data }: IMUCardProps) {
   const gForce = data?.g_force ?? 0;
 
   return (
-    <div className="card">
-      <h2>📐 IMU — Inércia</h2>
+    <Card title="IMU — Inércia">
       <div className="gauge-grid">
         <div className="gauge">
+          <div className="gauge-icon"><MoveHorizontal size={16} /></div>
           <div className="value" style={{ color: rollColor(roll) }}>
             {roll.toFixed(1)}
           </div>
@@ -39,16 +38,19 @@ export default function IMUCard({ data }: IMUCardProps) {
           <div className="label">Roll</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><MoveVertical size={16} /></div>
           <div className="value">{pitch.toFixed(1)}</div>
           <div className="unit">°</div>
           <div className="label">Pitch</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><Compass size={16} /></div>
           <div className="value">{yaw.toFixed(1)}</div>
           <div className="unit">°</div>
           <div className="label">Yaw</div>
         </div>
         <div className="gauge">
+          <div className="gauge-icon"><Activity size={16} /></div>
           <div className="value" style={{ color: gForceColor(gForce) }}>
             {gForce.toFixed(2)}
           </div>
@@ -56,6 +58,6 @@ export default function IMUCard({ data }: IMUCardProps) {
           <div className="label">G-Force</div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -202,6 +202,29 @@ class RouteCursor:
             return 90.0
         return None
 
+    def distance_to_end_m(self) -> float | None:
+        """
+        Distância restante (metros) até ao destino final quando a rota não é loop.
+        Retorna None para rotas em loop.
+        """
+        if self._close_loop:
+            return None
+
+        n_segments = len(self.waypoints) - 1
+        if n_segments <= 0:
+            return 0.0
+        if self._finished:
+            return 0.0
+
+        idx = max(0, min(self._idx, n_segments - 1))
+        current_seg_len = self._segment_len_m(idx)
+        remaining = max(0.0, current_seg_len - self._seg_pos_m)
+
+        for seg_idx in range(idx + 1, n_segments):
+            remaining += self._segment_len_m(seg_idx)
+
+        return float(max(0.0, remaining))
+
     def step(self, distance_m: float) -> tuple[float, float, float]:
         n_segments = len(self.waypoints) - 1
         if n_segments <= 0:

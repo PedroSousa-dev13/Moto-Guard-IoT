@@ -104,11 +104,7 @@ class SocketService {
         if (command?.acao === "parar") {
           try {
             await this.forceEndTripsOnStopCommand(preferredDeviceId);
-            if (preferredDeviceId) {
-              telemetryStore.clearLatestIfDevice(preferredDeviceId);
-            } else {
-              telemetryStore.clearLatest();
-            }
+            this.clearRuntimeStateAfterStop(preferredDeviceId);
             this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
           } catch (error) {
             console.error("Erro ao forçar fim de viagem:", error);
@@ -201,6 +197,12 @@ class SocketService {
           source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
           startedAt: new Date(timestamp),
           status: "ACTIVE",
+          // Inicializar com 0 para evitar nulls no frontend
+          distanceKm: 0,
+          maxSpeedKmh: 0,
+          avgSpeedKmh: 0,
+          maxRollDeg: 0,
+          maxGForce: 0,
         },
       });
 
@@ -288,6 +290,9 @@ class SocketService {
     }
 
     try {
+      // Forçar um flush final das estatísticas
+      await this.flushTripStats(deviceId);
+
       let distanceKm = 0;
       if (stats) {
         distanceKm = this.haversineDistance(
@@ -313,6 +318,8 @@ class SocketService {
         },
       });
 
+      console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
+      
       this.io?.emit("trip_ended", {
         deviceId,
         motoModel: payload.system.moto_model,
@@ -320,14 +327,22 @@ class SocketService {
         tripId,
         distanceKm,
         maxSpeedKmh: stats?.maxSpeed ?? 0,
+        status: "COMPLETED"
       });
-      console.log(`Viagem finalizada: ${tripId} (${distanceKm.toFixed(2)} km)`);
 
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
     } catch (error) {
       console.error("Erro ao finalizar viagem:", error);
-      this.io?.emit("trip_ended", { deviceId, motoModel: payload.system.moto_model, timestamp });
+      // Notificamos o frontend de que "tentámos" terminar, mas o status na BD pode estar inconsistente.
+      // No entanto, é melhor não emitir nada ou emitir um erro.
+      // Aqui vamos emitir um sinal genérico para que o dashboard resete a vista.
+      this.io?.emit("trip_ended", { 
+        deviceId, 
+        motoModel: payload.system.moto_model, 
+        timestamp,
+        error: "Falha ao persistir fim da viagem no servidor"
+      });
     }
   }
 
@@ -409,9 +424,9 @@ class SocketService {
           avgSpeedKmh,
         },
       });
-    } catch (error) {
-      console.error("Erro ao finalizar viagem (forceEndTrip):", error);
-    } finally {
+
+      console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
+      
       this.io?.emit("trip_ended", {
         deviceId,
         motoModel: lastPayload?.system.moto_model ?? "—",
@@ -419,11 +434,60 @@ class SocketService {
         tripId,
         distanceKm,
         maxSpeedKmh: stats?.maxSpeed ?? 0,
+        status: "COMPLETED"
       });
-
+    } catch (error) {
+      console.error("Erro ao finalizar viagem (forceEndTrip):", error);
+      this.io?.emit("trip_ended", {
+        deviceId,
+        motoModel: lastPayload?.system.moto_model ?? "—",
+        timestamp: endedAt.toISOString(),
+        error: "Falha ao forçar fim de viagem"
+      });
+    } finally {
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
     }
+  }
+
+  private clearRuntimeStateAfterStop(deviceId: string | null): void {
+    if (deviceId) {
+      this.clearDeviceRuntimeState(deviceId);
+      telemetryStore.clearLatestIfDevice(deviceId);
+      return;
+    }
+
+    const knownDevices = new Set<string>([
+      ...this.tripActiveByDevice.keys(),
+      ...this.stationaryTicksByDevice.keys(),
+      ...this.lastEventStatusByDevice.keys(),
+      ...this.lastTelemetryByDevice.keys(),
+      ...this.activeTripIdByDevice.keys(),
+      ...this.tripStatsByDevice.keys(),
+      ...this.lastStopHandledAtByDevice.keys(),
+      ...this.lastUserIdByDevice.keys(),
+      ...this.lastMotoModelByDevice.keys(),
+    ]);
+
+    if (knownDevices.size === 0) {
+      telemetryStore.clearLatest();
+      return;
+    }
+
+    for (const knownDeviceId of knownDevices) {
+      this.clearDeviceRuntimeState(knownDeviceId);
+      telemetryStore.clearLatestIfDevice(knownDeviceId);
+    }
+  }
+
+  private clearDeviceRuntimeState(deviceId: string): void {
+    this.tripActiveByDevice.delete(deviceId);
+    this.stationaryTicksByDevice.delete(deviceId);
+    this.lastEventStatusByDevice.delete(deviceId);
+    this.lastTelemetryByDevice.delete(deviceId);
+    this.activeTripIdByDevice.delete(deviceId);
+    this.tripStatsByDevice.delete(deviceId);
+    this.lastStopHandledAtByDevice.delete(deviceId);
   }
 
   private async createCompletedTripFromLastPayload(

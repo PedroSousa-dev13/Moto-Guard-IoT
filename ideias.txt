@@ -1,83 +1,61 @@
-================================================================================
-                           IDEIAS - MOTO GUARD IoT
-================================================================================
+﻿MotoGuard IoT - Pendencias Consolidadas
+(Consolidado de todos os ficheiros .txt analisados, exceto organizacao.txt)
 
-────────────────────────────────────────────────────────────────────────────────
-1. SECÇÃO DE VIAGENS REAIS (GPX)
-────────────────────────────────────────────────────────────────────────────────
-- Criar uma nova aba na app focada em analisar rotas GPX
-- Permitir importação de ficheiros GPX de viagens reais
-- Visualizar rotas no mapa com dados de percurso
-- Exportação GPX das viagens registadas pelo sistema (para usar em apps externas)
+ 
 
-────────────────────────────────────────────────────────────────────────────────
-2. INTELIGÊNCIA ARTIFICIAL - AVALIAÇÃO DE VIAGENS
-────────────────────────────────────────────────────────────────────────────────
+2) Persistencia e integracao backend
+- Executar migrations automaticamente no arranque Docker (prisma migrate deploy).
+- Executar seed automaticamente para perfis de mota.
+- Persistir inicio/fim de viagem no PostgreSQL (Trip).
+- Persistir alertas como TripEvent.
+- Associar device_id do simulador a mota no PostgreSQL.
+- Proteger endpoints sensiveis com JWT (incluindo comando e telemetria).
 
-  DADOS DISPONÍVEIS (já capturados pelo sistema):
-  - GPS (lat/lng) + velocidade + aceleração (IMU)
-  - Inclinação (lean angle), temperatura, voltagem
-  - Eventos de viagem (TripEvent)
-  → Muito mais rico que GPX puro (que só tem lat/lng/elevação/timestamp)
+3) Frontend funcional adicional
+- Criar pagina de gestao de motas (listar e associar mota/perfil).
+- Criar pagina de historico de viagens (lista, detalhe, eventos, telemetria).
+- Suportar dashboard multi-dispositivo.
+- Criar pagina explicativa sobre como cada contexto do simulador influencia a mota.
 
-  O QUE A IA PODE AVALIAR:
-  - Suavidade de condução (aceleração/travagem brusca via IMU)
-  - Comportamento em curvas (lean angle + velocidade)
-  - Padrões de risco (velocidade excessiva, acelerações bruscas)
-  - Eficiência de condução
-  - Score geral da viagem (0-100)
+4) GPX e analise de viagens
+- Corrigir importacao GPX para NAO criar/associar mota indevidamente.
+- Criar secao dedicada a viagens reais (GPX) com:
+  - importacao GPX
+  - visualizacao de rota no mapa
+  - exportacao GPX de viagens do sistema
+- Rever coerencia dos dados GPX (ex.: velocidade media anomala) e ajustar modelo/base de referencia.
+- Avaliar viabilidade de simulacao a partir de ficheiro GPX.
 
-  ABORDAGENS POSSÍVEIS (do mais simples ao mais complexo):
-  a) Regras heurísticas — penalizar travagens bruscas, excesso de inclinação, etc.
-  b) Classificação supervisionada — treinar com viagens rotuladas (boa/média/má)
-  c) Anomaly detection — detectar comportamentos fora do padrão
+5) Simulador e coerencia de dados
+- Organizar comandos do simulador e rever fluxo completo.
+- Garantir break no ciclo de geracao de dados quando houver queda.
+- Validar coerencia global entre dados gerados.
+- Apos utilizador definir a mota, simulador (exceto admin) deve ir buscar modelo automaticamente.
+- Melhorar coerencia dos perfis de mota com limites realistas por tipo.
+- Fazer trajeto simulado seguir estradas reais no mapa.
 
-  ARQUITETURA:
-  Telemetria (tempo real) → DB (Trip + TripEvent)
-                                    ↓
-                          Pós-processamento (Python)
-                                    ↓
-                          Modelo ML (scikit-learn / TensorFlow Lite)
-                                    ↓
-                          Score da viagem + Feedback ao utilizador
+6) Comportamento de fim de simulacao/viagem
+- Ao parar simulador/viagem:
+  - parar simulacao
+  - terminar e guardar viagem
+  - limpar estado do painel de simulador (mapa e parametros)
+- Ao chegar ao ponto final da simulacao:
+  - mostrar notificacao "viagem terminada"
+  - gravar trajeto automaticamente
+- Adicionar bandeira verde no inicio da rota e vermelha no fim.
 
-  PAPEL DO GPX:
-  - Usar GPX como formato de importação/exportação (não como base da IA)
-  - Importar datasets públicos de condução (GPX) para enriquecer treino
-  - Permitir ao utilizador exportar viagens para apps externas (Strava, etc.)
-  - Para a IA em si → usar dados diretos do sistema (são mais ricos)
+7) Qualidade e testes
+- Aumentar cobertura global para >=80% (statements, branches, functions, lines).
+- Priorizar testes em:
+  - src/index.ts
+  - src/routes/*
+  - src/services/influx.service.ts
+  - src/services/mqtt.service.ts
+  - src/services/prisma.service.ts
+  - src/services/socket.service.ts
+  - src/models/telemetry.model.ts
 
-================================================================================
-
-
-
-
-
-fazer uma organizacao dos comandos do simulador, a mota caiu e os dados continuaram a ser gerardos, deveria de haver
-um break no ciclo de geração de dados. verfiicar coenrencia entre todos os dados 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-apos a mota ser definida pelo usuario, o simulador, exceto em modo admin trerá que ir logo buscar o modelo 
-
-
-será possivel fazer uma simulação do ficheiro gpx ? 
-
-
-
-acerca do projeto, ao carregar em parar simulador a simulacao deve parar a viagem deve se dar como terminada e ser amazenada nas viagens. apos isso o painel de simulador deve levar reset limpando o respetivo mapa e parametros
-
-
-quando a mota chegar ao ponto de chegada da simulacao
-devera surgir uma notificao viagem terminada e suceder á gravacao do trajeto
+8) IA para avaliacao de conducao
+- Definir pipeline de pos-processamento e scoring de viagem (0-100).
+- Iniciar com regras heuristicas e evoluir para modelos supervisionados/anomalias.
+- Usar GPX como import/export e enriquecimento, nao como base principal da IA.

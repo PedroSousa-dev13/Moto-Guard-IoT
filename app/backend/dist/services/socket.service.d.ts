@@ -26,6 +26,8 @@ declare class SocketService {
     private endTrip;
     private forceEndTripsOnStopCommand;
     private forceEndTrip;
+    private clearRuntimeStateAfterStop;
+    private clearDeviceRuntimeState;
     private createCompletedTripFromLastPayload;
     private createCompletedTripWithoutTelemetry;
     private ensureAssociationForDevice;

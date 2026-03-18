@@ -1,8 +1,7 @@
-// =============================================================================
-// TempVoltCard — Temperatura, Voltagem, Pressão Óleo, Travões
-// =============================================================================
-
+import React from 'react';
 import type { TelemetryData, HealthData } from "../types/telemetry";
+import Card from "./ui/Card";
+import { Thermometer, Zap, Droplets, CircleDot } from 'lucide-react';
 
 interface TempVoltCardProps {
   telemetry: TelemetryData | null;
@@ -21,16 +20,20 @@ interface BarProps {
   value: string;
   pct: number;
   color?: string;
+  icon?: React.ReactNode;
 }
 
-function Bar({ name, value, pct, color }: BarProps) {
+function Bar({ name, value, pct, color, icon }: BarProps) {
   const clampedPct = Math.min(100, Math.max(0, pct));
   const bg = color ?? barColor(clampedPct);
 
   return (
     <div className="bar-container">
       <div className="bar-label">
-        <span className="name">{name}</span>
+        <span className="name">
+          {icon && <span className="bar-icon">{icon}</span>}
+          {name}
+        </span>
         <span className="val">{value}</span>
       </div>
       <div className="bar-track">
@@ -54,13 +57,43 @@ export default function TempVoltCard({ telemetry, health }: TempVoltCardProps) {
     volt < 11.5 ? "var(--red)" : volt < 12.5 ? "var(--yellow)" : "var(--green)";
 
   return (
-    <div className="card">
-      <h2>🌡️ Temperatura &amp; Voltagem</h2>
-      <Bar name="Temp. Motor" value={`${temp.toFixed(1)} °C`} pct={(temp / 130) * 100} />
-      <Bar name="Voltagem" value={`${volt.toFixed(1)} V`} pct={(volt / 16) * 100} color={voltColor} />
-      <Bar name="Pressão Óleo" value={`${oil.toFixed(1)} bar`} pct={(oil / 6) * 100} color={oil < 2 ? "var(--red)" : "var(--green)"} />
-      <Bar name="Travão Frente" value={`${Math.round(brkF)} %`} pct={brkF} color="var(--accent)" />
-      <Bar name="Travão Trás" value={`${Math.round(brkR)} %`} pct={brkR} color="var(--accent)" />
-    </div>
+    <Card title="Saúde & Fluidos">
+      <div className="bar-list">
+        <Bar 
+          icon={<Thermometer size={14} />}
+          name="Temp. Motor" 
+          value={`${temp.toFixed(1)} °C`} 
+          pct={(temp / 130) * 100} 
+        />
+        <Bar 
+          icon={<Zap size={14} />}
+          name="Voltagem" 
+          value={`${volt.toFixed(1)} V`} 
+          pct={(volt / 16) * 100} 
+          color={voltColor} 
+        />
+        <Bar 
+          icon={<Droplets size={14} />}
+          name="Pressão Óleo" 
+          value={`${oil.toFixed(1)} bar`} 
+          pct={(oil / 6) * 100} 
+          color={oil < 2 ? "var(--red)" : "var(--green)"} 
+        />
+        <Bar 
+          icon={<CircleDot size={14} />}
+          name="Travão Frente" 
+          value={`${Math.round(brkF)} %`} 
+          pct={brkF} 
+          color="var(--accent)" 
+        />
+        <Bar 
+          icon={<CircleDot size={14} />}
+          name="Travão Trás" 
+          value={`${Math.round(brkR)} %`} 
+          pct={brkR} 
+          color="var(--accent)" 
+        />
+      </div>
+    </Card>
   );
 }

@@ -1,9 +1,7 @@
-// =============================================================================
-// CommandPanel — Seletor de modelo + botões de eventos + log
-// =============================================================================
-
-import { useState } from "react";
+import React, { useState } from "react";
 import type { SimulatorCommand, LogEntry } from "../types/telemetry";
+import Card from "./ui/Card";
+import { Play, Square, AlertTriangle, RefreshCcw, Terminal, Bike, Cpu } from 'lucide-react';
 
 interface CommandPanelProps {
   sendCommand: (cmd: SimulatorCommand) => void;
@@ -70,21 +68,21 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
   }
 
   return (
-    <div className="card command-card">
-      <h2>🎮 Comandos do Simulador</h2>
+    <Card title="Controlo do Simulador" className="command-card">
       <div className="command-layout">
         {/* Coluna — Modelo */}
         <div className="command-col">
-          <label className="cmd-label">
-            Selecionar Modelo{" "}
+          <div className="section-label">
+            <Bike size={14} />
+            Modelo do Veículo
             {running ? (
-              <span style={{ color: "#22c55e", fontWeight: 600 }}>● A correr</span>
+              <span className="status-indicator active">● A correr</span>
             ) : (
-              <span style={{ color: "#71717a" }}>○ Idle</span>
+              <span className="status-indicator">○ Idle</span>
             )}
-          </label>
+          </div>
           <select
-            className="model-select"
+            className="control model-select"
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
             disabled={running}
@@ -95,68 +93,83 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
             ))}
           </select>
           <button
-            className="cmd-btn"
+            className="btn btn-primary btn-block"
             onClick={handleSendModel}
-            style={{ width: "100%" }}
             disabled={running || !selectedModel}
           >
-            ▶ Definir Modelo &amp; Iniciar
+            <Play size={16} />
+            Iniciar Simulação
           </button>
         </div>
 
         {/* Coluna — Eventos */}
         <div className="command-col">
-          <label className="cmd-label">Simular Eventos</label>
+          <div className="section-label">
+            <Cpu size={14} />
+            Simular Eventos & Falhas
+          </div>
           <div className="cmd-grid">
             <button
-              className="cmd-btn danger"
+              className="btn btn-danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "queda" })}
               disabled={!running}
             >
-              💥 Queda
+              <AlertTriangle size={14} />
+              Queda
             </button>
             <button
-              className="cmd-btn danger"
+              className="btn btn-danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "alternador" })}
               disabled={!running}
             >
-              🔋 Falha Alternador
+              <AlertTriangle size={14} />
+              Alternador
             </button>
             <button
-              className="cmd-btn danger"
+              className="btn btn-danger"
               onClick={() => sendCommand({ acao: "evento", tipo: "sobreaquecimento" })}
               disabled={!running}
             >
-              🌡️ Sobreaquecimento
+              <AlertTriangle size={14} />
+              Calor
             </button>
             <button
-              className="cmd-btn"
+              className="btn"
               onClick={() => sendCommand({ acao: "reset_eventos" })}
               disabled={!running}
             >
-              🔄 Reset Eventos
-            </button>
-            <button
-              className="cmd-btn danger"
-              onClick={handleStop}
-              disabled={!running}
-            >
-              ⏹ Parar Simulador
+              <RefreshCcw size={14} />
+              Reset
             </button>
           </div>
+          <button
+            className="btn btn-danger btn-block"
+            style={{ marginTop: 8 }}
+            onClick={handleStop}
+            disabled={!running}
+          >
+            <Square size={14} />
+            Parar Simulação
+          </button>
         </div>
       </div>
 
       {/* Log */}
-      <h2 style={{ marginTop: 12 }}>📋 Log</h2>
-      <div className="log-area">
-        {logs.map((entry, i) => (
-          <div key={i} className="log-entry">
-            <span className="log-time">{entry.time}</span>{" "}
-            <span style={{ color: entry.color }}>{entry.message}</span>
-          </div>
-        ))}
+      <div className="log-section">
+        <div className="section-label">
+          <Terminal size={14} />
+          Consola de Eventos
+        </div>
+        <div className="log-area">
+          {logs.length === 0 && <div className="log-empty">A aguardar eventos...</div>}
+          {logs.map((entry, i) => (
+            <div key={i} className="log-entry">
+              <span className="log-time">[{entry.time}]</span>{" "}
+              <span className="log-msg" style={{ color: entry.color }}>{entry.message}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }

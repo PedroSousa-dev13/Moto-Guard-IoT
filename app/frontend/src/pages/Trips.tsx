@@ -4,6 +4,28 @@ import { tripsAPI } from "../services/api";
 import { Trip, TripSource, TripStatus } from "../types";
 import { Link } from "react-router-dom";
 import { applyTripFilters, groupTripsBySource, listMotorcyclesForFilter, paginate } from "../utils/trips";
+import { 
+  Route, 
+  Calendar, 
+  Bike, 
+  ChevronDown, 
+  AlertCircle, 
+  Filter, 
+  Clock, 
+  MapPin, 
+  Zap, 
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  Cpu,
+  Monitor,
+  Info,
+  ChevronUp,
+  History,
+  Activity
+} from 'lucide-react';
+import Card from "../components/ui/Card";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -33,49 +55,52 @@ function formatDuration(start: string, end?: string) {
 function statusBadge(status: string) {
   switch (status) {
     case "ACTIVE":
-      return { bg: "rgba(34,197,94,0.15)", color: "#22c55e", label: "Ativa" };
+      return { bg: "rgba(34,197,94,0.1)", color: "#22c55e", label: "Ativa", icon: <Zap size={12} /> };
     case "COMPLETED":
       return {
-        bg: "rgba(59,130,246,0.15)",
+        bg: "rgba(59,130,246,0.1)",
         color: "#3b82f6",
         label: "Concluída",
+        icon: <Calendar size={12} />
       };
     case "CANCELLED":
       return {
-        bg: "rgba(239,68,68,0.15)",
+        bg: "rgba(239,68,68,0.1)",
         color: "#ef4444",
         label: "Cancelada",
+        icon: <AlertCircle size={12} />
       };
     default:
-      return { bg: "rgba(113,113,122,0.15)", color: "#71717a", label: status };
+      return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: status, icon: <Info size={12} /> };
   }
 }
 
 function sourceBadge(source: TripSource) {
   switch (source) {
     case "SIMULATOR":
-      return { bg: "rgba(14,165,233,0.15)", color: "#0ea5e9", label: "Simulador" };
+      return { bg: "rgba(14,165,233,0.1)", color: "#0ea5e9", label: "Simulador", icon: <Monitor size={12} /> };
     case "GPX_IMPORTED":
-      return { bg: "rgba(16,185,129,0.15)", color: "#10b981", label: "GPX" };
+      return { bg: "rgba(16,185,129,0.1)", color: "#10b981", label: "GPX", icon: <Database size={12} /> };
     case "DEVICE_REAL":
-      return { bg: "rgba(244,114,182,0.15)", color: "#f472b6", label: "Dispositivo" };
+      return { bg: "rgba(244,114,182,0.1)", color: "#f472b6", label: "Real", icon: <Cpu size={12} /> };
     default:
-      return { bg: "rgba(113,113,122,0.15)", color: "#71717a", label: source };
+      return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: source, icon: <Route size={12} /> };
   }
 }
 
 function severityColor(severity: string) {
   switch (severity) {
     case "CRITICAL":
-      return "#ef4444";
+      return "var(--red)";
     case "WARNING":
-      return "#eab308";
+      return "var(--yellow)";
     default:
-      return "#71717a";
+      return "var(--muted)";
   }
 }
 
 function eventTypeIcon(type: string) {
+  // Mantemos emojis para tipos específicos mas podemos usar Lucide para outros
   const icons: Record<string, string> = {
     CRASH_DETECTED: "💥",
     EXCESSIVE_LEAN: "↗️",
@@ -89,6 +114,8 @@ function eventTypeIcon(type: string) {
   };
   return icons[type] ?? "⚠️";
 }
+
+// ...
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -212,105 +239,116 @@ export default function Trips() {
   return (
     <div className="page">
       <div className="page-header">
-        <div>
-          <div className="page-title">🛣️ Histórico de Viagens</div>
+        <div className="header-main">
+          <div className="page-title">
+            <History className="title-icon" size={24} />
+            Histórico de Viagens
+          </div>
           <div className="page-subtitle">
-            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""}
+            <Route size={14} style={{ marginRight: 4 }} />
+            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""} registadas
           </div>
         </div>
-        <div className="page-actions">
-          <span className="field-label" style={{ marginTop: 10 }}>
-            Origem
-          </span>
-          <select
-            className="control control-sm"
-            value={sourceFilter}
-            onChange={(event) => setSourceFilter(event.target.value as TripSourceFilter)}
-            style={{ width: 180 }}
-          >
-            <option value="ALL">Todas</option>
-            <option value="SIMULATOR">Simulador</option>
-            <option value="GPX_IMPORTED">GPX</option>
-            <option value="DEVICE_REAL">Dispositivo</option>
-          </select>
-          <span className="field-label" style={{ marginTop: 10 }}>
-            Estado
-          </span>
-          <select
-            className="control control-sm"
-            value={statusFilter}
-            onChange={(event) => {
-              setStatusFilter(event.target.value as TripStatusFilter);
-              setPage(1);
-              setExpandedId(null);
-            }}
-            style={{ width: 160 }}
-          >
-            <option value="ALL">Todos</option>
-            <option value="ACTIVE">Ativas</option>
-            <option value="COMPLETED">Concluídas</option>
-            <option value="CANCELLED">Canceladas</option>
-          </select>
-          <span className="field-label" style={{ marginTop: 10 }}>
-            Mota
-          </span>
-          <select
-            className="control control-sm"
-            value={motorcycleFilter}
-            onChange={(event) => {
-              setMotorcycleFilter(event.target.value);
-              setPage(1);
-              setExpandedId(null);
-            }}
-            style={{ width: 220 }}
-          >
-            <option value="ALL">Todas</option>
-            {motorcyclesForFilter.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}{m.brand ? ` (${m.brand})` : ""}
-              </option>
-            ))}
-          </select>
-          <span className="field-label" style={{ marginTop: 10 }}>
-            De
-          </span>
-          <input
-            className="control control-sm"
-            type="date"
-            value={fromDate}
-            onChange={(e) => {
-              setFromDate(e.target.value);
-              setPage(1);
-              setExpandedId(null);
-            }}
-          />
-          <span className="field-label" style={{ marginTop: 10 }}>
-            Até
-          </span>
-          <input
-            className="control control-sm"
-            type="date"
-            value={toDate}
-            onChange={(e) => {
-              setToDate(e.target.value);
-              setPage(1);
-              setExpandedId(null);
-            }}
-          />
-          <label className="auth-checkbox" style={{ marginTop: 10 }}>
+      </div>
+
+      <Card title="Filtros de Pesquisa" className="filter-card">
+        <div className="filter-grid">
+          <div className="field">
+            <label className="field-label">Origem</label>
+            <select
+              className="control"
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value as TripSourceFilter)}
+            >
+              <option value="ALL">Todas</option>
+              <option value="SIMULATOR">Simulador</option>
+              <option value="GPX_IMPORTED">GPX</option>
+              <option value="DEVICE_REAL">Dispositivo</option>
+            </select>
+          </div>
+          
+          <div className="field">
+            <label className="field-label">Estado</label>
+            <select
+              className="control"
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value as TripStatusFilter);
+                setPage(1);
+                setExpandedId(null);
+              }}
+            >
+              <option value="ALL">Todos</option>
+              <option value="ACTIVE">Ativas</option>
+              <option value="COMPLETED">Concluídas</option>
+              <option value="CANCELLED">Canceladas</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label className="field-label">Mota</label>
+            <select
+              className="control"
+              value={motorcycleFilter}
+              onChange={(event) => {
+                setMotorcycleFilter(event.target.value);
+                setPage(1);
+                setExpandedId(null);
+              }}
+            >
+              <option value="ALL">Todas</option>
+              {motorcyclesForFilter.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}{m.brand ? ` (${m.brand})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field">
+            <label className="field-label">De</label>
             <input
-              type="checkbox"
-              checked={onlyWithEvents}
+              className="control"
+              type="date"
+              value={fromDate}
               onChange={(e) => {
-                setOnlyWithEvents(e.target.checked);
+                setFromDate(e.target.value);
                 setPage(1);
                 setExpandedId(null);
               }}
             />
-            <span>Só com eventos</span>
-          </label>
+          </div>
+
+          <div className="field">
+            <label className="field-label">Até</label>
+            <input
+              className="control"
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+                setExpandedId(null);
+              }}
+            />
+          </div>
+
+          <div className="field" style={{ justifyContent: 'center' }}>
+            <label className="auth-checkbox">
+              <input
+                type="checkbox"
+                checked={onlyWithEvents}
+                onChange={(e) => {
+                  setOnlyWithEvents(e.target.checked);
+                  setPage(1);
+                  setExpandedId(null);
+                }}
+              />
+              <span>Só com eventos</span>
+            </label>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Empty state */}
       {filteredTrips.length === 0 && (
@@ -394,11 +432,8 @@ export default function Trips() {
                 </option>
               ))}
             </select>
-            <span className="page-subtitle" style={{ margin: 0 }}>
-              Página {safePage} de {totalPages}
-            </span>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button
               className="btn btn-ghost btn-sm"
               disabled={safePage <= 1}
@@ -407,8 +442,12 @@ export default function Trips() {
                 setExpandedId(null);
               }}
             >
-              ◀ Anterior
+              <ChevronLeft size={16} />
+              Anterior
             </button>
+            <span className="page-info">
+              Página {safePage} de {totalPages}
+            </span>
             <button
               className="btn btn-ghost btn-sm"
               disabled={safePage >= totalPages}
@@ -417,7 +456,8 @@ export default function Trips() {
                 setExpandedId(null);
               }}
             >
-              Seguinte ▶
+              Seguinte
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -441,201 +481,160 @@ function TripSection({
 }) {
   if (trips.length === 0) return null;
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div className="panel" style={{ marginBottom: 12 }}>
-        <div className="panel-header">
-          <div className="panel-title">{title}</div>
-          <div className="page-subtitle" style={{ margin: 0 }}>
-            {trips.length} viagem{trips.length !== 1 ? "s" : ""}
-          </div>
-        </div>
+    <div className="trip-section-container">
+      <div className="section-header-row">
+        <h3 className="section-title">{title}</h3>
+        <span className="section-count">{trips.length} viagens</span>
       </div>
 
-      {trips.map((trip) => {
-        const badge = statusBadge(trip.status);
-        const tripSourceBadge = sourceBadge(trip.source);
-        const isOpen = expandedId === trip.id;
-        const evCount = trip.events?.length ?? trip._count?.events ?? 0;
-        const isDetailLoading = detailLoadingId === trip.id;
+      <div className="trip-grid">
+        {trips.map((trip) => {
+          const badge = statusBadge(trip.status);
+          const tripSourceBadge = sourceBadge(trip.source);
+          const isOpen = expandedId === trip.id;
+          const evCount = trip.events?.length ?? trip._count?.events ?? 0;
+          const isDetailLoading = detailLoadingId === trip.id;
 
-        return (
-          <div
-            key={trip.id}
-            className={`trip-card ${isOpen ? "trip-card-open" : ""}`}
-          >
-            <button
-              type="button"
-              onClick={() => onToggle(trip.id)}
-              className="trip-row"
+          return (
+            <div
+              key={trip.id}
+              className={`trip-card-v2 ${isOpen ? "open" : ""}`}
             >
-              <div className="trip-left">
-                <div className="trip-title-row">
-                  <span className="trip-title">
-                    🏍️ {trip.motorcycle?.name ?? "—"}
-                    {trip.motorcycle?.brand
-                      ? ` (${trip.motorcycle.brand})`
-                      : ""}
-                  </span>
-                  <span
-                    className="badge-pill"
-                    style={{ backgroundColor: badge.bg, color: badge.color }}
-                  >
-                    {badge.label}
-                  </span>
-                  <span
-                    className="badge-pill"
-                    style={{
-                      backgroundColor: tripSourceBadge.bg,
-                      color: tripSourceBadge.color,
-                    }}
-                  >
-                    {tripSourceBadge.label}
-                  </span>
+              <button
+                type="button"
+                onClick={() => onToggle(trip.id)}
+                className="trip-summary"
+              >
+                <div className="trip-info-main">
+                  <div className="trip-mota-line">
+                    <Bike size={18} className="mota-icon-v2" />
+                    <span className="mota-name-v2">
+                      {trip.motorcycle?.name ?? "—"}
+                      {trip.motorcycle?.brand ? ` (${trip.motorcycle.brand})` : ""}
+                    </span>
+                    <div className="trip-badges-v2">
+                      <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>
+                        {badge.icon}
+                        {badge.label}
+                      </span>
+                      <span className="badge-v2" style={{ background: tripSourceBadge.bg, color: tripSourceBadge.color }}>
+                        {tripSourceBadge.icon}
+                        {tripSourceBadge.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="trip-meta-line">
+                    <Calendar size={14} />
+                    <span>{formatDate(trip.startedAt)}</span>
+                    <span className="separator">•</span>
+                    <Clock size={14} />
+                    <span>{formatDuration(trip.startedAt, trip.endedAt)}</span>
+                  </div>
+                </div>
+
+                <div className="trip-stats-quick">
+                  {trip.distanceKm != null && (
+                    <div className="quick-stat">
+                      <span className="stat-v">{trip.distanceKm.toFixed(1)}</span>
+                      <span className="stat-u">km</span>
+                    </div>
+                  )}
                   {evCount > 0 && (
-                    <span className="trip-warning">
-                      ⚠️ {evCount} evento{evCount !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {isDetailLoading && (
-                    <span className="trip-warning" style={{ color: "#a1a1aa" }}>
-                      a carregar…
-                    </span>
-                  )}
-                </div>
-                <span className="trip-date">{formatDate(trip.startedAt)}</span>
-              </div>
-
-              <div className="trip-right">
-                {trip.distanceKm != null && (
-                  <Stat
-                    value={`${trip.distanceKm.toFixed(1)} km`}
-                    label="Distância"
-                  />
-                )}
-                {trip.maxSpeedKmh != null && (
-                  <Stat
-                    value={`${trip.maxSpeedKmh.toFixed(0)} km/h`}
-                    label="Vel. Máx."
-                    color="var(--accent)"
-                  />
-                )}
-                <Stat
-                  value={formatDuration(trip.startedAt, trip.endedAt)}
-                  label="Duração"
-                />
-                <span
-                  className={`trip-chevron ${isOpen ? "trip-chevron-open" : ""}`}
-                >
-                  ▾
-                </span>
-              </div>
-            </button>
-
-            {isOpen && (
-              <div className="trip-details">
-                <div className="tile-grid" style={{ marginBottom: 16 }}>
-                  {[
-                    {
-                      label: "Distância",
-                      val:
-                        trip.distanceKm != null
-                          ? `${trip.distanceKm.toFixed(2)} km`
-                          : trip.status === "ACTIVE" ? "Em direto" : "—",
-                    },
-                    {
-                      label: "Vel. Máxima",
-                      val:
-                        trip.maxSpeedKmh != null
-                          ? `${trip.maxSpeedKmh.toFixed(1)} km/h`
-                          : trip.status === "ACTIVE" ? "Em direto" : "—",
-                    },
-                    {
-                      label: "Vel. Média",
-                      val:
-                        trip.avgSpeedKmh != null
-                          ? `${trip.avgSpeedKmh.toFixed(1)} km/h`
-                          : trip.status === "ACTIVE" ? "Em direto" : "—",
-                    },
-                    {
-                      label: "Inclin. Máx.",
-                      val:
-                        trip.maxRollDeg != null
-                          ? `${trip.maxRollDeg.toFixed(1)}°`
-                          : trip.status === "ACTIVE" ? "Em direto" : "—",
-                    },
-                    {
-                      label: "G-Force Máx.",
-                      val:
-                        trip.maxGForce != null
-                          ? `${trip.maxGForce.toFixed(2)} G`
-                          : trip.status === "ACTIVE" ? "Em direto" : "—",
-                    },
-                    {
-                      label: "Duração",
-                      val: formatDuration(trip.startedAt, trip.endedAt),
-                    },
-                  ].map(({ label, val }) => (
-                    <div key={label} className="tile">
-                      <div className="tile-k">{label}</div>
-                      <div className="tile-v">{val}</div>
+                    <div className="quick-stat warning">
+                      <AlertCircle size={14} />
+                      <span className="stat-v">{evCount}</span>
                     </div>
-                  ))}
+                  )}
+                  <div className="expand-icon">
+                    {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </div>
                 </div>
+              </button>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-                  <Link to={`/trips/${trip.id}`} className="btn btn-primary btn-sm">
-                    Abrir análise
-                  </Link>
-                </div>
-
-                {trip.events && trip.events.length > 0 ? (
-                  <div>
-                    <div className="trip-events-title">
-                      Eventos de Risco ({trip.events.length})
+              {isOpen && (
+                <div className="trip-expanded-content">
+                  {isDetailLoading ? (
+                    <div className="detail-loading">
+                      <div className="spinner-small"></div>
+                      <span>A carregar detalhes...</span>
                     </div>
-                    <div className="trip-events">
-                      {trip.events.map((ev) => (
-                        <div
-                          key={ev.id}
-                          className="trip-event"
-                          style={{ borderLeftColor: severityColor(ev.severity) }}
-                        >
-                          <span className="trip-event-icon">
-                            {eventTypeIcon(ev.type)}
-                          </span>
-                          <span
-                            className="trip-event-severity"
-                            style={{ color: severityColor(ev.severity) }}
-                          >
-                            {ev.severity}
-                          </span>
-                          <span className="trip-event-message">
-                            {ev.message}
-                          </span>
-                          {ev.speedKmh != null && (
-                            <span className="trip-event-speed">
-                              {ev.speedKmh.toFixed(0)} km/h
-                            </span>
-                          )}
-                          <span className="trip-event-time">
-                            {new Date(ev.occurredAt).toLocaleTimeString(
-                              "pt-PT",
-                            )}
+                  ) : (
+                    <>
+                      <div className="expanded-stats-grid">
+                        <div className="stat-tile">
+                          <span className="tile-label">Velocidade Máxima</span>
+                          <span className="tile-value">
+                            {trip.status === "ACTIVE" && (trip.maxSpeedKmh === 0 || trip.maxSpeedKmh == null) 
+                              ? "—" 
+                              : trip.maxSpeedKmh?.toFixed(1)} <small>km/h</small>
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="trip-events-empty">
-                    ✅ Sem eventos de risco nesta viagem
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                        <div className="stat-tile">
+                          <span className="tile-label">Velocidade Média</span>
+                          <span className="tile-value">
+                            {trip.status === "ACTIVE" && (trip.avgSpeedKmh === 0 || trip.avgSpeedKmh == null) 
+                              ? "—" 
+                              : trip.avgSpeedKmh?.toFixed(1)} <small>km/h</small>
+                          </span>
+                        </div>
+                        <div className="stat-tile">
+                          <span className="tile-label">Inclinação Máxima</span>
+                          <span className="tile-value">
+                            {trip.status === "ACTIVE" && (trip.maxRollDeg === 0 || trip.maxRollDeg == null) 
+                              ? "—" 
+                              : trip.maxRollDeg?.toFixed(1)} <small>°</small>
+                          </span>
+                        </div>
+                        <div className="stat-tile">
+                          <span className="tile-label">Força G Máxima</span>
+                          <span className="tile-value">
+                            {trip.status === "ACTIVE" && (trip.maxGForce === 0 || trip.maxGForce == null) 
+                              ? "—" 
+                              : trip.maxGForce?.toFixed(2)} <small>G</small>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="expanded-actions">
+                        <Link to={`/trips/${trip.id}`} className="btn btn-primary btn-sm">
+                          <Activity size={14} />
+                          Análise Detalhada
+                          <ArrowRight size={14} />
+                        </Link>
+                      </div>
+
+                      {trip.events && trip.events.length > 0 && (
+                        <div className="events-section-v2">
+                          <div className="section-title-v2">Eventos de Risco</div>
+                          <div className="events-list-v2">
+                            {trip.events.map((ev) => (
+                              <div key={ev.id} className="event-item-v2" style={{ borderLeftColor: severityColor(ev.severity) }}>
+                                <span className="event-icon-v2">{eventTypeIcon(ev.type)}</span>
+                                <div className="event-content-v2">
+                                  <div className="event-top-v2">
+                                    <span className="event-msg-v2">{ev.message}</span>
+                                    <span className="event-time-v2">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
+                                  </div>
+                                  {ev.speedKmh != null && (
+                                    <div className="event-meta-v2">
+                                      <Zap size={10} />
+                                      {ev.speedKmh.toFixed(0)} km/h
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
