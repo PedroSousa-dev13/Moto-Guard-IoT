@@ -29,8 +29,8 @@ from config import (
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
     PERFIS_MOTO, ROUTE_NAME,
-)
-from routes import RouteCursor, get_route
+                   )
+from routes import RouteCursor, get_route, get_route_between
 
 # ── Constantes de interpolação (suavidade por tick de 1s) ─────────────────────
 LERP_VEL   = 0.15
@@ -151,6 +151,9 @@ class HeadlessSimulator:
         self._tick_count = 0
         self._generation_paused: bool = False  # True após queda confirmada; retoma com reset_eventos/arrancar
         self.route_cursor: RouteCursor = RouteCursor(get_route(ROUTE_NAME))
+        self._route_override = False
+        self._route_override_waypoints: list[tuple[float, float]] | None = None
+        self._route_override_loop: bool = False
 
         # Limites do perfil
         self.vel_max = 200
@@ -223,7 +226,13 @@ class HeadlessSimulator:
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
 
-        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+        if self._route_override and self._route_override_waypoints:
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
+        else:
+            self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+            self._route_override = False
+            self._route_override_waypoints = None
+            self._route_override_loop = False
         return True
 
     # ========================================================================
@@ -268,13 +277,22 @@ class HeadlessSimulator:
         log("MQTT desconectado — a tentar reconectar…")
 
     def _on_message(self, client, userdata, msg):
+        log(f"DEBUG: Mensagem MQTT recebida - topic={msg.topic}, payload={msg.payload}")
         try:
             dados = json.loads(msg.payload.decode("utf-8"))
         except Exception:
             log(f"Comando inválido (não é JSON): {msg.payload}")
             return
 
-        acao = dados.get("acao", "")
+        device_id = dados.get("device_id")
+        log(f"DEBUG: Comando recebido - device_id={device_id}, acao={dados.get('acao')}, DEVICE_ID={DEVICE_ID}")
+        if device_id and device_id != DEVICE_ID:
+            log(f"DEBUG: Comando ignorado - device_id {device_id} != {DEVICE_ID}")
+            return
+
+        acao_raw = dados.get("acao", "")
+        acao = str(acao_raw).strip().lower()
+        log(f"DEBUG: Processando acao='{acao}' (raw={acao_raw!r})")
         if acao == "definir_modelo":
             modelo = dados.get("modelo", "")
             log(f"Comando: definir_modelo → '{modelo}'")
@@ -305,8 +323,47 @@ class HeadlessSimulator:
             self._generation_paused = False
             self.tele = TelemetriaState()
             self._tick_count = 0
+            if self._route_override:
+                self._route_override = False
+                self._route_override_waypoints = None
+                self._route_override_loop = False
+                self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+                self.route_cursor.reset(0)
+        elif acao in ("definir_rota", "set_route", "set-rota"):
+            route = dados.get("route") or {}
+            start = route.get("start") or {}
+            end = route.get("end") or {}
+            start_lat = start.get("latitude")
+            start_lng = start.get("longitude")
+            end_lat = end.get("latitude")
+            end_lng = end.get("longitude")
+            loop = bool(route.get("loop", False))
+            if not all(isinstance(v, (int, float)) for v in (start_lat, start_lng, end_lat, end_lng)):
+                log("Comando: definir_rota inválido — faltam coordenadas (latitude/longitude)")
+                return
+            wps = get_route_between((float(start_lat), float(start_lng)), (float(end_lat), float(end_lng)))
+            log(f"DEBUG _aplicar_rota: Gerados {len(wps)} waypoints da rota")
+            self.route_cursor = RouteCursor(wps, close_loop=loop)
+            self.route_cursor.reset(0)
+            start_point = self.route_cursor.waypoints[0]
+            log(f"DEBUG: Primeiro waypoint da rota: ({start_point[0]:.6f}, {start_point[1]:.6f})")
+            self.tele.lat = start_point[0]
+            self.tele.lng = start_point[1]
+            self._route_override = True
+            self._route_override_waypoints = wps
+            self._route_override_loop = loop
+            log(f"Comando: definir_rota → start=({start_lat:.6f},{start_lng:.6f}) end=({end_lat:.6f},{end_lng:.6f}) loop={'on' if loop else 'off'}")
+        elif acao in ("reset_rota", "clear_route", "clear-rota"):
+            self._route_override = False
+            self._route_override_waypoints = None
+            self._route_override_loop = False
+            self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+            self.route_cursor.reset(0)
+            self.tele.lat = self.route_cursor.waypoints[0][0]
+            self.tele.lng = self.route_cursor.waypoints[0][1]
+            log("Comando: reset_rota")
         else:
-            log(f"Comando desconhecido: {acao}")
+            log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
 
     # ========================================================================
     #  Processar comandos
@@ -315,12 +372,34 @@ class HeadlessSimulator:
         if not self._carregar_perfil(modelo):
             return
         self._generation_paused = False
+        
+        # Preservar rota customizada durante reset
+        rota_salva = self._route_override_waypoints
+        loop_salvo = self._route_override_loop
+        override_salvo = self._route_override
+        
         self.tele = TelemetriaState()
         self._carregar_perfil(modelo)  # re-propagar thresholds após reset
+        
+        # Restaurar rota customizada se existia
+        if override_salvo and rota_salva:
+            self._route_override = override_salvo
+            self._route_override_waypoints = rota_salva
+            self._route_override_loop = loop_salvo
+            self.route_cursor = RouteCursor(rota_salva, close_loop=loop_salvo)
+            log(f"DEBUG: Rota customizada restaurada após reset")
+
+        # DEBUG: Verificar estado da rota antes de aplicar
+        log(f"DEBUG _aplicar_modelo: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
+        if self._route_override and self._route_override_waypoints:
+            log(f"DEBUG: Usando rota customizada com {len(self._route_override_waypoints)} waypoints")
+        else:
+            log(f"DEBUG: Usando rota padrão")
 
         # Iniciar GPS no ponto de partida da rota
         self.route_cursor.reset(0)
         rota_start = self.route_cursor.waypoints[0]
+        log(f"DEBUG: GPS inicializado em ({rota_start[0]:.6f}, {rota_start[1]:.6f})")
         self.tele.lat = rota_start[0]
         self.tele.lng = rota_start[1]
 
@@ -362,6 +441,8 @@ class HeadlessSimulator:
         speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
         if speed_limit is not None:
             s._target_vel = min(s._target_vel, speed_limit)
+        if self.route_cursor.finished:
+            s._target_vel = 0.0
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
@@ -525,10 +606,15 @@ class HeadlessSimulator:
             speed_ms = s.velocidade / 3.6
             dist_m = speed_ms * PUBLISH_INTERVAL
             lat, lng, bearing = self.route_cursor.step(dist_m)
+            # DEBUG: Verificar se GPS está a avançar
+            if self._tick_count % 50 == 0:  # Log a cada 50 ticks (~5 segundos)
+                log(f"DEBUG GPS: vel={s.velocidade:.1f}km/h dist={dist_m:.1f}m lat={lat:.6f} lng={lng:.6f} bearing={bearing:.1f}°")
             s.lat = lat
             s.lng = lng
             s._target_yaw = bearing
             s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+            if self.route_cursor.finished:
+                s._target_vel = 0.0
 
         # ── 17. Arredondar ───────────────────────────────────────────
         vel_out   = round(s.velocidade, 1)

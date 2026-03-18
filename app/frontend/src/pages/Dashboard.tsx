@@ -104,6 +104,7 @@ export default function Dashboard() {
           telemetry={telemetry?.telemetry ?? null}
           msgCount={msgCount}
           resetSignal={mapResetSignal}
+          sendCommand={sendCommand}
         />
         <StatusCard
           system={telemetry?.system ?? null}

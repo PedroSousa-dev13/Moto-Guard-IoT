@@ -420,6 +420,12 @@ class TestRouteCursor(unittest.TestCase):
         self.assertGreaterEqual(lng2, -1.0)
         self.assertLessEqual(lng2, 1.0)
 
+    def test_rota_aberta_marca_finished(self):
+        rc = RouteCursor([(0.0, 0.0), (0.0, 0.001)], close_loop=False)
+        self.assertFalse(rc.finished)
+        rc.step(500_000)
+        self.assertTrue(rc.finished)
+
     def test_speed_limit_retorna_none_ou_numero(self):
         rc = RouteCursor(_square_route())
         v = rc.speed_limit_kmh(steps=4)

@@ -32,6 +32,34 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
       addLog("Selecione um modelo primeiro!", "#eab308");
       return;
     }
+
+    let route: any = null;
+    try {
+      const raw = localStorage.getItem("sim_route");
+      if (raw) route = JSON.parse(raw);
+    } catch {
+      route = null;
+    }
+
+    if (
+      route &&
+      route.start &&
+      route.end &&
+      typeof route.start.latitude === "number" &&
+      typeof route.start.longitude === "number" &&
+      typeof route.end.latitude === "number" &&
+      typeof route.end.longitude === "number"
+    ) {
+      // Primeiro definir modelo, depois rota
+      sendCommand({ acao: "definir_modelo", modelo: selectedModel });
+      addLog("Modelo definido (auto) antes de enviar rota", "#f97316");
+      setTimeout(() => {
+        sendCommand({ acao: "definir_rota", route });
+        addLog("Rota enviada (auto) após modelo definido", "#f97316");
+      }, 500);
+      return;
+    }
+
     sendCommand({ acao: "definir_modelo", modelo: selectedModel });
   }
 

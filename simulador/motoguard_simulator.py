@@ -37,7 +37,7 @@ from config import (
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
     PERFIS_MOTO, ROUTE_NAME,
 )
-from routes import RouteCursor, get_route
+from routes import RouteCursor, get_route, get_route_between
 
 # ── Tema ──────────────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
@@ -109,6 +109,8 @@ class TelemetriaState:
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
 
+        self.ambient_light_lux: float = 500.0
+
         # Alvos internos (interpolação suave)
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -178,6 +180,9 @@ class MotoGuardGenerator(ctk.CTk):
         self._sim_running = False
         self._sim_thread: threading.Thread | None = None
         self.route_cursor: RouteCursor = RouteCursor(get_route(ROUTE_NAME))
+        self._route_override = False
+        self._route_override_waypoints: list[tuple[float, float]] | None = None
+        self._route_override_loop: bool = False
 
         # Limites do perfil activo (preenchidos por _carregar_perfil)
         self.vel_max = 200
@@ -247,7 +252,18 @@ class MotoGuardGenerator(ctk.CTk):
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
 
-        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+        # DEBUG: Verificar estado da rota antes de carregar perfil
+        self._log(f"DEBUG _carregar_perfil: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
+        
+        if self._route_override and self._route_override_waypoints:
+            self._log(f"DEBUG: Mantendo rota customizada com {len(self._route_override_waypoints)} waypoints")
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
+        else:
+            self._log(f"DEBUG: Usando rota padrão")
+            self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+            self._route_override = False
+            self._route_override_waypoints = None
+            self._route_override_loop = False
         return True
 
     # ========================================================================
@@ -375,7 +391,12 @@ class MotoGuardGenerator(ctk.CTk):
             self._log(f"Comando inválido (não é JSON): {msg.payload}")
             return
 
-        acao = dados.get("acao", "")
+        device_id = dados.get("device_id")
+        if device_id and device_id != DEVICE_ID:
+            return
+
+        acao_raw = dados.get("acao", "")
+        acao = str(acao_raw).strip().lower()
 
         if acao == "definir_modelo":
             modelo = dados.get("modelo", "")
@@ -399,8 +420,16 @@ class MotoGuardGenerator(ctk.CTk):
             self._log("Comando recebido: arrancar")
             self.after(0, self._arrancar_geracao)
 
+        elif acao in ("definir_rota", "set_route", "set-rota"):
+            route = dados.get("route") or {}
+            self.after(0, lambda r=route: self._aplicar_rota(r))
+
+        elif acao in ("reset_rota", "clear_route", "clear-rota"):
+            self._log("Comando recebido: reset_rota")
+            self.after(0, self._reset_rota)
+
         else:
-            self._log(f"Comando desconhecido: {acao}")
+            self._log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
 
     # ========================================================================
     #  Processar comandos
@@ -412,11 +441,31 @@ class MotoGuardGenerator(ctk.CTk):
 
         # Reset estado para novo modelo
         self.tele = TelemetriaState()
+        # Preservar rota customizada durante reset
+        rota_salva = self._route_override_waypoints
+        loop_salvo = self._route_override_loop
+        override_salvo = self._route_override
         self._carregar_perfil(modelo)  # re-propagar thresholds após reset
+        # Restaurar rota customizada se existia
+        if override_salvo and rota_salva:
+            self._route_override = override_salvo
+            self._route_override_waypoints = rota_salva
+            self._route_override_loop = loop_salvo
+            self.route_cursor = RouteCursor(rota_salva, close_loop=loop_salvo)
+            self._log(f"DEBUG: Rota customizada restaurada após reset")
+
+        # DEBUG: Verificar estado da rota antes de aplicar
+        self._log(f"DEBUG _aplicar_modelo: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
+        if self._route_override and self._route_override_waypoints:
+            self._log(f"DEBUG: Usando rota customizada com {len(self._route_override_waypoints)} waypoints")
+            self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
+        else:
+            self._log(f"DEBUG: Usando rota padrão")
 
         # Iniciar GPS no ponto de partida da rota
         self.route_cursor.reset(0)
         rota_start = self.route_cursor.waypoints[0]
+        self._log(f"DEBUG: GPS inicializado em ({rota_start[0]:.6f}, {rota_start[1]:.6f})")
         self.tele.lat = rota_start[0]
         self.tele.lng = rota_start[1]
 
@@ -435,6 +484,40 @@ class MotoGuardGenerator(ctk.CTk):
             self._sim_running = True
             self._sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
             self._sim_thread.start()
+
+    def _aplicar_rota(self, route: dict):
+        start = route.get("start") or {}
+        end = route.get("end") or {}
+        start_lat = start.get("latitude")
+        start_lng = start.get("longitude")
+        end_lat = end.get("latitude")
+        end_lng = end.get("longitude")
+        loop = bool(route.get("loop", False))
+        if not all(isinstance(v, (int, float)) for v in (start_lat, start_lng, end_lat, end_lng)):
+            self._log("definir_rota inválido — faltam coordenadas (latitude/longitude)")
+            return
+        wps = get_route_between((float(start_lat), float(start_lng)), (float(end_lat), float(end_lng)))
+        self._route_override_waypoints = wps
+        self._route_override_loop = loop
+        self._log(f"DEBUG _aplicar_rota: Gerados {len(wps)} waypoints da rota")
+        self.route_cursor = RouteCursor(wps, close_loop=loop)
+        self.route_cursor.reset(0)
+        start_point = self.route_cursor.waypoints[0]
+        self._log(f"DEBUG: Primeiro waypoint da rota: ({start_point[0]:.6f}, {start_point[1]:.6f})")
+        self.tele.lat = start_point[0]
+        self.tele.lng = start_point[1]
+        self._route_override = True
+        self._log(f"Rota definida: start=({start_lat:.6f},{start_lng:.6f}) end=({end_lat:.6f},{end_lng:.6f}) loop={'on' if loop else 'off'}")
+
+    def _reset_rota(self):
+        self._route_override = False
+        self._route_override_waypoints = None
+        self._route_override_loop = False
+        self.route_cursor = RouteCursor(get_route(ROUTE_NAME))
+        self.route_cursor.reset(0)
+        self.tele.lat = self.route_cursor.waypoints[0][0]
+        self.tele.lng = self.route_cursor.waypoints[0][1]
+        self._log("Rota reposta para padrão")
 
     def _aplicar_evento(self, tipo: str):
         if not self._sim_running:
@@ -508,6 +591,8 @@ class MotoGuardGenerator(ctk.CTk):
             speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
             if speed_limit is not None:
                 s._target_vel = min(s._target_vel, speed_limit)
+            if self.route_cursor.finished:
+                s._target_vel = 0.0
 
             # ── 2. Velocidade e Aceleração ────────────────────────────────
             vel_diff = s._target_vel - s.velocidade
@@ -641,7 +726,12 @@ class MotoGuardGenerator(ctk.CTk):
                 + random.uniform(-0.02, 0.02),
                 self.tire_rear_base * 0.85, self.tire_rear_base * 1.15)
 
-            # ── 14. Efeitos de eventos activos ───────────────────────────
+            # ── 14. Luminosidade ─────────────────────────────────────────
+            hour_sim = (self._tick_count % 1800) / 1800.0
+            lux_base = 500 * math.sin(math.pi * hour_sim) + 50
+            s.ambient_light_lux = clamp(lux_base + random.uniform(-20, 20), 0, 1000)
+
+            # ── 15. Efeitos de eventos activos ───────────────────────────
             s.g_force = 0.0
 
             if s.flag_queda:
@@ -679,17 +769,22 @@ class MotoGuardGenerator(ctk.CTk):
                 s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
                 s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-            # ── 15. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
+            # ── 16. GPS baseado em DIREÇÃO (yaw) e VELOCIDADE ────────
             if s.velocidade > 1:
                 speed_ms = s.velocidade / 3.6
                 dist_m = speed_ms * PUBLISH_INTERVAL
                 lat, lng, bearing = self.route_cursor.step(dist_m)
+                # DEBUG: Verificar se GPS está a avançar
+                if self._tick_count % 50 == 0:  # Log a cada 50 ticks (~5 segundos)
+                    self._log(f"DEBUG GPS: vel={s.velocidade:.1f}km/h dist={dist_m:.1f}m lat={lat:.6f} lng={lng:.6f} bearing={bearing:.1f}°")
                 s.lat = lat
                 s.lng = lng
                 s._target_yaw = bearing
                 s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+                if self.route_cursor.finished:
+                    s._target_vel = 0.0
 
-            # ── 16. Arredondar para output ───────────────────────────────
+            # ── 17. Arredondar para output ───────────────────────────────
             vel_out   = round(s.velocidade, 1)
             rpm_out   = int(round(s.rpm))
             temp_out  = round(s.temp_motor, 1)
@@ -703,32 +798,25 @@ class MotoGuardGenerator(ctk.CTk):
             accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
             accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-            # ── 17. Construir e publicar payload ─────────────────────────
+            # ── 18. Construir e publicar payload ─────────────────────────
             payload = {
-                "device_id": DEVICE_ID,
-                "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "modelo": self.perfil_nome,
                 "telemetry": {
-                    "speed_kmh":     vel_out,
-                    "rpm":           rpm_out,
-                    "engine_temp_c": temp_out,
-                    "gear":          s.gear,
-                    "throttle_pct":  round(s.throttle_pct, 1),
-                    "clutch_engaged": s.clutch_engaged,
-                    "brakes": {
-                        "front_pct": round(s.brake_front_pct, 1),
-                        "rear_pct":  round(s.brake_rear_pct, 1),
-                    },
-                    "odometer_km":   round(s.odometer_km, 1),
-                    "imu": {
-                        "roll":    roll_out,
-                        "pitch":   pitch_out,
-                        "yaw":     yaw_out,
-                        "accel_x": round(accel_x, 2),
-                        "accel_y": round(accel_y, 2),
-                        "accel_z": round(accel_z, 2),
-                        "g_force": s.g_force,
-                    },
+                    "speed_kmh":       vel_out,
+                    "rpm":             rpm_out,
+                    "gear":            s.gear,
+                    "throttle_pct":    round(s.throttle_pct, 1),
+                    "engine_temp_c":   temp_out,
+                    "voltage":         volt_out,
+                    "brake_front_pct": round(s.brake_front_pct, 1),
+                    "brake_rear_pct":  round(s.brake_rear_pct, 1),
+                    "odometer_km":     round(s.odometer_km, 1),
+                    "clutch_engaged":  s.clutch_engaged,
+                },
+                "imu": {
+                    "roll_deg":  roll_out,
+                    "pitch_deg": pitch_out,
+                    "yaw_deg":   yaw_out,
+                    "g_force":   s.g_force,
                 },
                 "active_safety": {
                     "abs_active":      s.abs_active,
@@ -736,26 +824,23 @@ class MotoGuardGenerator(ctk.CTk):
                     "side_stand_down": s.side_stand_down,
                 },
                 "health": {
-                    "oil_pressure_bar":  round(s.oil_pressure_bar, 1),
-                    "battery_voltage":   volt_out,
-                    "tire_pressure_bar": {
-                        "front": round(s.tire_pressure_front, 2),
-                        "rear":  round(s.tire_pressure_rear, 2),
-                    },
+                    "oil_pressure_bar":        round(s.oil_pressure_bar, 1),
+                    "tire_pressure_front_bar": round(s.tire_pressure_front, 2),
+                    "tire_pressure_rear_bar":  round(s.tire_pressure_rear, 2),
                 },
                 "location": {
-                    "lat": round(s.lat, 6),
-                    "lng": round(s.lng, 6),
+                    "latitude":  round(s.lat, 6),
+                    "longitude": round(s.lng, 6),
+                },
+                "environment": {
+                    "ambient_light_lux": round(s.ambient_light_lux),
                 },
                 "system": {
-                    "status":          evento.lower(),
-                    "battery_voltage": volt_out,
-                },
-                "limites_modelo": {
-                    "velocidade_max":  self.vel_max,
-                    "rpm_max":         self.rpm_max,
-                    "temp_max":        self.temp_max,
-                    "roll_tipico_max": self.roll_tipico,
+                    "device_id":    DEVICE_ID,
+                    "moto_model":   self.perfil_nome,
+                    "event_status": evento,
+                    "tick":         self._tick_count,
+                    "timestamp":    datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 },
             }
 
