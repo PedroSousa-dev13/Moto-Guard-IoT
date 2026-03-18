@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { tripsAPI } from "../services/api";
-import { Trip, TripSource, TripStatus } from "../types";
+import { Trip, TripFeedItem, TripSource, TripStatus } from "../types";
 import { Link } from "react-router-dom";
 import { applyTripFilters, groupTripsBySource, listMotorcyclesForFilter, paginate } from "../utils/trips";
 import { 
@@ -29,6 +29,7 @@ import Card from "../components/ui/Card";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
+type TripHistoryView = "FEED" | "LIST";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -115,14 +116,24 @@ function eventTypeIcon(type: string) {
   return icons[type] ?? "⚠️";
 }
 
+function scoreStyle(score: number) {
+  if (score >= 80) return { bg: "rgba(34,197,94,0.12)", color: "#22c55e" };
+  if (score >= 60) return { bg: "rgba(202,138,4,0.14)", color: "#ca8a04" };
+  return { bg: "rgba(239,68,68,0.12)", color: "#ef4444" };
+}
+
 // ...
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Trips() {
+  const [view, setView] = useState<TripHistoryView>("FEED");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [feed, setFeed] = useState<TripFeedItem[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<TripSourceFilter>("ALL");
   const [statusFilter, setStatusFilter] = useState<TripStatusFilter>("ALL");
@@ -135,16 +146,20 @@ export default function Trips() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    loadTrips();
+    void refresh();
   }, []);
 
   // Auto-refresh quando uma viagem começa ou termina
   useEffect(() => {
     const socket = io();
-    socket.on("trip_started", () => loadTrips());
-    socket.on("trip_ended", () => loadTrips());
+    socket.on("trip_started", () => void refresh());
+    socket.on("trip_ended", () => void refresh());
     return () => { socket.disconnect(); };
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [view]);
 
   async function loadTrips() {
     try {
@@ -161,12 +176,30 @@ export default function Trips() {
     }
   }
 
+  async function loadFeed() {
+    try {
+      setFeedLoading(true);
+      setFeedError(null);
+      const res = await tripsAPI.getFeed(sourceFilter === "ALL" ? undefined : sourceFilter, 200);
+      setFeed(res.data);
+    } catch {
+      setFeedError("Não foi possível carregar o feed. Verifica a ligação ao servidor.");
+    } finally {
+      setFeedLoading(false);
+    }
+  }
+
+  async function refresh() {
+    if (view === "FEED") return loadFeed();
+    return loadTrips();
+  }
+
   function toggle(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
   useEffect(() => {
-    void loadTrips();
+    void refresh();
     setExpandedId(null);
     setPage(1);
   }, [sourceFilter]);
@@ -182,12 +215,53 @@ export default function Trips() {
   }
 
   const filteredTrips = applyFilters(trips);
+  const filteredFeed = (() => {
+    let out = feed;
 
-  const motorcyclesForFilter = listMotorcyclesForFilter(trips);
-  const pagination = paginate(filteredTrips, page, pageSize);
-  const safePage = pagination.page;
-  const totalPages = pagination.totalPages;
-  const pagedTrips = pagination.items;
+    if (statusFilter !== "ALL") {
+      out = out.filter((t) => t.status === statusFilter);
+    }
+
+    if (motorcycleFilter !== "ALL") {
+      out = out.filter((t) => t.motorcycle?.id === motorcycleFilter);
+    }
+
+    if (fromDate) {
+      const from = new Date(fromDate);
+      out = out.filter((t) => new Date(t.startedAt) >= from);
+    }
+
+    if (toDate) {
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999);
+      out = out.filter((t) => new Date(t.startedAt) <= to);
+    }
+
+    if (onlyWithEvents) {
+      out = out.filter((t) => (t.eventCounts?.total ?? 0) > 0);
+    }
+
+    return out;
+  })();
+
+  const motorcyclesForFilter =
+    view === "FEED"
+      ? Array.from(
+          new Map(
+            feed
+              .filter((t) => t.motorcycle?.id)
+              .map((t) => [t.motorcycle!.id, t.motorcycle!]),
+          ).values(),
+        )
+      : listMotorcyclesForFilter(trips);
+
+  const listPagination = paginate(filteredTrips, page, pageSize);
+  const feedPagination = paginate(filteredFeed, page, pageSize);
+
+  const safePage = view === "FEED" ? feedPagination.page : listPagination.page;
+  const totalPages = view === "FEED" ? feedPagination.totalPages : listPagination.totalPages;
+  const pagedTrips = listPagination.items;
+  const pagedFeed = feedPagination.items;
   const tripsBySource = groupTripsBySource(pagedTrips);
 
   async function ensureDetails(tripId: string) {
@@ -202,13 +276,17 @@ export default function Trips() {
     }
   }
 
+  const activeLoading = view === "FEED" ? feedLoading : isLoading;
+  const activeError = view === "FEED" ? feedError : error;
+  const activeCount = view === "FEED" ? filteredFeed.length : filteredTrips.length;
+
   // ── Loading ──────────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (activeLoading) {
     return (
       <div className="page">
         <div className="empty-state">
           <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">A carregar viagens...</div>
+          <div className="empty-state-title">{view === "FEED" ? "A carregar feed..." : "A carregar viagens..."}</div>
           <div className="empty-state-text">Pode demorar alguns segundos.</div>
         </div>
       </div>
@@ -216,17 +294,17 @@ export default function Trips() {
   }
 
   // ── Error ────────────────────────────────────────────────────────────────
-  if (error) {
+  if (activeError) {
     return (
       <div className="page">
         <div className="empty-state">
           <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Erro ao carregar viagens</div>
+          <div className="empty-state-title">{view === "FEED" ? "Erro ao carregar feed" : "Erro ao carregar viagens"}</div>
           <div className="empty-state-text" style={{ marginBottom: 14 }}>
-            {error}
+            {activeError}
           </div>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <button className="btn btn-primary" onClick={loadTrips}>
+            <button className="btn btn-primary" onClick={() => void refresh()}>
               Tentar novamente
             </button>
           </div>
@@ -246,8 +324,32 @@ export default function Trips() {
           </div>
           <div className="page-subtitle">
             <Route size={14} style={{ marginRight: 4 }} />
-            {filteredTrips.length} viagem{filteredTrips.length !== 1 ? "s" : ""} registadas
+            {activeCount} viagem{activeCount !== 1 ? "s" : ""} registadas
           </div>
+        </div>
+        <div className="status-group">
+          <button
+            className={`btn btn-sm ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => {
+              setView("FEED");
+              setExpandedId(null);
+              setPage(1);
+            }}
+          >
+            <Activity size={14} />
+            Feed
+          </button>
+          <button
+            className={`btn btn-sm ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => {
+              setView("LIST");
+              setExpandedId(null);
+              setPage(1);
+            }}
+          >
+            <History size={14} />
+            Lista
+          </button>
         </div>
       </div>
 
@@ -351,10 +453,10 @@ export default function Trips() {
       </Card>
 
       {/* Empty state */}
-      {filteredTrips.length === 0 && (
+      {activeCount === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🛣️</div>
-          <div className="empty-state-title">Ainda não há viagens registadas</div>
+          <div className="empty-state-title">{view === "FEED" ? "Ainda não há rides no feed" : "Ainda não há viagens registadas"}</div>
           <div className="empty-state-text">
             {sourceFilter === "ALL"
               ? "As viagens são criadas automaticamente quando a simulação termina (mesmo que seja curta)."
@@ -365,7 +467,13 @@ export default function Trips() {
 
       {/* Trip list */}
       <div className="trip-list">
-        {sourceFilter === "ALL" ? (
+        {view === "FEED" ? (
+          <div className="trip-grid">
+            {pagedFeed.map((item) => (
+              <TripFeedCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : sourceFilter === "ALL" ? (
           <>
             <TripSection
               title="Simuladas"
@@ -412,7 +520,7 @@ export default function Trips() {
         )}
       </div>
 
-      {filteredTrips.length > 0 && (
+      {activeCount > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <span className="field-label">Por página</span>
@@ -462,6 +570,97 @@ export default function Trips() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function TripFeedCard({ item }: { item: TripFeedItem }) {
+  const badge = statusBadge(item.status);
+  const tripSourceBadge = sourceBadge(item.source);
+  const safety = scoreStyle(item.safetyScore);
+  const performance = scoreStyle(item.performanceScore);
+
+  return (
+    <div className="trip-card-v2">
+      <div className="trip-summary" style={{ cursor: "default" }}>
+        <div className="trip-info-main">
+          <div className="trip-mota-line">
+            <Bike size={18} className="mota-icon-v2" />
+            <span className="mota-name-v2">
+              {item.motorcycle?.name ?? "—"}
+              {item.motorcycle?.brand ? ` (${item.motorcycle.brand})` : ""}
+            </span>
+            <div className="trip-badges-v2">
+              <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>
+                {badge.icon}
+                {badge.label}
+              </span>
+              <span className="badge-v2" style={{ background: tripSourceBadge.bg, color: tripSourceBadge.color }}>
+                {tripSourceBadge.icon}
+                {tripSourceBadge.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="trip-meta-line">
+            <Calendar size={14} />
+            <span>{formatDate(item.startedAt)}</span>
+            <span className="separator">•</span>
+            <Clock size={14} />
+            <span>{formatDuration(item.startedAt, item.endedAt ?? undefined)}</span>
+            <span className="separator">•</span>
+            <AlertCircle size={14} />
+            <span>{item.eventCounts?.total ?? 0} eventos</span>
+          </div>
+        </div>
+
+        <div className="trip-stats-quick" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <span className="badge-v2" style={{ background: safety.bg, color: safety.color }}>
+            Safety {item.safetyScore}
+          </span>
+          <span className="badge-v2" style={{ background: performance.bg, color: performance.color }}>
+            Performance {item.performanceScore}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding: "0 20px 16px" }}>
+        {item.labels?.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            {item.labels.map((label) => (
+              <span
+                key={label}
+                className="badge-v2"
+                style={{ background: "rgba(79,70,229,0.10)", color: "var(--accent)" }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="trip-stats-quick">
+            <div className="quick-stat">
+              <span className="stat-v">{item.distanceKm?.toFixed(1) ?? "—"}</span>
+              <span className="stat-u">km</span>
+            </div>
+            <div className="quick-stat">
+              <span className="stat-v">{item.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
+              <span className="stat-u">km/h</span>
+            </div>
+            <div className="quick-stat">
+              <span className="stat-v">{item.maxSpeedKmh?.toFixed(0) ?? "—"}</span>
+              <span className="stat-u">max</span>
+            </div>
+          </div>
+
+          <Link to={`/trips/${item.id}`} className="btn btn-primary btn-sm">
+            Abrir análise
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

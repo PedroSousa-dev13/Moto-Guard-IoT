@@ -91,6 +91,9 @@ export default function Gpx() {
       <div className="panel">
         <div className="panel-header">
           <div className="panel-title">Importar GPX</div>
+          <a className="btn btn-ghost btn-sm" href="https://www.wikiloc.com/trails/motorcycling" target="_blank" rel="noreferrer">
+            consigue aqui os ficheiros gpx
+          </a>
         </div>
         <div className="panel-body">
           <div className="form-grid" style={{ marginBottom: 12 }}>
@@ -211,4 +214,3 @@ export default function Gpx() {
     </div>
   );
 }
-

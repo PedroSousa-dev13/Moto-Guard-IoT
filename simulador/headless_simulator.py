@@ -578,14 +578,14 @@ class HeadlessSimulator:
         # ── 13. Pressão pneus (base específica por perfil + calor) ───────────
         temp_factor = ((s.temp_motor - self.temp_min)
                       / max(1, self.temp_max - self.temp_min))
-        s.tire_pressure_front = clamp(
-            self.tire_front_base + temp_factor * self.tire_front_base * 0.08
-            + random.uniform(-0.02, 0.02),
-            self.tire_front_base * 0.85, self.tire_front_base * 1.15)
-        s.tire_pressure_rear = clamp(
-            self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
-            + random.uniform(-0.02, 0.02),
-            self.tire_rear_base * 0.85, self.tire_rear_base * 1.15)
+        target_tire_front = self.tire_front_base + temp_factor * self.tire_front_base * 0.08
+        target_tire_rear = self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
+        s.tire_pressure_front = lerp(s.tire_pressure_front, target_tire_front, 0.06)
+        s.tire_pressure_rear = lerp(s.tire_pressure_rear, target_tire_rear, 0.06)
+        s.tire_pressure_front += random.uniform(-0.003, 0.003)
+        s.tire_pressure_rear += random.uniform(-0.003, 0.003)
+        s.tire_pressure_front = clamp(s.tire_pressure_front, self.tire_front_base * 0.90, self.tire_front_base * 1.15)
+        s.tire_pressure_rear = clamp(s.tire_pressure_rear, self.tire_rear_base * 0.90, self.tire_rear_base * 1.15)
 
         # ── 14. Luminosidade ─────────────────────────────────────────
         hour_sim = (self._tick_count % 1800) / 1800.0

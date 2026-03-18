@@ -117,3 +117,26 @@ export interface GpxImportResponse {
     maxSpeedKmh: number;
   };
 }
+
+export type TripScoreBucket = "good" | "warn" | "bad";
+
+export interface TripFeedItem {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: TripStatus;
+  source: TripSource;
+  distanceKm: number | null;
+  avgSpeedKmh: number | null;
+  maxSpeedKmh: number | null;
+  motorcycle: MotorcycleSummary | null;
+  eventCounts: {
+    total: number;
+    bySeverity: { INFO: number; WARNING: number; CRITICAL: number };
+    byType: Record<string, number>;
+  };
+  safetyScore: number;
+  performanceScore: number;
+  labels: string[];
+  buckets: { safety: TripScoreBucket; performance: TripScoreBucket };
+}

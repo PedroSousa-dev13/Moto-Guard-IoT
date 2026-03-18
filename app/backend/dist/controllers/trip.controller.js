@@ -8,7 +8,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.listTrips = listTrips;
 exports.getTrip = getTrip;
+exports.getTripEvaluation = getTripEvaluation;
 const prisma_service_1 = require("../services/prisma.service");
+const trip_ml_pipeline_service_1 = require("../services/trip-ml-pipeline.service");
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"];
 // ─── Listar viagens ─────────────────────────────────────────────────────────
 async function listTrips(req, res) {
@@ -62,6 +64,22 @@ async function getTrip(req, res) {
     }
     catch (err) {
         console.error("[getTrip] Erro interno:", err);
+        res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+    }
+}
+async function getTripEvaluation(req, res) {
+    const userId = req.userId;
+    const id = req.params.id;
+    try {
+        const evaluation = await (0, trip_ml_pipeline_service_1.runTripMlPipeline)(id, userId);
+        if (!evaluation) {
+            res.status(404).json({ error: "Viagem não encontrada" });
+            return;
+        }
+        res.json(evaluation);
+    }
+    catch (err) {
+        console.error("[getTripEvaluation] Erro interno:", err);
         res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
     }
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User, Motorcycle, Trip, TripTelemetryResponse, GpxImportResponse } from '../types';
+import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -70,6 +70,14 @@ export const tripsAPI = {
       params: source ? { source } : undefined,
     }),
   
+  getFeed: (source?: Trip["source"], limit?: number) =>
+    api.get<TripFeedItem[]>("/trips/feed", {
+      params: {
+        ...(source ? { source } : {}),
+        ...(limit ? { limit } : {}),
+      },
+    }),
+
   getById: (id: string) =>
     api.get<Trip>(`/trips/${id}`),
   

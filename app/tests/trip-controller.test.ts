@@ -10,7 +10,7 @@ vi.mock("../backend/src/services/prisma.service", () => ({
 }));
 
 import { prisma } from "../backend/src/services/prisma.service";
-import { listTrips, getTrip } from "../backend/src/controllers/trip.controller";
+import { listTrips, listTripFeed, getTrip } from "../backend/src/controllers/trip.controller";
 
 function mockResponse() {
   return {
@@ -73,6 +73,90 @@ describe("listTrips", () => {
     const res = mockResponse();
 
     await listTrips(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Erro interno do servidor. Tente novamente mais tarde.",
+    });
+  });
+});
+
+describe("listTripFeed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 400 for invalid source filter", async () => {
+    const req = { userId: "u1", query: { source: "INVALID" } } as any;
+    const res = mockResponse();
+
+    await listTripFeed(req, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+    });
+    expect(prisma.trip.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns computed scores and labels", async () => {
+    vi.mocked(prisma.trip.findMany).mockResolvedValue([
+      {
+        id: "t1",
+        startedAt: new Date("2026-03-14T10:00:00.000Z"),
+        endedAt: new Date("2026-03-14T11:00:00.000Z"),
+        status: "COMPLETED",
+        source: "DEVICE_REAL",
+        distanceKm: 85,
+        avgSpeedKmh: 72,
+        maxSpeedKmh: 120,
+        maxRollDeg: 18,
+        maxGForce: 0.9,
+        motorcycle: {
+          id: "m1",
+          name: "MT-07",
+          brand: "Yamaha",
+          profile: {
+            maxSpeedKmh: 200,
+            typicalMaxRollDeg: 35,
+            crashRollThreshold: 65,
+            crashGForce: 3.2,
+          },
+        },
+        events: [{ type: "HARD_BRAKING", severity: "WARNING" }],
+      },
+    ] as any);
+
+    const req = { userId: "u1", query: {} } as any;
+    const res = mockResponse();
+
+    await listTripFeed(req, res as any);
+
+    expect(prisma.trip.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "u1", status: "COMPLETED" },
+      }),
+    );
+
+    const payload = vi.mocked(res.json).mock.calls[0]?.[0] as any[];
+    expect(payload).toHaveLength(1);
+    expect(payload[0]).toEqual(
+      expect.objectContaining({
+        id: "t1",
+        safetyScore: 88,
+        performanceScore: expect.any(Number),
+        labels: expect.arrayContaining(["Weekend Tour"]),
+        eventCounts: expect.objectContaining({ total: 1 }),
+      }),
+    );
+  });
+
+  it("returns 500 when list query throws", async () => {
+    vi.mocked(prisma.trip.findMany).mockRejectedValue(new Error("db issue"));
+    const req = { userId: "u1", query: {} } as any;
+    const res = mockResponse();
+
+    await listTripFeed(req, res as any);
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
