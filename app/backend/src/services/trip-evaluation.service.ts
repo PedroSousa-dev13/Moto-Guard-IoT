@@ -51,6 +51,17 @@ export function evaluateTripHeuristic(input: TripEvaluationInput): TripEvaluatio
   score -= severityCounts.WARNING * 12;
   score -= severityCounts.INFO * 5;
 
+  // Penalidade extra por excesso de velocidade (por ocorrência)
+  // Extra penalty for speeding events (on top of base severity penalty)
+  const speedingCriticalCount = input.events.filter(
+    (e) => e.type === EventType.SPEEDING && e.severity === EventSeverity.CRITICAL
+  ).length;
+  const speedingWarningCount = input.events.filter(
+    (e) => e.type === EventType.SPEEDING && e.severity === EventSeverity.WARNING
+  ).length;
+  score -= speedingCriticalCount * 15;
+  score -= speedingWarningCount * 8;
+
   const profile = input.profile;
   if (profile) {
     const maxSpeed = input.trip.maxSpeedKmh ?? 0;

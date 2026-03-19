@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motorcyclesAPI } from "../services/api";
-import { useSocket } from "../hooks/useSocket";
 import type { Motorcycle } from "../types";
 import Card from "../components/ui/Card";
 import { SkeletonCard } from "../components/ui/Skeleton";
+import { CATEGORIES, deviceIdFromCategory } from "../utils/categoryDeviceMap";
 import {
   Bike,
   Plus,
   Pencil,
   Trash2,
-  Wifi,
-  WifiOff,
   Activity,
   Route,
   X,
@@ -24,14 +22,13 @@ interface FormState {
   model: string;
   year: string;
   plate: string;
-  deviceId: string;
+  category: string;
 }
 
-const EMPTY_FORM: FormState = { name: "", brand: "", model: "", year: "", plate: "", deviceId: "" };
+const EMPTY_FORM: FormState = { name: "", brand: "", model: "", year: "", plate: "", category: "" };
 
 export default function Garage() {
   const navigate = useNavigate();
-  const { devices } = useSocket();
   const [motos, setMotos] = useState<Motorcycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +72,7 @@ export default function Garage() {
       model: m.model ?? "",
       year: m.year != null ? String(m.year) : "",
       plate: m.plate ?? "",
-      deviceId: m.deviceId ?? "",
+      category: m.category ?? "",
     });
     setEditId(m.id);
     setSaveError(null);
@@ -92,6 +89,10 @@ export default function Garage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
+    if (!form.category) {
+      setSaveError("Seleciona uma categoria.");
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     const payload = {
@@ -100,7 +101,8 @@ export default function Garage() {
       model: form.model.trim() || undefined,
       year: form.year ? Number(form.year) : undefined,
       plate: form.plate.trim() || undefined,
-      deviceId: form.deviceId.trim() || undefined,
+      category: form.category,
+      deviceId: deviceIdFromCategory(form.category),
     };
     try {
       if (editId) {
@@ -119,18 +121,13 @@ export default function Garage() {
 
   async function handleDelete(id: string) {
     try {
-      await motorcyclesAPI.delete(id);
+      await motorcyclesAPI.remove(id);
       setConfirmDeleteId(null);
       if (detailId === id) setDetailId(null);
       await load();
     } catch (err: any) {
       alert(err?.response?.data?.error ?? "Erro ao remover mota.");
     }
-  }
-
-  function isOnline(moto: Motorcycle) {
-    if (!moto.deviceId) return false;
-    return devices.includes(moto.deviceId);
   }
 
   if (isLoading) {
@@ -201,8 +198,19 @@ export default function Garage() {
                 <input id="g-plate" className="control" value={form.plate} onChange={(e) => setForm((p) => ({ ...p, plate: e.target.value }))} placeholder="Ex: AA-00-BB" />
               </div>
               <div className="field">
-                <label className="field-label" htmlFor="g-device">Device ID</label>
-                <input id="g-device" className="control" value={form.deviceId} onChange={(e) => setForm((p) => ({ ...p, deviceId: e.target.value }))} placeholder="Ex: device-001" />
+                <label className="field-label" htmlFor="g-category">Categoria *</label>
+                <select
+                  id="g-category"
+                  className="control"
+                  required
+                  value={form.category}
+                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                >
+                  <option value="">— escolher categoria —</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
             </div>
             {saveError && <div className="alert alert-danger" style={{ marginTop: 10 }}>{saveError}</div>}
@@ -226,7 +234,6 @@ export default function Garage() {
       ) : (
         <div className="tile-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
           {motos.map((moto) => {
-            const online = isOnline(moto);
             const isDetail = detailId === moto.id;
             const isConfirmDelete = confirmDeleteId === moto.id;
             return (
@@ -251,20 +258,11 @@ export default function Garage() {
                       {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ")}
                     </div>
                   </div>
-                  <span
-                    className="badge-pill"
-                    style={{
-                      background: online ? "rgba(34,197,94,0.12)" : "rgba(113,113,122,0.1)",
-                      color: online ? "#22c55e" : "#71717a",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {online ? <Wifi size={11} /> : <WifiOff size={11} />}
-                    {online ? "Online" : "Offline"}
-                  </span>
+                  {moto.category && (
+                    <span className="badge-pill" style={{ background: "rgba(79,70,229,0.1)", color: "#4f46e5", whiteSpace: "nowrap" }}>
+                      {moto.category}
+                    </span>
+                  )}
                 </div>
 
                 {/* Info */}
@@ -272,11 +270,6 @@ export default function Garage() {
                   {moto.plate && (
                     <span className="badge-pill" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>
                       {moto.plate}
-                    </span>
-                  )}
-                  {moto.deviceId && (
-                    <span className="badge-pill" style={{ background: "rgba(14,165,233,0.1)", color: "#0ea5e9" }}>
-                      {moto.deviceId}
                     </span>
                   )}
                 </div>
@@ -302,9 +295,9 @@ export default function Garage() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       className="btn btn-primary btn-sm"
-                      disabled={!moto.deviceId}
-                      title={moto.deviceId ? "Abrir dashboard para esta mota" : "Sem device ID associado"}
-                      onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}
+                      disabled={!moto.category}
+                      title={moto.category ? "Abrir simulador para esta mota" : "Sem categoria associada"}
+                      onClick={() => navigate(`/simulator-contexts?moto=${moto.id}`)}
                     >
                       <Activity size={13} /> Monitorizar
                     </button>

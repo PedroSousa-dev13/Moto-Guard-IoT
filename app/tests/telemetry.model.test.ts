@@ -129,24 +129,20 @@ describe('Telemetry Models', () => {
       const activeSafety: ActiveSafety = {
         abs_active: true,
         tc_active: false,
-        side_stand_down: false,
       };
       
       expect(activeSafety.abs_active).toBe(true);
       expect(activeSafety.tc_active).toBe(false);
-      expect(activeSafety.side_stand_down).toBe(false);
     });
 
     it('deve aceitar todos os valores booleanos', () => {
       const activeSafety: ActiveSafety = {
         abs_active: false,
         tc_active: true,
-        side_stand_down: true,
       };
       
       expect(activeSafety.abs_active).toBe(false);
       expect(activeSafety.tc_active).toBe(true);
-      expect(activeSafety.side_stand_down).toBe(true);
     });
   });
 
@@ -305,7 +301,6 @@ describe('Telemetry Models', () => {
         active_safety: {
           abs_active: true,
           tc_active: false,
-          side_stand_down: false,
         },
         health: {
           oil_pressure_bar: 3.2,
@@ -356,7 +351,6 @@ describe('Telemetry Models', () => {
         active_safety: {
           abs_active: false,
           tc_active: false,
-          side_stand_down: false,
         },
         health: {
           oil_pressure_bar: 0,
@@ -486,7 +480,6 @@ describe('Telemetry Models', () => {
         active_safety: {
           abs_active: true,
           tc_active: true,
-          side_stand_down: false,
         },
         health: {
           oil_pressure_bar: 4.0,

@@ -9,6 +9,9 @@ interface CommandPanelProps {
   logs: LogEntry[];
   running: boolean;
   onStop?: () => void;
+  /** If provided, only these models are shown in the dropdown (regular user's moto categories).
+   *  If undefined, all models are shown (admin free selector). */
+  allowedModels?: string[];
 }
 
 const MODELOS = [
@@ -22,11 +25,18 @@ const MODELOS = [
   "Supermotard",
 ];
 
-export default function CommandPanel({ sendCommand, addLog, logs, running, onStop }: CommandPanelProps) {
+export default function CommandPanel({ sendCommand, addLog, logs, running, onStop, allowedModels }: CommandPanelProps) {
   const [selectedModel, setSelectedModel] = useState("");
 
+  // undefined = admin (all 8 models), [] = loading/no motos, string[] = user's categories
+  const isLoadingModels = allowedModels !== undefined && allowedModels.length === 0;
+  const modelOptions = allowedModels !== undefined ? allowedModels : MODELOS;
+
+  // Reset selection if it's no longer in the allowed list (e.g. user switched moto)
+  const effectiveModel = modelOptions.includes(selectedModel) ? selectedModel : "";
+
   function handleSendModel() {
-    if (!selectedModel) {
+    if (!effectiveModel) {
       addLog("Selecione um modelo primeiro!", "#eab308");
       return;
     }
@@ -49,7 +59,7 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
       typeof route.end.longitude === "number"
     ) {
       // Primeiro definir modelo, depois rota
-      sendCommand({ acao: "definir_modelo", modelo: selectedModel });
+      sendCommand({ acao: "definir_modelo", modelo: effectiveModel });
       addLog("Modelo definido (auto) antes de enviar rota", "#f97316");
       setTimeout(() => {
         sendCommand({ acao: "definir_rota", route });
@@ -58,7 +68,7 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
       return;
     }
 
-    sendCommand({ acao: "definir_modelo", modelo: selectedModel });
+    sendCommand({ acao: "definir_modelo", modelo: effectiveModel });
   }
 
   function handleStop() {
@@ -81,21 +91,32 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
               <span className="status-indicator">○ Idle</span>
             )}
           </div>
-          <select
-            className="control model-select"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            disabled={running}
-          >
-            <option value="">— escolher modelo —</option>
-            {MODELOS.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          {/* Always a dropdown — restricted to user's moto categories or all models for admin */}
+          {isLoadingModels ? (
+            <select className="control model-select" disabled>
+              <option>A carregar motas...</option>
+            </select>
+          ) : modelOptions.length === 0 ? (
+            <div className="control" style={{ color: "var(--muted)", fontSize: 13, padding: "8px 12px" }}>
+              Sem motas na garagem. Adiciona uma mota primeiro.
+            </div>
+          ) : (
+            <select
+              className="control model-select"
+              value={effectiveModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={running}
+            >
+              <option value="">— escolher modelo —</option>
+              {modelOptions.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          )}
           <button
             className="btn btn-primary btn-block"
             onClick={handleSendModel}
-            disabled={running || !selectedModel}
+            disabled={running || !effectiveModel || isLoadingModels}
           >
             <Play size={16} />
             Iniciar Simulação

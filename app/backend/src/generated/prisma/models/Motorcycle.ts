@@ -40,9 +40,13 @@ export type MotorcycleMinAggregateOutputType = {
   profileId: string | null
   name: string | null
   brand: string | null
+  model: string | null
   year: number | null
+  plate: string | null
+  category: string | null
   deviceId: string | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type MotorcycleMaxAggregateOutputType = {
@@ -51,9 +55,13 @@ export type MotorcycleMaxAggregateOutputType = {
   profileId: string | null
   name: string | null
   brand: string | null
+  model: string | null
   year: number | null
+  plate: string | null
+  category: string | null
   deviceId: string | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type MotorcycleCountAggregateOutputType = {
@@ -62,9 +70,13 @@ export type MotorcycleCountAggregateOutputType = {
   profileId: number
   name: number
   brand: number
+  model: number
   year: number
+  plate: number
+  category: number
   deviceId: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -83,9 +95,13 @@ export type MotorcycleMinAggregateInputType = {
   profileId?: true
   name?: true
   brand?: true
+  model?: true
   year?: true
+  plate?: true
+  category?: true
   deviceId?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type MotorcycleMaxAggregateInputType = {
@@ -94,9 +110,13 @@ export type MotorcycleMaxAggregateInputType = {
   profileId?: true
   name?: true
   brand?: true
+  model?: true
   year?: true
+  plate?: true
+  category?: true
   deviceId?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type MotorcycleCountAggregateInputType = {
@@ -105,9 +125,13 @@ export type MotorcycleCountAggregateInputType = {
   profileId?: true
   name?: true
   brand?: true
+  model?: true
   year?: true
+  plate?: true
+  category?: true
   deviceId?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -203,9 +227,13 @@ export type MotorcycleGroupByOutputType = {
   profileId: string | null
   name: string
   brand: string | null
+  model: string | null
   year: number | null
+  plate: string | null
+  category: string | null
   deviceId: string | null
   createdAt: Date
+  updatedAt: Date
   _count: MotorcycleCountAggregateOutputType | null
   _avg: MotorcycleAvgAggregateOutputType | null
   _sum: MotorcycleSumAggregateOutputType | null
@@ -237,9 +265,13 @@ export type MotorcycleWhereInput = {
   profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   name?: Prisma.StringFilter<"Motorcycle"> | string
   brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null
+  plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   profile?: Prisma.XOR<Prisma.MotorcycleProfileNullableScalarRelationFilter, Prisma.MotorcycleProfileWhereInput> | null
   trips?: Prisma.TripListRelationFilter
@@ -251,9 +283,13 @@ export type MotorcycleOrderByWithRelationInput = {
   profileId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
   brand?: Prisma.SortOrderInput | Prisma.SortOrder
+  model?: Prisma.SortOrderInput | Prisma.SortOrder
   year?: Prisma.SortOrderInput | Prisma.SortOrder
+  plate?: Prisma.SortOrderInput | Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
   deviceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   profile?: Prisma.MotorcycleProfileOrderByWithRelationInput
   trips?: Prisma.TripOrderByRelationAggregateInput
@@ -268,9 +304,13 @@ export type MotorcycleWhereUniqueInput = Prisma.AtLeast<{
   profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   name?: Prisma.StringFilter<"Motorcycle"> | string
   brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null
+  plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   profile?: Prisma.XOR<Prisma.MotorcycleProfileNullableScalarRelationFilter, Prisma.MotorcycleProfileWhereInput> | null
   trips?: Prisma.TripListRelationFilter
@@ -282,9 +322,13 @@ export type MotorcycleOrderByWithAggregationInput = {
   profileId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
   brand?: Prisma.SortOrderInput | Prisma.SortOrder
+  model?: Prisma.SortOrderInput | Prisma.SortOrder
   year?: Prisma.SortOrderInput | Prisma.SortOrder
+  plate?: Prisma.SortOrderInput | Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
   deviceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.MotorcycleCountOrderByAggregateInput
   _avg?: Prisma.MotorcycleAvgOrderByAggregateInput
   _max?: Prisma.MotorcycleMaxOrderByAggregateInput
@@ -301,18 +345,26 @@ export type MotorcycleScalarWhereWithAggregatesInput = {
   profileId?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
   name?: Prisma.StringWithAggregatesFilter<"Motorcycle"> | string
   brand?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
+  model?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
   year?: Prisma.IntNullableWithAggregatesFilter<"Motorcycle"> | number | null
+  plate?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
+  category?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
   deviceId?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Motorcycle"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Motorcycle"> | Date | string
 }
 
 export type MotorcycleCreateInput = {
   id?: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput
   profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput
   trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput
@@ -324,9 +376,13 @@ export type MotorcycleUncheckedCreateInput = {
   profileId?: string | null
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput
 }
 
@@ -334,9 +390,13 @@ export type MotorcycleUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput
   profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput
   trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput
@@ -348,9 +408,13 @@ export type MotorcycleUncheckedUpdateInput = {
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput
 }
 
@@ -360,18 +424,26 @@ export type MotorcycleCreateManyInput = {
   profileId?: string | null
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type MotorcycleUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MotorcycleUncheckedUpdateManyInput = {
@@ -380,9 +452,13 @@ export type MotorcycleUncheckedUpdateManyInput = {
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MotorcycleListRelationFilter = {
@@ -401,9 +477,13 @@ export type MotorcycleCountOrderByAggregateInput = {
   profileId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   brand?: Prisma.SortOrder
+  model?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  plate?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type MotorcycleAvgOrderByAggregateInput = {
@@ -416,9 +496,13 @@ export type MotorcycleMaxOrderByAggregateInput = {
   profileId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   brand?: Prisma.SortOrder
+  model?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  plate?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type MotorcycleMinOrderByAggregateInput = {
@@ -427,9 +511,13 @@ export type MotorcycleMinOrderByAggregateInput = {
   profileId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   brand?: Prisma.SortOrder
+  model?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  plate?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type MotorcycleSumOrderByAggregateInput = {
@@ -551,9 +639,13 @@ export type MotorcycleCreateWithoutUserInput = {
   id?: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput
   trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput
 }
@@ -563,9 +655,13 @@ export type MotorcycleUncheckedCreateWithoutUserInput = {
   profileId?: string | null
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput
 }
 
@@ -604,18 +700,26 @@ export type MotorcycleScalarWhereInput = {
   profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   name?: Prisma.StringFilter<"Motorcycle"> | string
   brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null
+  plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
+  category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string
 }
 
 export type MotorcycleCreateWithoutProfileInput = {
   id?: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput
   trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput
 }
@@ -625,9 +729,13 @@ export type MotorcycleUncheckedCreateWithoutProfileInput = {
   userId: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput
 }
 
@@ -661,9 +769,13 @@ export type MotorcycleCreateWithoutTripsInput = {
   id?: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput
   profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput
 }
@@ -674,9 +786,13 @@ export type MotorcycleUncheckedCreateWithoutTripsInput = {
   profileId?: string | null
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type MotorcycleCreateOrConnectWithoutTripsInput = {
@@ -699,9 +815,13 @@ export type MotorcycleUpdateWithoutTripsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput
   profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput
 }
@@ -712,9 +832,13 @@ export type MotorcycleUncheckedUpdateWithoutTripsInput = {
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MotorcycleCreateManyUserInput = {
@@ -722,18 +846,26 @@ export type MotorcycleCreateManyUserInput = {
   profileId?: string | null
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type MotorcycleUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput
   trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput
 }
@@ -743,9 +875,13 @@ export type MotorcycleUncheckedUpdateWithoutUserInput = {
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput
 }
 
@@ -754,9 +890,13 @@ export type MotorcycleUncheckedUpdateManyWithoutUserInput = {
   profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MotorcycleCreateManyProfileInput = {
@@ -764,18 +904,26 @@ export type MotorcycleCreateManyProfileInput = {
   userId: string
   name: string
   brand?: string | null
+  model?: string | null
   year?: number | null
+  plate?: string | null
+  category?: string | null
   deviceId?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type MotorcycleUpdateWithoutProfileInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput
   trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput
 }
@@ -785,9 +933,13 @@ export type MotorcycleUncheckedUpdateWithoutProfileInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput
 }
 
@@ -796,9 +948,13 @@ export type MotorcycleUncheckedUpdateManyWithoutProfileInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -838,9 +994,13 @@ export type MotorcycleSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   profileId?: boolean
   name?: boolean
   brand?: boolean
+  model?: boolean
   year?: boolean
+  plate?: boolean
+  category?: boolean
   deviceId?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>
   trips?: boolean | Prisma.Motorcycle$tripsArgs<ExtArgs>
@@ -853,9 +1013,13 @@ export type MotorcycleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   profileId?: boolean
   name?: boolean
   brand?: boolean
+  model?: boolean
   year?: boolean
+  plate?: boolean
+  category?: boolean
   deviceId?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>
 }, ExtArgs["result"]["motorcycle"]>
@@ -866,9 +1030,13 @@ export type MotorcycleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   profileId?: boolean
   name?: boolean
   brand?: boolean
+  model?: boolean
   year?: boolean
+  plate?: boolean
+  category?: boolean
   deviceId?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>
 }, ExtArgs["result"]["motorcycle"]>
@@ -879,12 +1047,16 @@ export type MotorcycleSelectScalar = {
   profileId?: boolean
   name?: boolean
   brand?: boolean
+  model?: boolean
   year?: boolean
+  plate?: boolean
+  category?: boolean
   deviceId?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type MotorcycleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "profileId" | "name" | "brand" | "year" | "deviceId" | "createdAt", ExtArgs["result"]["motorcycle"]>
+export type MotorcycleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "profileId" | "name" | "brand" | "model" | "year" | "plate" | "category" | "deviceId" | "createdAt" | "updatedAt", ExtArgs["result"]["motorcycle"]>
 export type MotorcycleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>
@@ -913,9 +1085,13 @@ export type $MotorcyclePayload<ExtArgs extends runtime.Types.Extensions.Internal
     profileId: string | null
     name: string
     brand: string | null
+    model: string | null
     year: number | null
+    plate: string | null
+    category: string | null
     deviceId: string | null
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["motorcycle"]>
   composites: {}
 }
@@ -1347,9 +1523,13 @@ export interface MotorcycleFieldRefs {
   readonly profileId: Prisma.FieldRef<"Motorcycle", 'String'>
   readonly name: Prisma.FieldRef<"Motorcycle", 'String'>
   readonly brand: Prisma.FieldRef<"Motorcycle", 'String'>
+  readonly model: Prisma.FieldRef<"Motorcycle", 'String'>
   readonly year: Prisma.FieldRef<"Motorcycle", 'Int'>
+  readonly plate: Prisma.FieldRef<"Motorcycle", 'String'>
+  readonly category: Prisma.FieldRef<"Motorcycle", 'String'>
   readonly deviceId: Prisma.FieldRef<"Motorcycle", 'String'>
   readonly createdAt: Prisma.FieldRef<"Motorcycle", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Motorcycle", 'DateTime'>
 }
     
 

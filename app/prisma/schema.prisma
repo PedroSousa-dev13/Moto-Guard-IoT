@@ -74,9 +74,13 @@ model Motorcycle {
   profileId     String?            @map("profile_id")  // referência ao perfil da classe
   name          String                                  // ex: "A minha PCX"
   brand         String?                                 // ex: "Honda", "Yamaha"
+  model         String?                                 // ex: "GSF650"
   year          Int?
-  deviceId      String?            @map("device_id")   // ex: "MOTOGUARD-SIM-01"
+  plate         String?                                 // ex: "AA-00-BB"
+  category      String?                                 // ex: "Naked", "Scooter"
+  deviceId      String?            @map("device_id")   // ex: "MOTOGUARD-SIM-NAKED"
   createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
 
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   profile       MotorcycleProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
@@ -177,6 +181,7 @@ enum EventType {
   RAPID_ACCELERATION    // Aceleração brusca
   TIRE_PRESSURE_LOW     // Pressão dos pneus baixa
   OIL_PRESSURE_LOW      // Pressão do óleo baixa
+  SPEEDING              // Excesso de velocidade
 }
 
 enum EventSeverity {

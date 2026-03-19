@@ -1,46 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { tripsAPI } from "../services/api";
-import { Trip, TripFeedItem, TripSource, TripStatus } from "../types";
+import { tripsAPI, motorcyclesAPI } from "../services/api";
+import { Trip, TripFeedItem, TripSource, TripStatus, Motorcycle } from "../types";
 import { Link } from "react-router-dom";
-import { applyTripFilters, groupTripsBySource, listMotorcyclesForFilter, paginate } from "../utils/trips";
-import { 
-  Route, 
-  Calendar, 
-  Bike, 
-  ChevronDown, 
-  AlertCircle, 
-  Filter, 
-  Clock, 
-  MapPin, 
-  Zap, 
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Database,
-  Cpu,
-  Monitor,
-  Info,
-  ChevronUp,
-  History,
-  Activity
-} from 'lucide-react';
+import { applyTripFilters, paginate } from "../utils/trips";
+import { imageFromCategory } from "../utils/categoryImageMap";
+import {
+  Route, Calendar, Bike, ChevronDown, AlertCircle, Clock,
+  Zap, ArrowRight, ChevronLeft, ChevronRight, Database,
+  Cpu, Monitor, Info, ChevronUp, History, Activity
+} from "lucide-react";
 import Card from "../components/ui/Card";
-import { SkeletonRow } from "../components/ui/Skeleton";
+import { SkeletonRow, SkeletonCard } from "../components/ui/Skeleton";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
-type TripHistoryView = "FEED" | "LIST";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("pt-PT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
@@ -56,101 +37,130 @@ function formatDuration(start: string, end?: string) {
 
 function statusBadge(status: string) {
   switch (status) {
-    case "ACTIVE":
-      return { bg: "rgba(34,197,94,0.1)", color: "#22c55e", label: "Ativa", icon: <Zap size={12} /> };
-    case "COMPLETED":
-      return {
-        bg: "rgba(59,130,246,0.1)",
-        color: "#3b82f6",
-        label: "Concluída",
-        icon: <Calendar size={12} />
-      };
-    case "CANCELLED":
-      return {
-        bg: "rgba(239,68,68,0.1)",
-        color: "#ef4444",
-        label: "Cancelada",
-        icon: <AlertCircle size={12} />
-      };
-    default:
-      return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: status, icon: <Info size={12} /> };
+    case "ACTIVE":    return { bg: "rgba(34,197,94,0.1)",  color: "#22c55e", label: "Ativa",     icon: <Zap size={12} /> };
+    case "COMPLETED": return { bg: "rgba(59,130,246,0.1)", color: "#3b82f6", label: "Concluída", icon: <Calendar size={12} /> };
+    case "CANCELLED": return { bg: "rgba(239,68,68,0.1)",  color: "#ef4444", label: "Cancelada", icon: <AlertCircle size={12} /> };
+    default:          return { bg: "rgba(113,113,122,0.1)",color: "#71717a", label: status,      icon: <Info size={12} /> };
   }
 }
 
 function sourceBadge(source: TripSource) {
   switch (source) {
-    case "SIMULATOR":
-      return { bg: "rgba(14,165,233,0.1)", color: "#0ea5e9", label: "Simulador", icon: <Monitor size={12} /> };
-    case "GPX_IMPORTED":
-      return { bg: "rgba(16,185,129,0.1)", color: "#10b981", label: "GPX", icon: <Database size={12} /> };
-    case "DEVICE_REAL":
-      return { bg: "rgba(244,114,182,0.1)", color: "#f472b6", label: "Real", icon: <Cpu size={12} /> };
-    default:
-      return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: source, icon: <Route size={12} /> };
+    case "SIMULATOR":    return { bg: "rgba(14,165,233,0.1)",  color: "#0ea5e9", label: "Simulador", icon: <Monitor size={12} /> };
+    case "GPX_IMPORTED": return { bg: "rgba(16,185,129,0.1)",  color: "#10b981", label: "GPX",       icon: <Database size={12} /> };
+    case "DEVICE_REAL":  return { bg: "rgba(244,114,182,0.1)", color: "#f472b6", label: "Real",      icon: <Cpu size={12} /> };
+    default:             return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: source,      icon: <Route size={12} /> };
   }
 }
 
 function severityColor(severity: string) {
   switch (severity) {
-    case "CRITICAL":
-      return "var(--red)";
-    case "WARNING":
-      return "var(--yellow)";
-    default:
-      return "var(--muted)";
+    case "CRITICAL": return "var(--red)";
+    case "WARNING":  return "var(--yellow)";
+    default:         return "var(--muted)";
   }
 }
 
 function eventTypeIcon(type: string) {
-  // Mantemos emojis para tipos específicos mas podemos usar Lucide para outros
   const icons: Record<string, string> = {
-    CRASH_DETECTED: "💥",
-    EXCESSIVE_LEAN: "↗️",
-    HARD_BRAKING: "🛑",
-    OVERHEAT: "🌡️",
-    LOW_VOLTAGE: "🔋",
-    HIGH_VIBRATION: "📳",
-    RAPID_ACCELERATION: "🚀",
-    TIRE_PRESSURE_LOW: "🛞",
-    OIL_PRESSURE_LOW: "🛢️",
+    CRASH_DETECTED: "💥", EXCESSIVE_LEAN: "↗️", HARD_BRAKING: "🛑",
+    OVERHEAT: "🌡️", LOW_VOLTAGE: "🔋", HIGH_VIBRATION: "📳",
+    RAPID_ACCELERATION: "🚀", TIRE_PRESSURE_LOW: "🛞", OIL_PRESSURE_LOW: "🛢️",
   };
   return icons[type] ?? "⚠️";
 }
 
 function scoreStyle(score: number) {
-  if (score >= 80) return { bg: "rgba(34,197,94,0.12)", color: "#22c55e" };
-  if (score >= 60) return { bg: "rgba(202,138,4,0.14)", color: "#ca8a04" };
-  return { bg: "rgba(239,68,68,0.12)", color: "#ef4444" };
+  if (score >= 80) return { bg: "rgba(34,197,94,0.12)",  color: "#22c55e" };
+  if (score >= 60) return { bg: "rgba(202,138,4,0.14)",  color: "#ca8a04" };
+  return              { bg: "rgba(239,68,68,0.12)",  color: "#ef4444" };
 }
 
-// ...
+// ─── Moto Card ────────────────────────────────────────────────────────────────
+
+function MotoCard({
+  moto,
+  selected,
+  tripCount,
+  onClick,
+}: {
+  moto: Motorcycle;
+  selected: boolean;
+  tripCount: number;
+  onClick: () => void;
+}) {
+  const img = imageFromCategory(moto.category);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: selected ? "rgba(79,70,229,0.12)" : "var(--surface)",
+        border: selected ? "2px solid #4f46e5" : "1.5px solid var(--border)",
+        borderRadius: 14,
+        overflow: "hidden",
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "border-color 0.15s, background 0.15s",
+        minWidth: 160,
+        flex: "0 0 auto",
+      }}
+    >
+      <div style={{ width: "100%", height: 110, overflow: "hidden", background: "var(--surface-2)" }}>
+        <img
+          src={img}
+          alt={moto.category ?? moto.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      </div>
+      <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{moto.name}</div>
+        {moto.category && (
+          <div style={{ fontSize: 11, color: "#4f46e5", marginBottom: 4 }}>{moto.category}</div>
+        )}
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>
+          {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+          {tripCount} viagem{tripCount !== 1 ? "s" : ""}
+        </div>
+      </div>
+    </button>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Trips() {
-  const [view, setView] = useState<TripHistoryView>("FEED");
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [feed, setFeed] = useState<TripFeedItem[]>([]);
+  const [motos, setMotos] = useState<Motorcycle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [motosLoading, setMotosLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
+  const [view, setView] = useState<"FEED" | "LIST">("FEED");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<TripSourceFilter>("ALL");
   const [statusFilter, setStatusFilter] = useState<TripStatusFilter>("ALL");
-  const [motorcycleFilter, setMotorcycleFilter] = useState<string>("ALL");
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
+  const [selectedMotoId, setSelectedMotoId] = useState<string>("ALL");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [onlyWithEvents, setOnlyWithEvents] = useState(false);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    document.title = "Viagens — MotoGuard";
+    void loadMotos();
     void refresh();
   }, []);
 
-  // Auto-refresh quando uma viagem começa ou termina
   useEffect(() => {
     const socket = io();
     socket.on("trip_started", () => void refresh());
@@ -158,36 +168,32 @@ export default function Trips() {
     return () => { socket.disconnect(); };
   }, []);
 
-  useEffect(() => {
-    void refresh();
-  }, [view]);
+  useEffect(() => { void refresh(); setExpandedId(null); setPage(1); }, [view, sourceFilter]);
+
+  async function loadMotos() {
+    try {
+      const res = await motorcyclesAPI.getAll();
+      setMotos(res.data);
+    } catch { /* silently fail */ }
+    finally { setMotosLoading(false); }
+  }
 
   async function loadTrips() {
     try {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true); setError(null);
       const res = await tripsAPI.getAll(sourceFilter === "ALL" ? undefined : sourceFilter);
       setTrips(res.data);
-    } catch {
-      setError(
-        "Não foi possível carregar as viagens. Verifica a ligação ao servidor.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Não foi possível carregar as viagens."); }
+    finally { setIsLoading(false); }
   }
 
   async function loadFeed() {
     try {
-      setFeedLoading(true);
-      setFeedError(null);
+      setFeedLoading(true); setFeedError(null);
       const res = await tripsAPI.getFeed(sourceFilter === "ALL" ? undefined : sourceFilter, 200);
       setFeed(res.data);
-    } catch {
-      setFeedError("Não foi possível carregar o feed. Verifica a ligação ao servidor.");
-    } finally {
-      setFeedLoading(false);
-    }
+    } catch { setFeedError("Não foi possível carregar o feed."); }
+    finally { setFeedLoading(false); }
   }
 
   async function refresh() {
@@ -195,99 +201,54 @@ export default function Trips() {
     return loadTrips();
   }
 
-  function toggle(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id));
-  }
-
-  useEffect(() => {
-    void refresh();
-    setExpandedId(null);
-    setPage(1);
-  }, [sourceFilter]);
-
-  function applyFilters(list: Trip[]) {
-    return applyTripFilters(list, {
-      status: statusFilter,
-      motorcycleId: motorcycleFilter,
-      fromDate,
-      toDate,
-      onlyWithEvents,
-    });
-  }
-
-  const filteredTrips = applyFilters(trips);
-  const filteredFeed = (() => {
-    let out = feed;
-
-    if (statusFilter !== "ALL") {
-      out = out.filter((t) => t.status === statusFilter);
-    }
-
-    if (motorcycleFilter !== "ALL") {
-      out = out.filter((t) => t.motorcycle?.id === motorcycleFilter);
-    }
-
-    if (fromDate) {
-      const from = new Date(fromDate);
-      out = out.filter((t) => new Date(t.startedAt) >= from);
-    }
-
-    if (toDate) {
-      const to = new Date(toDate);
-      to.setHours(23, 59, 59, 999);
-      out = out.filter((t) => new Date(t.startedAt) <= to);
-    }
-
-    if (onlyWithEvents) {
-      out = out.filter((t) => (t.eventCounts?.total ?? 0) > 0);
-    }
-
-    return out;
-  })();
-
-  const motorcyclesForFilter =
-    view === "FEED"
-      ? Array.from(
-          new Map(
-            feed
-              .filter((t) => t.motorcycle?.id)
-              .map((t) => [t.motorcycle!.id, t.motorcycle!]),
-          ).values(),
-        )
-      : listMotorcyclesForFilter(trips);
-
-  const listPagination = paginate(filteredTrips, page, pageSize);
-  const feedPagination = paginate(filteredFeed, page, pageSize);
-
-  const safePage = view === "FEED" ? feedPagination.page : listPagination.page;
-  const totalPages = view === "FEED" ? feedPagination.totalPages : listPagination.totalPages;
-  const pagedTrips = listPagination.items;
-  const pagedFeed = feedPagination.items;
-  const tripsBySource = groupTripsBySource(pagedTrips);
-
   async function ensureDetails(tripId: string) {
-    const current = trips.find((t) => t.id === tripId);
-    if (current?.events) return;
+    if (trips.find((t) => t.id === tripId)?.events) return;
     try {
       setDetailLoadingId(tripId);
       const res = await tripsAPI.getById(tripId);
-      setTrips((prev) => prev.map((t) => (t.id === tripId ? { ...t, ...res.data } : t)));
-    } finally {
-      setDetailLoadingId((prev) => (prev === tripId ? null : prev));
-    }
+      setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, ...res.data } : t));
+    } finally { setDetailLoadingId((p) => p === tripId ? null : p); }
+  }
+
+  // ── Filtering ────────────────────────────────────────────────────────────
+  const filteredTrips = applyTripFilters(trips, {
+    status: statusFilter,
+    motorcycleId: selectedMotoId,
+    fromDate, toDate, onlyWithEvents,
+  });
+
+  const filteredFeed = feed.filter((t) => {
+    if (statusFilter !== "ALL" && t.status !== statusFilter) return false;
+    if (selectedMotoId !== "ALL" && t.motorcycle?.id !== selectedMotoId) return false;
+    if (fromDate && new Date(t.startedAt) < new Date(fromDate)) return false;
+    if (toDate) { const to = new Date(toDate); to.setHours(23,59,59,999); if (new Date(t.startedAt) > to) return false; }
+    if (onlyWithEvents && (t.eventCounts?.total ?? 0) === 0) return false;
+    return true;
+  });
+
+  // Trip count per moto (from feed + trips combined)
+  function tripCountForMoto(motoId: string) {
+    const fromFeed = feed.filter((t) => t.motorcycle?.id === motoId).length;
+    const fromList = trips.filter((t) => t.motorcycleId === motoId).length;
+    return Math.max(fromFeed, fromList);
   }
 
   const activeLoading = view === "FEED" ? feedLoading : isLoading;
-  const activeError = view === "FEED" ? feedError : error;
-  const activeCount = view === "FEED" ? filteredFeed.length : filteredTrips.length;
+  const activeError   = view === "FEED" ? feedError   : error;
+  const activeCount   = view === "FEED" ? filteredFeed.length : filteredTrips.length;
+
+  const listPagination = paginate(filteredTrips, page, pageSize);
+  const feedPagination = paginate(filteredFeed,  page, pageSize);
+  const safePage   = view === "FEED" ? feedPagination.page       : listPagination.page;
+  const totalPages = view === "FEED" ? feedPagination.totalPages : listPagination.totalPages;
+  const pagedFeed  = feedPagination.items;
+  const pagedTrips = listPagination.items;
 
   // ── Loading ──────────────────────────────────────────────────────────────
-  if (activeLoading) {
+  if (activeLoading && motosLoading) {
     return (
       <div className="page">
-        <div className="page-header">
-          <div className="page-title">🗺️ Histórico de Viagens</div>
-        </div>
+        <div className="page-header"><div className="page-title">🗺️ Histórico de Viagens</div></div>
         <div className="card" style={{ padding: 16 }}>
           {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
@@ -295,27 +256,19 @@ export default function Trips() {
     );
   }
 
-  // ── Error ────────────────────────────────────────────────────────────────
   if (activeError) {
     return (
       <div className="page">
         <div className="empty-state">
           <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">{view === "FEED" ? "Erro ao carregar feed" : "Erro ao carregar viagens"}</div>
-          <div className="empty-state-text" style={{ marginBottom: 14 }}>
-            {activeError}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <button className="btn btn-primary" onClick={() => void refresh()}>
-              Tentar novamente
-            </button>
-          </div>
+          <div className="empty-state-title">Erro ao carregar viagens</div>
+          <div className="empty-state-text">{activeError}</div>
+          <button className="btn btn-primary" onClick={() => void refresh()}>Tentar novamente</button>
         </div>
       </div>
     );
   }
 
-  // ── Main ─────────────────────────────────────────────────────────────────
   return (
     <div className="page">
       <div className="page-header">
@@ -330,195 +283,129 @@ export default function Trips() {
           </div>
         </div>
         <div className="status-group">
-          <button
-            className={`btn btn-sm ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => {
-              setView("FEED");
-              setExpandedId(null);
-              setPage(1);
-            }}
-          >
-            <Activity size={14} />
-            Feed
+          <button className={`btn btn-sm ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => { setView("FEED"); setExpandedId(null); setPage(1); }}>
+            <Activity size={14} /> Feed
           </button>
-          <button
-            className={`btn btn-sm ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => {
-              setView("LIST");
-              setExpandedId(null);
-              setPage(1);
-            }}
-          >
-            <History size={14} />
-            Lista
+          <button className={`btn btn-sm ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => { setView("LIST"); setExpandedId(null); setPage(1); }}>
+            <History size={14} /> Lista
           </button>
         </div>
       </div>
 
-      <Card title="Filtros de Pesquisa" className="filter-card">
+      {/* Moto selector cards */}
+      {motos.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Filtrar por mota
+          </div>
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+            {/* "Todas" card */}
+            <button
+              type="button"
+              onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                background: selectedMotoId === "ALL" ? "rgba(79,70,229,0.12)" : "var(--surface)",
+                border: selectedMotoId === "ALL" ? "2px solid #4f46e5" : "1.5px solid var(--border)",
+                borderRadius: 14, padding: "16px 20px", cursor: "pointer", minWidth: 100,
+                transition: "border-color 0.15s, background 0.15s",
+              }}
+            >
+              <Bike size={28} style={{ color: selectedMotoId === "ALL" ? "#4f46e5" : "var(--muted)", marginBottom: 8 }} />
+              <div style={{ fontWeight: 700, fontSize: 13 }}>Todas</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{view === "FEED" ? feed.length : trips.length} viagens</div>
+            </button>
+
+            {motos.map((moto) => (
+              <MotoCard
+                key={moto.id}
+                moto={moto}
+                selected={selectedMotoId === moto.id}
+                tripCount={tripCountForMoto(moto.id)}
+                onClick={() => { setSelectedMotoId(moto.id); setPage(1); setExpandedId(null); }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <Card title="Filtros" className="filter-card">
         <div className="filter-grid">
           <div className="field">
             <label className="field-label">Origem</label>
-            <select
-              className="control"
-              value={sourceFilter}
-              onChange={(event) => setSourceFilter(event.target.value as TripSourceFilter)}
-            >
+            <select className="control" value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as TripSourceFilter)}>
               <option value="ALL">Todas</option>
               <option value="SIMULATOR">Simulador</option>
               <option value="GPX_IMPORTED">GPX</option>
               <option value="DEVICE_REAL">Dispositivo</option>
             </select>
           </div>
-          
           <div className="field">
             <label className="field-label">Estado</label>
-            <select
-              className="control"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as TripStatusFilter);
-                setPage(1);
-                setExpandedId(null);
-              }}
-            >
+            <select className="control" value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value as TripStatusFilter); setPage(1); setExpandedId(null); }}>
               <option value="ALL">Todos</option>
               <option value="ACTIVE">Ativas</option>
               <option value="COMPLETED">Concluídas</option>
               <option value="CANCELLED">Canceladas</option>
             </select>
           </div>
-
-          <div className="field">
-            <label className="field-label">Mota</label>
-            <select
-              className="control"
-              value={motorcycleFilter}
-              onChange={(event) => {
-                setMotorcycleFilter(event.target.value);
-                setPage(1);
-                setExpandedId(null);
-              }}
-            >
-              <option value="ALL">Todas</option>
-              {motorcyclesForFilter.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}{m.brand ? ` (${m.brand})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="field">
             <label className="field-label">De</label>
-            <input
-              className="control"
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(1);
-                setExpandedId(null);
-              }}
-            />
+            <input className="control" type="date" value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
-
           <div className="field">
             <label className="field-label">Até</label>
-            <input
-              className="control"
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(1);
-                setExpandedId(null);
-              }}
-            />
+            <input className="control" type="date" value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
-
-          <div className="field" style={{ justifyContent: 'center' }}>
+          <div className="field" style={{ justifyContent: "center" }}>
             <label className="auth-checkbox">
-              <input
-                type="checkbox"
-                checked={onlyWithEvents}
-                onChange={(e) => {
-                  setOnlyWithEvents(e.target.checked);
-                  setPage(1);
-                  setExpandedId(null);
-                }}
-              />
+              <input type="checkbox" checked={onlyWithEvents}
+                onChange={(e) => { setOnlyWithEvents(e.target.checked); setPage(1); setExpandedId(null); }} />
               <span>Só com eventos</span>
             </label>
           </div>
         </div>
       </Card>
 
-      {/* Empty state */}
       {activeCount === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🛣️</div>
-          <div className="empty-state-title">{view === "FEED" ? "Ainda não há rides no feed" : "Ainda não há viagens registadas"}</div>
+          <div className="empty-state-title">Sem viagens</div>
           <div className="empty-state-text">
-            {sourceFilter === "ALL"
-              ? "As viagens são criadas automaticamente quando a simulação termina (mesmo que seja curta)."
-              : "Não há viagens para o filtro de origem selecionado."}
+            {selectedMotoId !== "ALL"
+              ? "Esta mota ainda não tem viagens registadas."
+              : "As viagens são criadas automaticamente quando a simulação termina."}
           </div>
         </div>
       )}
 
-      {/* Trip list */}
       <div className="trip-list">
         {view === "FEED" ? (
           <div className="trip-grid">
-            {pagedFeed.map((item) => (
-              <TripFeedCard key={item.id} item={item} />
+            {pagedFeed.map((item) => <TripFeedCard key={item.id} item={item} />)}
+          </div>
+        ) : (
+          <div className="trip-grid">
+            {pagedTrips.map((trip) => (
+              <TripListCard
+                key={trip.id}
+                trip={trip}
+                expandedId={expandedId}
+                detailLoadingId={detailLoadingId}
+                onToggle={async (id) => {
+                  setExpandedId((p) => p === id ? null : id);
+                  if (expandedId !== id) await ensureDetails(id);
+                }}
+              />
             ))}
           </div>
-        ) : sourceFilter === "ALL" ? (
-          <>
-            <TripSection
-              title="Simuladas"
-              trips={tripsBySource.SIMULATOR}
-              expandedId={expandedId}
-              detailLoadingId={detailLoadingId}
-              onToggle={async (id) => {
-                toggle(id);
-                if (expandedId !== id) await ensureDetails(id);
-              }}
-            />
-            <TripSection
-              title="GPX"
-              trips={tripsBySource.GPX_IMPORTED}
-              expandedId={expandedId}
-              detailLoadingId={detailLoadingId}
-              onToggle={async (id) => {
-                toggle(id);
-                if (expandedId !== id) await ensureDetails(id);
-              }}
-            />
-            <TripSection
-              title="Dispositivo"
-              trips={tripsBySource.DEVICE_REAL}
-              expandedId={expandedId}
-              detailLoadingId={detailLoadingId}
-              onToggle={async (id) => {
-                toggle(id);
-                if (expandedId !== id) await ensureDetails(id);
-              }}
-            />
-          </>
-        ) : (
-          <TripSection
-            title={sourceFilter === "SIMULATOR" ? "Simuladas" : sourceFilter === "GPX_IMPORTED" ? "GPX" : "Dispositivo"}
-            trips={pagedTrips}
-            expandedId={expandedId}
-            detailLoadingId={detailLoadingId}
-            onToggle={async (id) => {
-              toggle(id);
-              if (expandedId !== id) await ensureDetails(id);
-            }}
-          />
         )}
       </div>
 
@@ -526,48 +413,20 @@ export default function Trips() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <span className="field-label">Por página</span>
-            <select
-              className="control control-sm"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(parseInt(e.target.value, 10));
-                setPage(1);
-                setExpandedId(null);
-              }}
-              style={{ width: 120 }}
-            >
-              {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
+            <select className="control control-sm" value={pageSize} style={{ width: 120 }}
+              onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); setExpandedId(null); }}>
+              {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={safePage <= 1}
-              onClick={() => {
-                setPage((p) => Math.max(1, p - 1));
-                setExpandedId(null);
-              }}
-            >
-              <ChevronLeft size={16} />
-              Anterior
+            <button className="btn btn-ghost btn-sm" disabled={safePage <= 1}
+              onClick={() => { setPage((p) => Math.max(1, p - 1)); setExpandedId(null); }}>
+              <ChevronLeft size={16} /> Anterior
             </button>
-            <span className="page-info">
-              Página {safePage} de {totalPages}
-            </span>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={safePage >= totalPages}
-              onClick={() => {
-                setPage((p) => Math.min(totalPages, p + 1));
-                setExpandedId(null);
-              }}
-            >
-              Seguinte
-              <ChevronRight size={16} />
+            <span className="page-info">Página {safePage} de {totalPages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={safePage >= totalPages}
+              onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); setExpandedId(null); }}>
+              Seguinte <ChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -576,14 +435,27 @@ export default function Trips() {
   );
 }
 
+// ─── Feed Card ────────────────────────────────────────────────────────────────
+
 function TripFeedCard({ item }: { item: TripFeedItem }) {
   const badge = statusBadge(item.status);
-  const tripSourceBadge = sourceBadge(item.source);
+  const src   = sourceBadge(item.source);
   const safety = scoreStyle(item.safetyScore);
-  const performance = scoreStyle(item.performanceScore);
+  const perf   = scoreStyle(item.performanceScore);
+  const motoImg = imageFromCategory(item.motorcycle?.category);
 
   return (
-    <div className="trip-card-v2">
+    <div className="trip-card-v2" style={{ display: "flex", overflow: "hidden" }}>
+      {/* Moto image strip — lateral, imagem rodada 90° */}
+      <div style={{ width: 80, minWidth: 80, flexShrink: 0, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <img
+          src={motoImg}
+          alt={item.motorcycle?.category ?? "moto"}
+          style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
       <div className="trip-summary" style={{ cursor: "default" }}>
         <div className="trip-info-main">
           <div className="trip-mota-line">
@@ -593,270 +465,166 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
               {item.motorcycle?.brand ? ` (${item.motorcycle.brand})` : ""}
             </span>
             <div className="trip-badges-v2">
-              <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>
-                {badge.icon}
-                {badge.label}
-              </span>
-              <span className="badge-v2" style={{ background: tripSourceBadge.bg, color: tripSourceBadge.color }}>
-                {tripSourceBadge.icon}
-                {tripSourceBadge.label}
-              </span>
+              <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
+              <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
             </div>
           </div>
-
           <div className="trip-meta-line">
-            <Calendar size={14} />
-            <span>{formatDate(item.startedAt)}</span>
+            <Calendar size={14} /><span>{formatDate(item.startedAt)}</span>
             <span className="separator">•</span>
-            <Clock size={14} />
-            <span>{formatDuration(item.startedAt, item.endedAt ?? undefined)}</span>
+            <Clock size={14} /><span>{formatDuration(item.startedAt, item.endedAt ?? undefined)}</span>
             <span className="separator">•</span>
-            <AlertCircle size={14} />
-            <span>{item.eventCounts?.total ?? 0} eventos</span>
+            <AlertCircle size={14} /><span>{item.eventCounts?.total ?? 0} eventos</span>
           </div>
         </div>
-
         <div className="trip-stats-quick" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <span className="badge-v2" style={{ background: safety.bg, color: safety.color }}>
-            Safety {item.safetyScore}
-          </span>
-          <span className="badge-v2" style={{ background: performance.bg, color: performance.color }}>
-            Performance {item.performanceScore}
-          </span>
+          <span className="badge-v2" style={{ background: safety.bg, color: safety.color }}>Safety {item.safetyScore}</span>
+          <span className="badge-v2" style={{ background: perf.bg, color: perf.color }}>Perf {item.performanceScore}</span>
         </div>
       </div>
-
       <div style={{ padding: "0 20px 16px" }}>
         {item.labels?.length > 0 && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            {item.labels.map((label) => (
-              <span
-                key={label}
-                className="badge-v2"
-                style={{ background: "rgba(79,70,229,0.10)", color: "var(--accent)" }}
-              >
-                {label}
-              </span>
+            {item.labels.map((l) => (
+              <span key={l} className="badge-v2" style={{ background: "rgba(79,70,229,0.10)", color: "var(--accent)" }}>{l}</span>
             ))}
           </div>
         )}
-
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div className="trip-stats-quick">
-            <div className="quick-stat">
-              <span className="stat-v">{item.distanceKm?.toFixed(1) ?? "—"}</span>
-              <span className="stat-u">km</span>
-            </div>
-            <div className="quick-stat">
-              <span className="stat-v">{item.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
-              <span className="stat-u">km/h</span>
-            </div>
-            <div className="quick-stat">
-              <span className="stat-v">{item.maxSpeedKmh?.toFixed(0) ?? "—"}</span>
-              <span className="stat-u">max</span>
-            </div>
+            <div className="quick-stat"><span className="stat-v">{item.distanceKm?.toFixed(1) ?? "—"}</span><span className="stat-u">km</span></div>
+            <div className="quick-stat"><span className="stat-v">{item.avgSpeedKmh?.toFixed(0) ?? "—"}</span><span className="stat-u">km/h</span></div>
+            <div className="quick-stat"><span className="stat-v">{item.maxSpeedKmh?.toFixed(0) ?? "—"}</span><span className="stat-u">max</span></div>
           </div>
-
           <Link to={`/trips/${item.id}`} className="btn btn-primary btn-sm">
-            Abrir análise
-            <ArrowRight size={16} />
+            Abrir análise <ArrowRight size={16} />
           </Link>
         </div>
+      </div>
       </div>
     </div>
   );
 }
 
-function TripSection({
-  title,
-  trips,
-  expandedId,
-  detailLoadingId,
-  onToggle,
+// ─── List Card ────────────────────────────────────────────────────────────────
+
+function TripListCard({
+  trip, expandedId, detailLoadingId, onToggle,
 }: {
-  title: string;
-  trips: Trip[];
+  trip: Trip;
   expandedId: string | null;
   detailLoadingId: string | null;
   onToggle: (id: string) => void | Promise<void>;
 }) {
-  if (trips.length === 0) return null;
+  const badge = statusBadge(trip.status);
+  const src   = sourceBadge(trip.source);
+  const isOpen = expandedId === trip.id;
+  const evCount = trip.events?.length ?? trip._count?.events ?? 0;
+  const isDetailLoading = detailLoadingId === trip.id;
+  const motoImg = imageFromCategory((trip.motorcycle as any)?.category);
+
   return (
-    <div className="trip-section-container">
-      <div className="section-header-row">
-        <h3 className="section-title">{title}</h3>
-        <span className="section-count">{trips.length} viagens</span>
+    <div className={`trip-card-v2 ${isOpen ? "open" : ""}`} style={{ display: "flex", overflow: "hidden" }}>
+      {/* Moto image strip — lateral, imagem rodada 90° */}
+      <div style={{ width: 80, minWidth: 80, flexShrink: 0, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <img
+          src={motoImg}
+          alt="moto"
+          style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
       </div>
 
-      <div className="trip-grid">
-        {trips.map((trip) => {
-          const badge = statusBadge(trip.status);
-          const tripSourceBadge = sourceBadge(trip.source);
-          const isOpen = expandedId === trip.id;
-          const evCount = trip.events?.length ?? trip._count?.events ?? 0;
-          const isDetailLoading = detailLoadingId === trip.id;
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <button type="button" onClick={() => onToggle(trip.id)} className="trip-summary">
+          <div className="trip-info-main">
+            <div className="trip-mota-line">
+              <Bike size={18} className="mota-icon-v2" />
+              <span className="mota-name-v2">
+                {trip.motorcycle?.name ?? "—"}
+                {trip.motorcycle?.brand ? ` (${trip.motorcycle.brand})` : ""}
+              </span>
+              <div className="trip-badges-v2">
+                <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
+                <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
+              </div>
+            </div>
+            <div className="trip-meta-line">
+              <Calendar size={14} /><span>{formatDate(trip.startedAt)}</span>
+              <span className="separator">•</span>
+              <Clock size={14} /><span>{formatDuration(trip.startedAt, trip.endedAt)}</span>
+            </div>
+          </div>
+          <div className="trip-stats-quick">
+            {trip.distanceKm != null && (
+              <div className="quick-stat">
+                <span className="stat-v">{trip.distanceKm.toFixed(1)}</span>
+                <span className="stat-u">km</span>
+              </div>
+            )}
+            {evCount > 0 && (
+              <div className="quick-stat warning">
+                <AlertCircle size={14} /><span className="stat-v">{evCount}</span>
+              </div>
+            )}
+            <div className="expand-icon">{isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</div>
+          </div>
+        </button>
 
-          return (
-            <div
-              key={trip.id}
-              className={`trip-card-v2 ${isOpen ? "open" : ""}`}
-            >
-              <button
-                type="button"
-                onClick={() => onToggle(trip.id)}
-                className="trip-summary"
-              >
-                <div className="trip-info-main">
-                  <div className="trip-mota-line">
-                    <Bike size={18} className="mota-icon-v2" />
-                    <span className="mota-name-v2">
-                      {trip.motorcycle?.name ?? "—"}
-                      {trip.motorcycle?.brand ? ` (${trip.motorcycle.brand})` : ""}
-                    </span>
-                    <div className="trip-badges-v2">
-                      <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>
-                        {badge.icon}
-                        {badge.label}
-                      </span>
-                      <span className="badge-v2" style={{ background: tripSourceBadge.bg, color: tripSourceBadge.color }}>
-                        {tripSourceBadge.icon}
-                        {tripSourceBadge.label}
-                      </span>
-                    </div>
+        {isOpen && (
+          <div className="trip-expanded-content">
+            {isDetailLoading ? (
+              <div className="detail-loading"><div className="spinner-small"></div><span>A carregar detalhes...</span></div>
+            ) : (
+              <>
+                <div className="expanded-stats-grid">
+                  <div className="stat-tile">
+                    <span className="tile-label">Vel. Máxima</span>
+                    <span className="tile-value">{trip.maxSpeedKmh?.toFixed(1) ?? "—"} <small>km/h</small></span>
                   </div>
-                  <div className="trip-meta-line">
-                    <Calendar size={14} />
-                    <span>{formatDate(trip.startedAt)}</span>
-                    <span className="separator">•</span>
-                    <Clock size={14} />
-                    <span>{formatDuration(trip.startedAt, trip.endedAt)}</span>
+                  <div className="stat-tile">
+                    <span className="tile-label">Vel. Média</span>
+                    <span className="tile-value">{trip.avgSpeedKmh?.toFixed(1) ?? "—"} <small>km/h</small></span>
                   </div>
-                </div>
-
-                <div className="trip-stats-quick">
-                  {trip.distanceKm != null && (
-                    <div className="quick-stat">
-                      <span className="stat-v">{trip.distanceKm.toFixed(1)}</span>
-                      <span className="stat-u">km</span>
-                    </div>
-                  )}
-                  {evCount > 0 && (
-                    <div className="quick-stat warning">
-                      <AlertCircle size={14} />
-                      <span className="stat-v">{evCount}</span>
-                    </div>
-                  )}
-                  <div className="expand-icon">
-                    {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  <div className="stat-tile">
+                    <span className="tile-label">Inclinação Máx.</span>
+                    <span className="tile-value">{trip.maxRollDeg?.toFixed(1) ?? "—"} <small>°</small></span>
+                  </div>
+                  <div className="stat-tile">
+                    <span className="tile-label">Força G Máx.</span>
+                    <span className="tile-value">{trip.maxGForce?.toFixed(2) ?? "—"} <small>G</small></span>
                   </div>
                 </div>
-              </button>
-
-              {isOpen && (
-                <div className="trip-expanded-content">
-                  {isDetailLoading ? (
-                    <div className="detail-loading">
-                      <div className="spinner-small"></div>
-                      <span>A carregar detalhes...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="expanded-stats-grid">
-                        <div className="stat-tile">
-                          <span className="tile-label">Velocidade Máxima</span>
-                          <span className="tile-value">
-                            {trip.status === "ACTIVE" && (trip.maxSpeedKmh === 0 || trip.maxSpeedKmh == null) 
-                              ? "—" 
-                              : trip.maxSpeedKmh?.toFixed(1)} <small>km/h</small>
-                          </span>
-                        </div>
-                        <div className="stat-tile">
-                          <span className="tile-label">Velocidade Média</span>
-                          <span className="tile-value">
-                            {trip.status === "ACTIVE" && (trip.avgSpeedKmh === 0 || trip.avgSpeedKmh == null) 
-                              ? "—" 
-                              : trip.avgSpeedKmh?.toFixed(1)} <small>km/h</small>
-                          </span>
-                        </div>
-                        <div className="stat-tile">
-                          <span className="tile-label">Inclinação Máxima</span>
-                          <span className="tile-value">
-                            {trip.status === "ACTIVE" && (trip.maxRollDeg === 0 || trip.maxRollDeg == null) 
-                              ? "—" 
-                              : trip.maxRollDeg?.toFixed(1)} <small>°</small>
-                          </span>
-                        </div>
-                        <div className="stat-tile">
-                          <span className="tile-label">Força G Máxima</span>
-                          <span className="tile-value">
-                            {trip.status === "ACTIVE" && (trip.maxGForce === 0 || trip.maxGForce == null) 
-                              ? "—" 
-                              : trip.maxGForce?.toFixed(2)} <small>G</small>
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="expanded-actions">
-                        <Link to={`/trips/${trip.id}`} className="btn btn-primary btn-sm">
-                          <Activity size={14} />
-                          Análise Detalhada
-                          <ArrowRight size={14} />
-                        </Link>
-                      </div>
-
-                      {trip.events && trip.events.length > 0 && (
-                        <div className="events-section-v2">
-                          <div className="section-title-v2">Eventos de Risco</div>
-                          <div className="events-list-v2">
-                            {trip.events.map((ev) => (
-                              <div key={ev.id} className="event-item-v2" style={{ borderLeftColor: severityColor(ev.severity) }}>
-                                <span className="event-icon-v2">{eventTypeIcon(ev.type)}</span>
-                                <div className="event-content-v2">
-                                  <div className="event-top-v2">
-                                    <span className="event-msg-v2">{ev.message}</span>
-                                    <span className="event-time-v2">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
-                                  </div>
-                                  {ev.speedKmh != null && (
-                                    <div className="event-meta-v2">
-                                      <Zap size={10} />
-                                      {ev.speedKmh.toFixed(0)} km/h
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                <div className="expanded-actions">
+                  <Link to={`/trips/${trip.id}`} className="btn btn-primary btn-sm">
+                    <Activity size={14} /> Análise Detalhada <ArrowRight size={14} />
+                  </Link>
+                </div>
+                {trip.events && trip.events.length > 0 && (
+                  <div className="events-section-v2">
+                    <div className="section-title-v2">Eventos de Risco</div>
+                    <div className="events-list-v2">
+                      {trip.events.map((ev) => (
+                        <div key={ev.id} className="event-item-v2" style={{ borderLeftColor: severityColor(ev.severity) }}>
+                          <span className="event-icon-v2">{eventTypeIcon(ev.type)}</span>
+                          <div className="event-content-v2">
+                            <div className="event-top-v2">
+                              <span className="event-msg-v2">{ev.message}</span>
+                              <span className="event-time-v2">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
+                            </div>
+                            {ev.speedKmh != null && (
+                              <div className="event-meta-v2"><Zap size={10} />{ev.speedKmh.toFixed(0)} km/h</div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Mini stat component ──────────────────────────────────────────────────────
-function Stat({
-  value,
-  label,
-  color = "var(--text)",
-}: {
-  value: string;
-  label: string;
-  color?: string;
-}) {
-  return (
-    <div className="mini-stat">
-      <div className="mini-stat-value" style={{ color }}>
-        {value}
-      </div>
-      <div className="mini-stat-label">
-        {label}
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

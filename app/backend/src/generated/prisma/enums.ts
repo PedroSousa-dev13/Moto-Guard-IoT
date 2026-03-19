@@ -36,7 +36,8 @@ export const EventType = {
   CRASH_DETECTED: 'CRASH_DETECTED',
   RAPID_ACCELERATION: 'RAPID_ACCELERATION',
   TIRE_PRESSURE_LOW: 'TIRE_PRESSURE_LOW',
-  OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW'
+  OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW',
+  SPEEDING: 'SPEEDING'
 } as const
 
 export type EventType = (typeof EventType)[keyof typeof EventType]

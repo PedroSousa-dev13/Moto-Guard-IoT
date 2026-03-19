@@ -40,7 +40,7 @@ export async function listTrips(req: AuthRequest, res: Response): Promise<void> 
       },
       orderBy: { startedAt: "desc" },
       include: {
-        motorcycle: { select: { id: true, name: true, brand: true } },
+        motorcycle: { select: { id: true, name: true, brand: true, category: true } },
         _count: { select: { events: true } },
       },
     });
@@ -75,7 +75,7 @@ export async function listTripFeed(req: AuthRequest, res: Response): Promise<voi
       orderBy: { startedAt: "desc" },
       take: limit,
       include: {
-        motorcycle: { select: { id: true, name: true, brand: true, profile: true } },
+        motorcycle: { select: { id: true, name: true, brand: true, category: true, profile: true } },
         events: { select: { type: true, severity: true } },
       },
     });
@@ -93,7 +93,7 @@ export async function listTripFeed(req: AuthRequest, res: Response): Promise<voi
           maxSpeedKmh: t.maxSpeedKmh,
           maxRollDeg: t.maxRollDeg,
           maxGForce: t.maxGForce,
-          motorcycle: t.motorcycle ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand } : null,
+          motorcycle: t.motorcycle ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category } : null,
           profile: t.motorcycle?.profile ?? null,
         },
         t.events,
