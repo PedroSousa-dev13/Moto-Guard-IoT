@@ -188,6 +188,7 @@ class HeadlessSimulator:
 
         # Modelo inicial
         self.modelo_inicial = modelo
+        self._tick_interval: float = float(PUBLISH_INTERVAL)  # pode ser alterado por set_speed
 
         # Graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -370,6 +371,15 @@ class HeadlessSimulator:
             self.tele._target_vel = 0.0
             self.tele.velocidade = 0.0
             log("Comando: reset_rota")
+        elif acao in ("set_speed", "set-speed"):
+            mult = dados.get("multiplier", 1)
+            try:
+                mult = float(mult)
+            except (TypeError, ValueError):
+                mult = 1.0
+            mult = max(0.1, min(mult, 20.0))
+            self._tick_interval = PUBLISH_INTERVAL / mult
+            log(f"Comando: set_speed → {mult}x (intervalo={self._tick_interval:.3f}s)")
         else:
             log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
 
@@ -444,6 +454,7 @@ class HeadlessSimulator:
         self._route_override_waypoints = None
         self._route_override_loop = False
         self.route_cursor = None
+        self._tick_interval = float(PUBLISH_INTERVAL)  # reset velocidade
 
     def _arrival_speed_cap_kmh(self) -> float | None:
         if self.route_cursor is None:
@@ -854,7 +865,7 @@ class HeadlessSimulator:
                         f"roll {round(s.roll,1)}° | "
                         f"{s.evento_activo()}")
 
-            time.sleep(PUBLISH_INTERVAL)
+            time.sleep(self._tick_interval)
 
         # Cleanup
         log("A encerrar…")

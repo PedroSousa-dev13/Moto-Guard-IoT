@@ -1,14 +1,26 @@
 import React, { Suspense } from 'react';
-import type { TelemetryPayload } from '../../types/telemetry';
+import type { TelemetryPayload, SimulatorCommand } from '../../types/telemetry';
 import './MotorcycleDigitalTwin.css';
 import { Shield, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import Motorcycle3DView from './Motorcycle3DView';
 
 interface DigitalTwinProps {
   data: TelemetryPayload | null;
+  sendCommand?: (cmd: SimulatorCommand) => void;
+  running?: boolean;
 }
 
-export default function MotorcycleDigitalTwin({ data }: DigitalTwinProps) {
+export default function MotorcycleDigitalTwin({ data, sendCommand, running }: DigitalTwinProps) {
+  function handleSpeedPress(multiplier: number) {
+    if (!running || !sendCommand) return;
+    sendCommand({ acao: 'set_speed', multiplier });
+  }
+
+  function handleSpeedRelease() {
+    if (!running || !sendCommand) return;
+    sendCommand({ acao: 'set_speed', multiplier: 1 });
+  }
+
   if (!data) return (
     <div className="digital-twin-empty">
       <Loader2 className="animate-spin" size={32} />
@@ -82,6 +94,27 @@ export default function MotorcycleDigitalTwin({ data }: DigitalTwinProps) {
           </div>
         </div>
       </div>
+
+      {sendCommand && (
+        <div className="speed-controls">
+          <span className="speed-label">Velocidade</span>
+          {[1, 2, 5, 10].map((m) => (
+            <button
+              key={m}
+              className={`btn-speed${!running ? ' disabled' : ''}`}
+              onMouseDown={() => handleSpeedPress(m)}
+              onMouseUp={m === 1 ? undefined : handleSpeedRelease}
+              onMouseLeave={m === 1 ? undefined : handleSpeedRelease}
+              onTouchStart={() => handleSpeedPress(m)}
+              onTouchEnd={m === 1 ? undefined : handleSpeedRelease}
+              disabled={!running}
+              title={m === 1 ? 'Velocidade normal' : `Segurar para ${m}x`}
+            >
+              {m}x
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

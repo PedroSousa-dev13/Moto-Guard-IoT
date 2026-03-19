@@ -29,7 +29,7 @@ export default function IMUCard({ data }: IMUCardProps) {
   return (
     <Card title="IMU — Inércia">
       <div className="gauge-grid">
-        <div className="gauge">
+        <div className="gauge" title="Inclinação lateral da mota (esquerda/direita). Valores altos indicam curvas agressivas. Acima de 45° é zona de risco.">
           <div className="gauge-icon"><MoveHorizontal size={16} /></div>
           <div className="value" style={{ color: rollColor(roll) }}>
             {roll.toFixed(1)}
@@ -37,19 +37,19 @@ export default function IMUCard({ data }: IMUCardProps) {
           <div className="unit">°</div>
           <div className="label">Roll</div>
         </div>
-        <div className="gauge">
+        <div className="gauge" title="Inclinação frontal/traseira (aceleração/travagem). Positivo = aceleração, negativo = travagem.">
           <div className="gauge-icon"><MoveVertical size={16} /></div>
           <div className="value">{pitch.toFixed(1)}</div>
           <div className="unit">°</div>
           <div className="label">Pitch</div>
         </div>
-        <div className="gauge">
+        <div className="gauge" title="Orientação da mota em graus (0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste). Muda conforme a direção de marcha.">
           <div className="gauge-icon"><Compass size={16} /></div>
           <div className="value">{yaw.toFixed(1)}</div>
           <div className="unit">°</div>
           <div className="label">Yaw</div>
         </div>
-        <div className="gauge">
+        <div className="gauge" title="Força gravitacional total. Em repouso = 1G. Em curva ou travagem aumenta. Acima de 2G pode indicar evento de risco.">
           <div className="gauge-icon"><Activity size={16} /></div>
           <div className="value" style={{ color: gForceColor(gForce) }}>
             {gForce.toFixed(2)}
