@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../hooks/useAuth';
+import OfflineBanner from './OfflineBanner';
 
 interface LayoutProps {
   children?: ReactNode;
@@ -11,7 +12,6 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
-  // Se não estiver autenticado, mostrar apenas o conteúdo sem sidebar
   if (!isAuthenticated) {
     return (
       <div className="layout layout-auth">
@@ -23,12 +23,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
   }
 
-  // Layout com sidebar para utilizadores autenticados
   return (
     <div className="layout layout-app">
       <Sidebar />
       <div className="layout-main">
         <Navbar />
+        <OfflineBanner />
         <main className="main-content">
           {children || <Outlet />}
         </main>

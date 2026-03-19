@@ -21,6 +21,7 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/garage', label: 'Garagem', icon: <Bike size={20} /> },
     { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
     { path: '/alertas', label: 'Alertas', icon: <Bell size={20} /> },
     { path: '/trips', label: 'Viagens', icon: <Route size={20} /> },

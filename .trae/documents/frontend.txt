@@ -1,36 +1,62 @@
 BACKLOG FRONTEND — CONSOLIDADO (pendente)
 
+
 P0 — Analytics, Alertas, Settings, alinhar Dashboard
-- Routing
-  - Criar/validar rotas: /dashboard, /analytics, /alertas, /settings (e redirect / -> /dashboard)
-  - Garantir navegação global consistente (top bar)
 
-- Dashboard (alinhar)
-  - Padronizar grelha de cards (margens, alturas, padding, headings)
-  - Normalizar estados (loading/empty/error) e placeholders
-  - Rever consistência de tipografia e hierarquia visual
+* Routing
+  * ✔️ Criar/validar rotas: /dashboard, /analytics, /alertas, /settings (e redirect / -> /dashboard)
+  * ✔️ Garantir navegação global consistente (top bar)
 
-- Analytics
-  - Implementar filtro por intervalo temporal (presets + custom)
-  - Implementar componentes de gráficos (layout em cards)
-  - Lidar com estados: loading/empty/error
+* Dashboard (alinhar)
+  * ✔️ Padronizar grelha de cards (margens, alturas, padding, headings)
+  * ✔️ Normalizar estados (loading/empty/error) e placeholders
+  * ✔️ Rever consistência de tipografia e hierarquia visual
 
-- Alertas
-  - Implementar lista (ordem recente) com filtros mínimos (status/severidade)
-  - Implementar detalhe do alerta (master-detail desktop; fluxo mobile)
-  - Implementar ação “marcar como lido/reconhecido” e refletir na lista
+* Analytics
+  * ✔️ Implementar filtro por intervalo temporal (presets + custom)
+  * ✔️ Implementar componentes de gráficos (layout em cards)
+  * ✔️ Lidar com estados: loading/empty/error
 
-- Settings
-  - Implementar formulário por secções (Aparência/Unidades/Preferências de alertas)
-  - Implementar carregar + guardar + feedback (sucesso/erro)
-  - Validar inputs essenciais e bloquear double-submit
+* Alertas
+  * ✔️ Implementar lista (ordem recente) com filtros mínimos (status/severidade)
+  * ✔️ Implementar detalhe do alerta (master-detail desktop; fluxo mobile)
+  * ✔️ Implementar ação "marcar como lido/reconhecido" e refletir na lista
 
-- Integração de dados
-  - Ligar Dashboard/Analytics/Alertas/Settings aos endpoints existentes (contratos a validar)
-  - Normalizar tratamento de erros e retries
+* Settings
+  * ✔️ Implementar formulário por secções (Aparência/Unidades/Preferências de alertas)
+  * ✔️ Implementar carregar + guardar + feedback (sucesso/erro)
+  * ✔️ Validar inputs essenciais e bloquear double-submit
+
+* Integração de dados
+  * ✔️ Ligar Dashboard/Analytics/Alertas/Settings aos endpoints existentes (contratos a validar)
+  * ✔️ Normalizar tratamento de erros e retries
 
 P1 (depois do P0)
-- Paginação e/ou virtualização na lista de alertas
-- Exportação (CSV/PNG) em Analytics
-- Melhorias de acessibilidade (teclado, foco, contraste) e testes básicos
-- Preferências avançadas (ex.: configurações mais detalhadas de alertas)
+
+* ✔️ Paginação e/ou virtualização na lista de alertas
+* ✔️ Exportação (CSV/PNG) em Analytics
+* ✔️ Melhorias de acessibilidade (teclado, foco, contraste) e testes básicos
+* ✔️ Preferências avançadas (ex.: configurações mais detalhadas de alertas)
+
+P0 (Crítica)
+
+- ✔️ Alta complexidade : Área Analytics & Relatórios dedicada com seletor de período (hoje/semana/mês/ano/custom), KPI cards, gráficos time‑series (≥6), estatísticas avançadas e comparativas período vs período, e exportação de relatórios (incluindo formatos além de PDF/CSV).
+- ✔️ Alta complexidade : Página Alertas & Eventos dedicada com filtros (tipo/severidade/período/mota), timeline de eventos, detalhe de evento com mapa e métricas no momento, ações "ver no mapa/ver viagem completa", e categorização por tipo.
+- ✔️ Alta complexidade : Página Configurações (Settings) completa por abas: Perfil (editar dados/segurança), Preferências (unidades/tema/idioma), Limiares (thresholds por campo), e Sobre (versão/dados/privacidade).
+- ✔️ Média complexidade : Alinhamento do "ecrã principal" pós‑login e do item Dashboard com o ecrã de telemetria real‑time (evitar que a rota principal apresente uma página vazia).
+
+P1 (Alta prioridade)
+
+- ✔️ Média complexidade : Garagem como área dedicada (/garage) com grid/cards, ações "Monitorizar/Ver/Editar/Remover" e detalhe completo por mota.
+- ✔️ Média complexidade : Integração consistente entre motas do utilizador e fontes de telemetria (seleção por mota no Dashboard/Map).
+- ✔️ Média complexidade : Histórico de Viagens com UX conforme planeamento: presets de datas, botão "Reset", ordenação explícita e opção clara entre vista feed e vista lista.
+- ✔️ Média complexidade : Detalhe de Viagem com "timeline" cronológica rica (eventos + marcos) e funcionalidade "Partilhar".
+- ✔️ Baixa complexidade : Melhorias nos cards de telemetria (máximos por sessão, zonas críticas com cores de threshold).
+- ✔️ Baixa complexidade : Mapa com modo de expansão/visualização dedicada (fullscreen/expand).
+- ✔️ Média complexidade : Resiliência de dados em tempo real: banner offline, tracking de reconexões, fallback "ligado mas sem telemetria".
+
+P2 (Média/Baixa prioridade)
+
+- Baixa complexidade : "Remember me" conforme planeamento com retenção do email no formulário (para além da persistência de sessão).
+- Baixa complexidade : Header global com indicador de notificações (badge/contador) e menu de utilizador mais completo (conforme os mockups).
+- Baixa complexidade : Estados visuais planeados (skeleton loaders/estados "offline" mais evidentes, realce de evento crítico nos cards e variações de layout do dashboard como "tabs/cards/fullscreen").

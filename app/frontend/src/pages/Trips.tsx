@@ -26,6 +26,7 @@ import {
   Activity
 } from 'lucide-react';
 import Card from "../components/ui/Card";
+import { SkeletonRow } from "../components/ui/Skeleton";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -284,10 +285,11 @@ export default function Trips() {
   if (activeLoading) {
     return (
       <div className="page">
-        <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">{view === "FEED" ? "A carregar feed..." : "A carregar viagens..."}</div>
-          <div className="empty-state-text">Pode demorar alguns segundos.</div>
+        <div className="page-header">
+          <div className="page-title">🗺️ Histórico de Viagens</div>
+        </div>
+        <div className="card" style={{ padding: 16 }}>
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       </div>
     );

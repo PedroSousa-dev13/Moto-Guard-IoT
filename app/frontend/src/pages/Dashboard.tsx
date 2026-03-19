@@ -12,7 +12,7 @@ function formatTime(ts: string | null) {
 }
 
 export default function Dashboard() {
-  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId } = useSocket();
+  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal } = useSocket();
   const [motorcycleCount, setMotorcycleCount] = useState<number | null>(null);
   const [feed, setFeed] = useState<TripFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,11 @@ export default function Dashboard() {
   useEffect(() => {
     void load();
   }, []);
+
+  // Auto-refresh quando uma viagem termina
+  useEffect(() => {
+    if (tripEndedSignal > 0) void load();
+  }, [tripEndedSignal]);
 
   const alerts = useMemo(() => loadAlerts(), []);
   const unreadAlerts = alerts.filter((a) => a.status === "unread").length;

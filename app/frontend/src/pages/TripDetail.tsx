@@ -60,6 +60,7 @@ export default function TripDetail() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingGpx, setExportingGpx] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -413,6 +414,26 @@ export default function TripDetail() {
     }
   }
 
+  async function shareTrip() {
+    if (!trip) return;
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Viagem — ${trip.motorcycle?.name ?? "MotoGuard"}`,
+          text: `Análise de viagem em ${trip.motorcycle?.name ?? "MotoGuard"} — ${formatDateTime(trip.startedAt)}`,
+          url,
+        });
+      } catch {
+        // utilizador cancelou
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShareMsg("Link copiado para a área de transferência");
+      setTimeout(() => setShareMsg(null), 2500);
+    }
+  }
+
   return (
     <div className="page page-full">
       <div className="page-header">
@@ -450,6 +471,18 @@ export default function TripDetail() {
           >
             {exportingPdf ? "PDF..." : "Exportar PDF"}
           </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => void shareTrip()}
+            title="Partilhar esta viagem"
+          >
+            Partilhar
+          </button>
+          {shareMsg && (
+            <span style={{ fontSize: 13, color: "var(--green, #22c55e)", alignSelf: "center" }}>
+              {shareMsg}
+            </span>
+          )}
         </div>
       </div>
 
