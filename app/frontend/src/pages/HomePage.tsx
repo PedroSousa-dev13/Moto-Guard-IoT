@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import LoginSidebar from "../components/auth/LoginSidebar";
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
@@ -8,21 +9,19 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
   const handleGetStarted = () => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-      return;
-    }
-    navigate("/login", { state: { from: location } });
+    if (isAuthenticated) { navigate("/dashboard"); return; }
+    setAuthMode("login");
+    setAuthOpen(true);
   };
 
   const handleCreateAccount = () => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-      return;
-    }
-    navigate("/login?mode=register", { state: { from: location } });
+    if (isAuthenticated) { navigate("/dashboard"); return; }
+    setAuthMode("register");
+    setAuthOpen(true);
   };
 
   const demoSteps = useMemo(
@@ -319,8 +318,15 @@ const HomePage: React.FC = () => {
         </div>
       </footer>
 
-      {isDemoOpen && (
-        <div className="demo-overlay" role="dialog" aria-modal="true">
+      <LoginSidebar
+        isOpen={authOpen}
+        defaultMode={authMode}
+        onClose={() => setAuthOpen(false)}
+        onSuccess={() => navigate("/dashboard", { replace: true })}
+        onRegisterSuccess={() => navigate("/garage", { replace: true })}
+      />
+
+      {isDemoOpen && (        <div className="demo-overlay" role="dialog" aria-modal="true">
           <div className="demo-backdrop" onClick={() => setIsDemoOpen(false)} />
           <div className="demo-modal">
             <div className="demo-header">

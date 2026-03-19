@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
+import { useAuth } from "../hooks/useAuth";
+import { motorcyclesAPI } from "../services/api";
+import type { Motorcycle } from "../types";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
 import IMUCard from "../components/IMUCard";
@@ -10,7 +13,10 @@ import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
 import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
 
+const ADMIN_EMAIL = 'admin@admin.com';
+
 export default function SimulatorContexts() {
+  const { user } = useAuth();
   const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
@@ -18,7 +24,43 @@ export default function SimulatorContexts() {
   const [mapResetSignal, setMapResetSignal] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
+  // User motos state (only for non-admin)
+  const [userMotos, setUserMotos] = useState<Motorcycle[]>([]);
+  const [motosLoading, setMotosLoading] = useState(false);
+  const [motosError, setMotosError] = useState<string | null>(null);
+
   const running = status.ws && !!telemetry;
+
+  // Derive allowedModels from user's motos (unique categories, preserving order).
+  // undefined = admin free selector (all 8 models).
+  // [] = still loading or no motos — CommandPanel will show empty/disabled state.
+  const allowedModels: string[] | undefined = isAdmin
+    ? undefined
+    : motosLoading
+      ? []
+      : Array.from(new Set(userMotos.map((m) => m.category).filter(Boolean))) as string[];
+
+  async function loadMotos() {
+    setMotosLoading(true);
+    setMotosError(null);
+    try {
+      const res = await motorcyclesAPI.getAll();
+      setUserMotos(res.data);
+    } catch {
+      setMotosError("Não foi possível carregar as tuas motas.");
+    } finally {
+      setMotosLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    document.title = "Simulador — MotoGuard";
+    if (!isAdmin) {
+      void loadMotos();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!tripEndedSignal) return;
@@ -117,7 +159,6 @@ export default function SimulatorContexts() {
             system={telemetry?.system ?? null}
             safety={telemetry?.active_safety ?? null}
             health={telemetry?.health ?? null}
-            environment={telemetry?.environment ?? null}
           />
         </div>
 
@@ -127,6 +168,7 @@ export default function SimulatorContexts() {
             addLog={addLog}
             logs={logs}
             running={running}
+            allowedModels={allowedModels}
             onStop={() => {
               setToast({ message: "Simulação terminada", type: "success" });
               setMapResetSignal((v) => v + 1);

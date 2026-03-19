@@ -12,9 +12,15 @@ export interface Motorcycle {
   profileId?: string | null;
   name: string;
   brand?: string;
+  model?: string;
   year?: number;
+  plate?: string;
   deviceId?: string;
+  category?: string;
+  odometer?: number;
+  lastSeenAt?: string;
   createdAt: string;
+  updatedAt?: string;
   profile?: { id: string; name: string } | null;
 }
 
@@ -22,6 +28,7 @@ export interface MotorcycleSummary {
   id: string;
   name: string;
   brand?: string | null;
+  category?: string | null;
   profile?: { id: string; name: string } | null;
 }
 
@@ -133,7 +140,7 @@ export interface TripFeedItem {
   eventCounts: {
     total: number;
     bySeverity: { INFO: number; WARNING: number; CRITICAL: number };
-    byType: Record<string, number>;
+    byType?: Record<string, number>;
   };
   safetyScore: number;
   performanceScore: number;

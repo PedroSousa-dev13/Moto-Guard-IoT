@@ -42,7 +42,6 @@ export function validateTelemetryPayload(data: unknown): ValidationResult {
     "active_safety",
     "health",
     "location",
-    "environment",
     "system",
   ];
 

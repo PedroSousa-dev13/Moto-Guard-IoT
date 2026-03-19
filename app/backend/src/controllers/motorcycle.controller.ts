@@ -16,19 +16,20 @@ export async function createMotorcycle(
   res: Response
 ): Promise<void> {
   const userId = req.userId!;
-  const { name, brand, year, profileId, deviceId } = req.body;
+  const { name, brand, model, year, plate, category, profileId, deviceId } = req.body;
 
   if (!name) {
     res.status(400).json({ error: "Campo 'name' é obrigatório" });
     return;
   }
+  if (!category) {
+    res.status(400).json({ error: "Campo 'category' é obrigatório" });
+    return;
+  }
 
   try {
-    // Validar que o perfil existe (se fornecido)
     if (profileId) {
-      const profile = await prisma.motorcycleProfile.findUnique({
-        where: { id: profileId },
-      });
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: profileId } });
       if (!profile) {
         res.status(400).json({ error: "Perfil de mota não encontrado" });
         return;
@@ -40,7 +41,10 @@ export async function createMotorcycle(
         userId,
         name,
         brand: brand || null,
+        model: model || null,
         year: year ? parseInt(year, 10) : null,
+        plate: plate || null,
+        category: category || null,
         profileId: profileId || null,
         deviceId: deviceId || null,
       },
@@ -95,7 +99,7 @@ export async function listProfiles(
 export async function updateMotorcycle(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
   const id = req.params.id as string;
-  const { name, brand, year, profileId, deviceId } = req.body;
+  const { name, brand, model, year, plate, category, profileId, deviceId } = req.body;
 
   if (name !== undefined && (!name || typeof name !== "string")) {
     res.status(400).json({ error: "Campo 'name' é inválido" });
@@ -122,9 +126,10 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
       data: {
         ...(name !== undefined ? { name } : {}),
         ...(brand !== undefined ? { brand: brand || null } : {}),
-        ...(year !== undefined
-          ? { year: year ? parseInt(year, 10) : null }
-          : {}),
+        ...(model !== undefined ? { model: model || null } : {}),
+        ...(year !== undefined ? { year: year ? parseInt(year, 10) : null } : {}),
+        ...(plate !== undefined ? { plate: plate || null } : {}),
+        ...(category !== undefined ? { category: category || null } : {}),
         ...(deviceId !== undefined ? { deviceId: deviceId || null } : {}),
         ...(profileId !== undefined ? { profileId: profileId || null } : {}),
       },

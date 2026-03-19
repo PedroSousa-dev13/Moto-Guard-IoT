@@ -24,7 +24,6 @@ export default function MotorcycleDigitalTwin({ data }: DigitalTwinProps) {
   const frontTireStatus = health.tire_pressure_front_bar < 1.8 ? 'critical' : health.tire_pressure_front_bar < 2.2 ? 'warning' : 'ok';
   const rearTireStatus = health.tire_pressure_rear_bar < 1.9 ? 'critical' : health.tire_pressure_rear_bar < 2.4 ? 'warning' : 'ok';
   const batteryStatus = telemetry.voltage < 11.8 ? 'critical' : telemetry.voltage < 12.4 ? 'warning' : 'ok';
-  const sideStandStatus = active_safety.side_stand_down ? 'warning' : 'ok';
 
   return (
     <div className="digital-twin-container">
@@ -65,12 +64,6 @@ export default function MotorcycleDigitalTwin({ data }: DigitalTwinProps) {
           <span className={`value ${rearTireStatus}`}>{health.tire_pressure_rear_bar}b</span>
         </div>
         
-        {active_safety.side_stand_down && (
-          <div className="overlay-label side-stand warning" style={{ top: '15%', left: '15%' }}>
-            <span className="label">DESCANSO</span>
-            <span className="value blink">BAIXADO</span>
-          </div>
-        )}
       </div>
 
       <div className="health-grid">

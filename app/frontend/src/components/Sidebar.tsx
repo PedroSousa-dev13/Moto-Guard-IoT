@@ -12,7 +12,8 @@ import {
   Cpu,
   User as UserIcon,
   LogOut,
-  Bike
+  Bike,
+  Info
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -30,6 +31,7 @@ const Sidebar: React.FC = () => {
     { path: '/simulator-contexts', label: 'Simulador', icon: <Cpu size={20} /> },
     { path: '/settings', label: 'Settings', icon: <SlidersHorizontal size={20} /> },
     { path: '/profile', label: 'Perfil', icon: <UserIcon size={20} /> },
+    { path: '/about', label: 'Como Funciona', icon: <Info size={20} /> },
   ];
 
   return (

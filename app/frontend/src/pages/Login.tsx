@@ -24,6 +24,7 @@ export default function Login() {
       defaultMode={defaultMode}
       onClose={() => navigate("/", { replace: true })}
       onSuccess={() => navigate(redirectTo, { replace: true })}
+      onRegisterSuccess={() => navigate("/garage", { replace: true })}
     />
   );
 }

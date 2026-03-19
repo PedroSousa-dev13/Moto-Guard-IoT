@@ -76,18 +76,25 @@ PERFIS_MOTO = {
         "peso_medio": 130,
         "exemplo": "Honda PCX 125, Yamaha XMAX 300",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 55,    # centro gravidade alto, rodas pequenas — tomba cedo
+        "queda_roll_threshold": 55,
         "queda_pitch_threshold": 45,
-        "queda_g_force": 2.0,          # chassis leve — menos G para dano
+        "queda_g_force": 2.0,
         "queda_confirmacao_seg": 2,
-        "rpm_critico": 8500,           # zona vermelha
-        "temp_critica": 95,            # motor pequeno sobreaquece mais cedo
+        "rpm_critico": 8500,
+        "temp_critica": 95,
         "voltagem_critica": 11.0,
-        # --- Pressões (específicas por classe) ---
-        "oil_pressure_idle_bar": 0.8,    # sistema CVT / motor pequeno — pressão reduzida
+        # --- Pressões ---
+        "oil_pressure_idle_bar": 0.8,
         "oil_pressure_max_bar":  3.0,
-        "tire_pressure_front_bar": 1.75, # pneus pequenos (10-12") — baixa pressão
+        "tire_pressure_front_bar": 1.75,
         "tire_pressure_rear_bar":  2.00,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":   6.0,   # km/h por segundo — CVT suave, motor pequeno
+        "brake_max_kmhs":  12.0,   # travagem fraca (pneus pequenos)
+        "cruise_min_kmh":  30.0,   # velocidade mínima de cruzeiro
+        "cruise_max_frac":  0.75,  # % de vel_max como teto de cruzeiro
+        "throttle_response": 0.25, # LERP do acelerador — CVT é lento
+        "temp_idle_offset":  5.0,  # motor aquece pouco em marcha lenta
     },
     "Naked": {
         "cilindrada_min": 300,
@@ -102,7 +109,7 @@ PERFIS_MOTO = {
         "peso_medio": 190,
         "exemplo": "Yamaha MT-07, KTM Duke 890",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 70,    # posição semi-ereta — tomba a ~70°
+        "queda_roll_threshold": 70,
         "queda_pitch_threshold": 55,
         "queda_g_force": 2.5,
         "queda_confirmacao_seg": 2,
@@ -110,10 +117,17 @@ PERFIS_MOTO = {
         "temp_critica": 110,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.5,    # motor 4cil/2cil de médio porte
+        "oil_pressure_idle_bar": 1.5,
         "oil_pressure_max_bar":  4.5,
-        "tire_pressure_front_bar": 2.30, # pneu 120/70 ZR17 típico
-        "tire_pressure_rear_bar":  2.50, # pneu 180/55 ZR17 típico
+        "tire_pressure_front_bar": 2.30,
+        "tire_pressure_rear_bar":  2.50,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":  12.0,
+        "brake_max_kmhs":  18.0,
+        "cruise_min_kmh":  40.0,
+        "cruise_max_frac":  0.70,
+        "throttle_response": 0.35,
+        "temp_idle_offset":  8.0,
     },
     "Desportiva": {
         "cilindrada_min": 600,
@@ -128,18 +142,25 @@ PERFIS_MOTO = {
         "peso_medio": 200,
         "exemplo": "Yamaha R1, Honda CBR1000RR",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 85,    # feita para inclinar muito — só cai a ângulos extremos
+        "queda_roll_threshold": 85,
         "queda_pitch_threshold": 65,
-        "queda_g_force": 3.0,          # chassis rígido — suporta mais G
+        "queda_g_force": 3.0,
         "queda_confirmacao_seg": 2,
         "rpm_critico": 14000,
-        "temp_critica": 115,           # motor de alta performance tolera mais
+        "temp_critica": 115,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 2.0,    # bomba dedicada de alta performance
+        "oil_pressure_idle_bar": 2.0,
         "oil_pressure_max_bar":  5.5,
-        "tire_pressure_front_bar": 2.50, # pneu 120/70 ZR17 racing
-        "tire_pressure_rear_bar":  2.90, # pneu 190/55 ZR17 racing
+        "tire_pressure_front_bar": 2.50,
+        "tire_pressure_rear_bar":  2.90,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":  22.0,   # aceleração brutal
+        "brake_max_kmhs":  25.0,   # travagem de competição
+        "cruise_min_kmh":  60.0,   # não anda devagar
+        "cruise_max_frac":  0.80,  # usa mais da velocidade máxima
+        "throttle_response": 0.55, # resposta imediata
+        "temp_idle_offset": 15.0,  # motor quente mesmo em marcha lenta
     },
     "Trail / Adventure": {
         "cilindrada_min": 650,
@@ -154,18 +175,25 @@ PERFIS_MOTO = {
         "peso_medio": 230,
         "exemplo": "BMW R1250GS, Honda Africa Twin",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 65,    # centro gravidade alto + peso — tomba mais cedo
+        "queda_roll_threshold": 65,
         "queda_pitch_threshold": 50,
-        "queda_g_force": 2.0,          # off-road — impactos menores já são queda
-        "queda_confirmacao_seg": 3,    # off-road pode ter inclinações breves normais
+        "queda_g_force": 2.0,
+        "queda_confirmacao_seg": 3,
         "rpm_critico": 9000,
         "temp_critica": 105,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.5,    # motor boxer/2cil de grande cilindrada
+        "oil_pressure_idle_bar": 1.5,
         "oil_pressure_max_bar":  4.5,
-        "tire_pressure_front_bar": 2.40, # setup estrada (off-road: ~1.0)
+        "tire_pressure_front_bar": 2.40,
         "tire_pressure_rear_bar":  2.80,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":   9.0,   # pesada mas torque elevado
+        "brake_max_kmhs":  14.0,
+        "cruise_min_kmh":  40.0,
+        "cruise_max_frac":  0.65,  # condução mais relaxada
+        "throttle_response": 0.30,
+        "temp_idle_offset":  8.0,
     },
     "Custom / Cruiser": {
         "cilindrada_min": 800,
@@ -180,18 +208,25 @@ PERFIS_MOTO = {
         "peso_medio": 300,
         "exemplo": "Harley Davidson Sportster, Indian Scout",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 50,    # pesada + baixa — tomba muito cedo
+        "queda_roll_threshold": 50,
         "queda_pitch_threshold": 40,
-        "queda_g_force": 1.8,          # massa grande — pouco G para derrubar
+        "queda_g_force": 1.8,
         "queda_confirmacao_seg": 2,
         "rpm_critico": 6500,
         "temp_critica": 100,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.0,    # V-twin a ar (Harley-style) — pressão historicamente baixa
+        "oil_pressure_idle_bar": 1.0,
         "oil_pressure_max_bar":  3.5,
-        "tire_pressure_front_bar": 2.10, # pneu largo mas de baixa pressão
+        "tire_pressure_front_bar": 2.10,
         "tire_pressure_rear_bar":  2.40,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":   7.0,   # pesada, torque baixo a altas rotações
+        "brake_max_kmhs":  10.0,   # travagem fraca (peso + pneus largos)
+        "cruise_min_kmh":  50.0,   # não anda devagar — cruiser
+        "cruise_max_frac":  0.60,  # condução relaxada, nunca no limite
+        "throttle_response": 0.20, # resposta lenta — V-twin a ar
+        "temp_idle_offset": 12.0,  # motor a ar aquece muito em marcha lenta
     },
     "Motocross / Enduro": {
         "cilindrada_min": 125,
@@ -206,18 +241,25 @@ PERFIS_MOTO = {
         "peso_medio": 110,
         "exemplo": "KTM 450 EXC, Honda CRF250",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 75,    # leve + off-road — inclinações normais são maiores
-        "queda_pitch_threshold": 60,   # saltos causam pitch alto
-        "queda_g_force": 3.5,          # saltos e terreno irregular — G alto é normal
-        "queda_confirmacao_seg": 3,    # terreno irregular causa leituras breves falsas
+        "queda_roll_threshold": 75,
+        "queda_pitch_threshold": 60,
+        "queda_g_force": 3.5,
+        "queda_confirmacao_seg": 3,
         "rpm_critico": 12500,
-        "temp_critica": 120,           # motor arrefecido a ar — tolera mais
+        "temp_critica": 120,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.5,    # monocilíndrico 4T
+        "oil_pressure_idle_bar": 1.5,
         "oil_pressure_max_bar":  4.0,
-        "tire_pressure_front_bar": 1.00, # off-road — pressão muito baixa para aderência
+        "tire_pressure_front_bar": 1.00,
         "tire_pressure_rear_bar":  1.10,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":  18.0,   # leve + potente = aceleração explosiva
+        "brake_max_kmhs":  20.0,
+        "cruise_min_kmh":  25.0,   # pode andar devagar em off-road
+        "cruise_max_frac":  0.75,
+        "throttle_response": 0.50, # resposta agressiva
+        "temp_idle_offset": 18.0,  # motor a ar sobreaquece rapidamente
     },
     "Touring": {
         "cilindrada_min": 1000,
@@ -232,18 +274,25 @@ PERFIS_MOTO = {
         "peso_medio": 350,
         "exemplo": "Honda Gold Wing, BMW K1600GTL",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 45,    # muito pesada — tomba facilmente
-        "queda_pitch_threshold": 35,   # baixo centro de massa mas peso enorme
-        "queda_g_force": 1.5,          # 350 kg — pouco G já é acidente sério
+        "queda_roll_threshold": 45,
+        "queda_pitch_threshold": 35,
+        "queda_g_force": 1.5,
         "queda_confirmacao_seg": 2,
         "rpm_critico": 7500,
         "temp_critica": 100,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.5,    # grande motor longitudinal / boxer
+        "oil_pressure_idle_bar": 1.5,
         "oil_pressure_max_bar":  4.5,
-        "tire_pressure_front_bar": 2.50, # pneu largo com carga elevada (bagagens)
+        "tire_pressure_front_bar": 2.50,
         "tire_pressure_rear_bar":  3.00,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":   8.0,   # muito pesada — aceleração lenta
+        "brake_max_kmhs":  12.0,
+        "cruise_min_kmh":  60.0,   # touring — velocidades de autoestrada
+        "cruise_max_frac":  0.70,
+        "throttle_response": 0.22, # resposta suave e progressiva
+        "temp_idle_offset":  5.0,  # motor líquido bem gerido
     },
     "Supermotard": {
         "cilindrada_min": 450,
@@ -258,17 +307,24 @@ PERFIS_MOTO = {
         "peso_medio": 150,
         "exemplo": "Husqvarna 701, KTM 690 SMC",
         # --- Thresholds específicos ---
-        "queda_roll_threshold": 80,    # condução agressiva é normal — roll alto esperado
-        "queda_pitch_threshold": 60,   # wheelies e stoppies frequentes
-        "queda_g_force": 3.0,          # condução agressiva — G alto é comum
+        "queda_roll_threshold": 80,
+        "queda_pitch_threshold": 60,
+        "queda_g_force": 3.0,
         "queda_confirmacao_seg": 2,
         "rpm_critico": 10500,
         "temp_critica": 115,
         "voltagem_critica": 11.0,
         # --- Pressões ---
-        "oil_pressure_idle_bar": 1.5,    # monocilíndrico de grande cilindrada
+        "oil_pressure_idle_bar": 1.5,
         "oil_pressure_max_bar":  4.5,
         "tire_pressure_front_bar": 2.30,
         "tire_pressure_rear_bar":  2.50,
+        # --- Comportamento de simulação ---
+        "accel_max_kmhs":  16.0,   # leve + torque — aceleração agressiva
+        "brake_max_kmhs":  22.0,   # travagem de supermoto
+        "cruise_min_kmh":  35.0,
+        "cruise_max_frac":  0.75,
+        "throttle_response": 0.48, # resposta rápida
+        "temp_idle_offset": 14.0,  # motor a ar aquece em marcha lenta
     },
 }

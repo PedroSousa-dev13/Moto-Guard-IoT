@@ -93,13 +93,10 @@ class TelemetriaState:
 
         self.abs_active: bool = False
         self.tc_active: bool = False
-        self.side_stand_down: bool = False
 
         self.oil_pressure_bar: float = 4.0
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
-
-        self.ambient_light_lux: float = 500.0
 
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -159,6 +156,8 @@ class HeadlessSimulator:
         self._route_override = False
         self._route_override_waypoints: list[tuple[float, float]] | None = None
         self._route_override_loop: bool = False
+        self._startup_phase: bool = False  # True durante a fase de arranque suave
+        self._startup_tick: int = 0
 
         # Limites do perfil
         self.vel_max = 200
@@ -169,10 +168,16 @@ class HeadlessSimulator:
         self.volt_max = 14.5
         self.roll_tipico = 40.0
         self.peso = 190
-        self.oil_idle = 1.5           # pressão óleo em marcha lenta (bar)
-        self.oil_max = 5.0            # pressão óleo a RPM máximo (bar)
-        self.tire_front_base = 2.3    # pressão base pneu dianteiro (bar)
-        self.tire_rear_base = 2.6     # pressão base pneu traseiro (bar)
+        self.oil_idle = 1.5
+        self.oil_max = 5.0
+        self.tire_front_base = 2.3
+        self.tire_rear_base = 2.6
+        self.accel_max       = 12.0
+        self.brake_max       = 18.0
+        self.cruise_min      = 40.0
+        self.cruise_max_frac = 0.70
+        self.throttle_resp   = 0.35
+        self.temp_idle_off   = 8.0
         self.th_roll = QUEDA_ROLL_THRESHOLD
         self.th_pitch = QUEDA_PITCH_THRESHOLD
         self.th_g_force = QUEDA_G_FORCE
@@ -215,6 +220,14 @@ class HeadlessSimulator:
         self.tire_front_base = p.get("tire_pressure_front_bar", 2.3)
         self.tire_rear_base  = p.get("tire_pressure_rear_bar", 2.6)
 
+        # Parâmetros comportamentais — diferenciam cada tipo de mota
+        self.accel_max       = p.get("accel_max_kmhs", 12.0)    # km/h/s aceleração máxima
+        self.brake_max       = p.get("brake_max_kmhs", 18.0)    # km/h/s travagem máxima
+        self.cruise_min      = p.get("cruise_min_kmh", 40.0)    # velocidade mínima de cruzeiro
+        self.cruise_max_frac = p.get("cruise_max_frac", 0.70)   # % de vel_max como teto
+        self.throttle_resp   = p.get("throttle_response", 0.35) # LERP do acelerador
+        self.temp_idle_off   = p.get("temp_idle_offset", 8.0)   # °C acima de temp_min em marcha lenta
+
         self.th_roll         = p.get("queda_roll_threshold", QUEDA_ROLL_THRESHOLD)
         self.th_pitch        = p.get("queda_pitch_threshold", QUEDA_PITCH_THRESHOLD)
         self.th_g_force      = p.get("queda_g_force", QUEDA_G_FORCE)
@@ -230,6 +243,9 @@ class HeadlessSimulator:
         self.tele.th_rpm_critico  = self.th_rpm_critico
         self.tele.th_temp_critica = self.th_temp_critica
         self.tele.th_volt_critica = self.th_volt_critica
+
+        # Temperatura inicial = marcha lenta do perfil (motor já ligado)
+        self.tele.temp_motor = self.temp_min + self.temp_idle_off
 
         if self._route_override and self._route_override_waypoints:
             self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
@@ -394,8 +410,10 @@ class HeadlessSimulator:
             self.tele.lat = rota_start[0]
             self.tele.lng = rota_start[1]
 
-        self.tele._target_vel = random.randint(40, int(self.vel_max * 0.6))
+        self.tele._target_vel = 0.0   # arranca parado — acelera organicamente
         self._tick_count = 0
+        self._startup_phase = True    # flag para fase de arranque suave
+        self._startup_tick = 0
         log(f"Perfil '{modelo}' carregado — Vel máx: {self.vel_max} km/h | RPM máx: {self.rpm_max}")
         if self.route_cursor is None:
             log("Modelo carregado — aguarda rota do mapa")
@@ -450,17 +468,43 @@ class HeadlessSimulator:
         self._tick_count += 1
         s = self.tele
 
+        # ── 0. Fase de arranque — aceleração orgânica desde 0 ────────────
+        # Simula: marcha lenta → embraiagem → 1ª mudança → aceleração suave
+        # Fase 1 (ticks 1-3):   mota parada, motor a aquecer em marcha lenta
+        # Fase 2 (ticks 4-8):   embraiagem, começa a mover-se muito devagar (0→5 km/h)
+        # Fase 3 (ticks 9-20):  aceleração suave em 1ª/2ª (5→30 km/h)
+        # Fase 4 (tick 21+):    entrega ao controlador normal de velocidade
+        if self._startup_phase:
+            self._startup_tick += 1
+            t = self._startup_tick
+            if t <= 3:
+                # Parado — motor em marcha lenta
+                s._target_vel = 0.0
+            elif t <= 8:
+                # Embraiagem — arranque muito suave
+                s._target_vel = (t - 3) * 1.0   # 0 → 5 km/h ao longo de 5 ticks
+            elif t <= 20:
+                # Aceleração progressiva em 1ª/2ª mudança
+                s._target_vel = 5.0 + (t - 8) * 2.5   # 5 → 35 km/h ao longo de 12 ticks
+            else:
+                # Entregar ao controlador normal — velocidade de cruzeiro aleatória
+                s._target_vel = random.randint(int(self.cruise_min), int(self.vel_max * self.cruise_max_frac))
+                self._startup_phase = False
+
         # ── 1. Intenção do motociclista (guiada pela rota) ────────────────
         #  Velocidade alvo: ajuste suave a cada 8s + limites de curva
+        #  Durante a fase de arranque, o step 0 controla _target_vel — não interferir
         if self.route_cursor is None:
-            s._target_vel = 0.0
+            if not self._startup_phase:
+                s._target_vel = 0.0
             s._target_yaw = s.yaw
         else:
-            if self._tick_count % 8 == 0:
-                s._target_vel = clamp(
-                    s._target_vel + random.uniform(-5, 5),
-                    30, self.vel_max * 0.7
-                )
+            if not self._startup_phase:
+                if self._tick_count % 8 == 0:
+                    s._target_vel = clamp(
+                        s._target_vel + random.uniform(-5, 5),
+                        self.cruise_min, self.vel_max * self.cruise_max_frac
+                    )
             s._target_yaw = self.route_cursor.bearing_deg()
             speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
             if speed_limit is not None:
@@ -484,12 +528,15 @@ class HeadlessSimulator:
 
         # ── 2. Velocidade e Aceleração ────────────────────────────────
         vel_diff = s._target_vel - s.velocidade
-        s._acceleration = clamp(vel_diff * 0.22, -18, 12)
+        # Durante arranque: aceleração máxima muito suave (como embraiagem real)
+        accel_cap = 3.0 if self._startup_phase else self.accel_max
+        brake_cap = self.brake_max
+        s._acceleration = clamp(vel_diff * 0.22, -brake_cap, accel_cap)
         s.velocidade = clamp(s.velocidade + s._acceleration, 0, self.vel_max)
 
         # ── 3. Throttle e Brakes ─────────────────────────────────────
         if vel_diff > 1.5:
-            s.throttle_pct = clamp(lerp(s.throttle_pct, clamp(vel_diff * 5.0, 18, 100), 0.35), 0, 100)
+            s.throttle_pct = clamp(lerp(s.throttle_pct, clamp(vel_diff * 5.0, 18, 100), self.throttle_resp), 0, 100)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.6)
             s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.6)
         elif vel_diff < -1.5:
@@ -499,7 +546,7 @@ class HeadlessSimulator:
             s.brake_rear_pct  = lerp(s.brake_rear_pct, brake_force * 0.35, 0.45)
         else:
             cruise = clamp(12 + (s.velocidade / max(1, self.vel_max)) * 18, 10, 35)
-            s.throttle_pct = lerp(s.throttle_pct, cruise, 0.18)
+            s.throttle_pct = lerp(s.throttle_pct, cruise, self.throttle_resp * 0.5)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.3)
             s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.3)
         s.throttle_pct    = clamp(s.throttle_pct, 0, 100)
@@ -530,9 +577,10 @@ class HeadlessSimulator:
         s.yaw = s.yaw % 360
 
         # ── 7. Temperatura ───────────────────────────────────────────
-        target_temp = (self.temp_min
-                       + (self.temp_max - self.temp_min)
-                       * (s.velocidade / self.vel_max) * 0.9)
+        # Em marcha lenta: temp_min + offset do perfil (motor a ar aquece mais)
+        # Em movimento: sobe até temp_max proporcional à velocidade
+        temp_idle = self.temp_min + self.temp_idle_off
+        target_temp = temp_idle + (self.temp_max - temp_idle) * (s.velocidade / self.vel_max) * 0.9
         s.temp_motor = lerp(s.temp_motor, target_temp, LERP_TEMP)
         s.temp_motor += random.uniform(-0.1, 0.1)
         s.temp_motor = clamp(s.temp_motor, self.temp_min - 5, self.temp_max + 25)
@@ -549,8 +597,21 @@ class HeadlessSimulator:
             s.gear = 0
             s.clutch_engaged = True
         else:
-            gear_ratio = s.velocidade / self.vel_max
-            s.gear = max(1, min(6, int(gear_ratio * 6) + 1))
+            # Gear selection: based on speed bands (more realistic)
+            # gear 1: 0-20, 2: 20-40, 3: 40-70, 4: 70-110, 5: 110-150, 6: 150+
+            spd = s.velocidade
+            if spd < 20:
+                s.gear = 1
+            elif spd < 40:
+                s.gear = 2
+            elif spd < 70:
+                s.gear = 3
+            elif spd < 110:
+                s.gear = 4
+            elif spd < 150:
+                s.gear = 5
+            else:
+                s.gear = 6
             if s.gear != s._prev_gear and s._prev_gear != 0:
                 s._clutch_timer = 2
             if s._clutch_timer > 0:
@@ -561,14 +622,19 @@ class HeadlessSimulator:
 
         idle_rpm = max(900, int(self.rpm_max * 0.08))
         if s.gear <= 0 or s.velocidade < 1:
-            target_rpm = idle_rpm + s.throttle_pct * 8
+            # Marcha lenta: RPM base + contribuição do acelerador
+            target_rpm = idle_rpm + s.throttle_pct * 6
         else:
-            redline_speeds = { 1: 0.18, 2: 0.30, 3: 0.44, 4: 0.60, 5: 0.78, 6: 1.00 }
+            # Velocidade máxima de cada mudança antes de mudar (% de vel_max)
+            redline_speeds = { 1: 0.20, 2: 0.34, 3: 0.52, 4: 0.70, 5: 0.86, 6: 1.00 }
             red_speed = max(1.0, self.vel_max * redline_speeds.get(s.gear, 1.0))
-            ratio = clamp(s.velocidade / red_speed, 0.0, 1.15)
-            target_rpm = idle_rpm + (self.rpm_max - idle_rpm) * ratio
+            ratio = clamp(s.velocidade / red_speed, 0.0, 1.0)
+            # Curva quadrática: RPM sobe devagar a baixas velocidades,
+            # acelera perto do redline — mais realista que linear
+            rpm_range = self.rpm_max * 0.82 - idle_rpm
+            target_rpm = idle_rpm + rpm_range * (ratio ** 1.8)
             if s.clutch_engaged:
-                target_rpm = max(idle_rpm, target_rpm - 900)
+                target_rpm = max(idle_rpm, target_rpm - 800)
         s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
         s.rpm += random.uniform(-20, 20)
         s.rpm = clamp(s.rpm, 0, self.rpm_max)
@@ -581,7 +647,6 @@ class HeadlessSimulator:
                        and random.random() < 0.15)
         s.tc_active = (s.throttle_pct > 70 and s.velocidade > 20
                       and random.random() < 0.10)
-        s.side_stand_down = (s.velocidade < 1 and random.random() < 0.05)
 
         # ── 12. Pressão óleo (específica por perfil) ──────────────────────────
         oil_base = self.oil_idle + (s.rpm / self.rpm_max) * (self.oil_max - self.oil_idle)
@@ -600,13 +665,20 @@ class HeadlessSimulator:
         s.tire_pressure_front = clamp(s.tire_pressure_front, self.tire_front_base * 0.90, self.tire_front_base * 1.15)
         s.tire_pressure_rear = clamp(s.tire_pressure_rear, self.tire_rear_base * 0.90, self.tire_rear_base * 1.15)
 
-        # ── 14. Luminosidade ─────────────────────────────────────────
-        hour_sim = (self._tick_count % 1800) / 1800.0
-        lux_base = 500 * math.sin(math.pi * hour_sim) + 50
-        s.ambient_light_lux = clamp(lux_base + random.uniform(-20, 20), 0, 1000)
+        # ── 14. G-Force física ───────────────────────────────────────
+        # Física real de uma mota em curva:
+        #   Em equilíbrio: tan(roll) = v² / (r·g)  →  G_lateral = tan(roll)
+        # G longitudinal: derivado da aceleração/travagem (km/h/s → m/s² → G)
+        if not s.flag_queda:
+            g_lateral = abs(math.tan(math.radians(clamp(s.roll, -80, 80))))
+            g_lateral = clamp(g_lateral, 0.0, 2.5)
 
-        # ── 15. Efeitos de eventos ───────────────────────────────────
-        s.g_force = 0.0
+            accel_ms2 = s._acceleration / 3.6      # km/h/s → m/s²
+            g_longitudinal = clamp(abs(accel_ms2) / 9.81, 0.0, 1.5)
+
+            # Resultante vetorial com componente vertical (gravidade = 1G)
+            g_combined = math.sqrt(1.0 + g_lateral**2 + g_longitudinal**2)
+            s.g_force = round(clamp(g_combined + random.uniform(-0.03, 0.03), 0.95, 3.5), 2)
 
         if s.flag_queda:
             if not s._queda_confirmed:
@@ -621,7 +693,6 @@ class HeadlessSimulator:
                 s.brake_front_pct = 0
                 s.brake_rear_pct = 0
                 s.tc_active = False          # sem acelerador durante queda
-                s.side_stand_down = False    # mota em queda — descanso levantado
                 if s._queda_timer >= self.th_confirmacao:
                     s._queda_confirmed = True
             else:
@@ -631,10 +702,10 @@ class HeadlessSimulator:
                 s.gear = 0
                 s.throttle_pct = 0
                 s.roll = self.th_roll if s.roll >= 0 else -self.th_roll
+                s.g_force = round(random.uniform(0.1, 0.4), 2)  # mota no chão — G baixo
                 s.oil_pressure_bar = max(0.0, lerp(s.oil_pressure_bar, 0.0, 0.5))
                 s.abs_active = False
                 s.tc_active = False
-                s.side_stand_down = False
 
         if s.flag_alternador:
             s.voltagem = max(9.0, s.voltagem - random.uniform(0.15, 0.25))
@@ -643,7 +714,7 @@ class HeadlessSimulator:
             s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
-        # ── 16. GPS ──────────────────────────────────────────────────
+        # ── 15. GPS ──────────────────────────────────────────────────
         if self.route_cursor is not None and s.velocidade > 1:
             speed_ms = s.velocidade / 3.6
             dist_m = speed_ms * PUBLISH_INTERVAL
@@ -658,7 +729,7 @@ class HeadlessSimulator:
             if self.route_cursor.finished:
                 s._target_vel = 0.0
 
-        # ── 17. Arredondar ───────────────────────────────────────────
+        # ── 16. Arredondar ───────────────────────────────────────────
         vel_out   = round(s.velocidade, 1)
         rpm_out   = int(round(s.rpm))
         temp_out  = round(s.temp_motor, 1)
@@ -672,7 +743,7 @@ class HeadlessSimulator:
         accel_y = math.sin(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
         accel_z = math.cos(math.radians(roll_out)) + random.uniform(-0.02, 0.02)
 
-        # ── 18. Payload ──────────────────────────────────────────────
+        # ── 17. Payload ──────────────────────────────────────────────
         # Estrutura alinhada com o contrato do backend (telemetry.model.ts)
         payload = {
             "telemetry": {
@@ -696,7 +767,6 @@ class HeadlessSimulator:
             "active_safety": {
                 "abs_active":      s.abs_active,
                 "tc_active":       s.tc_active,
-                "side_stand_down": s.side_stand_down,
             },
             "health": {
                 "oil_pressure_bar":        round(s.oil_pressure_bar, 1),
@@ -707,15 +777,13 @@ class HeadlessSimulator:
                 "latitude":  round(s.lat, 6),
                 "longitude": round(s.lng, 6),
             },
-            "environment": {
-                "ambient_light_lux": round(s.ambient_light_lux),
-            },
             "system": {
-                "device_id":    DEVICE_ID,
-                "moto_model":   self.perfil_nome,
-                "event_status": evento,
-                "tick":         self._tick_count,
-                "timestamp":    datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "device_id":       DEVICE_ID,
+                "moto_model":      self.perfil_nome,
+                "event_status":    evento,
+                "tick":            self._tick_count,
+                "timestamp":       datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "speed_limit_kmh": self.route_cursor.legal_speed_limit_kmh() if self.route_cursor else 50.0,
             },
         }
 

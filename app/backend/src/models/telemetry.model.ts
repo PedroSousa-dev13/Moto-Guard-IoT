@@ -28,7 +28,6 @@ export interface IMUData {
 export interface ActiveSafety {
   abs_active: boolean;
   tc_active: boolean;
-  side_stand_down: boolean;
 }
 
 export interface HealthData {
@@ -48,6 +47,7 @@ export interface SystemData {
   event_status: string;
   tick: number;
   timestamp: string;
+  speed_limit_kmh?: number;
 }
 
 /** Payload completo recebido do simulador via MQTT */

@@ -24,7 +24,7 @@ export type TripFeedTripLite = {
   maxSpeedKmh: number | null;
   maxRollDeg: number | null;
   maxGForce: number | null;
-  motorcycle: { id: string; name: string; brand: string | null } | null;
+  motorcycle: { id: string; name: string; brand: string | null; category?: string | null } | null;
   profile?: {
     maxSpeedKmh: number;
     typicalMaxRollDeg: number;
@@ -42,7 +42,7 @@ export type TripFeedItem = {
   distanceKm: number | null;
   avgSpeedKmh: number | null;
   maxSpeedKmh: number | null;
-  motorcycle: { id: string; name: string; brand: string | null } | null;
+  motorcycle: { id: string; name: string; brand: string | null; category?: string | null } | null;
   eventCounts: {
     total: number;
     bySeverity: Record<EventSeverity, number>;

@@ -121,9 +121,13 @@ export const MotorcycleScalarFieldEnum = {
   profileId: 'profileId',
   name: 'name',
   brand: 'brand',
+  model: 'model',
   year: 'year',
+  plate: 'plate',
+  category: 'category',
   deviceId: 'deviceId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type MotorcycleScalarFieldEnum = (typeof MotorcycleScalarFieldEnum)[keyof typeof MotorcycleScalarFieldEnum]

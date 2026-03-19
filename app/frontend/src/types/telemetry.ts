@@ -27,7 +27,6 @@ export interface IMUData {
 export interface ActiveSafety {
   abs_active: boolean;
   tc_active: boolean;
-  side_stand_down: boolean;
 }
 
 export interface HealthData {
@@ -41,16 +40,13 @@ export interface LocationData {
   longitude: number;
 }
 
-export interface EnvironmentData {
-  ambient_light_lux: number;
-}
-
 export interface SystemData {
   device_id: string;
   moto_model: string;
   event_status: string;
   tick: number;
   timestamp: string;
+  speed_limit_kmh?: number;
 }
 
 /** Payload completo recebido do simulador via MQTT */
@@ -60,7 +56,6 @@ export interface TelemetryPayload {
   active_safety: ActiveSafety;
   health: HealthData;
   location: LocationData;
-  environment: EnvironmentData;
   system: SystemData;
 }
 
