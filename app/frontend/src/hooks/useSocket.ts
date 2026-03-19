@@ -15,6 +15,8 @@ import type {
   AlertEvent,
   TripSocketEvent,
 } from "../types/telemetry";
+import { pushAlert } from "../utils/alerts";
+import { loadSettings } from "../utils/settings";
 
 function getStoredUserId(): string | null {
   const rememberMe = localStorage.getItem("rememberMe") === "true";
@@ -132,6 +134,27 @@ export function useSocket() {
     socket.on("alert", (data: AlertEvent) => {
       const status = data.status.replace(/_/g, " ");
       addLog(`ALERTA [${status}] ${data.motoModel} (${data.deviceId})`, "#f97316");
+
+      const settings = loadSettings();
+      if (settings.alerts.enabled) {
+        const id = `${data.deviceId}:${data.timestamp}:${data.status}`;
+        const severity = data.status.includes("CRASH") || data.status.includes("FALL")
+          ? "CRITICAL"
+          : data.status.includes("OVER") || data.status.includes("ALT")
+            ? "WARNING"
+            : "INFO";
+        pushAlert({
+          id,
+          title: status,
+          message: `Alerta emitido por ${data.motoModel} (${data.deviceId})`,
+          severity,
+          status: "unread",
+          timestamp: data.timestamp,
+          deviceId: data.deviceId,
+          motoModel: data.motoModel,
+          meta: data as unknown as Record<string, unknown>,
+        });
+      }
     });
 
     socket.on("trip_started", (data: TripSocketEvent) => {

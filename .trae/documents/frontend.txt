@@ -1,0 +1,36 @@
+BACKLOG FRONTEND — CONSOLIDADO (pendente)
+
+P0 — Analytics, Alertas, Settings, alinhar Dashboard
+- Routing
+  - Criar/validar rotas: /dashboard, /analytics, /alertas, /settings (e redirect / -> /dashboard)
+  - Garantir navegação global consistente (top bar)
+
+- Dashboard (alinhar)
+  - Padronizar grelha de cards (margens, alturas, padding, headings)
+  - Normalizar estados (loading/empty/error) e placeholders
+  - Rever consistência de tipografia e hierarquia visual
+
+- Analytics
+  - Implementar filtro por intervalo temporal (presets + custom)
+  - Implementar componentes de gráficos (layout em cards)
+  - Lidar com estados: loading/empty/error
+
+- Alertas
+  - Implementar lista (ordem recente) com filtros mínimos (status/severidade)
+  - Implementar detalhe do alerta (master-detail desktop; fluxo mobile)
+  - Implementar ação “marcar como lido/reconhecido” e refletir na lista
+
+- Settings
+  - Implementar formulário por secções (Aparência/Unidades/Preferências de alertas)
+  - Implementar carregar + guardar + feedback (sucesso/erro)
+  - Validar inputs essenciais e bloquear double-submit
+
+- Integração de dados
+  - Ligar Dashboard/Analytics/Alertas/Settings aos endpoints existentes (contratos a validar)
+  - Normalizar tratamento de erros e retries
+
+P1 (depois do P0)
+- Paginação e/ou virtualização na lista de alertas
+- Exportação (CSV/PNG) em Analytics
+- Melhorias de acessibilidade (teclado, foco, contraste) e testes básicos
+- Preferências avançadas (ex.: configurações mais detalhadas de alertas)

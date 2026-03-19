@@ -10,6 +10,9 @@ import TripDetail from './pages/TripDetail';
 import Gpx from './pages/Gpx';
 import Map from './pages/Map';
 import SimulatorContexts from './pages/SimulatorContexts';
+import Analytics from './pages/Analytics';
+import Alertas from './pages/Alertas';
+import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -54,6 +57,21 @@ function App() {
               <Route path="/simulator-contexts" element={
                 <ProtectedRoute>
                   <SimulatorContexts />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/alertas" element={
+                <ProtectedRoute>
+                  <Alertas />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={
