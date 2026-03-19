@@ -205,3 +205,53 @@
   color: rgba(255, 255, 255, 0.3);
   font-style: italic;
 }
+
+.speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.speed-label {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.25rem;
+  white-space: nowrap;
+}
+
+.btn-speed {
+  flex: 1;
+  padding: 0.35rem 0;
+  background: rgba(51, 181, 229, 0.1);
+  border: 1px solid rgba(51, 181, 229, 0.25);
+  border-radius: 0.5rem;
+  color: var(--blue-primary, #33b5e5);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.btn-speed:hover:not(:disabled) {
+  background: rgba(51, 181, 229, 0.2);
+}
+
+.btn-speed:active:not(:disabled) {
+  background: rgba(51, 181, 229, 0.35);
+  transform: scale(0.96);
+}
+
+.btn-speed:disabled,
+.btn-speed.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

@@ -194,13 +194,14 @@ class RouteCursor:
 
     def speed_limit_kmh(self, steps: int = 8) -> float | None:
         max_curve = self.max_curve_deg(steps=steps)
+        # Thresholds mais altos para não travar em rotas OSRM (waypoints densos)
+        if max_curve > 90:
+            return 40.0   # curva muito fechada (quase inversão)
         if max_curve > 65:
-            return 40.0
-        if max_curve > 40:
-            return 65.0
-        if max_curve > 22:
-            return 90.0
-        return None
+            return 65.0   # curva fechada
+        if max_curve > 45:
+            return 90.0   # curva moderada
+        return None       # recta ou curva suave — sem limite extra
 
     def legal_speed_limit_kmh(self) -> float:
         """

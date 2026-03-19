@@ -28,6 +28,14 @@ interface MapCardProps {
 const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
+// Rota padrão: Vila Real, ~1.5 km, ~80 segundos a 1x (velocidade média ~65 km/h)
+// Percurso: Centro → Av. Carvalho Araújo → Rotunda Norte
+const DEFAULT_ROUTE = {
+  start: { latitude: 41.2951, longitude: -7.7463 },
+  end:   { latitude: 41.3045, longitude: -7.7388 },
+  loop: false,
+};
+
 export default function MapCard({ location, telemetry, imu, msgCount, resetSignal, sendCommand }: MapCardProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -432,9 +440,16 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
             <button
               className="btn btn-sm"
               onClick={() => {
-                sendCommand({ acao: "reset_rota" });
-                localStorage.removeItem("sim_route");
+                localStorage.setItem("sim_route", JSON.stringify(DEFAULT_ROUTE));
+                sendCommand({ acao: "definir_rota", route: DEFAULT_ROUTE });
                 clearRouteSelection();
+                if (trailRef.current) {
+                  trailPointsRef.current = [];
+                  trailRef.current.setLatLngs([]);
+                }
+                if (mapRef.current) {
+                  mapRef.current.setView([DEFAULT_ROUTE.start.latitude, DEFAULT_ROUTE.start.longitude], 15);
+                }
               }}
             >
               <MapIcon size={16} />

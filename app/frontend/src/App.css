@@ -1451,8 +1451,38 @@ button {
   border: 1px solid var(--border);
 }
 
-.command-card-full {
-  width: 100%;
+/* CommandPanel fills its container height, log takes remaining space */
+.command-card-container > * {
+  height: 100%;
+}
+
+.command-card-container .command-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.command-card-container .log-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.command-card-container .log-area {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Speed controls below the 3D twin */
+.twin-speed-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.twin-speed-controls .ff-btn {
+  flex: 1;
 }
 
 @media (max-width: 1024px) {
@@ -1893,6 +1923,48 @@ button {
 .log-section {
   border-top: 1px solid var(--border);
   padding-top: 16px;
+}
+
+/* Fast Forward */
+.ff-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-bottom: 16px;
+}
+
+.ff-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ff-btn {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  background: var(--surface-2, #1e293b);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.ff-btn:not(:disabled):hover {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+.ff-btn-active {
+  background: rgba(167, 139, 250, 0.15) !important;
+  border-color: #a78bfa !important;
+  color: #a78bfa !important;
+}
+
+.ff-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 4px 0 8px;
 }
 
 .log-area {

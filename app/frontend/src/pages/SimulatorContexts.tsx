@@ -134,7 +134,7 @@ export default function SimulatorContexts() {
       <div className="dashboard">
         <div className="hero-row">
           <div className="twin-card-container">
-            <MotorcycleDigitalTwin data={telemetry} />
+          <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommand} running={running} />
           </div>
           <div className="map-card-container">
             <MapCard
@@ -176,6 +176,7 @@ export default function SimulatorContexts() {
             }}
           />
         </div>
+
       </div>
 
       <div className="stats-footer">
