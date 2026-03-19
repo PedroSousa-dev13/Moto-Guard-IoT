@@ -1,78 +1,35 @@
-import { useEffect, useRef, useState } from "react";
-import { Activity, Clock, Database, Settings2, Wifi } from "lucide-react";
+import React, { useEffect, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
+import GaugeCard from "../components/GaugeCard";
+import TempVoltCard from "../components/TempVoltCard";
+import IMUCard from "../components/IMUCard";
 import MapCard from "../components/MapCard";
+import StatusCard from "../components/StatusCard";
 import CommandPanel from "../components/CommandPanel";
+import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
-import type { SimulatorCommand } from "../types/telemetry";
-
-type ToastState = { message: string; type: "success" | "error" | "info" };
+import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
 
 export default function SimulatorContexts() {
-  const {
-    telemetry,
-    msgCount,
-    logs,
-    status,
-    sendCommand,
-    addLog,
-    devices,
-    activeDeviceId,
-    setActiveDeviceId,
-    tripEndedSignal,
-    resetSimulationView,
-  } = useSocket();
-
-  const [mapResetSignal, setMapResetSignal] = useState(0);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const lastToastMessageRef = useRef<string | null>(null);
-
-  const running = status.ws && !!telemetry;
+  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
+  const [mapResetSignal, setMapResetSignal] = useState(0);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  const safeSendCommand = (cmd: SimulatorCommand) => {
-    if (!status.ws) {
-      const message = "Sem ligação ao servidor. Não é possível enviar comandos.";
-      addLog(message, "#ef4444");
-      setToast({ message, type: "error" });
-      return;
-    }
-    sendCommand(cmd);
-  };
-
-  useEffect(() => {
-    document.title = "Simulador — MotoGuard";
-  }, []);
+  const running = status.ws && !!telemetry;
 
   useEffect(() => {
     if (!tripEndedSignal) return;
     setToast((prev) =>
       prev?.message === "Simulação terminada"
         ? prev
-        : { message: "Simulação terminada", type: "success" },
+        : { message: "Simulação terminada", type: "success" }
     );
     setMapResetSignal((v) => v + 1);
     resetSimulationView();
   }, [tripEndedSignal, resetSimulationView]);
-
-  useEffect(() => {
-    const newest = logs[0];
-    if (!newest) return;
-    if (newest.color !== "#ef4444") return;
-    if (newest.message === lastToastMessageRef.current) return;
-    if (!newest.message.startsWith("Erro:")) return;
-
-    lastToastMessageRef.current = newest.message;
-    setToast({ message: newest.message, type: "error" });
-  }, [logs]);
-
-  const banner = !status.ws
-    ? { type: "danger" as const, text: "Sem ligação ao servidor (WebSocket)." }
-    : !status.hasData
-      ? { type: "warning" as const, text: "Ligado, mas sem telemetria. Confirma o simulador." }
-      : null;
 
   return (
     <div className="page page-full">
@@ -80,14 +37,14 @@ export default function SimulatorContexts() {
         <div className="header-main">
           <div className="page-title">
             <Activity className="title-icon" size={24} />
-            Simulador
+            Dashboard
           </div>
           <div className="page-subtitle">
             <Clock size={14} style={{ marginRight: 4 }} />
             {lastUpdate ? `Último update às ${lastUpdate}` : "A aguardar dados..."}
           </div>
         </div>
-
+        
         <div className="page-actions">
           {devices.length > 1 && (
             <div className="device-selector">
@@ -105,7 +62,7 @@ export default function SimulatorContexts() {
               </select>
             </div>
           )}
-
+          
           <div className="status-group">
             <span
               className={`pill ${status.mqtt ? "pill-success" : "pill-danger"}`}
@@ -132,34 +89,41 @@ export default function SimulatorContexts() {
         </div>
       </div>
 
-      {banner && (
-        <div
-          className={`sim-banner ${
-            banner.type === "danger"
-              ? "sim-banner-danger"
-              : "sim-banner-warning"
-          }`}
-          role="status"
-        >
-          {banner.text}
+      <div className="dashboard">
+        <div className="hero-row">
+          <div className="twin-card-container">
+            <MotorcycleDigitalTwin data={telemetry} />
+          </div>
+          <div className="map-card-container">
+            <MapCard
+              location={telemetry?.location ?? null}
+              telemetry={telemetry?.telemetry ?? null}
+              imu={telemetry?.imu ?? null}
+              msgCount={msgCount}
+              resetSignal={mapResetSignal}
+              sendCommand={sendCommand}
+            />
+          </div>
         </div>
-      )}
 
-      <div className="simulator-grid">
-        <div className="simulator-left">
-          <MapCard
-            location={telemetry?.location ?? null}
+        <div className="data-hub-grid">
+          <GaugeCard data={telemetry?.telemetry ?? null} />
+          <TempVoltCard
             telemetry={telemetry?.telemetry ?? null}
-            imu={telemetry?.imu ?? null}
-            msgCount={msgCount}
-            resetSignal={mapResetSignal}
-            sendCommand={safeSendCommand}
+            health={telemetry?.health ?? null}
+          />
+          <IMUCard data={telemetry?.imu ?? null} />
+          <StatusCard
+            system={telemetry?.system ?? null}
+            safety={telemetry?.active_safety ?? null}
+            health={telemetry?.health ?? null}
+            environment={telemetry?.environment ?? null}
           />
         </div>
 
-        <div className="simulator-right">
+        <div className="command-card-full">
           <CommandPanel
-            sendCommand={safeSendCommand}
+            sendCommand={sendCommand}
             addLog={addLog}
             logs={logs}
             running={running}
@@ -172,14 +136,23 @@ export default function SimulatorContexts() {
         </div>
       </div>
 
+      <div className="stats-footer">
+        <span>
+          Mensagens: <strong>{msgCount}</strong>
+        </span>
+        <span>
+          Último update:{" "}
+          <strong>
+            {lastUpdate ?? "—"}
+          </strong>
+        </span>
+      </div>
+
       {toast && (
         <Toast
           message={toast.message}
           type={toast.type}
-          onClose={() => {
-            setToast(null);
-            lastToastMessageRef.current = null;
-          }}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

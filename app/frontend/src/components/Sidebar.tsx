@@ -3,10 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { 
   LayoutDashboard, 
+  BarChart3,
+  Bell,
+  SlidersHorizontal,
   Map as MapIcon, 
   Route, 
   Compass, 
-  Settings, 
+  Cpu,
   User as UserIcon,
   LogOut,
   Bike
@@ -18,10 +21,13 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
+    { path: '/alertas', label: 'Alertas', icon: <Bell size={20} /> },
     { path: '/trips', label: 'Viagens', icon: <Route size={20} /> },
     { path: '/gpx', label: 'GPX', icon: <Compass size={20} /> },
     { path: '/map', label: 'Mapa', icon: <MapIcon size={20} /> },
-    { path: '/simulator-contexts', label: 'Simulador', icon: <Settings size={20} /> },
+    { path: '/simulator-contexts', label: 'Simulador', icon: <Cpu size={20} /> },
+    { path: '/settings', label: 'Settings', icon: <SlidersHorizontal size={20} /> },
     { path: '/profile', label: 'Perfil', icon: <UserIcon size={20} /> },
   ];
 
