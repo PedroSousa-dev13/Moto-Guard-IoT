@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import HomePage from './pages/HomePage';
@@ -14,10 +14,18 @@ import Analytics from './pages/Analytics';
 import Alertas from './pages/Alertas';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import Garage from './pages/Garage';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import './App.css';
 import './Layout.css';
+
+function HomeOrDashboard() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <HomePage />;
+}
 
 function App() {
   return (
@@ -28,7 +36,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HomeOrDashboard />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -72,6 +80,11 @@ function App() {
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              } />
+              <Route path="/garage" element={
+                <ProtectedRoute>
+                  <Garage />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

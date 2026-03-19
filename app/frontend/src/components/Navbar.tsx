@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Bike, User, Settings, LogOut, LogIn } from 'lucide-react';
+import { Bike, User, Settings, LogOut, LogIn, Bell } from 'lucide-react';
+import { loadAlerts } from '../utils/alerts';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const unreadCount = useMemo(() => {
+    if (!isAuthenticated) return 0;
+    return loadAlerts().filter((a) => a.status === "unread").length;
+  }, [isAuthenticated, location.pathname]);
 
   return (
     <nav className="navbar">
@@ -20,13 +26,19 @@ const Navbar: React.FC = () => {
       <div className="navbar-menu">
         {isAuthenticated ? (
           <>
+            <Link to="/alertas" className="nav-icon-link nav-bell" title="Alertas">
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="nav-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+              )}
+            </Link>
             <div className="navbar-user">
               <div className="user-avatar">
                 <User size={16} />
               </div>
               <span className="user-name">{user?.name}</span>
             </div>
-            <Link to="/profile" className="nav-icon-link" title="Perfil">
+            <Link to="/settings" className="nav-icon-link" title="Definições">
               <Settings size={20} />
             </Link>
             <button

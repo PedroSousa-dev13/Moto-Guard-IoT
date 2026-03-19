@@ -53,6 +53,12 @@ export const authAPI = {
   me: () =>
     api.get<User>('/auth/me'),
 
+  updateProfile: (data: { name?: string; email?: string }) =>
+    api.put<User>('/auth/profile', data),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put<{ message: string }>('/auth/change-password', { currentPassword, newPassword }),
+
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
 
