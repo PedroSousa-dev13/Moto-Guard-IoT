@@ -5,6 +5,7 @@
 // =============================================================================
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Bell, X, CheckCheck, ExternalLink } from "lucide-react";
 import { loadAlerts, saveAlerts, type AlertItem } from "../utils/alerts";
@@ -42,7 +43,9 @@ export default function NotificationCenter() {
   const { unreadCount, toast, dismissToast, markAllRead, markRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [dropdownPos, setDropdownPos] = useState({ top: 70, right: 24 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
 
   const refreshAlerts = useCallback(() => {
     setAlerts(loadAlerts().slice(0, 30));
@@ -59,13 +62,25 @@ export default function NotificationCenter() {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+          bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  const handleOpen = () => {
+    if (!open && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 10,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
+    setOpen((v) => !v);
+  };
 
   const handleItemClick = (alert: AlertItem) => {
     markRead(alert.id);
@@ -85,10 +100,11 @@ export default function NotificationCenter() {
   return (
     <>
       {/* ── Sino ── */}
-      <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}>
         <button
+          ref={bellRef}
           className="nav-icon-link nav-bell"
-          onClick={() => setOpen((v) => !v)}
+          onClick={handleOpen}
           aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} por ler` : ""}`}
           aria-expanded={open}
           aria-haspopup="true"
@@ -101,9 +117,15 @@ export default function NotificationCenter() {
           )}
         </button>
 
-        {/* ── Dropdown ── */}
-        {open && (
-          <div className="notif-dropdown" role="dialog" aria-label="Centro de notificações">
+        {/* ── Dropdown via Portal (escapa qualquer stacking context) ── */}
+        {open && createPortal(
+          <div
+            ref={dropdownRef}
+            className="notif-dropdown"
+            role="dialog"
+            aria-label="Centro de notificações"
+            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+          >
             <div className="notif-header">
               <span className="notif-title">Notificações</span>
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -196,7 +218,7 @@ export default function NotificationCenter() {
               </div>
             )}
           </div>
-        )}
+        , document.body)}
       </div>
 
       {/* ── Toast global ── */}
