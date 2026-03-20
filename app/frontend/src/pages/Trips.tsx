@@ -79,55 +79,21 @@ function scoreStyle(score: number) {
 
 // ─── Moto Card ────────────────────────────────────────────────────────────────
 
-function MotoCard({
-  moto,
-  selected,
-  tripCount,
-  onClick,
-}: {
-  moto: Motorcycle;
-  selected: boolean;
-  tripCount: number;
-  onClick: () => void;
+function MotoCard({ moto, selected, tripCount, onClick }: {
+  moto: Motorcycle; selected: boolean; tripCount: number; onClick: () => void;
 }) {
   const img = imageFromCategory(moto.category);
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        background: selected ? "rgba(79,70,229,0.12)" : "var(--surface)",
-        border: selected ? "2px solid #4f46e5" : "1.5px solid var(--border)",
-        borderRadius: 14,
-        overflow: "hidden",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "border-color 0.15s, background 0.15s",
-        minWidth: 160,
-        flex: "0 0 auto",
-      }}
-    >
-      <div style={{ width: "100%", height: 110, overflow: "hidden", background: "var(--surface-2)" }}>
-        <img
-          src={img}
-          alt={moto.category ?? moto.name}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
+    <button type="button" onClick={onClick} className={`moto-filter-card ${selected ? "selected" : ""}`}>
+      <div className="moto-filter-img">
+        <img src={img} alt={moto.category ?? moto.name}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       </div>
-      <div style={{ padding: "10px 12px 12px" }}>
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{moto.name}</div>
-        {moto.category && (
-          <div style={{ fontSize: 11, color: "#4f46e5", marginBottom: 4 }}>{moto.category}</div>
-        )}
-        <div style={{ fontSize: 11, color: "var(--muted)" }}>
-          {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-          {tripCount} viagem{tripCount !== 1 ? "s" : ""}
-        </div>
+      <div className="moto-filter-body">
+        <div className="moto-filter-name">{moto.name}</div>
+        {moto.category && <div className="moto-filter-cat">{moto.category}</div>}
+        <div className="moto-filter-sub">{[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}</div>
+        <div className="moto-filter-count">{tripCount} viagem{tripCount !== 1 ? "s" : ""}</div>
       </div>
     </button>
   );
@@ -295,38 +261,24 @@ export default function Trips() {
         </div>
       </div>
 
-      {/* Moto selector cards */}
       {motos.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Filtrar por mota
-          </div>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
-            {/* "Todas" card */}
-            <button
-              type="button"
-              onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                background: selectedMotoId === "ALL" ? "rgba(79,70,229,0.12)" : "var(--surface)",
-                border: selectedMotoId === "ALL" ? "2px solid #4f46e5" : "1.5px solid var(--border)",
-                borderRadius: 14, padding: "16px 20px", cursor: "pointer", minWidth: 100,
-                transition: "border-color 0.15s, background 0.15s",
-              }}
-            >
-              <Bike size={28} style={{ color: selectedMotoId === "ALL" ? "#4f46e5" : "var(--muted)", marginBottom: 8 }} />
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Todas</div>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{view === "FEED" ? feed.length : trips.length} viagens</div>
+        <div className="moto-filter-section">
+          <div className="section-label" style={{ marginBottom: 10 }}>Filtrar por mota</div>
+          <div className="moto-filter-scroll">
+            <button type="button" onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
+              className={`moto-filter-card moto-filter-all ${selectedMotoId === "ALL" ? "selected" : ""}`}>
+              <div className="moto-filter-img moto-filter-img-all">
+                <Bike size={28} style={{ color: selectedMotoId === "ALL" ? "var(--accent)" : "var(--muted)" }} />
+              </div>
+              <div className="moto-filter-body">
+                <div className="moto-filter-name">Todas</div>
+                <div className="moto-filter-count">{view === "FEED" ? feed.length : trips.length} viagens</div>
+              </div>
             </button>
-
             {motos.map((moto) => (
-              <MotoCard
-                key={moto.id}
-                moto={moto}
-                selected={selectedMotoId === moto.id}
+              <MotoCard key={moto.id} moto={moto} selected={selectedMotoId === moto.id}
                 tripCount={tripCountForMoto(moto.id)}
-                onClick={() => { setSelectedMotoId(moto.id); setPage(1); setExpandedId(null); }}
-              />
+                onClick={() => { setSelectedMotoId(moto.id); setPage(1); setExpandedId(null); }} />
             ))}
           </div>
         </div>
