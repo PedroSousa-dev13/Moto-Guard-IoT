@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card";
 import {
   loadAlerts,
   saveAlerts,
+  pushAlert,
   ALERT_TYPE_LABELS,
   type AlertItem,
   type AlertSeverity,
@@ -11,7 +12,9 @@ import {
   type AlertType,
 } from "../utils/alerts";
 import { loadSettings } from "../utils/settings";
-import { Bell, Search, Filter, X } from "lucide-react";
+import { alertsAPI } from "../services/api";
+import { useNotifications } from "../hooks/useNotifications";
+import { RefreshCw } from "lucide-react";
 
 type StatusFilter = "all" | "unread" | "ack";
 type SeverityFilter = "all" | "INFO" | "WARNING" | "CRITICAL";
@@ -63,7 +66,11 @@ function typeIcon(type?: AlertType): string {
 
 export default function Alertas() {
   const navigate = useNavigate();
+  const { markAllRead } = useNotifications();
   const [alerts, setAlerts] = useState<AlertItem[]>(() => loadAlerts());
+  const [backendAlerts, setBackendAlerts] = useState<AlertItem[]>([]);
+  const [backendLoading, setBackendLoading] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [severity, setSeverity] = useState<SeverityFilter>("all");
@@ -75,33 +82,83 @@ export default function Alertas() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
+  // Carregar histórico persistido do backend
+  const loadBackendAlerts = useCallback(async () => {
+    setBackendLoading(true);
+    setBackendError(null);
+    try {
+      const res = await alertsAPI.getAll({ limit: 200 });
+      const mapped: AlertItem[] = res.data.map((ev: any) => ({
+        id: `backend:${ev.id}`,
+        title: ev.type.replace(/_/g, " "),
+        message: ev.message ?? ev.type,
+        severity: ev.severity as AlertSeverity,
+        status: "ack" as AlertStatus, // eventos do backend já são histórico
+        timestamp: ev.occurredAt,
+        deviceId: ev.trip?.motorcycle?.deviceId ?? undefined,
+        motoModel: ev.trip?.motorcycle?.name ?? undefined,
+        tripId: ev.tripId,
+        lat: ev.latitude ?? undefined,
+        lng: ev.longitude ?? undefined,
+        meta: {
+          speedKmh: ev.speedKmh,
+          rollDeg: ev.rollDeg,
+          gForce: ev.gForce,
+          engineTempC: ev.engineTempC,
+          voltage: ev.voltage,
+          source: ev.trip?.source,
+        },
+      }));
+      setBackendAlerts(mapped);
+    } catch {
+      setBackendError("Não foi possível carregar o histórico do servidor.");
+    } finally {
+      setBackendLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBackendAlerts();
+  }, [loadBackendAlerts]);
+
   useEffect(() => {
     document.title = "Alertas & Eventos — MotoGuard";
   }, []);
 
+  // Subscrever eventos Socket.IO em tempo real
   useEffect(() => {
     const onUpdate = () => setAlerts(loadAlerts());
     window.addEventListener("motoguard:alerts", onUpdate);
     return () => window.removeEventListener("motoguard:alerts", onUpdate);
   }, []);
 
+  // Combinar alertas locais (tempo real) com histórico do backend
+  const allAlerts = useMemo(() => {
+    const localIds = new Set(alerts.map((a) => a.id));
+    const merged = [
+      ...alerts,
+      ...backendAlerts.filter((a) => !localIds.has(a.id)),
+    ];
+    return merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [alerts, backendAlerts]);
+
   const devices = useMemo(() => {
     const set = new Set<string>();
-    alerts.forEach((a) => { if (a.deviceId) set.add(a.deviceId); });
+    allAlerts.forEach((a) => { if (a.deviceId) set.add(a.deviceId); });
     return Array.from(set).sort();
-  }, [alerts]);
+  }, [allAlerts]);
 
   const types = useMemo(() => {
     const set = new Set<AlertType>();
-    alerts.forEach((a) => { if (a.type) set.add(a.type); });
+    allAlerts.forEach((a) => { if (a.type) set.add(a.type); });
     return Array.from(set).sort();
-  }, [alerts]);
+  }, [allAlerts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const fromTs = dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : null;
     const toTs = dateTo ? new Date(dateTo + "T23:59:59").getTime() : null;
-    return alerts
+    return allAlerts
       .filter((a) => status === "all" || a.status === status)
       .filter((a) => severity === "all" || a.severity === severity)
       .filter((a) => type === "all" || a.type === type)
@@ -132,21 +189,21 @@ export default function Alertas() {
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
-    return alerts.find((a) => a.id === selectedId) ?? null;
-  }, [alerts, selectedId]);
+    return allAlerts.find((a) => a.id === selectedId) ?? null;
+  }, [allAlerts, selectedId]);
 
   useEffect(() => {
     if (!selectedId) return;
     const settings = loadSettings();
     if (!settings.alerts.autoAckOnOpen) return;
-    const current = alerts.find((a) => a.id === selectedId);
+    const current = allAlerts.find((a) => a.id === selectedId);
     if (!current || current.status !== "unread") return;
     const out = alerts.map<AlertItem>((a) =>
       a.id === selectedId ? { ...a, status: "ack" as AlertStatus } : a,
     );
     setAlerts(out);
     saveAlerts(out);
-  }, [alerts, selectedId]);
+  }, [allAlerts, alerts, selectedId]);
 
   function setAlert(next: AlertItem) {
     const out = alerts.map((a) => (a.id === next.id ? next : a));
@@ -175,11 +232,31 @@ export default function Alertas() {
             Alertas & Eventos
           </div>
           <div className="page-subtitle">
-            {alerts.filter((a) => a.status === "unread").length} por ler
+            {allAlerts.filter((a) => a.status === "unread").length} por ler
             &nbsp;·&nbsp; {filtered.length} filtrados
+            &nbsp;·&nbsp; {allAlerts.length} total
+            {backendLoading && <span style={{ color: "var(--accent)", fontSize: "0.78rem" }}>· a carregar...</span>}
+            {backendError && <span style={{ color: "var(--red)", fontSize: "0.78rem" }}>· {backendError}</span>}
           </div>
         </div>
         <div className="page-actions">
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={loadBackendAlerts}
+            disabled={backendLoading}
+            title="Recarregar histórico do servidor"
+          >
+            <RefreshCw size={14} className={backendLoading ? "spin" : ""} />
+            Atualizar
+          </button>
+          {allAlerts.filter((a) => a.status === "unread").length > 0 && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => { markAllRead(); setAlerts(loadAlerts()); }}
+            >
+              Marcar todas lidas
+            </button>
+          )}
           <button
             className={`btn btn-sm ${viewMode === "list" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => setViewMode("list")}
@@ -312,9 +389,16 @@ export default function Alertas() {
                       <div className="alert-item-left">
                         <div className="alert-item-header">
                           <span className="alert-item-title">{typeIcon(a.type)} {a.title}</span>
-                          <span className="badge-pill" style={{ color: severityColor(a.severity), background: "transparent", border: `1px solid ${severityColor(a.severity)}40` }}>
-                            {a.severity}
-                          </span>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {(a.meta as any)?.predictive && (
+                              <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)", border: "1px solid var(--accent)30", fontSize: "0.68rem" }}>
+                                📈 Preditivo
+                              </span>
+                            )}
+                            <span className="badge-pill" style={{ color: severityColor(a.severity), background: "transparent", border: `1px solid ${severityColor(a.severity)}40` }}>
+                              {a.severity}
+                            </span>
+                          </div>
                         </div>
                         <div className="alert-item-meta">
                           {formatDateTime(a.timestamp)}
@@ -431,6 +515,11 @@ export default function Alertas() {
                     <span className="badge-pill" style={{ color: severityColor(selected.severity), border: `1px solid ${severityColor(selected.severity)}40`, background: "transparent" }}>
                       {selected.severity}
                     </span>
+                    {(selected.meta as any)?.predictive && (
+                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
+                        📈 Alerta Preditivo
+                      </span>
+                    )}
                     {selected.type && (
                       <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
                         {ALERT_TYPE_LABELS[selected.type]}

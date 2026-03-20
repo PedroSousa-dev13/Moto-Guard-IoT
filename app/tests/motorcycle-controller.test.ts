@@ -51,7 +51,7 @@ describe("createMotorcycle", () => {
     vi.mocked(prisma.motorcycleProfile.findUnique).mockResolvedValue(null);
     const req = {
       userId: "u1",
-      body: { name: "MT-07", profileId: "missing-profile" },
+      body: { name: "MT-07", category: "Naked", profileId: "missing-profile" },
     } as any;
     const res = mockResponse();
 
@@ -71,6 +71,7 @@ describe("createMotorcycle", () => {
         name: "MT-07",
         brand: "Yamaha",
         year: "2024",
+        category: "Naked",
         profileId: "p1",
         deviceId: "dev-77",
       },
@@ -85,6 +86,9 @@ describe("createMotorcycle", () => {
         name: "MT-07",
         brand: "Yamaha",
         year: 2024,
+        model: null,
+        plate: null,
+        category: "Naked",
         profileId: "p1",
         deviceId: "dev-77",
       },
@@ -96,7 +100,7 @@ describe("createMotorcycle", () => {
 
   it("returns 500 when create throws", async () => {
     vi.mocked(prisma.motorcycle.create).mockRejectedValue(new Error("db issue"));
-    const req = { userId: "u1", body: { name: "MT-07" } } as any;
+    const req = { userId: "u1", body: { name: "MT-07", category: "Naked" } } as any;
     const res = mockResponse();
 
     await createMotorcycle(req, res as any);

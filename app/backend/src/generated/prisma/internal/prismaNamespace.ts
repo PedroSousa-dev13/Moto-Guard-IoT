@@ -898,6 +898,8 @@ export const UserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   name: 'name',
   resetToken: 'resetToken',
+  emergencyContact: 'emergencyContact',
+  resendApiKey: 'resendApiKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -963,6 +965,8 @@ export const TripScalarFieldEnum = {
   maxRollDeg: 'maxRollDeg',
   maxGForce: 'maxGForce',
   status: 'status',
+  mlScore: 'mlScore',
+  mlModelVersion: 'mlModelVersion',
   createdAt: 'createdAt'
 } as const
 

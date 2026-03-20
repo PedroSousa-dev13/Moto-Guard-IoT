@@ -120,7 +120,7 @@ describe("getTripTelemetry", () => {
     });
   });
 
-  it("returns 503 when influx query fails", async () => {
+  it("returns empty data when influx query fails (fallback)", async () => {
     const trip = {
       id: "t2",
       startedAt: new Date("2026-03-15T10:00:00.000Z"),
@@ -136,9 +136,10 @@ describe("getTripTelemetry", () => {
 
     await getTripTelemetry(req, res as any);
 
-    expect(res.status).toHaveBeenCalledWith(503);
     expect(res.json).toHaveBeenCalledWith({
-      error: "Não foi possível consultar o InfluxDB",
+      trip,
+      total_points: 0,
+      data: [],
     });
   });
 

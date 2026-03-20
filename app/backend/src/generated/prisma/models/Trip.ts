@@ -32,6 +32,7 @@ export type TripAvgAggregateOutputType = {
   avgSpeedKmh: number | null
   maxRollDeg: number | null
   maxGForce: number | null
+  mlScore: number | null
 }
 
 export type TripSumAggregateOutputType = {
@@ -40,6 +41,7 @@ export type TripSumAggregateOutputType = {
   avgSpeedKmh: number | null
   maxRollDeg: number | null
   maxGForce: number | null
+  mlScore: number | null
 }
 
 export type TripMinAggregateOutputType = {
@@ -55,6 +57,8 @@ export type TripMinAggregateOutputType = {
   maxRollDeg: number | null
   maxGForce: number | null
   status: $Enums.TripStatus | null
+  mlScore: number | null
+  mlModelVersion: string | null
   createdAt: Date | null
 }
 
@@ -71,6 +75,8 @@ export type TripMaxAggregateOutputType = {
   maxRollDeg: number | null
   maxGForce: number | null
   status: $Enums.TripStatus | null
+  mlScore: number | null
+  mlModelVersion: string | null
   createdAt: Date | null
 }
 
@@ -87,6 +93,8 @@ export type TripCountAggregateOutputType = {
   maxRollDeg: number
   maxGForce: number
   status: number
+  mlScore: number
+  mlModelVersion: number
   createdAt: number
   _all: number
 }
@@ -98,6 +106,7 @@ export type TripAvgAggregateInputType = {
   avgSpeedKmh?: true
   maxRollDeg?: true
   maxGForce?: true
+  mlScore?: true
 }
 
 export type TripSumAggregateInputType = {
@@ -106,6 +115,7 @@ export type TripSumAggregateInputType = {
   avgSpeedKmh?: true
   maxRollDeg?: true
   maxGForce?: true
+  mlScore?: true
 }
 
 export type TripMinAggregateInputType = {
@@ -121,6 +131,8 @@ export type TripMinAggregateInputType = {
   maxRollDeg?: true
   maxGForce?: true
   status?: true
+  mlScore?: true
+  mlModelVersion?: true
   createdAt?: true
 }
 
@@ -137,6 +149,8 @@ export type TripMaxAggregateInputType = {
   maxRollDeg?: true
   maxGForce?: true
   status?: true
+  mlScore?: true
+  mlModelVersion?: true
   createdAt?: true
 }
 
@@ -153,6 +167,8 @@ export type TripCountAggregateInputType = {
   maxRollDeg?: true
   maxGForce?: true
   status?: true
+  mlScore?: true
+  mlModelVersion?: true
   createdAt?: true
   _all?: true
 }
@@ -256,6 +272,8 @@ export type TripGroupByOutputType = {
   maxRollDeg: number | null
   maxGForce: number | null
   status: $Enums.TripStatus
+  mlScore: number | null
+  mlModelVersion: string | null
   createdAt: Date
   _count: TripCountAggregateOutputType | null
   _avg: TripAvgAggregateOutputType | null
@@ -295,6 +313,8 @@ export type TripWhereInput = {
   maxRollDeg?: Prisma.FloatNullableFilter<"Trip"> | number | null
   maxGForce?: Prisma.FloatNullableFilter<"Trip"> | number | null
   status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  mlScore?: Prisma.FloatNullableFilter<"Trip"> | number | null
+  mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>
@@ -315,6 +335,8 @@ export type TripOrderByWithRelationInput = {
   maxRollDeg?: Prisma.SortOrderInput | Prisma.SortOrder
   maxGForce?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  mlModelVersion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   motorcycle?: Prisma.MotorcycleOrderByWithRelationInput
@@ -338,6 +360,8 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   maxRollDeg?: Prisma.FloatNullableFilter<"Trip"> | number | null
   maxGForce?: Prisma.FloatNullableFilter<"Trip"> | number | null
   status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  mlScore?: Prisma.FloatNullableFilter<"Trip"> | number | null
+  mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>
@@ -358,6 +382,8 @@ export type TripOrderByWithAggregationInput = {
   maxRollDeg?: Prisma.SortOrderInput | Prisma.SortOrder
   maxGForce?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  mlModelVersion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.TripCountOrderByAggregateInput
   _avg?: Prisma.TripAvgOrderByAggregateInput
@@ -382,6 +408,8 @@ export type TripScalarWhereWithAggregatesInput = {
   maxRollDeg?: Prisma.FloatNullableWithAggregatesFilter<"Trip"> | number | null
   maxGForce?: Prisma.FloatNullableWithAggregatesFilter<"Trip"> | number | null
   status?: Prisma.EnumTripStatusWithAggregatesFilter<"Trip"> | $Enums.TripStatus
+  mlScore?: Prisma.FloatNullableWithAggregatesFilter<"Trip"> | number | null
+  mlModelVersion?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string
 }
 
@@ -396,6 +424,8 @@ export type TripCreateInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
@@ -416,6 +446,8 @@ export type TripUncheckedCreateInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
   gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
@@ -432,6 +464,8 @@ export type TripUpdateInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
@@ -452,6 +486,8 @@ export type TripUncheckedUpdateInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
   gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
@@ -470,6 +506,8 @@ export type TripCreateManyInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
 }
 
@@ -484,6 +522,8 @@ export type TripUpdateManyMutationInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -500,6 +540,8 @@ export type TripUncheckedUpdateManyInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -526,6 +568,8 @@ export type TripCountOrderByAggregateInput = {
   maxRollDeg?: Prisma.SortOrder
   maxGForce?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrder
+  mlModelVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -535,6 +579,7 @@ export type TripAvgOrderByAggregateInput = {
   avgSpeedKmh?: Prisma.SortOrder
   maxRollDeg?: Prisma.SortOrder
   maxGForce?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrder
 }
 
 export type TripMaxOrderByAggregateInput = {
@@ -550,6 +595,8 @@ export type TripMaxOrderByAggregateInput = {
   maxRollDeg?: Prisma.SortOrder
   maxGForce?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrder
+  mlModelVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -566,6 +613,8 @@ export type TripMinOrderByAggregateInput = {
   maxRollDeg?: Prisma.SortOrder
   maxGForce?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrder
+  mlModelVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -575,6 +624,7 @@ export type TripSumOrderByAggregateInput = {
   avgSpeedKmh?: Prisma.SortOrder
   maxRollDeg?: Prisma.SortOrder
   maxGForce?: Prisma.SortOrder
+  mlScore?: Prisma.SortOrder
 }
 
 export type TripScalarRelationFilter = {
@@ -725,6 +775,8 @@ export type TripCreateWithoutUserInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
   events?: Prisma.TripEventCreateNestedManyWithoutTripInput
@@ -743,6 +795,8 @@ export type TripUncheckedCreateWithoutUserInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
   gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
@@ -790,6 +844,8 @@ export type TripScalarWhereInput = {
   maxRollDeg?: Prisma.FloatNullableFilter<"Trip"> | number | null
   maxGForce?: Prisma.FloatNullableFilter<"Trip"> | number | null
   status?: Prisma.EnumTripStatusFilter<"Trip"> | $Enums.TripStatus
+  mlScore?: Prisma.FloatNullableFilter<"Trip"> | number | null
+  mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
 }
 
@@ -804,6 +860,8 @@ export type TripCreateWithoutMotorcycleInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   events?: Prisma.TripEventCreateNestedManyWithoutTripInput
@@ -822,6 +880,8 @@ export type TripUncheckedCreateWithoutMotorcycleInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
   gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
@@ -864,6 +924,8 @@ export type TripCreateWithoutEventsInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
@@ -883,6 +945,8 @@ export type TripUncheckedCreateWithoutEventsInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput
 }
@@ -914,6 +978,8 @@ export type TripUpdateWithoutEventsInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
@@ -933,6 +999,8 @@ export type TripUncheckedUpdateWithoutEventsInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
 }
@@ -948,6 +1016,8 @@ export type TripCreateWithoutGpxDataInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTripsInput
   motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput
@@ -967,6 +1037,8 @@ export type TripUncheckedCreateWithoutGpxDataInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
   events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput
 }
@@ -998,6 +1070,8 @@ export type TripUpdateWithoutGpxDataInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
@@ -1017,6 +1091,8 @@ export type TripUncheckedUpdateWithoutGpxDataInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
 }
@@ -1033,6 +1109,8 @@ export type TripCreateManyUserInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
 }
 
@@ -1047,6 +1125,8 @@ export type TripUpdateWithoutUserInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput
   events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
@@ -1065,6 +1145,8 @@ export type TripUncheckedUpdateWithoutUserInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
   gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
@@ -1082,6 +1164,8 @@ export type TripUncheckedUpdateManyWithoutUserInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1097,6 +1181,8 @@ export type TripCreateManyMotorcycleInput = {
   maxRollDeg?: number | null
   maxGForce?: number | null
   status?: $Enums.TripStatus
+  mlScore?: number | null
+  mlModelVersion?: string | null
   createdAt?: Date | string
 }
 
@@ -1111,6 +1197,8 @@ export type TripUpdateWithoutMotorcycleInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput
   events?: Prisma.TripEventUpdateManyWithoutTripNestedInput
@@ -1129,6 +1217,8 @@ export type TripUncheckedUpdateWithoutMotorcycleInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput
   gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput
@@ -1146,6 +1236,8 @@ export type TripUncheckedUpdateManyWithoutMotorcycleInput = {
   maxRollDeg?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   maxGForce?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   status?: Prisma.EnumTripStatusFieldUpdateOperationsInput | $Enums.TripStatus
+  mlScore?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1193,6 +1285,8 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   maxRollDeg?: boolean
   maxGForce?: boolean
   status?: boolean
+  mlScore?: boolean
+  mlModelVersion?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
@@ -1214,6 +1308,8 @@ export type TripSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   maxRollDeg?: boolean
   maxGForce?: boolean
   status?: boolean
+  mlScore?: boolean
+  mlModelVersion?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
@@ -1232,6 +1328,8 @@ export type TripSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   maxRollDeg?: boolean
   maxGForce?: boolean
   status?: boolean
+  mlScore?: boolean
+  mlModelVersion?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
@@ -1250,10 +1348,12 @@ export type TripSelectScalar = {
   maxRollDeg?: boolean
   maxGForce?: boolean
   status?: boolean
+  mlScore?: boolean
+  mlModelVersion?: boolean
   createdAt?: boolean
 }
 
-export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "motorcycleId" | "source" | "startedAt" | "endedAt" | "distanceKm" | "maxSpeedKmh" | "avgSpeedKmh" | "maxRollDeg" | "maxGForce" | "status" | "createdAt", ExtArgs["result"]["trip"]>
+export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "motorcycleId" | "source" | "startedAt" | "endedAt" | "distanceKm" | "maxSpeedKmh" | "avgSpeedKmh" | "maxRollDeg" | "maxGForce" | "status" | "mlScore" | "mlModelVersion" | "createdAt", ExtArgs["result"]["trip"]>
 export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>
@@ -1291,6 +1391,8 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     maxRollDeg: number | null
     maxGForce: number | null
     status: $Enums.TripStatus
+    mlScore: number | null
+    mlModelVersion: string | null
     createdAt: Date
   }, ExtArgs["result"]["trip"]>
   composites: {}
@@ -1731,6 +1833,8 @@ export interface TripFieldRefs {
   readonly maxRollDeg: Prisma.FieldRef<"Trip", 'Float'>
   readonly maxGForce: Prisma.FieldRef<"Trip", 'Float'>
   readonly status: Prisma.FieldRef<"Trip", 'TripStatus'>
+  readonly mlScore: Prisma.FieldRef<"Trip", 'Float'>
+  readonly mlModelVersion: Prisma.FieldRef<"Trip", 'String'>
   readonly createdAt: Prisma.FieldRef<"Trip", 'DateTime'>
 }
     

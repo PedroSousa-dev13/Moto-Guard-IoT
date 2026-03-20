@@ -101,6 +101,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-motoguard}:${POSTGRES_PASSWORD:-motoguard123}@postgres:5432/${POSTGRES_DB:-motoguard}
       # JWT
       JWT_SECRET: ${JWT_SECRET:-motoguard-dev-secret-change-in-prod}
+      # ML Pipeline
+      ML_ENABLED: ${ML_ENABLED:-true}
+      ML_MODEL_PATH: ${ML_MODEL_PATH:-ml/models/isolation_forest.pkl}
     depends_on:
       mosquitto:
         condition: service_started
@@ -110,6 +113,7 @@ services:
         condition: service_healthy
     volumes:
       - ./app/backend:/app/backend
+      - ./ml:/ml
     networks:
       - motoguard-net
 

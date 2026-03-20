@@ -12,6 +12,9 @@ import { telemetryStore } from "./telemetry.store";
 import { prisma } from "./prisma.service";
 import { influxService } from "./influx.service";
 import { deviceAssociationService } from "./device-association.service";
+import { sendCrashAlert } from "./email.service";
+import { decrypt } from "../utils/crypto";
+import { env } from "../config/env";
 import type {
   TelemetryPayload,
   SimulatorCommand,
@@ -274,7 +277,7 @@ class SocketService {
   }
 
   private static readonly CRASH_STATUSES = new Set([
-    "CRASH", "QUEDA", "FALL", "CRASH_DETECTED",
+    "CRASH", "QUEDA", "FALL", "CRASH_DETECTED", "QUEDA_CONFIRMADA",
   ]);
 
   private async handleAlertEvent(payload: TelemetryPayload): Promise<void> {
@@ -305,6 +308,8 @@ class SocketService {
         } catch (error) {
           console.error("Erro ao terminar viagem após queda:", error);
         }
+        // Notificar contacto de emergência
+        void this.notifyEmergencyContact(deviceId, payload);
       }
     }
 
@@ -808,6 +813,47 @@ class SocketService {
       console.log(`Evento ${eventType} persistido na viagem ${tripId}`);
     } catch (error) {
       console.error("Erro ao persistir evento de risco:", error);
+    }
+  }
+
+  private async notifyEmergencyContact(deviceId: string, payload: TelemetryPayload): Promise<void> {
+    try {
+      const userId = this.lastUserIdByDevice.get(deviceId);
+      if (!userId) {
+        console.warn(`[notifyEmergencyContact] userId não encontrado para device ${deviceId}`);
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, emergencyContact: true, resendApiKey: true },
+      });
+
+      if (!user?.emergencyContact) {
+        console.warn(`[notifyEmergencyContact] Sem contacto de emergência para userId ${userId} — email não enviado.`);
+        return;
+      }
+
+      const tripId = this.activeTripIdByDevice.get(deviceId) ?? null;
+
+      // Desencriptar a API key do utilizador (se configurada)
+      let resendApiKey: string | null = null;
+      if (user.resendApiKey) {
+        try { resendApiKey = decrypt(user.resendApiKey, env.JWT_SECRET); } catch { /* ignora */ }
+      }
+
+      await sendCrashAlert({
+        toEmail: user.emergencyContact,
+        riderName: user.name,
+        timestamp: payload.system.timestamp,
+        latitude: payload.location?.latitude ?? null,
+        longitude: payload.location?.longitude ?? null,
+        tripId,
+        deviceId,
+        resendApiKey,
+      });
+    } catch (err) {
+      console.error("[notifyEmergencyContact] Erro:", err);
     }
   }
 

@@ -4,6 +4,7 @@ export interface User {
   name: string;
   createdAt: string;
   updatedAt: string;
+  emergencyContact?: string | null;
 }
 
 export interface Motorcycle {
@@ -146,4 +147,25 @@ export interface TripFeedItem {
   performanceScore: number;
   labels: string[];
   buckets: { safety: TripScoreBucket; performance: TripScoreBucket };
+}
+
+export interface ComparisonReport {
+  heuristicScore: number;
+  mlScore: number;
+  scoreDelta: number;
+  agreement: boolean;
+  agreementLevel: "HIGH" | "MEDIUM" | "LOW";
+  dominantFactors: string[];
+  note: string | null;
+}
+
+export interface TripEvaluationResponse {
+  score: number;
+  model: string;
+  mlScore: number | null;
+  mlFeedback: string;
+  comparisonReport: ComparisonReport | null;
+  severityCounts: { INFO: number; WARNING: number; CRITICAL: number };
+  typeCounts: Partial<Record<string, number>>;
+  penalties: Array<{ reason: string; points: number }>;
 }

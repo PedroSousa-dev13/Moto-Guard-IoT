@@ -20,13 +20,15 @@ datasource db {
 
 // ─── Utilizadores ───────────────────────────────────────────────────────────
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  passwordHash  String       @map("password_hash")
-  name          String
-  resetToken    String?      @map("reset_token") // Token para reset de senha
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id                  String       @id @default(uuid())
+  email               String       @unique
+  passwordHash        String       @map("password_hash")
+  name                String
+  resetToken          String?      @map("reset_token")
+  emergencyContact    String?      @map("emergency_contact") // Email de contacto de emergência
+  resendApiKey        String?      @map("resend_api_key")    // API key Resend (encriptada, AES-256)
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
 
   motorcycles   Motorcycle[]
   trips         Trip[]
@@ -103,6 +105,8 @@ model Trip {
   maxRollDeg      Float?      @map("max_roll_deg")
   maxGForce       Float?      @map("max_g_force")
   status          TripStatus  @default(ACTIVE)
+  mlScore         Float?      @map("ml_score")
+  mlModelVersion  String?     @map("ml_model_version")
   createdAt       DateTime    @default(now()) @map("created_at")
 
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)

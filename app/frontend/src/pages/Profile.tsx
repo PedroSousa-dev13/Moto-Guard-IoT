@@ -5,7 +5,7 @@ import type { Motorcycle } from "../types";
 import Card from "../components/ui/Card";
 import {
   User, Mail, Calendar, Shield, LogOut, Bike, Plus, X,
-  Edit2, Trash2, Check, Key, Cpu, ChevronDown, ChevronUp,
+  Edit2, Trash2, Check, Key, Cpu, ChevronDown, ChevronUp, Eye, EyeOff,
 } from "lucide-react";
 
 interface Msg { type: "success" | "error"; text: string }
@@ -22,6 +22,7 @@ export default function Profile() {
 
   // Profile edit
   const [profileName, setProfileName] = useState(user?.name ?? "");
+  const [emergencyContact, setEmergencyContact] = useState(user?.emergencyContact ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,12 +30,21 @@ export default function Profile() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
 
+  // Resend API key
+  const [resendKey, setResendKey] = useState("");
+  const [resendConfigured, setResendConfigured] = useState(false);
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [isSavingResend, setIsSavingResend] = useState(false);
+  const [resendMsg, setResendMsg] = useState<Msg | null>(null);
+
   useEffect(() => {
     document.title = "Perfil — MotoGuard";
     void loadData();
+    void authAPI.getResendApiKeyStatus().then((r) => setResendConfigured(r.data.configured)).catch(() => {});
   }, []);
 
   useEffect(() => { if (user?.name) setProfileName(user.name); }, [user]);
+  useEffect(() => { setEmergencyContact(user?.emergencyContact ?? ""); }, [user]);
 
   async function loadData() {
     try {
@@ -52,6 +62,22 @@ export default function Profile() {
     }
   }
 
+  async function handleSaveResendKey(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSavingResend(true);
+    setResendMsg(null);
+    try {
+      const res = await authAPI.saveResendApiKey(resendKey || null);
+      setResendConfigured(res.data.configured);
+      setResendKey("");
+      setResendMsg({ type: "success", text: resendKey ? "API key guardada com sucesso." : "API key removida." });
+    } catch {
+      setResendMsg({ type: "error", text: "Erro ao guardar API key." });
+    } finally {
+      setIsSavingResend(false);
+    }
+  }
+
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (isSavingProfile) return;
@@ -62,7 +88,9 @@ export default function Profile() {
     setIsSavingProfile(true);
     setProfileMsg(null);
     try {
-      if (profileName !== user?.name) await authAPI.updateProfile({ name: profileName });
+      if (profileName !== user?.name || emergencyContact !== (user?.emergencyContact ?? "")) {
+        await authAPI.updateProfile({ name: profileName, emergencyContact: emergencyContact || null });
+      }
       if (newPassword && currentPassword) {
         await authAPI.changePassword(currentPassword, newPassword);
         setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
@@ -150,6 +178,22 @@ export default function Profile() {
               </label>
               <input id="p-email" className="control" value={user?.email ?? ""} readOnly disabled style={{ opacity: 0.6 }} />
             </div>
+            <div className="field field-span-2">
+              <label className="field-label" htmlFor="p-emergency">
+                <Shield size={12} style={{ marginRight: 4 }} />Contacto de emergência
+              </label>
+              <input
+                id="p-emergency"
+                className="control"
+                type="email"
+                value={emergencyContact}
+                onChange={(e) => setEmergencyContact(e.target.value)}
+                placeholder="email@exemplo.com — notificado em caso de queda"
+              />
+              <div style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: 4 }}>
+                Em caso de queda detetada (CRASH_DETECTED), este email recebe um alerta automático com localização GPS.
+              </div>
+            </div>
           </div>
 
           {/* Segurança — expansível */}
@@ -185,6 +229,77 @@ export default function Profile() {
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button type="submit" className="btn btn-primary" disabled={isSavingProfile}>
               <Check size={14} /> {isSavingProfile ? "A guardar..." : "Guardar alterações"}
+            </button>
+          </div>
+        </form>
+      </Card>
+
+      {/* ── Resend API Key ── */}
+      <Card title="Email de Emergência — Resend API">
+        <form onSubmit={(e) => void handleSaveResendKey(e)} style={{ display: "grid", gap: 16 }}>
+          {resendMsg && (
+            <div role="status" className={`alert ${resendMsg.type === "success" ? "alert-success" : "alert-danger"}`}>
+              {resendMsg.text}
+            </div>
+          )}
+          <div style={{ fontSize: "0.875rem", color: "var(--muted)", lineHeight: 1.6 }}>
+            {resendConfigured
+              ? "✅ API key configurada. Os emails de emergência serão enviados com a tua conta Resend."
+              : "⚠️ Sem API key configurada. Os emails de emergência não serão enviados."}
+            {" "}Obtém a tua key gratuita em{" "}
+            <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer" style={{ color: "var(--primary)" }}>
+              resend.com/api-keys
+            </a>.
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="p-resend-key">
+              <Key size={12} style={{ marginRight: 4 }} />
+              {resendConfigured ? "Substituir API key" : "API key Resend"}
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                id="p-resend-key"
+                className="control"
+                type={showResendKey ? "text" : "password"}
+                value={resendKey}
+                onChange={(e) => setResendKey(e.target.value)}
+                placeholder={resendConfigured ? "••••••••••••••••••••• (deixa vazio para manter)" : "re_..."}
+                style={{ paddingRight: 40 }}
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowResendKey((v) => !v)}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 0 }}
+                aria-label={showResendKey ? "Ocultar key" : "Mostrar key"}
+              >
+                {showResendKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            {resendConfigured && (
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={isSavingResend}
+                onClick={async () => {
+                  if (!confirm("Remover a API key? Os emails de emergência deixarão de ser enviados.")) return;
+                  setIsSavingResend(true);
+                  try {
+                    await authAPI.saveResendApiKey(null);
+                    setResendConfigured(false);
+                    setResendMsg({ type: "success", text: "API key removida." });
+                  } catch {
+                    setResendMsg({ type: "error", text: "Erro ao remover." });
+                  } finally { setIsSavingResend(false); }
+                }}
+              >
+                <Trash2 size={14} /> Remover key
+              </button>
+            )}
+            <button type="submit" className="btn btn-primary" disabled={isSavingResend || !resendKey}>
+              <Check size={14} /> {isSavingResend ? "A guardar..." : "Guardar key"}
             </button>
           </div>
         </form>

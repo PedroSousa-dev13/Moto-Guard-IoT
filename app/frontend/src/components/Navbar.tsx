@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Bike, Settings, LogOut, LogIn, Bell } from 'lucide-react';
-import { loadAlerts } from '../utils/alerts';
+import { Bike, Settings, LogOut, LogIn } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 function getInitials(name?: string): string {
   if (!name) return '?';
@@ -12,12 +12,6 @@ function getInitials(name?: string): string {
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const unreadCount = useMemo(() => {
-    if (!isAuthenticated) return 0;
-    return loadAlerts().filter((a) => a.status === "unread").length;
-  }, [isAuthenticated, location.pathname]);
 
   return (
     <nav className="navbar">
@@ -31,12 +25,7 @@ const Navbar: React.FC = () => {
       <div className="navbar-menu">
         {isAuthenticated ? (
           <>
-            <Link to="/alertas" className="nav-icon-link nav-bell" title="Alertas">
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="nav-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
-              )}
-            </Link>
+            <NotificationCenter />
             <div className="navbar-user">
               <div className="user-avatar">
                 {getInitials(user?.name)}

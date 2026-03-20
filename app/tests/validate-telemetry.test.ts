@@ -52,12 +52,12 @@ describe("validateTelemetryPayload", () => {
 
   it("returns invalid when a required block is missing", () => {
     const payload = buildValidPayload();
-    delete (payload as Record<string, unknown>).environment;
+    delete (payload as Record<string, unknown>).health;
 
     const result = validateTelemetryPayload(payload);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe("Bloco 'environment' em falta ou inválido");
+    expect(result.error).toBe("Bloco 'health' em falta ou inválido");
   });
 
   it("returns invalid when telemetry field is missing", () => {
