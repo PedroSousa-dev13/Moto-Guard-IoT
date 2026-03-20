@@ -1,8 +1,13 @@
 import React, { useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Bike, User, Settings, LogOut, LogIn, Bell } from 'lucide-react';
+import { Bike, Settings, LogOut, LogIn, Bell } from 'lucide-react';
 import { loadAlerts } from '../utils/alerts';
+
+function getInitials(name?: string): string {
+  if (!name) return '?';
+  return name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
+}
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -34,7 +39,7 @@ const Navbar: React.FC = () => {
             </Link>
             <div className="navbar-user">
               <div className="user-avatar">
-                <User size={16} />
+                {getInitials(user?.name)}
               </div>
               <span className="user-name">{user?.name}</span>
             </div>
