@@ -245,7 +245,7 @@ describe("Garage — edit moto", () => {
     // Simpler: just find the form after clicking any button that shows "Editar mota"
     // Use the Pencil button which is the 4th in the card actions
     const cardBtns = screen.getAllByRole("button").filter((b) =>
-      b.closest(".subpanel") !== null
+      b.closest(".garage-card-actions") !== null
     );
     if (cardBtns.length >= 4) fireEvent.click(cardBtns[3]);
 
@@ -265,7 +265,7 @@ describe("Garage — edit moto", () => {
     await waitFor(() => screen.getByText("Bandit"));
 
     // Click pencil button (4th button in card)
-    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".subpanel") !== null);
+    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".garage-card-actions") !== null);
     fireEvent.click(cardBtns[3]); // pencil
 
     await waitFor(() => screen.getByLabelText("Nome *"));
@@ -286,7 +286,7 @@ describe("Garage — delete moto", () => {
     renderGarage();
     await waitFor(() => screen.getByText("Bandit"));
 
-    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".subpanel") !== null);
+    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".garage-card-actions") !== null);
     fireEvent.click(cardBtns[4]); // trash button (last)
 
     expect(screen.getByText("Confirmar remoção?")).toBeInTheDocument();
@@ -299,7 +299,7 @@ describe("Garage — delete moto", () => {
     renderGarage();
     await waitFor(() => screen.getByText("Bandit"));
 
-    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".subpanel") !== null);
+    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".garage-card-actions") !== null);
     fireEvent.click(cardBtns[4]); // trash
     expect(screen.getByText("Confirmar remoção?")).toBeInTheDocument();
 
@@ -316,7 +316,7 @@ describe("Garage — delete moto", () => {
     renderGarage();
     await waitFor(() => screen.getByText("Bandit"));
 
-    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".subpanel") !== null);
+    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".garage-card-actions") !== null);
     fireEvent.click(cardBtns[4]); // trash
     fireEvent.click(screen.getByText("Remover"));
 
@@ -335,7 +335,7 @@ describe("Garage — delete moto", () => {
     renderGarage();
     await waitFor(() => screen.getByText("Bandit"));
 
-    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".subpanel") !== null);
+    const cardBtns = screen.getAllByRole("button").filter((b) => b.closest(".garage-card-actions") !== null);
     fireEvent.click(cardBtns[4]);
     fireEvent.click(screen.getByText("Remover"));
 

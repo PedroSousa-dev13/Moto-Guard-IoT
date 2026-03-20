@@ -6,6 +6,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Instalar Python e dependências ML
+RUN apk add --no-cache python3 py3-pip py3-numpy py3-scipy && \
+    pip3 install --break-system-packages joblib scikit-learn
+
 # ─── Backend ─────────────────────────────────────────────────────────────────
 # Instalar dependências do backend primeiro (cache de camadas)
 COPY package*.json ./

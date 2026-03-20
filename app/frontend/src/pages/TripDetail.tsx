@@ -18,7 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { gpxAPI, tripsAPI } from "../services/api";
-import type { Trip, TripTelemetryResponse, TripEvent } from "../types";
+import type { Trip, TripTelemetryResponse, TripEvent, TripEvaluationResponse } from "../types/index";
 import { deriveGpxSeries } from "../utils/gpx";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -61,6 +61,7 @@ export default function TripDetail() {
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingGpx, setExportingGpx] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [evaluation, setEvaluation] = useState<import("../types/index").TripEvaluationResponse | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -88,6 +89,13 @@ export default function TripDetail() {
           setTelemetryRes(telem.data);
         } else {
           setTelemetryRes(null);
+        }
+
+        // Carregar avaliação ML (não bloqueia o carregamento principal)
+        if (tripRes.data.status === "COMPLETED") {
+          tripsAPI.getEvaluation(id)
+            .then((r) => { if (!cancelled) setEvaluation(r.data); })
+            .catch(() => { /* fallback silencioso */ });
         }
       } catch (err: any) {
         if (cancelled) return;
@@ -530,6 +538,92 @@ export default function TripDetail() {
               <div className="tile-v">{val}</div>
             </div>
           ))}
+        </div>
+
+        <div className="panel" style={{ marginTop: 14 }}>
+          <div className="panel-header">
+            <div className="panel-title">🤖 Avaliação de Condução</div>
+          </div>
+          <div className="panel-body">
+            {evaluation ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Scores lado a lado */}
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                  <div className="tile" style={{ flex: 1, minWidth: 120 }}>
+                    <div className="tile-k">Score Heurístico</div>
+                    <div className="tile-v" style={{ color: evaluation.score >= 70 ? "#22c55e" : evaluation.score >= 40 ? "#eab308" : "#ef4444", fontSize: 28 }}>
+                      {evaluation.score}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>regras fixas</div>
+                  </div>
+                  <div className="tile" style={{ flex: 1, minWidth: 120 }}>
+                    <div className="tile-k">Score ML</div>
+                    {evaluation.mlScore !== null ? (
+                      <>
+                        <div className="tile-v" style={{ color: evaluation.mlScore >= 70 ? "#22c55e" : evaluation.mlScore >= 40 ? "#eab308" : "#ef4444", fontSize: 28 }}>
+                          {evaluation.mlScore}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Isolation Forest</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="tile-v" style={{ color: "var(--text-muted)", fontSize: 18 }}>—</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>não disponível</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Feedback ML */}
+                {evaluation.mlFeedback && (
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)", padding: "8px 12px", background: "var(--bg-secondary)", borderRadius: 6 }}>
+                    {evaluation.mlFeedback}
+                  </div>
+                )}
+
+                {/* Comparison Report */}
+                {evaluation.comparisonReport && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Concordância:</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+                        background: evaluation.comparisonReport.agreementLevel === "HIGH" ? "rgba(34,197,94,0.15)" :
+                                    evaluation.comparisonReport.agreementLevel === "MEDIUM" ? "rgba(234,179,8,0.15)" : "rgba(239,68,68,0.15)",
+                        color: evaluation.comparisonReport.agreementLevel === "HIGH" ? "#22c55e" :
+                               evaluation.comparisonReport.agreementLevel === "MEDIUM" ? "#eab308" : "#ef4444",
+                      }}>
+                        {evaluation.comparisonReport.agreementLevel === "HIGH" ? "✓ Alta" :
+                         evaluation.comparisonReport.agreementLevel === "MEDIUM" ? "~ Média" : "✗ Baixa"}
+                      </span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        Δ {evaluation.comparisonReport.scoreDelta > 0 ? "+" : ""}{evaluation.comparisonReport.scoreDelta} pontos
+                      </span>
+                    </div>
+                    {evaluation.comparisonReport.dominantFactors.length > 0 && (
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        Fatores dominantes: {evaluation.comparisonReport.dominantFactors.join(", ")}
+                      </div>
+                    )}
+                    {evaluation.comparisonReport.note && (
+                      <div style={{ fontSize: 12, color: "#f97316", padding: "6px 10px", background: "rgba(249,115,22,0.1)", borderRadius: 4 }}>
+                        ⚠️ {evaluation.comparisonReport.note}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : trip?.status === "COMPLETED" ? (
+              <div className="empty-state" style={{ padding: "20px 0" }}>
+                <div className="empty-state-icon">⏳</div>
+                <div className="empty-state-title">A calcular avaliação...</div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                Avaliação disponível após a viagem ser concluída.
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="panel" style={{ marginTop: 14 }}>

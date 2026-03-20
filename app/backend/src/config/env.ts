@@ -32,4 +32,13 @@ export const env = {
   // ─── JWT ────────────────────────────────────────────────────────────────
   JWT_SECRET:
     process.env.JWT_SECRET || "motoguard-dev-secret-change-in-prod",
+
+  // ─── ML Pipeline ────────────────────────────────────────────────────────
+  ML_ENABLED: process.env.ML_ENABLED === "true",
+  ML_MODEL_PATH: process.env.ML_MODEL_PATH || "ml/models/isolation_forest.pkl",
+
+  // ─── Email (Emergência via Resend) ──────────────────────────────────────
+  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+  RESEND_FROM: process.env.RESEND_FROM || "onboarding@resend.dev",
+  APP_URL: process.env.APP_URL || "http://localhost:3000",
 } as const;

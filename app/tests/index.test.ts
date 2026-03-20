@@ -72,6 +72,13 @@ vi.mock('../backend/src/services/prisma.service', () => ({
   }
 }));
 
+vi.mock('../backend/src/services/influx.service', () => ({
+  influxService: {
+    queryTripTelemetry: vi.fn(),
+    ensureBucket: vi.fn().mockResolvedValue(undefined),
+  }
+}));
+
 describe('src/index.ts', () => {
   let mockApp: any;
   let mockServer: any;

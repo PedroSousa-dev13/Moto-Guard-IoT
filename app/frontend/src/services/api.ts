@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse } from '../types';
+import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse, TripEvaluationResponse } from '../types/index';
 
 const API_BASE = '/api';
 
@@ -53,11 +53,17 @@ export const authAPI = {
   me: () =>
     api.get<User>('/auth/me'),
 
-  updateProfile: (data: { name?: string; email?: string }) =>
+  updateProfile: (data: { name?: string; email?: string; emergencyContact?: string | null }) =>
     api.put<User>('/auth/profile', data),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put<{ message: string }>('/auth/change-password', { currentPassword, newPassword }),
+
+  saveResendApiKey: (apiKey: string | null) =>
+    api.put<{ message: string; configured: boolean }>('/auth/resend-key', { apiKey }),
+
+  getResendApiKeyStatus: () =>
+    api.get<{ configured: boolean }>('/auth/resend-key/status'),
 
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
@@ -89,6 +95,9 @@ export const tripsAPI = {
   
   getTelemetry: (tripId: string) =>
     api.get<TripTelemetryResponse>(`/telemetry/${tripId}`),
+
+  getEvaluation: (tripId: string) =>
+    api.get<TripEvaluationResponse>(`/trips/${tripId}/evaluation`),
 };
 
 // Motorcycles endpoints
@@ -128,4 +137,13 @@ export const gpxAPI = {
   },
   exportTrip: (tripId: string) =>
     api.get(`/gpx/export/${tripId}`, { responseType: "blob" }),
+};
+
+export const mlAPI = {
+  getStatus: () => api.get<{ enabled: boolean; modelLoaded: boolean; modelVersion: string | null; trainedAt: string | null; nSamples: number | null }>("/ml/status"),
+};
+
+export const alertsAPI = {
+  getAll: (params?: { severity?: string; type?: string; tripId?: string; limit?: number }) =>
+    api.get<any[]>("/alerts", { params }),
 };

@@ -8,7 +8,7 @@
 import { Response } from "express";
 import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
-import { runTripMlPipeline } from "../services/trip-ml-pipeline.service";
+import { runTripMlPipeline, getMlStatus } from "../services/trip-ml-pipeline.service";
 import { buildTripFeedItem } from "../services/trip-feed.service";
 
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
@@ -141,6 +141,17 @@ export async function getTripEvaluation(req: AuthRequest, res: Response): Promis
   const id = req.params.id as string;
 
   try {
+    // Verificar se a viagem existe e pertence ao utilizador (Req 5.3, 5.4)
+    const trip = await prisma.trip.findFirst({ where: { id } });
+    if (!trip) {
+      res.status(404).json({ error: "Viagem não encontrada" });
+      return;
+    }
+    if (trip.userId !== userId) {
+      res.status(403).json({ error: "Acesso negado" });
+      return;
+    }
+
     const evaluation = await runTripMlPipeline(id, userId);
     if (!evaluation) {
       res.status(404).json({ error: "Viagem não encontrada" });
@@ -150,5 +161,66 @@ export async function getTripEvaluation(req: AuthRequest, res: Response): Promis
   } catch (err) {
     console.error("[getTripEvaluation] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}
+
+export async function getMlStatusHandler(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const status = await getMlStatus();
+    res.json(status);
+  } catch (err) {
+    console.error("[getMlStatus] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor." });
+  }
+}
+
+// ─── Listar alertas (TripEvents) do utilizador ──────────────────────────────
+// GET /api/alerts?severity=CRITICAL&type=CRASH_DETECTED&limit=50&tripId=xxx
+export async function listAlerts(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const { severity, type, tripId, limit: limitRaw } = req.query as Record<string, string | undefined>;
+  const limit = clampInt(limitRaw, 100, 1, 500);
+
+  const VALID_SEVERITIES = ["INFO", "WARNING", "CRITICAL"];
+  const VALID_TYPES = [
+    "HARD_BRAKING", "EXCESSIVE_LEAN", "HIGH_VIBRATION", "OVERHEAT",
+    "LOW_VOLTAGE", "CRASH_DETECTED", "RAPID_ACCELERATION",
+    "TIRE_PRESSURE_LOW", "OIL_PRESSURE_LOW", "SPEEDING",
+  ];
+
+  if (severity && !VALID_SEVERITIES.includes(severity)) {
+    res.status(400).json({ error: "severity inválido" });
+    return;
+  }
+  if (type && !VALID_TYPES.includes(type)) {
+    res.status(400).json({ error: "type inválido" });
+    return;
+  }
+
+  try {
+    const events = await prisma.tripEvent.findMany({
+      where: {
+        trip: { userId },
+        ...(severity ? { severity: severity as any } : {}),
+        ...(type ? { type: type as any } : {}),
+        ...(tripId ? { tripId } : {}),
+      },
+      orderBy: { occurredAt: "desc" },
+      take: limit,
+      include: {
+        trip: {
+          select: {
+            id: true,
+            source: true,
+            motorcycle: { select: { name: true, brand: true, deviceId: true } },
+          },
+        },
+      },
+    });
+
+    res.json(events);
+  } catch (err) {
+    console.error("[listAlerts] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor." });
   }
 }

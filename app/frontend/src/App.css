@@ -2007,3 +2007,15 @@ button { font-family: inherit; }
 .moto-filter-cat { font-size: 0.72rem; color: var(--accent); font-weight: 700; margin-bottom: 3px; }
 .moto-filter-sub { font-size: 0.72rem; color: var(--muted); }
 .moto-filter-count { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+/* ── Missing / Fix classes ─────────────────────────────────────────────────── */
+.alert-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Spin utility ──────────────────────────────────────────────────────────── */
+.spin { animation: spin 0.8s linear infinite; }
