@@ -15,6 +15,7 @@ import {
   YAxis,
   Legend,
 } from "recharts";
+import { BarChart2 } from "lucide-react";
 import {
   aggregateFeedSeries,
   computePeriodStats,
@@ -141,7 +142,9 @@ export default function Analytics() {
     return (
       <div className="page page-full">
         <div className="page-header">
-          <div className="page-title">📊 Analytics & Relatórios</div>
+          <div className="header-main">
+            <div className="page-title"><BarChart2 className="title-icon" size={24} />Analytics & Relatórios</div>
+          </div>
         </div>
         <div className="tile-grid">
           {Array.from({ length: 7 }).map((_, i) => <SkeletonTile key={i} />)}
@@ -183,8 +186,11 @@ export default function Analytics() {
   return (
     <div className="page page-full">
       <div className="page-header">
-        <div>
-          <div className="page-title">📊 Analytics & Relatórios</div>
+        <div className="header-main">
+          <div className="page-title">
+            <BarChart2 className="title-icon" size={24} />
+            Analytics & Relatórios
+          </div>
           <div className="page-subtitle">
             {lastUpdatedAt ? `Atualizado: ${formatDateTime(lastUpdatedAt)}` : "—"}
           </div>

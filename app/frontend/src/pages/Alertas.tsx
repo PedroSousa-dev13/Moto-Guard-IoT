@@ -11,6 +11,7 @@ import {
   type AlertType,
 } from "../utils/alerts";
 import { loadSettings } from "../utils/settings";
+import { Bell, Search, Filter, X } from "lucide-react";
 
 type StatusFilter = "all" | "unread" | "ack";
 type SeverityFilter = "all" | "INFO" | "WARNING" | "CRITICAL";
@@ -168,8 +169,11 @@ export default function Alertas() {
   return (
     <div className="page page-full">
       <div className="page-header">
-        <div>
-          <div className="page-title">🔔 Alertas & Eventos</div>
+        <div className="header-main">
+          <div className="page-title">
+            <span className="title-icon">🔔</span>
+            Alertas & Eventos
+          </div>
           <div className="page-subtitle">
             {alerts.filter((a) => a.status === "unread").length} por ler
             &nbsp;·&nbsp; {filtered.length} filtrados
@@ -294,12 +298,7 @@ export default function Alertas() {
               </div>
             ) : viewMode === "list" ? (
               <>
-                <div
-                  role="list"
-                  aria-label="Lista de alertas"
-                  aria-live="polite"
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
+                <div role="list" aria-label="Lista de alertas" aria-live="polite" className="alert-list">
                   {paginated.map((a) => (
                     <button
                       key={a.id}
@@ -308,43 +307,23 @@ export default function Alertas() {
                       aria-pressed={selectedId === a.id}
                       aria-label={`${a.title} — ${a.severity} — ${a.status === "unread" ? "Por ler" : "Reconhecido"}`}
                       onClick={() => setSelectedId(a.id)}
-                      className="trip-summary"
-                      style={{
-                        cursor: "pointer",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                        background: selectedId === a.id ? "rgba(79,70,229,0.06)" : "var(--surface)",
-                      }}
+                      className={`alert-item ${selectedId === a.id ? "selected" : ""} ${a.status === "unread" ? "unread" : ""}`}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                          <div style={{ fontWeight: 800, fontSize: 14 }}>
-                            {typeIcon(a.type)} {a.title}
-                          </div>
-                          <span
-                            className="badge-pill"
-                            style={{ background: "rgba(17,24,39,0.03)", color: severityColor(a.severity) }}
-                          >
+                      <div className="alert-item-left">
+                        <div className="alert-item-header">
+                          <span className="alert-item-title">{typeIcon(a.type)} {a.title}</span>
+                          <span className="badge-pill" style={{ color: severityColor(a.severity), background: "transparent", border: `1px solid ${severityColor(a.severity)}40` }}>
                             {a.severity}
                           </span>
                         </div>
-                        <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                        <div className="alert-item-meta">
                           {formatDateTime(a.timestamp)}
                           {a.deviceId ? ` · ${a.deviceId}` : ""}
                           {a.type ? ` · ${ALERT_TYPE_LABELS[a.type]}` : ""}
                         </div>
-                        <div style={{ color: "var(--text)", fontSize: 13, opacity: 0.9 }}>
-                          {a.message}
-                        </div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                          <span
-                            className="badge-pill"
-                            style={{
-                              background: a.status === "unread" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)",
-                              color: a.status === "unread" ? "#ef4444" : "#22c55e",
-                            }}
-                          >
+                        <div className="alert-item-msg">{a.message}</div>
+                        <div className="alert-item-footer">
+                          <span className={`pill ${a.status === "unread" ? "pill-danger" : "pill-success"}`}>
                             {a.status === "unread" ? "Por ler" : "Reconhecido"}
                           </span>
                         </div>
@@ -354,28 +333,12 @@ export default function Alertas() {
                 </div>
 
                 {totalPages > 1 && (
-                  <div
-                    role="navigation"
-                    aria-label="Paginação de alertas"
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}
-                  >
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      aria-label="Página anterior"
-                    >
+                  <div role="navigation" aria-label="Paginação de alertas" className="pagination-row">
+                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} aria-label="Página anterior">
                       ‹ Anterior
                     </button>
-                    <span style={{ fontSize: 13, color: "var(--muted)" }}>
-                      {page} / {totalPages} &nbsp;·&nbsp; {filtered.length} alertas
-                    </span>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                      aria-label="Próxima página"
-                    >
+                    <span className="page-info">{page} / {totalPages} · {filtered.length} alertas</span>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label="Próxima página">
                       Próxima ›
                     </button>
                   </div>
@@ -454,27 +417,22 @@ export default function Alertas() {
                 <div className="empty-state-text">Escolhe um item na lista para ver detalhes.</div>
               </div>
             ) : (
-              <div style={{ display: "grid", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <div className="alert-detail">
+                <div className="alert-detail-header">
                   <div>
-                    <div style={{ fontWeight: 900, fontSize: 18 }}>
-                      {typeIcon(selected.type)} {selected.title}
-                    </div>
+                    <div className="alert-detail-title">{typeIcon(selected.type)} {selected.title}</div>
                     <div className="page-subtitle" style={{ margin: 0 }}>
                       {formatDateTime(selected.timestamp)}
                       {selected.motoModel ? ` · ${selected.motoModel}` : ""}
                       {selected.deviceId ? ` · ${selected.deviceId}` : ""}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <span
-                      className="badge-pill"
-                      style={{ background: "rgba(17,24,39,0.03)", color: severityColor(selected.severity) }}
-                    >
+                  <div className="alert-detail-badges">
+                    <span className="badge-pill" style={{ color: severityColor(selected.severity), border: `1px solid ${severityColor(selected.severity)}40`, background: "transparent" }}>
                       {selected.severity}
                     </span>
                     {selected.type && (
-                      <span className="badge-pill" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>
+                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
                         {ALERT_TYPE_LABELS[selected.type]}
                       </span>
                     )}
@@ -488,58 +446,40 @@ export default function Alertas() {
                 </div>
 
                 <div className="subpanel">
-                  <div style={{ fontWeight: 800, marginBottom: 6 }}>Mensagem</div>
-                  <div style={{ color: "var(--text)", opacity: 0.9 }}>{selected.message}</div>
+                  <div className="alert-detail-section-title">Mensagem</div>
+                  <div style={{ color: "var(--text)" }}>{selected.message}</div>
                 </div>
 
-                {/* Ações: ver no mapa / ver viagem */}
                 {(selected.lat != null || selected.tripId) && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div className="alert-detail-actions">
                     {selected.lat != null && selected.lng != null && (
-                      <a
-                        href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-ghost btn-sm"
-                      >
-                        Ver no mapa (Google Maps)
+                      <a href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                        Ver no Google Maps
                       </a>
                     )}
                     {selected.lat != null && (
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => navigate(`/map`)}
-                      >
-                        Ver no mapa
-                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/map`)}>Ver no mapa</button>
                     )}
                     {selected.tripId && (
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => navigate(`/trips/${selected.tripId}`)}
-                      >
-                        Ver viagem completa
-                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips/${selected.tripId}`)}>Ver viagem</button>
                     )}
                   </div>
                 )}
 
-                {/* Coordenadas */}
                 {selected.lat != null && selected.lng != null && (
                   <div className="subpanel">
-                    <div style={{ fontWeight: 800, marginBottom: 6 }}>Localização</div>
-                    <div style={{ fontSize: 13, color: "var(--muted)" }}>
-                      Lat: {selected.lat.toFixed(6)} &nbsp; Lng: {selected.lng.toFixed(6)}
+                    <div className="alert-detail-section-title">Localização</div>
+                    <div className="alert-coords">
+                      <span>Lat: <strong>{selected.lat.toFixed(6)}</strong></span>
+                      <span>Lng: <strong>{selected.lng.toFixed(6)}</strong></span>
                     </div>
                   </div>
                 )}
 
                 {selected.meta && (
                   <div className="subpanel">
-                    <div style={{ fontWeight: 800, marginBottom: 6 }}>Métricas no momento</div>
-                    <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "var(--muted)" }}>
-                      {JSON.stringify(selected.meta, null, 2)}
-                    </pre>
+                    <div className="alert-detail-section-title">Métricas no momento</div>
+                    <pre className="alert-meta-pre">{JSON.stringify(selected.meta, null, 2)}</pre>
                   </div>
                 )}
               </div>
