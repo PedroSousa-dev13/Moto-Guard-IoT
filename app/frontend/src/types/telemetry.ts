@@ -78,6 +78,8 @@ export interface SimulatorCommand {
   acao: string;
   modelo?: string;
   tipo?: string;
+  multiplier?: number;
+  active?: boolean;
   device_id?: string;
   userId?: string;
   route?: {

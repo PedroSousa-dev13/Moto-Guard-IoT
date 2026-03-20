@@ -66,6 +66,7 @@ function eventTypeIcon(type: string) {
     CRASH_DETECTED: "💥", EXCESSIVE_LEAN: "↗️", HARD_BRAKING: "🛑",
     OVERHEAT: "🌡️", LOW_VOLTAGE: "🔋", HIGH_VIBRATION: "📳",
     RAPID_ACCELERATION: "🚀", TIRE_PRESSURE_LOW: "🛞", OIL_PRESSURE_LOW: "🛢️",
+    SPEEDING: "🚨",
   };
   return icons[type] ?? "⚠️";
 }

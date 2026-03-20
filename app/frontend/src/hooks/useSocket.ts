@@ -71,7 +71,9 @@ export function useSocket() {
           cmd.acao === "reset_eventos" ||
           cmd.acao === "arrancar" ||
           cmd.acao === "definir_rota" ||
-          cmd.acao === "reset_rota";
+          cmd.acao === "reset_rota" ||
+          cmd.acao === "set_speed" ||
+          cmd.acao === "set_speeding";
         const device_id = cmd.device_id
           ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined)
           ?? activeDeviceId

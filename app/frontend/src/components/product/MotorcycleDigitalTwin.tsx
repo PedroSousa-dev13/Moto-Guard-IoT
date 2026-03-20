@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import type { TelemetryPayload, SimulatorCommand } from '../../types/telemetry';
 import './MotorcycleDigitalTwin.css';
 import { Shield, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -11,6 +11,8 @@ interface DigitalTwinProps {
 }
 
 export default function MotorcycleDigitalTwin({ data, sendCommand, running }: DigitalTwinProps) {
+  const [speedingActive, setSpeedingActive] = useState(false);
+
   function handleSpeedPress(multiplier: number) {
     if (!running || !sendCommand) return;
     sendCommand({ acao: 'set_speed', multiplier });
@@ -20,6 +22,20 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running }: Di
     if (!running || !sendCommand) return;
     sendCommand({ acao: 'set_speed', multiplier: 1 });
   }
+
+  function toggleSpeeding() {
+    if (!running || !sendCommand) return;
+    const next = !speedingActive;
+    setSpeedingActive(next);
+    sendCommand({ acao: 'set_speeding', active: next });
+  }
+
+  // Reset speeding state when simulation stops
+  React.useEffect(() => {
+    if (!running && speedingActive) {
+      setSpeedingActive(false);
+    }
+  }, [running]);
 
   if (!data) return (
     <div className="digital-twin-empty">
@@ -113,6 +129,14 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running }: Di
               {m}x
             </button>
           ))}
+          <button
+            className={`btn-speed btn-speed-danger${speedingActive ? ' active' : ''}${!running ? ' disabled' : ''}`}
+            onClick={toggleSpeeding}
+            disabled={!running}
+            title={speedingActive ? 'Clica para desativar excesso de velocidade' : 'Clica para forçar excesso de velocidade'}
+          >
+            🚨 {speedingActive ? 'ON' : 'OFF'}
+          </button>
         </div>
       )}
     </div>

@@ -41,8 +41,8 @@ LERP_TEMP  = 0.03
 LERP_VOLT  = 0.08
 
 # Redução progressiva de velocidade perto do destino final (rotas não-loop).
-ARRIVAL_SLOWDOWN_START_M = 2000.0
-ARRIVAL_FULL_STOP_M = 12.0
+ARRIVAL_SLOWDOWN_START_M = 300.0   # começa a abrandar apenas nos últimos 300m
+ARRIVAL_FULL_STOP_M = 8.0
 ARRIVAL_MIN_CRUISE_KMH = 6.0
 
 
@@ -189,6 +189,7 @@ class HeadlessSimulator:
         # Modelo inicial
         self.modelo_inicial = modelo
         self._tick_interval: float = float(PUBLISH_INTERVAL)  # pode ser alterado por set_speed
+        self._excesso_ticks: int = 0  # ticks restantes de excesso de velocidade forçado
 
         # Graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -323,6 +324,7 @@ class HeadlessSimulator:
         elif acao == "reset_eventos":
             log("Comando: reset_eventos")
             self.tele.reset_eventos()
+            self._excesso_ticks = 0
             if self._generation_paused:
                 self._generation_paused = False
                 log(f"Geração retomada após reset_eventos — modelo '{self.perfil_nome}'.")
@@ -380,6 +382,20 @@ class HeadlessSimulator:
             mult = max(0.1, min(mult, 20.0))
             self._tick_interval = PUBLISH_INTERVAL / mult
             log(f"Comando: set_speed → {mult}x (intervalo={self._tick_interval:.3f}s)")
+        elif acao in ("set_speeding", "set-speeding"):
+            active = bool(dados.get("active", False))
+            if active:
+                self._excesso_ticks = 9999  # ativo indefinidamente até desligar
+                log("Comando: set_speeding → ON (excesso de velocidade forçado)")
+            else:
+                self._excesso_ticks = 0
+                # Repor velocidade alvo para o limite legal da estrada atual
+                if self.route_cursor:
+                    legal = self.route_cursor.legal_speed_limit_kmh() or 50.0
+                    self.tele._target_vel = legal * random.uniform(0.90, 1.00)
+                    log(f"Comando: set_speeding → OFF (velocidade reposta para {self.tele._target_vel:.1f} km/h)")
+                else:
+                    log("Comando: set_speeding → OFF (velocidade normalizada)")
         else:
             log(f"Comando desconhecido: {acao} (raw={acao_raw!r})")
 
@@ -442,6 +458,9 @@ class HeadlessSimulator:
         elif tipo == "sobreaquecimento":
             self.tele.flag_sobreaquecimento = True
             log("Evento: SOBREAQUECIMENTO activado")
+        elif tipo in ("excesso_velocidade", "speeding"):
+            self._excesso_ticks = 20  # ~20 ticks a 1x = 20s de excesso
+            log("Evento: EXCESSO DE VELOCIDADE activado (20 ticks)")
         else:
             log(f"Tipo de evento desconhecido: {tipo}")
 
@@ -455,6 +474,7 @@ class HeadlessSimulator:
         self._route_override_loop = False
         self.route_cursor = None
         self._tick_interval = float(PUBLISH_INTERVAL)  # reset velocidade
+        self._excesso_ticks = 0
 
     def _arrival_speed_cap_kmh(self) -> float | None:
         if self.route_cursor is None:
@@ -498,8 +518,11 @@ class HeadlessSimulator:
                 # Aceleração progressiva em 1ª/2ª mudança
                 s._target_vel = 5.0 + (t - 8) * 2.5   # 5 → 35 km/h ao longo de 12 ticks
             else:
-                # Entregar ao controlador normal — velocidade de cruzeiro aleatória
-                s._target_vel = random.randint(int(self.cruise_min), int(self.vel_max * self.cruise_max_frac))
+                # Entregar ao controlador normal — aponta para o limite legal da rota
+                legal_now = (self.route_cursor.legal_speed_limit_kmh()
+                             if self.route_cursor else None) or self.cruise_min
+                s._target_vel = clamp(legal_now * random.uniform(0.90, 1.00),
+                                      self.cruise_min, self.vel_max * self.cruise_max_frac)
                 self._startup_phase = False
 
         # ── 1. Intenção do motociclista (guiada pela rota) ────────────────
@@ -512,20 +535,27 @@ class HeadlessSimulator:
         else:
             if not self._startup_phase:
                 if self._tick_count % 8 == 0:
-                    s._target_vel = clamp(
-                        s._target_vel + random.uniform(-5, 5),
-                        self.cruise_min, self.vel_max * self.cruise_max_frac
-                    )
+                    # Velocidade de cruzeiro baseada no limite legal da estrada atual
+                    # Motociclista realista: circula perto do limite ± variação natural
+                    legal_now = (self.route_cursor.legal_speed_limit_kmh()
+                                 if self.route_cursor else None) or self.cruise_min
+                    # Cruzeiro entre 90% e 105% do limite (simula condução normal sem trânsito)
+                    cruise_target = legal_now * random.uniform(0.90, 1.05)
+                    cruise_target = clamp(cruise_target, self.cruise_min, self.vel_max * self.cruise_max_frac)
+                    # Ajuste suave para não mudar bruscamente
+                    s._target_vel = lerp(s._target_vel, cruise_target, 0.3)
             s._target_yaw = self.route_cursor.bearing_deg()
             speed_limit = self.route_cursor.speed_limit_kmh(steps=12)
-            if speed_limit is not None:
+            if speed_limit is not None and self._excesso_ticks <= 0:
+                # Respeitar limite legal apenas quando NÃO há excesso forçado
                 if speed_limit < s._target_vel:
                     s._target_vel = lerp(s._target_vel, speed_limit, 0.35)
                 else:
                     s._target_vel = min(s._target_vel, speed_limit)
 
             arrival_speed_cap = self._arrival_speed_cap_kmh()
-            if arrival_speed_cap is not None:
+            if arrival_speed_cap is not None and self._excesso_ticks <= 0:
+                # Ignorar arrival cap durante excesso — queremos ultrapassar
                 if arrival_speed_cap < s._target_vel:
                     dist_to_end_m = self.route_cursor.distance_to_end_m() or 0.0
                     closeness = clamp(1.0 - (dist_to_end_m / ARRIVAL_SLOWDOWN_START_M), 0.0, 1.0)
@@ -544,6 +574,24 @@ class HeadlessSimulator:
         brake_cap = self.brake_max
         s._acceleration = clamp(vel_diff * 0.22, -brake_cap, accel_cap)
         s.velocidade = clamp(s.velocidade + s._acceleration, 0, self.vel_max)
+
+        # ── 2b. Excesso de velocidade forçado ─────────────────────────
+        # Incrementa progressivamente a partir da velocidade atual até ultrapassar o limite.
+        # A velocidade já devia estar perto do limite (cruzeiro normal), por isso
+        # o incremento é suave mas constante enquanto o botão está pressionado.
+        if self._excesso_ticks > 0 and not self._startup_phase:
+            legal = (self.route_cursor.legal_speed_limit_kmh()
+                     if self.route_cursor else 50.0) or 50.0
+            # Alvo: 30-40% acima do limite (suficiente para disparar CRITICAL no heuristics)
+            target_excesso = legal * 1.35
+            # Incremento por tick: ~3-5 km/h/s — sobe visivelmente mas não instantâneo
+            increment = min(self.accel_max * 1.8, 25.0)
+            if s.velocidade < target_excesso:
+                s.velocidade = min(s.velocidade + increment, target_excesso)
+            s._target_vel = target_excesso
+            s.throttle_pct = clamp(lerp(s.throttle_pct, 100.0, 0.4), 0, 100)
+            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.5)
+            s.brake_rear_pct = lerp(s.brake_rear_pct, 0, 0.5)
 
         # ── 3. Throttle e Brakes ─────────────────────────────────────
         if vel_diff > 1.5:
@@ -690,6 +738,29 @@ class HeadlessSimulator:
             # Resultante vetorial com componente vertical (gravidade = 1G)
             g_combined = math.sqrt(1.0 + g_lateral**2 + g_longitudinal**2)
             s.g_force = round(clamp(g_combined + random.uniform(-0.03, 0.03), 0.95, 3.5), 2)
+
+        # ── 14b. Queda automática em curva a alta velocidade ─────────
+        # Se em excesso de velocidade E numa curva apertada, a física dita queda.
+        # Condição: roll > 85% do threshold de queda do perfil durante excesso.
+        if (self._excesso_ticks > 0
+                and not s.flag_queda
+                and not s._queda_confirmed
+                and s.velocidade > 30):
+            roll_abs = abs(s.roll)
+            # Quanto mais rápido acima do limite, menor o roll necessário para cair
+            legal = (self.route_cursor.legal_speed_limit_kmh()
+                     if self.route_cursor else 50.0) or 50.0
+            speed_excess_ratio = s.velocidade / max(legal, 1.0)  # ex: 1.45 = 45% acima
+            # Threshold dinâmico: a 1.45x o limite, cai com 70% do roll normal
+            dynamic_threshold = self.th_roll * max(0.55, 1.5 - speed_excess_ratio * 0.65)
+            if roll_abs > dynamic_threshold:
+                s.flag_queda = True
+                s._queda_timer = 0
+                s._queda_confirmed = False
+                self._excesso_ticks = 0  # parar excesso imediatamente
+                log(f"QUEDA por excesso em curva: vel={s.velocidade:.0f}km/h "
+                    f"roll={roll_abs:.1f}° threshold={dynamic_threshold:.1f}° "
+                    f"(limite={legal:.0f}km/h)")
 
         if s.flag_queda:
             if not s._queda_confirmed:
