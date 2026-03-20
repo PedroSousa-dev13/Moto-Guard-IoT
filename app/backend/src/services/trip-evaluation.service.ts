@@ -85,7 +85,12 @@ export function evaluateTripHeuristic(input: TripEvaluationInput): TripEvaluatio
 
   for (const p of penalties) score -= p.points;
 
-  score = clamp(Math.round(score), 0, 100);
+  // Queda detectada → score vai sempre a 0, independentemente do resto
+  if ((typeCounts[EventType.CRASH_DETECTED] ?? 0) > 0) {
+    score = 0;
+  } else {
+    score = clamp(Math.round(score), 0, 100);
+  }
 
   return {
     score,

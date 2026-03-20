@@ -273,6 +273,10 @@ class SocketService {
     }
   }
 
+  private static readonly CRASH_STATUSES = new Set([
+    "CRASH", "QUEDA", "FALL", "CRASH_DETECTED",
+  ]);
+
   private async handleAlertEvent(payload: TelemetryPayload): Promise<void> {
     const deviceId = payload.system.device_id;
     const status = this.normalizeEventStatus(payload.system.event_status);
@@ -287,8 +291,21 @@ class SocketService {
       };
       this.io?.emit("alert", alert);
 
-      // Persistir evento de risco na BD (etapa 1.12)
+      // Persistir evento de risco na BD
       await this.persistTripEvent(payload, status);
+
+      // Queda detectada → terminar viagem imediatamente
+      if (SocketService.CRASH_STATUSES.has(status)) {
+        console.log(`Queda detetada (${status}) para device ${deviceId} — a terminar viagem.`);
+        try {
+          await this.forceEndTrip(deviceId);
+          this.clearDeviceRuntimeState(deviceId);
+          telemetryStore.clearLatestIfDevice(deviceId);
+          this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
+        } catch (error) {
+          console.error("Erro ao terminar viagem após queda:", error);
+        }
+      }
     }
 
     this.lastEventStatusByDevice.set(deviceId, status);
