@@ -411,16 +411,16 @@
 
 /* ── Notification Center ───────────────────────────────────────────────────── */
 .notif-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: 70px;
+  right: 24px;
   width: 360px;
   max-width: calc(100vw - 24px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  z-index: 500;
+  z-index: 9998;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -540,14 +540,14 @@
 /* ── Toast ─────────────────────────────────────────────────────────────────── */
 .notif-toast {
   position: fixed;
-  top: calc(var(--header-height, 56px) + 12px);
+  top: calc(var(--header-height, 58px) + 12px);
   right: 24px;
   z-index: 9999;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   max-width: 380px;
   width: calc(100vw - 48px);
-  max-height: calc(100vh - var(--header-height, 56px) - 24px);
+  max-height: calc(100vh - var(--header-height, 58px) - 24px);
   overflow: hidden;
   animation: toastSlideDown 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -597,6 +597,6 @@
 }
 
 @media (max-width: 480px) {
-  .notif-toast { bottom: 12px; right: 12px; width: calc(100vw - 24px); }
+  .notif-toast { top: calc(50px + 8px); right: 12px; width: calc(100vw - 24px); }
   .notif-dropdown { width: calc(100vw - 16px); right: -8px; }
 }
