@@ -1340,6 +1340,233 @@ button {
   text-align: center;
 }
 
+/* ─── Map Routes Page ──────────────────────────────────────────────────────── */
+.map-routes-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.map-routes-page .page-header {
+  flex-shrink: 0;
+}
+
+.map-routes-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left panel */
+.routes-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.routes-panel-inner {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px;
+}
+
+.district-group {
+  margin-bottom: 4px;
+}
+
+.district-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.district-header:hover {
+  background: var(--surface-2, rgba(255,255,255,0.05));
+}
+
+.district-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.district-region {
+  font-size: 0.72rem;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.district-chevron {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.district-routes {
+  padding: 0 4px 6px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.route-card {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  color: var(--text);
+}
+
+.route-card:hover {
+  background: var(--surface-2, rgba(255,255,255,0.04));
+  border-color: var(--accent, #3b82f6);
+}
+
+.route-card.selected {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: var(--accent, #3b82f6);
+}
+
+.route-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.route-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.route-type-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.route-card-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Right side */
+.map-routes-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.map-routes-right .map-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Route detail bar */
+.route-detail-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+}
+
+.route-detail-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.route-detail-name {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 3px;
+}
+
+.route-detail-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.route-detail-stats {
+  display: flex;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.route-detail-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+@media (max-width: 900px) {
+  .map-routes-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: auto;
+  }
+  .routes-panel {
+    max-height: 280px;
+  }
+  .map-routes-page {
+    height: auto;
+    overflow: auto;
+  }
+}
+
 @media (max-width: 640px) {
   .trip-row {
     grid-template-columns: 1fr;

@@ -199,6 +199,8 @@ const SECTIONS: Section[] = [
           "−10 pts se inclinação > 115% do típico",
           "−12 pts se G-force ≥ limiar de queda",
           "−6 pts se G-force ≥ 70% do limiar de queda",
+          "−15 pts por SPEEDING CRITICAL (> 25% acima do limite)",
+          "−8 pts por SPEEDING WARNING (> 10% acima do limite)",
         ],
         thresholds: [
           { label: "≥ 80", value: "Bom (verde)", severity: "info" },
@@ -425,6 +427,7 @@ export default function About() {
               { icon: "🛢️", name: "OIL_PRESSURE_LOW", label: "Pressão de Óleo Baixa", desc: "< 0.9 bar a velocidade > 25 km/h" },
               { icon: "🛞", name: "TIRE_PRESSURE_LOW", label: "Pressão de Pneus Baixa", desc: "< 1.3 bar em qualquer pneu" },
               { icon: "💥", name: "CRASH_DETECTED", label: "Queda Detetada", desc: "Roll + G-force acima dos limiares de queda do perfil" },
+              { icon: "🚨", name: "SPEEDING", label: "Excesso de Velocidade", desc: "> 10% acima do limite legal durante 3+ ticks (WARNING); > 25% → CRITICAL" },
             ].map((ev) => (
               <div key={ev.name} style={{
                 display: "flex", gap: 10, padding: "10px 12px",

@@ -200,9 +200,6 @@ class SocketService {
   private async handleHeuristicEvents(payload: TelemetryPayload): Promise<void> {
     const deviceId = payload.system.device_id;
     const tripId = this.activeTripIdByDevice.get(deviceId) ?? null;
-    if (!tripId) {
-      return;
-    }
 
     const state = this.heuristicStateByDevice.get(deviceId) ?? createInitialHeuristicState();
     this.heuristicStateByDevice.set(deviceId, state);
@@ -225,6 +222,23 @@ class SocketService {
     const evaluation = evaluateTelemetryRisk(payload, state, thresholds, nowMs, dtSec);
 
     if (evaluation.events.length === 0) {
+      return;
+    }
+
+    // Emit heuristic alerts to frontend regardless of active trip
+    for (const ev of evaluation.events) {
+      this.io?.emit("alert", {
+        status: ev.type,
+        severity: ev.severity,
+        message: ev.message,
+        deviceId,
+        motoModel: payload.system.moto_model,
+        timestamp: payload.system.timestamp,
+      });
+    }
+
+    // Only persist to DB if there's an active trip
+    if (!tripId) {
       return;
     }
 

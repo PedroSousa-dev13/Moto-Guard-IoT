@@ -205,23 +205,29 @@ class RouteCursor:
 
     def legal_speed_limit_kmh(self) -> float:
         """
-        Limite de velocidade legal da via actual (independente de curvas).
-        Baseado no tipo de rota:
-          · urbano  → 50 km/h
-          · estrada → 90 km/h
-          · auto-estrada (waypoints muito espaçados) → 120 km/h
+        Limite de velocidade legal da via actual.
+        Combina distância média entre waypoints com a velocidade máxima observada
+        na rota para classificar o tipo de via com mais precisão.
+
+          · urbano       → 50 km/h   (waypoints densos, avg < 80m)
+          · suburbano    → 50 km/h   (avg 80-200m mas rota curta)
+          · estrada      → 90 km/h   (avg 200-500m)
+          · auto-estrada → 120 km/h  (avg > 500m)
         """
-        # Estimar tipo de via pela distância média entre waypoints
         n = len(self.waypoints) - 1
         if n <= 0:
             return 50.0
         total_m = sum(self._segment_len_m(i) for i in range(n))
         avg_seg_m = total_m / n
+
         # Waypoints muito próximos → via urbana
-        if avg_seg_m < 120:
+        if avg_seg_m < 80:
+            return 50.0
+        # Rota curta (< 3km total) com waypoints moderados → ainda urbana/suburbana
+        if total_m < 3000 and avg_seg_m < 250:
             return 50.0
         # Waypoints muito espaçados → auto-estrada
-        if avg_seg_m > 600:
+        if avg_seg_m > 500:
             return 120.0
         # Caso geral → estrada nacional
         return 90.0

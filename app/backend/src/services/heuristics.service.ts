@@ -274,7 +274,7 @@ export function evaluateTelemetryRisk(
     if (state.speedingTicks >= 3) {
       const excess = speed - legalLimit;
       const isCritical = speed > legalLimit * 1.25;
-      if (shouldEmit(EventType.SPEEDING, 15000)) {
+      if (shouldEmit(EventType.SPEEDING, 8000)) {
         events.push({
           type: EventType.SPEEDING,
           severity: isCritical ? EventSeverity.CRITICAL : EventSeverity.WARNING,
