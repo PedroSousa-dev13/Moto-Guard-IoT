@@ -18,6 +18,7 @@ import apiRoutes from "./routes";
 import { mqttService } from "./services/mqtt.service";
 import { socketService } from "./services/socket.service";
 import { prisma } from "./services/prisma.service";
+import { influxService } from "./services/influx.service";
 
 // ─── Handlers globais de erros não capturados ────────────────────────────────
 // Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
@@ -54,6 +55,9 @@ async function start() {
   } catch (err) {
     console.error("Falha ao conectar ao PostgreSQL:", err);
   }
+
+  // Garantir que o bucket do InfluxDB existe (cria automaticamente se necessário)
+  await influxService.ensureBucket();
 
   server.listen(env.PORT, () => {
     console.log(`MotoGuard Backend a correr na porta ${env.PORT}`);

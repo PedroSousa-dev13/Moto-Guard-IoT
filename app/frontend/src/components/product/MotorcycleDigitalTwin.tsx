@@ -68,9 +68,9 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running }: Di
 
       <div className="visual-center">
         <Suspense fallback={<div className="model-loader"><Loader2 className="animate-spin" /> Carregando 3D...</div>}>
-          <Motorcycle3DView 
-            roll={imu.roll_deg} 
-            pitch={imu.pitch_deg} 
+          <Motorcycle3DView
+            roll={imu.roll_deg}
+            pitch={imu.pitch_deg}
             yaw={imu.yaw_deg}
             speed={telemetry.speed_kmh}
             rpm={telemetry.rpm}

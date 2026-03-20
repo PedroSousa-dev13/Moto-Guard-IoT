@@ -178,25 +178,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── LIVE STAT CHIPS ── */}
-      <div className="db-chips">
-        <StatChip icon={<Gauge size={16} />} label="Velocidade"
-          value={fmt(tel?.speed_kmh)} unit=" km/h"
-          color={hasData ? speedColor(tel?.speed_kmh ?? 0) : undefined} />
-        <StatChip icon={<Zap size={16} />} label="RPM"
-          value={fmt(tel?.rpm)} unit=" rpm" />
-        <StatChip icon={<MoveHorizontal size={16} />} label="Roll"
-          value={fmt(imu?.roll_deg, 1)} unit="°"
-          color={hasData ? rollColor(imu?.roll_deg ?? 0) : undefined} />
-        <StatChip icon={<Activity size={16} />} label="G-Force"
-          value={fmt(imu?.g_force, 2)} unit=" G"
-          color={hasData ? gColor(imu?.g_force ?? 0) : undefined} />
-        <StatChip icon={<Disc size={16} />} label="Mudança"
-          value={tel?.gear === 0 ? "N" : fmt(tel?.gear)} />
-        <StatChip icon={<ArrowUpCircle size={16} />} label="Acelerador"
-          value={fmt(tel?.throttle_pct)} unit="%" />
-      </div>
-
       {/* ── MAIN GRID ── */}
       <div className="db-main-grid">
 
