@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -55,7 +55,7 @@ function getInitials(name?: string): string {
     .toUpperCase();
 }
 
-const Sidebar: React.FC = () => {
+const Sidebar: FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
 

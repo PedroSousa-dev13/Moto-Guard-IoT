@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import { FC, CSSProperties, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import LoginSidebar from "../components/auth/LoginSidebar";
 import './HomePage.css';
 
-const HomePage: React.FC = () => {
+const HomePage: FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { tripsAPI, motorcyclesAPI } from "../services/api";
 import { Trip, TripFeedItem, TripSource, TripStatus, Motorcycle } from "../types";

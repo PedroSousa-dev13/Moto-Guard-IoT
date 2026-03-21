@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import type { TelemetryPayload, SimulatorCommand } from '../../types/telemetry';
 import './MotorcycleDigitalTwin.css';
 import { Shield, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -51,9 +51,9 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
     sendCommand({ acao: 'set_speeding', active: next });
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!running && speedingActive) setSpeedingActive(false);
-  }, [running]);
+  }, [running, speedingActive]);
 
   // Derive values — use safe defaults when data is null
   const telemetry = data?.telemetry;

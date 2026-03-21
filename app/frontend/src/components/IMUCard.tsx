@@ -1,4 +1,3 @@
-import React from 'react';
 import type { IMUData } from "../types/telemetry";
 import Card from "./ui/Card";
 import { Compass, MoveHorizontal, MoveVertical, Activity } from 'lucide-react';

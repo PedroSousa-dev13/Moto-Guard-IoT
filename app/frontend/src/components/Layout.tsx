@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import { ReactNode, FC } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -9,7 +9,7 @@ interface LayoutProps {
   children?: ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {

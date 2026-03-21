@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { tripsAPI } from "../services/api";
 import type { TripFeedItem } from "../types";
 import Card from "../components/ui/Card";
@@ -19,7 +19,6 @@ import { BarChart2 } from "lucide-react";
 import {
   aggregateFeedSeries,
   computePeriodStats,
-  rangeWindow,
   type Granularity,
   type PresetRange,
 } from "../utils/analytics";

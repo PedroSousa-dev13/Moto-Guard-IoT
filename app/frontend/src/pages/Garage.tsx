@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motorcyclesAPI } from "../services/api";
 import type { Motorcycle } from "../types";
@@ -86,7 +86,7 @@ export default function Garage() {
     setSaveError(null);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (saving) return;
     if (!form.category) {
