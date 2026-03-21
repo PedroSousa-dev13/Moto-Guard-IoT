@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, ReactNode, FormEvent } from "react";
 import Card from "../components/ui/Card";
 import { useAuth } from "../hooks/useAuth";
-import { authAPI } from "../services/api";
 import {
   applyTheme, defaultSettings, defaultThresholds, loadSettings, saveSettings,
   type AlertMinSeverity, type AppSettings, type Language, type MapStyle,
@@ -13,7 +12,7 @@ import {
 
 type Tab = "prefs" | "alerts" | "thresholds" | "about";
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: "prefs",      label: "Preferências", icon: <Settings2 size={15} /> },
   { id: "alerts",     label: "Alertas",      icon: <Bell size={15} /> },
   { id: "thresholds", label: "Limiares",     icon: <Sliders size={15} /> },
@@ -33,7 +32,7 @@ export default function Settings() {
 
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(loadSettings()), [form]);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (isSaving) return;
     setIsSaving(true);

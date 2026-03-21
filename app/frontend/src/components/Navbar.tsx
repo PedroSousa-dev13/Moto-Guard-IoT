@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Bike, Settings, LogOut, LogIn } from 'lucide-react';
@@ -9,7 +9,7 @@ function getInitials(name?: string): string {
   return name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
 }
 
-const Navbar: React.FC = () => {
+const Navbar: FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 

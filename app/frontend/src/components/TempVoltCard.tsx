@@ -1,4 +1,4 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import type { TelemetryData, HealthData } from "../types/telemetry";
 import Card from "./ui/Card";
 import { Thermometer, Zap, Droplets, CircleDot } from 'lucide-react';
@@ -20,7 +20,7 @@ interface BarProps {
   value: string;
   pct: number;
   color?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }
 
 function Bar({ name, value, pct, color, icon }: BarProps) {

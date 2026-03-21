@@ -37,9 +37,8 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     // Gerar token de reset
     const resetToken = generateResetToken(email);
 
-    // TODO: Enviar email com token (implementar serviço de email)
-    // Por agora, apenas log do token para debug
-    console.log(`Reset token para ${email}: ${resetToken}`);
+    // Email de reset não implementado — token gerado mas não enviado
+    void resetToken;
 
     res.json({ message: "Se o email existir, receberá instruções de recuperação" });
   } catch (err) {

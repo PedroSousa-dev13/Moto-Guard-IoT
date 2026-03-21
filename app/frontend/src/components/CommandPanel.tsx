@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { SimulatorCommand, LogEntry } from "../types/telemetry";
 import Card from "./ui/Card";
 import { Play, Square, AlertTriangle, RefreshCcw, Terminal, Bike, Cpu } from 'lucide-react';
