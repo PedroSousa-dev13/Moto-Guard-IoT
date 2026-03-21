@@ -77,7 +77,7 @@ def _make_trip_row(
         "ended_at": ended_at,
         "max_speed_kmh": max_speed,
         "max_roll_deg": max_roll,
-        "max_gforce": max_gforce,
+        "max_g_force": max_gforce,
         "distance_km": distance_km,
         "avg_speed_kmh": avg_speed,
     }
@@ -99,7 +99,7 @@ def _make_events(trip_id: str, category: str) -> list[dict]:
             "speed_kmh": _rand_float(20, 150),
             "roll_deg": _rand_float(0, 60),
             "g_force": _rand_float(1.0, 4.0),
-            "timestamp": _now_utc(),
+            "occurred_at": _now_utc(),
         })
 
     if category == "normal":
@@ -172,7 +172,7 @@ def insert_trips(conn, trips: list[dict], events_by_trip: dict[str, list[dict]])
                 t["id"], t["user_id"], t["motorcycle_id"],
                 t["source"], t["status"],
                 t["started_at"], t["ended_at"],
-                t["max_speed_kmh"], t["max_roll_deg"], t["max_gforce"],
+                t["max_speed_kmh"], t["max_roll_deg"], t["max_g_force"],
                 t["distance_km"], t["avg_speed_kmh"],
             )
             for t in trips
@@ -182,7 +182,7 @@ def insert_trips(conn, trips: list[dict], events_by_trip: dict[str, list[dict]])
             """INSERT INTO trips
                (id, user_id, motorcycle_id, source, status,
                 started_at, ended_at,
-                max_speed_kmh, max_roll_deg, max_gforce,
+                max_speed_kmh, max_roll_deg, max_g_force,
                 distance_km, avg_speed_kmh)
                VALUES %s
                ON CONFLICT (id) DO NOTHING""",
@@ -196,14 +196,14 @@ def insert_trips(conn, trips: list[dict], events_by_trip: dict[str, list[dict]])
                 all_events.append((
                     ev["id"], ev["trip_id"], ev["type"], ev["severity"],
                     ev["message"], ev["latitude"], ev["longitude"],
-                    ev["speed_kmh"], ev["roll_deg"], ev["g_force"], ev["timestamp"],
+                    ev["speed_kmh"], ev["roll_deg"], ev["g_force"], ev["occurred_at"],
                 ))
         if all_events:
             execute_values(
                 cur,
                 """INSERT INTO trip_events
                    (id, trip_id, type, severity, message,
-                    latitude, longitude, speed_kmh, roll_deg, g_force, timestamp)
+                    latitude, longitude, speed_kmh, roll_deg, g_force, occurred_at)
                    VALUES %s
                    ON CONFLICT (id) DO NOTHING""",
                 all_events,
