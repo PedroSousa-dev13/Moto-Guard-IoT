@@ -152,6 +152,7 @@ export async function runTripMlPipeline(
     include: {
       motorcycle: { include: { profile: true } },
       events: true,
+      gpxData: true,
     },
   });
 
@@ -195,6 +196,7 @@ export async function runTripMlPipeline(
   const tripData = {
     trip: {
       id: trip.id,
+      source: trip.source,
       maxSpeedKmh: trip.maxSpeedKmh ?? 0,
       maxRollDeg: trip.maxRollDeg ?? 0,
       maxGForce: trip.maxGForce ?? 0,
@@ -212,6 +214,10 @@ export async function runTripMlPipeline(
           crashGForce: profile.crashGForce,
         }
       : null,
+    // Para viagens GPX, incluir waypoints
+    gpx_waypoints: trip.source === "GPX_IMPORTED" && trip.gpxData
+      ? (trip.gpxData.waypoints as any) || []
+      : undefined,
   };
 
   try {

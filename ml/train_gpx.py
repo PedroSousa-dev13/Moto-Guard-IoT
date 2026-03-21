@@ -1,14 +1,14 @@
 """
-train.py — Treina o Anomaly_Detector (Isolation Forest) com viagens da BD PostgreSQL.
+train_gpx.py — Treina o Anomaly_Detector especializado para viagens GPX.
 
 Uso:
-  DATABASE_URL=postgresql://... python ml/train.py [opções]
+  DATABASE_URL=postgresql://... python ml/train_gpx.py [opções]
 
 Opções:
   --n-estimators INT     Número de árvores (default: 100)
   --contamination FLOAT  Fração esperada de anomalias (default: 0.1)
   --random-state INT     Seed para reprodutibilidade (default: 42)
-  --output PATH          Caminho do .pkl (default: ml/models/isolation_forest.pkl)
+  --output PATH          Caminho do .pkl (default: ml/models/gpx_model.pkl)
 """
 
 from __future__ import annotations
@@ -27,84 +27,49 @@ import psycopg2.extras
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 
-# Adicionar o diretório pai ao path para importar features.py
+# Adicionar o diretório pai ao path para importar features_gpx.py
 sys.path.insert(0, str(Path(__file__).parent))
-from features import FeatureExtractor, FEATURE_NAMES
+from features_gpx import GpxFeatureExtractor, FEATURE_NAMES_GPX
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-MODEL_VERSION = "isolation-forest-v1"
-DEFAULT_OUTPUT = Path(__file__).parent / "models" / "isolation_forest.pkl"
+MODEL_VERSION = "gpx-isolation-forest-v1"
+DEFAULT_OUTPUT = Path(__file__).parent / "models" / "gpx_model.pkl"
 
 
 # ── Leitura da BD ─────────────────────────────────────────────────────────────
 
-def load_trips_from_db(conn) -> list[dict]:
-    """Lê viagens COMPLETED com TripEvents e perfil da mota."""
+def load_gpx_trips_from_db(conn) -> list[dict]:
+    """Lê viagens GPX COMPLETED com waypoints da tabela gpx_data."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-        # Viagens COMPLETED
+        # Viagens GPX COMPLETED com dados GPX
         cur.execute("""
             SELECT
-                t.id, t.source,
+                t.id,
                 t.max_speed_kmh   AS "maxSpeedKmh",
-                t.max_roll_deg    AS "maxRollDeg",
-                t.max_g_force     AS "maxGForce",
                 t.distance_km     AS "distanceKm",
                 t.avg_speed_kmh   AS "avgSpeedKmh",
                 t.started_at      AS "startedAt",
                 t.ended_at        AS "endedAt",
-                mp.max_speed_kmh  AS "profile_maxSpeedKmh",
-                mp.typical_max_roll_deg AS "profile_typicalMaxRollDeg",
-                mp.crash_roll_threshold AS "profile_crashRollThreshold",
-                mp.crash_g_force  AS "profile_crashGForce"
+                g.waypoints       AS "waypoints"
             FROM trips t
-            LEFT JOIN motorcycles m ON m.id = t.motorcycle_id
-            LEFT JOIN motorcycle_profiles mp ON mp.id = m.profile_id
-            WHERE t.status = 'COMPLETED'
+            INNER JOIN gpx_data g ON g.trip_id = t.id
+            WHERE t.status = 'COMPLETED' AND t.source = 'GPX_IMPORTED'
             ORDER BY t.started_at DESC
         """)
         trips = [dict(r) for r in cur.fetchall()]
 
-        if not trips:
-            return []
-
-        # TripEvents por viagem
-        trip_ids = [t["id"] for t in trips]
-        cur.execute("""
-            SELECT trip_id, type, severity
-            FROM trip_events
-            WHERE trip_id = ANY(%s)
-        """, (trip_ids,))
-        events_raw = cur.fetchall()
-
-    events_by_trip: dict[str, list[dict]] = {}
-    for ev in events_raw:
-        tid = ev["trip_id"]
-        events_by_trip.setdefault(tid, []).append({"type": ev["type"], "severity": ev["severity"]})
-
-    # Montar trip_data no formato esperado pelo FeatureExtractor
+    # Montar trip_data no formato esperado pelo GpxFeatureExtractor
     result = []
     for t in trips:
-        profile = None
-        if t.get("profile_maxSpeedKmh"):
-            profile = {
-                "maxSpeedKmh": t["profile_maxSpeedKmh"],
-                "typicalMaxRollDeg": t["profile_typicalMaxRollDeg"],
-                "crashRollThreshold": t["profile_crashRollThreshold"],
-                "crashGForce": t["profile_crashGForce"],
-            }
         result.append({
             "trip": {
                 "maxSpeedKmh": t["maxSpeedKmh"],
-                "maxRollDeg": t["maxRollDeg"],
-                "maxGForce": t["maxGForce"],
-                "distanceKm": t["distanceKm"],
                 "avgSpeedKmh": t["avgSpeedKmh"],
+                "distanceKm": t["distanceKm"],
                 "startedAt": t["startedAt"].isoformat() if t["startedAt"] else None,
                 "endedAt": t["endedAt"].isoformat() if t["endedAt"] else None,
             },
-            "events": events_by_trip.get(t["id"], []),
-            "profile": profile,
-            "_source": t.get("source", "UNKNOWN"),
+            "gpx_waypoints": t["waypoints"],  # Já é JSON/dict do PostgreSQL
         })
 
     return result
@@ -122,33 +87,27 @@ def train(
         print("ERRO: DATABASE_URL não definida.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"[train] A ligar à BD...")
+    print(f"[train_gpx] A ligar à BD...")
     conn = psycopg2.connect(DATABASE_URL)
-    trip_data_list = load_trips_from_db(conn)
+    trip_data_list = load_gpx_trips_from_db(conn)
     conn.close()
 
     n_trips = len(trip_data_list)
-    print(f"[train] Viagens COMPLETED encontradas: {n_trips}")
+    print(f"[train_gpx] Viagens GPX COMPLETED encontradas: {n_trips}")
 
     if n_trips < 10:
         print(
-            f"ERRO: Training_Dataset insuficiente ({n_trips} viagens). "
-            "São necessárias pelo menos 10 viagens COMPLETED. "
-            "Corre generate_training_data.py primeiro.",
+            f"ERRO: Training_Dataset insuficiente ({n_trips} viagens GPX). "
+            "São necessárias pelo menos 10 viagens GPX COMPLETED. "
+            "Corre generate_gpx_training_data.py primeiro.",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # Distribuição por TripSource
-    source_counts = Counter(td.get("_source", "UNKNOWN") for td in trip_data_list)
-    print("[train] Distribuição por TripSource:")
-    for src, cnt in sorted(source_counts.items()):
-        print(f"  {src}: {cnt}")
-
     # Feature extraction
-    extractor = FeatureExtractor()
+    extractor = GpxFeatureExtractor()
     X = extractor.extract_batch(trip_data_list)
-    print(f"[train] Feature matrix: {X.shape}")
+    print(f"[train_gpx] Feature matrix: {X.shape}")
 
     # Verificar NaN/Inf
     if not np.isfinite(X).all():
@@ -161,7 +120,7 @@ def train(
     X_scaled = scaler.fit_transform(X)
 
     # Isolation Forest
-    print(f"[train] A treinar IsolationForest (n_estimators={n_estimators}, contamination={contamination})...")
+    print(f"[train_gpx] A treinar IsolationForest (n_estimators={n_estimators}, contamination={contamination})...")
     model = IsolationForest(
         n_estimators=n_estimators,
         contamination=contamination,
@@ -178,8 +137,9 @@ def train(
         "metadata": {
             "trained_at": datetime.now(timezone.utc).isoformat(),
             "n_samples": n_trips,
-            "feature_names": FEATURE_NAMES,
+            "feature_names": FEATURE_NAMES_GPX,
             "model_version": MODEL_VERSION,
+            "model_type": "gpx",
             "n_estimators": n_estimators,
             "contamination": contamination,
             "random_state": random_state,
@@ -187,12 +147,12 @@ def train(
     }
     joblib.dump(artifact, output_path)
 
-    print(f"[train] Model_Artifact guardado em: {output_path}")
-    print(f"[train] Metadados: n_samples={n_trips}, version={MODEL_VERSION}")
+    print(f"[train_gpx] Model_Artifact guardado em: {output_path}")
+    print(f"[train_gpx] Metadados: n_samples={n_trips}, version={MODEL_VERSION}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Treina o Isolation Forest para avaliação de viagens")
+    parser = argparse.ArgumentParser(description="Treina o Isolation Forest especializado para viagens GPX")
     parser.add_argument("--n-estimators", type=int, default=100)
     parser.add_argument("--contamination", type=float, default=0.1)
     parser.add_argument("--random-state", type=int, default=42)
