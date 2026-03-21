@@ -22,7 +22,17 @@ export default function SimulatorContexts() {
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
   const [mapResetSignal, setMapResetSignal] = useState(0);
+  const [mapRouteSignal, setMapRouteSignal] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [routeStart, setRouteStart] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Wrapper que deteta quando uma rota é enviada e incrementa o sinal
+  function sendCommandAndSignal(cmd: Parameters<typeof sendCommand>[0]) {
+    sendCommand(cmd);
+    if ((cmd as { acao: string }).acao === "definir_rota") {
+      setMapRouteSignal((v) => v + 1);
+    }
+  }
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -134,7 +144,7 @@ export default function SimulatorContexts() {
       <div className="dashboard">
         <div className="hero-row">
           <div className="twin-card-container">
-          <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommand} running={running} />
+          <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommand} running={running} routeStart={routeStart} />
           </div>
           <div className="map-card-container">
             <MapCard
@@ -143,7 +153,9 @@ export default function SimulatorContexts() {
               imu={telemetry?.imu ?? null}
               msgCount={msgCount}
               resetSignal={mapResetSignal}
+              routeSignal={mapRouteSignal}
               sendCommand={sendCommand}
+              onRouteStartChange={setRouteStart}
             />
           </div>
         </div>
@@ -164,7 +176,7 @@ export default function SimulatorContexts() {
 
         <div className="command-card-full">
           <CommandPanel
-            sendCommand={sendCommand}
+            sendCommand={sendCommandAndSignal}
             addLog={addLog}
             logs={logs}
             running={running}

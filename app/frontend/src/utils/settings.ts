@@ -2,6 +2,7 @@ export type Theme = "light" | "dark";
 export type Units = "metric" | "imperial";
 export type Language = "pt" | "en" | "es";
 export type AlertMinSeverity = "INFO" | "WARNING" | "CRITICAL";
+export type MapStyle = "streets" | "satellite";
 
 export interface Thresholds {
   maxSpeedKmhWarn: number;
@@ -18,6 +19,8 @@ export interface AppSettings {
   theme: Theme;
   units: Units;
   language: Language;
+  mapStyle: MapStyle;
+  mapAutopilot: boolean;
   alerts: {
     enabled: boolean;
     autoAckOnOpen: boolean;
@@ -48,6 +51,8 @@ export function defaultSettings(): AppSettings {
     theme: "light",
     units: "metric",
     language: "pt",
+    mapStyle: "streets",
+    mapAutopilot: false,
     alerts: {
       enabled: true,
       autoAckOnOpen: false,
@@ -79,6 +84,10 @@ export function loadSettings(): AppSettings {
       language: (["pt", "en", "es"] as Language[]).includes(parsed.language as Language)
         ? (parsed.language as Language)
         : base.language,
+      mapStyle: (["streets", "satellite"] as MapStyle[]).includes(parsed.mapStyle as MapStyle)
+        ? (parsed.mapStyle as MapStyle)
+        : base.mapStyle,
+      mapAutopilot: typeof parsed.mapAutopilot === "boolean" ? parsed.mapAutopilot : base.mapAutopilot,
       alerts: {
         enabled: typeof parsed.alerts?.enabled === "boolean" ? parsed.alerts.enabled : base.alerts.enabled,
         autoAckOnOpen: typeof parsed.alerts?.autoAckOnOpen === "boolean" ? parsed.alerts.autoAckOnOpen : base.alerts.autoAckOnOpen,

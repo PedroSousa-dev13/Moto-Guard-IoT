@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { authAPI } from "../services/api";
 import {
   applyTheme, defaultSettings, defaultThresholds, loadSettings, saveSettings,
-  type AlertMinSeverity, type AppSettings, type Language,
+  type AlertMinSeverity, type AppSettings, type Language, type MapStyle,
 } from "../utils/settings";
 import {
   Settings2, Bell, Sliders, Info, Sun, Moon, Globe, Gauge,
@@ -170,7 +170,9 @@ export default function Settings() {
                     <div className="settings-option-desc">Tipo de mapa ao abrir o simulador</div>
                   </div>
                 </div>
-                <select className="control control-sm settings-select">
+                <select className="control control-sm settings-select"
+                  value={form.mapStyle}
+                  onChange={(e) => setForm((p) => ({ ...p, mapStyle: e.target.value as MapStyle }))}>
                   <option value="streets">Ruas (OSM)</option>
                   <option value="satellite">Satélite</option>
                 </select>
@@ -185,7 +187,9 @@ export default function Settings() {
                   </div>
                 </div>
                 <label className="settings-toggle">
-                  <input type="checkbox" />
+                  <input type="checkbox"
+                    checked={form.mapAutopilot}
+                    onChange={(e) => setForm((p) => ({ ...p, mapAutopilot: e.target.checked }))} />
                   <span className="toggle-track" />
                 </label>
               </div>
