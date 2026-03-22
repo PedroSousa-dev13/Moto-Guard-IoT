@@ -93,8 +93,8 @@ export const tripsAPI = {
   getById: (id: string) =>
     api.get<Trip>(`/trips/${id}`),
   
-  getTelemetry: (tripId: string) =>
-    api.get<TripTelemetryResponse>(`/telemetry/${tripId}`),
+  getTelemetry: (tripId: string, params?: { limit?: number }) =>
+    api.get<TripTelemetryResponse>(`/telemetry/${tripId}`, { params }),
 
   getEvaluation: (tripId: string) =>
     api.get<TripEvaluationResponse>(`/trips/${tripId}/evaluation`),
