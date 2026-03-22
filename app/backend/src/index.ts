@@ -19,6 +19,7 @@ import { mqttService } from "./services/mqtt.service";
 import { socketService } from "./services/socket.service";
 import { prisma } from "./services/prisma.service";
 import { influxService } from "./services/influx.service";
+import { perfLogger } from "./middleware/perf-logger.middleware";
 
 // ─── Handlers globais de erros não capturados ────────────────────────────────
 // Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
@@ -37,6 +38,7 @@ const server = http.createServer(app);
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+app.use(perfLogger);
 
 app.use("/api", apiRoutes);
 
