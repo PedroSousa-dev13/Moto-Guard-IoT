@@ -1,17 +1,12 @@
 // =============================================================================
 // MotoGuard — CompareBar
 // =============================================================================
-// Barra flutuante que aparece quando há ≥1 viagem selecionada para comparação.
-// =============================================================================
 
 import React from "react";
 
 export interface CompareBarProps {
-  /** Número de viagens atualmente selecionadas (0, 1 ou 2) */
   selectedCount: number;
-  /** Callback para limpar todas as seleções */
   onClear: () => void;
-  /** Callback para iniciar a comparação — só ativo quando selectedCount === 2 */
   onCompare: () => void;
 }
 
@@ -21,50 +16,43 @@ export function CompareBar({ selectedCount, onClear, onCompare }: CompareBarProp
   const canCompare = selectedCount === 2;
 
   return (
-    <div
-      className="compare-bar"
-      role="region"
-      aria-label="Barra de comparação de viagens"
-      aria-live="polite"
-    >
+    <div className="compare-bar" role="region" aria-label="Barra de comparação de viagens" aria-live="polite">
       <div className="compare-bar-inner">
-        {/* Contador e mensagem */}
+        {/* Slots visuais */}
+        <div className="compare-bar-slots">
+          <div className={`compare-bar-slot ${selectedCount >= 1 ? "compare-bar-slot--filled compare-bar-slot--a" : ""}`}>
+            {selectedCount >= 1 ? "A" : "—"}
+          </div>
+          <div className="compare-bar-slot-sep">vs</div>
+          <div className={`compare-bar-slot ${selectedCount >= 2 ? "compare-bar-slot--filled compare-bar-slot--b" : ""}`}>
+            {selectedCount >= 2 ? "B" : "—"}
+          </div>
+        </div>
+
+        {/* Info */}
         <div className="compare-bar-info">
           <span className="compare-bar-count">
             <span className="compare-bar-count-num">{selectedCount}</span>
-            {" de 2 selecionadas"}
+            <span className="compare-bar-count-of"> / 2</span>
           </span>
-          {canCompare && (
-            <span className="compare-bar-hint">
-              Pronto para comparar
-            </span>
-          )}
-          {!canCompare && (
-            <span className="compare-bar-hint">
-              Seleciona mais 1 viagem para comparar
-            </span>
-          )}
+          <span className="compare-bar-hint">
+            {canCompare ? "Pronto para comparar" : "Seleciona mais 1 viagem"}
+          </span>
         </div>
 
-        {/* Ações */}
+        {/* Actions */}
         <div className="compare-bar-actions">
-          <button
-            type="button"
-            className="btn btn-ghost compare-bar-clear"
-            onClick={onClear}
-          >
+          <button type="button" className="btn btn-ghost compare-bar-clear btn-sm" onClick={onClear}>
             Limpar
           </button>
-
           <button
             type="button"
             className="btn btn-primary compare-bar-compare"
             onClick={onCompare}
             disabled={!canCompare}
             aria-disabled={!canCompare}
-            tabIndex={0}
           >
-            Comparar Viagens
+            ⚡ Comparar
           </button>
         </div>
       </div>
