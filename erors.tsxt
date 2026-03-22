@@ -36,3 +36,6 @@ Em que é que isto tem impacto:
 
 Próximo passo recomendado:
 - Criar testes para routes + services críticos até atingir >=80% global em statements, branches, functions e lines.
+
+
+

@@ -34,6 +34,7 @@ export async function getTripTelemetry(
 ): Promise<void> {
   const userId = req.userId!;
   const tripId = req.params.tripId as string;
+  const t0 = Date.now();
 
   // Verificar que a viagem pertence ao utilizador
   const trip = await prisma.trip.findFirst({
@@ -47,11 +48,8 @@ export async function getTripTelemetry(
   }
 
   if (trip.source === "GPX_IMPORTED") {
-    res.json({
-      trip,
-      total_points: 0,
-      data: [],
-    });
+    console.log(`[TELEMETRY] ${tripId} — GPX_IMPORTED, sem dados InfluxDB (${Date.now() - t0}ms)`);
+    res.json({ trip, total_points: 0, data: [] });
     return;
   }
 
@@ -62,32 +60,29 @@ export async function getTripTelemetry(
   });
 
   if (!motorcycle?.deviceId) {
-    res.json({
-      trip,
-      total_points: 0,
-      data: [],
-    });
+    console.warn(`[TELEMETRY] ${tripId} — sem deviceId associado (${Date.now() - t0}ms)`);
+    res.json({ trip, total_points: 0, data: [] });
     return;
   }
 
   try {
+    const t1 = Date.now();
     const points = await influxService.queryTripTelemetry(
       trip.startedAt,
       trip.endedAt,
       motorcycle?.deviceId
     );
+    const influxMs = Date.now() - t1;
+    const totalMs = Date.now() - t0;
 
-    res.json({
-      trip,
-      total_points: points.length,
-      data: points,
-    });
+    console.log(`[TELEMETRY] ${tripId} — ${points.length} pontos, InfluxDB: ${influxMs}ms, total: ${totalMs}ms`);
+    if (influxMs > 2000) {
+      console.warn(`[TELEMETRY SLOW] InfluxDB demorou ${influxMs}ms para ${tripId} — considera reduzir o range ou adicionar downsampling`);
+    }
+
+    res.json({ trip, total_points: points.length, data: points });
   } catch (err) {
-    console.warn("InfluxDB indisponível, a retornar dados vazios:", (err as Error).message);
-    res.json({
-      trip,
-      total_points: 0,
-      data: [],
-    });
+    console.warn(`[TELEMETRY] InfluxDB indisponível para ${tripId} (${Date.now() - t0}ms):`, (err as Error).message);
+    res.json({ trip, total_points: 0, data: [] });
   }
 }

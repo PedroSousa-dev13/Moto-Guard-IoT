@@ -5,22 +5,26 @@ Ordenadas por prioridade/impacto académico
 
 ── PRIORIDADE ALTA ──────────────────────────────────────────────────────────
 
-[1] Slider interativo no TripDetail (mapa + gráficos sincronizados)
-    - Adicionar um range input (slider) na página TripDetail
-    - Ao mover o slider, o marcador no mapa move-se para a posição correspondente
-    - Os cursores dos gráficos Recharts acompanham o mesmo instante temporal
-    - Funciona tanto para viagens simuladas (telemetria InfluxDB) como GPX
+[✓] Slider interativo no TripDetail (mapa + gráficos sincronizados) — CONCLUÍDO
+    - ✓ Adicionar um range input (slider) na página TripDetail
+    - ✓ Ao mover o slider, o marcador no mapa move-se para a posição correspondente
+    - ✓ Os cursores dos gráficos Recharts acompanham o mesmo instante temporal
+    - ✓ Funciona tanto para viagens simuladas (telemetria InfluxDB) como GPX
     - Ficheiros: app/frontend/src/pages/TripDetail.tsx
+    - Spec: .kiro/specs/trip-detail-interactive-slider/
 
-[2] Replay animado de viagem no TripDetail
-    - Botão "Reproduzir" que anima o marcador ao longo da rota
-    - Controlo de velocidade: 1x, 2x, 5x, 10x
-    - Botões Play / Pause / Stop
-    - Mostra os valores de telemetria em tempo real durante o replay
+[✓] Replay animado de viagem no TripDetail — CONCLUÍDO
+    - ✓ Botão "Reproduzir" que anima o marcador ao longo da rota
+    - ✓ Controlo de velocidade: 1x, 2x, 5x, 10x
+    - ✓ Botões Play / Pause / Stop
+    - ✓ Mostra os valores de telemetria em tempo real durante o replay
     - Ficheiros: app/frontend/src/pages/TripDetail.tsx
+    - Spec: .kiro/specs/trip-replay-animation/
 
+
+# esperar por enquanto, apenas fazer quando receber ordem
 [3] Gauges interativos no Dashboard
-    - Substituir cards numéricos por gauges circulares animados (SVG ou Canvas)
+    - Substituir cards numéricos por gauges circulares animados (SVG ou Canvas) se os mesmos forem super interavivos tudo bem se nao consta
     - Gauge principal: Velocidade + RPM combinados com indicador de mudança
     - Gauges secundários: Temperatura, Voltagem, G-Force, Inclinação
     - Animação suave ao atualizar valores em tempo real
@@ -43,6 +47,9 @@ Ordenadas por prioridade/impacto académico
 
 ── PRIORIDADE MÉDIA ─────────────────────────────────────────────────────────
 
+
+
+# otima implelemtacap
 [5] Classificação automática de viagens (Trip Categorization)
     - Classificar automaticamente cada viagem numa categoria:
         * Commute (curta, urbana, velocidade baixa)
@@ -55,6 +62,9 @@ Ordenadas por prioridade/impacto académico
                  app/frontend/src/pages/Trips.tsx,
                  app/frontend/src/pages/TripDetail.tsx
 
+
+
+#super boa ideia
 [6] Comparação de viagens lado a lado
     - Selecionar 2 viagens na página Trips e comparar:
         * Gráficos de velocidade sobrepostos
@@ -63,6 +73,9 @@ Ordenadas por prioridade/impacto académico
         * Distância, duração, velocidade média/máxima
     - Ficheiros: app/frontend/src/pages/Trips.tsx (nova sub-página ou modal)
 
+
+
+#otimo a implementar
 [7] Heatmap de eventos no mapa (Analytics ou Alertas)
     - Mapa Leaflet com heatmap de densidade de eventos críticos por localização
     - Filtros por tipo de evento (HARD_BRAKING, EXCESSIVE_LEAN, CRASH, etc.)
@@ -70,7 +83,9 @@ Ordenadas por prioridade/impacto académico
     - Usar plugin Leaflet.heat ou implementação própria com canvas
     - Ficheiros: app/frontend/src/pages/Analytics.tsx ou nova página
 
-[8] Geofencing — alertas de zona
+
+# será que faz sentido implementar ?
+[8] Geofencing — alertas de zona 
     - Permitir ao utilizador definir uma zona geográfica no mapa (círculo ou polígono)
     - Gerar alerta quando a mota sai da zona definida
     - O tipo GEOFENCE já existe no modelo de TripEvent — apenas falta a lógica
@@ -79,6 +94,8 @@ Ordenadas por prioridade/impacto académico
     - Ficheiros: app/backend/src/services/heuristics.service.ts,
                  app/frontend/src/pages/Garage.tsx ou Settings.tsx
 
+
+# nao entendo este ponto procuro explicacao
 [9] Documentação OpenAPI/Swagger
     - Adicionar swagger-ui-express e swagger-jsdoc ao backend
     - Documentar todos os endpoints REST (~15 rotas)
@@ -113,15 +130,12 @@ Ordenadas por prioridade/impacto académico
      - Ficheiros: app/frontend/src/pages/Map.tsx,
                   simulador/headless_simulator.py
 
-[14] Health Score da mota na Garagem
-     - Score 0-100% baseado em: km desde última manutenção, eventos recentes,
-       temperatura média, pressão de pneus, voltagem
-     - Mostrar na card de cada mota na Garagem
-     - Ficheiros: app/frontend/src/pages/Garage.tsx,
-                  app/backend/src/controllers/motorcycle.controller.ts
+
 
 
 ── FEATURES AVANÇADAS (IMPACTO ACADÉMICO ELEVADO) ──────────────────────────
+
+
 
 [15] Análise de padrões de condução com clustering ML
      - Usar K-means ou DBSCAN para agrupar viagens por padrão de condução
@@ -132,28 +146,12 @@ Ordenadas por prioridade/impacto académico
      - Mostrar no Analytics uma secção "Teu Estilo de Condução"
      - Ficheiros: ml/clustering.py (novo), app/backend/src/services/trip-ml-pipeline.service.ts
 
-[16] Previsão de manutenção com ML
-     - Modelo que prevê quando a mota vai precisar de manutenção baseado em:
-         * Odómetro, temperatura média, eventos de sobreaquecimento
-         * Pressão de óleo, voltagem, padrão de utilização
-     - Alerta proativo: "Manutenção recomendada em ~200 km"
-     - Ficheiros: ml/maintenance_predictor.py (novo), app/frontend/src/pages/Garage.tsx
 
 [17] Detecção de anomalias em tempo real (streaming ML)
      - Modelo online que deteta anomalias durante a viagem (não só pós-viagem)
      - Alertas em tempo real quando o padrão de condução se desvia muito do normal
      - Usar Isolation Forest incremental ou One-Class SVM
      - Ficheiros: ml/online_detector.py (novo), app/backend/src/services/mqtt.service.ts
-
-[18] Leaderboard / Gamificação
-     - Ranking de condutores por score médio de condução
-     - Badges/conquistas:
-         * "100 km sem eventos críticos"
-         * "Mestre das curvas" (alta inclinação sem eventos)
-         * "Eco-rider" (baixo consumo estimado)
-     - Página dedicada ou secção no Analytics
-     - Ficheiros: app/frontend/src/pages/Leaderboard.tsx (novo),
-                  app/backend/src/controllers/leaderboard.controller.ts (novo)
 
 [19] Exportação de relatório PDF personalizado
      - Relatório profissional com:
@@ -166,6 +164,8 @@ Ordenadas por prioridade/impacto académico
      - Ficheiros: app/frontend/src/pages/TripDetail.tsx,
                   app/frontend/src/utils/pdfGenerator.ts (novo)
 
+
+# nao faz sentido colocar strava ou relive uma vez que sao plataformas de corrida e nao de motas
 [20] Integração com Strava/Relive
      - Exportar viagem diretamente para Strava ou Relive via API
      - Converter telemetria MotoGuard → formato compatível
@@ -200,13 +200,6 @@ Ordenadas por prioridade/impacto académico
      - Mapa de calor de horários de utilização (quando conduzes mais)
      - Comparação com média da comunidade (se houver múltiplos users)
      - Ficheiros: app/frontend/src/pages/Analytics.tsx (expandir)
-
-[25] Modo offline / PWA com Service Worker
-     - Aplicação funciona sem internet (dados em cache)
-     - Sincroniza viagens quando a ligação volta
-     - Útil para zonas sem cobertura durante viagens
-     - Ficheiros: app/frontend/src/serviceWorker.ts (novo),
-                  app/frontend/public/manifest.json
 
 
 ── BUGS / MELHORIAS TÉCNICAS ────────────────────────────────────────────────

@@ -10,9 +10,9 @@ interface Motorcycle3DViewProps {
   speed: number;
   rpm: number;
   engineTempStatus: 'ok' | 'warning' | 'critical';
-  lat?: number;       // current GPS position (live, updates every tick)
+  lat?: number;
   lng?: number;
-  originLat?: number; // route start point (fixed anchor for the map texture)
+  originLat?: number;
   originLng?: number;
   modelColor?: string;
   hasMapOrigin?: boolean;
@@ -21,11 +21,7 @@ interface Motorcycle3DViewProps {
 const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
-// ── Scale constants ───────────────────────────────────────────────────────────
-// Moto 3D model = 3 units = ~2.2m real  →  1 unit = 0.733m
-const MOTO_REAL_LENGTH_M = 2.2;
-const MOTO_3D_UNITS      = 3;
-const METERS_PER_UNIT    = MOTO_REAL_LENGTH_M / MOTO_3D_UNITS; // 0.733 m/unit
+const MOTO_3D_UNITS = 3;
 
 const ZOOM      = 19;
 const TILE_PX   = 256;
@@ -38,30 +34,6 @@ function textureMeters(lat: number) {
   return metersPerTile * GRID;
 }
 
-// ── Geo offset → UV delta ─────────────────────────────────────────────────────
-// Returns the UV offset (0..1 range) to shift the texture so the current
-// position appears at the centre of the plane.
-// OSM tiles: X = east (UV.x increases east), Y = south (UV.y increases south → flip)
-function geoToUVOffset(
-  originLat: number, originLng: number,
-  currentLat: number, currentLng: number,
-) {
-  const R = 6378137;
-  const avgLat = ((originLat + currentLat) / 2) * (Math.PI / 180);
-
-  const dNorth = (currentLat - originLat) * (Math.PI / 180) * R; // + = north
-  const dEast  = (currentLng - originLng) * (Math.PI / 180) * R * Math.cos(avgLat); // + = east
-
-  const texM = textureMeters(originLat);
-
-  // UV.x increases east, UV.y increases south in OSM tiles
-  // Three.js CanvasTexture flips Y by default for DOM elements → UV.y increases north
-  // So dNorth → +UV.y (no flip needed after Three.js auto-flip)
-  return {
-    u:  dEast  / texM,   // fraction of texture width
-    v:  dNorth / texM,   // fraction of texture height (Three.js already flipped Y)
-  };
-}
 function latLngToTile(lat: number, lng: number, zoom: number) {
   const n = Math.pow(2, zoom);
   const x = Math.floor(((lng + 180) / 360) * n);
@@ -70,30 +42,25 @@ function latLngToTile(lat: number, lng: number, zoom: number) {
   return { x, y };
 }
 
-// Exact fractional tile position (0..1 within the tile)
 function latLngToTileFrac(lat: number, lng: number, zoom: number) {
   const n = Math.pow(2, zoom);
   const xf = ((lng + 180) / 360) * n;
   const latRad = (lat * Math.PI) / 180;
   const yf = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
-  return { xf, yf }; // integer part = tile index, fractional part = position within tile
+  return { xf, yf };
 }
 
-// UV of a lat/lng within the GRID×GRID canvas texture
-// The canvas has GRID tiles, center tile index = Math.floor(GRID/2)
 function latLngToCanvasUV(lat: number, lng: number, originLat: number, originLng: number, zoom: number) {
   const half = Math.floor(GRID / 2);
   const originTile = latLngToTile(originLat, originLng, zoom);
   const { xf, yf } = latLngToTileFrac(lat, lng, zoom);
 
-  // Position in tile-space relative to the top-left of the canvas
   const canvasTileX = (xf - originTile.x) + half;
   const canvasTileY = (yf - originTile.y) + half;
 
-  // Convert to UV (0..1)
   return {
     u: canvasTileX / GRID,
-    v: canvasTileY / GRID, // OSM Y: increases southward (down in canvas)
+    v: canvasTileY / GRID,
   };
 }
 
@@ -103,7 +70,6 @@ function useMapTexture(lat: number, lng: number, enabled: boolean) {
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
 
-  // Create canvas + texture once
   useEffect(() => {
     const canvas = document.createElement('canvas');
     canvas.width  = CANVAS_PX;
@@ -115,12 +81,10 @@ function useMapTexture(lat: number, lng: number, enabled: boolean) {
     tex.wrapS = THREE.ClampToEdgeWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
     textureRef.current = tex;
-    // Don't expose texture yet — wait for tiles
 
     return () => { tex.dispose(); };
   }, []);
 
-  // Re-fetch tiles whenever lat/lng changes AND enabled
   useEffect(() => {
     if (!enabled) return;
 
@@ -158,7 +122,7 @@ function useMapTexture(lat: number, lng: number, enabled: boolean) {
             ctx.fillStyle = 'rgba(0,0,0,0.28)';
             ctx.fillRect(0, 0, CANVAS_PX, CANVAS_PX);
             tex.needsUpdate = true;
-            setTexture(tex); // expose only after first full load
+            setTexture(tex);
           }
         };
 
@@ -184,7 +148,6 @@ function useMapTexture(lat: number, lng: number, enabled: boolean) {
 }
 
 // ── Infinite map floor shader ─────────────────────────────────────────────────
-// Everything in UV space (0..1). The plane is static; the shader pans+rotates.
 const floorVertShader = /* glsl */`
   varying vec2 vUv;
   void main() {
@@ -196,20 +159,16 @@ const floorVertShader = /* glsl */`
 const floorFragShader = /* glsl */`
   uniform sampler2D uMap;
   uniform float     uHasMap;
-  uniform vec2      uCenter;   // UV of the bike's current position in the texture (0..1)
-  uniform float     uUVScale;  // fraction of texture visible around the centre
-  uniform float     uYaw;      // bike heading in radians (OSM: north=0, east=+PI/2)
+  uniform vec2      uCenter;
+  uniform float     uUVScale;
+  uniform float     uYaw;
 
   varying vec2 vUv;
 
   void main() {
-    vec2 c = vUv - 0.5; // -0.5..0.5, centre of plane
-
-    // Scale: how much texture is visible
+    vec2 c = vUv - 0.5;
     vec2 scaled = c * uUVScale;
 
-    // Rotate so the bike always faces "up" on screen
-    // yaw=0 → north up; yaw=PI/2 → east up
     float cosY = cos(uYaw);
     float sinY = sin(uYaw);
     vec2 rotated = vec2(
@@ -217,9 +176,6 @@ const floorFragShader = /* glsl */`
       -scaled.x * sinY + scaled.y * cosY
     );
 
-    // Translate so the bike's exact UV position is at the centre
-    // OSM canvas: U increases east, V increases south
-    // Three.js CanvasTexture flips V (south→north), so we negate V offset
     vec2 mapUv = rotated + vec2(uCenter.x, 1.0 - uCenter.y);
 
     vec4 col = vec4(0.07, 0.10, 0.13, 1.0);
@@ -244,10 +200,9 @@ function MapFloor({
   texture: THREE.CanvasTexture | null;
   yaw: number;
   originLat: number;
-  centerU: number; // UV of bike's current position in the canvas texture
+  centerU: number;
   centerV: number;
 }) {
-  // Visible area: ~160m diameter at this camera angle
   const VISIBLE_METERS = 160;
   const texM    = textureMeters(originLat);
   const uvScale = VISIBLE_METERS / texM;
@@ -359,7 +314,6 @@ function Scene(props: Motorcycle3DViewProps & { mapTexture: THREE.CanvasTexture 
   const currentLat = rest.lat ?? originLat;
   const currentLng = rest.lng ?? originLng;
 
-  // Exact UV of the bike's current position within the canvas texture
   const center = rest.hasMapOrigin
     ? latLngToCanvasUV(currentLat, currentLng, originLat, originLng, ZOOM)
     : { u: 0.5, v: 0.5 };
@@ -405,7 +359,6 @@ function Scene(props: Motorcycle3DViewProps & { mapTexture: THREE.CanvasTexture 
 
 // ── Export ────────────────────────────────────────────────────────────────────
 export default function Motorcycle3DView(props: Motorcycle3DViewProps) {
-  // Map texture is always anchored to the route origin, not the live GPS
   const originLat = props.originLat ?? props.lat ?? DEFAULT_LAT;
   const originLng = props.originLng ?? props.lng ?? DEFAULT_LNG;
   const mapTexture = useMapTexture(originLat, originLng, props.hasMapOrigin ?? false);
