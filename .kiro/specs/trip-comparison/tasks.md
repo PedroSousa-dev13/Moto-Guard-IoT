@@ -16,25 +16,25 @@ Implementação da funcionalidade de comparação de viagens lado a lado na pág
   - Exportar também as interfaces `NormalizedSpeedPoint`, `TripComparisonData`, `ListStateSnapshot`
   - _Requirements: 4.2, 4.6, 5.2, 5.3, 5.5, 7.3, 7.5_
 
-  - [ ]* 1.1 Escrever property test para `normalizeTelemetryToPercent`
+  - [x] 1.1 Escrever property test para `normalizeTelemetryToPercent`
     - Instalar `fast-check` como devDependency: `npm install --save-dev fast-check`
     - Criar `app/frontend/src/utils/tripComparison.property.test.ts`
     - **Property 7: Normalização do eixo X para [0, 100]**
     - **Validates: Requirements 4.2**
 
-  - [ ]* 1.2 Escrever property test para `compareValues`
+  - [x] 1.2 Escrever property test para `compareValues`
     - **Property 9: Destaque do vencedor é correto**
     - **Validates: Requirements 5.2, 6.4, 7.3**
 
-  - [ ]* 1.3 Escrever property test para `scoreStyle`
+  - [x] 1.3 Escrever property test para `scoreStyle`
     - **Property 11: Codificação de cor de score**
     - **Validates: Requirements 5.5**
 
-  - [ ]* 1.4 Escrever property test para `calcAvgSpeed`
+  - [x] 1.4 Escrever property test para `calcAvgSpeed`
     - **Property 8: Velocidade média de referência é a média aritmética**
     - **Validates: Requirements 4.6**
 
-  - [ ]* 1.5 Escrever property test para `formatDiff`
+  - [x] 1.5 Escrever property test para `formatDiff`
     - **Property 10: Diferença absoluta é correta**
     - **Validates: Requirements 5.3, 7.5**
 
@@ -48,7 +48,7 @@ Implementação da funcionalidade de comparação de viagens lado a lado na pág
   - Acessível por teclado (focus, aria-disabled)
   - _Requirements: 1.2, 1.3, 1.4_
 
-  - [ ]* 2.1 Escrever property test para lógica de ativação do botão Comparar
+  - [x] 2.1 Escrever property test para lógica de ativação do botão Comparar
     - **Property 2: Botão Comparar ativo apenas com 2 selecionadas**
     - **Validates: Requirements 1.4**
 
@@ -67,11 +67,11 @@ Implementação da funcionalidade de comparação de viagens lado a lado na pág
   - Renderizar `<CompareBar>` dentro de `Trips.tsx` quando `view === "LIST"`
   - _Requirements: 1.1, 1.2, 1.3, 1.6, 1.7, 2.2_
 
-  - [ ]* 3.1 Escrever property test para limite de seleção
+  - [x] 3.1 Escrever property test para limite de seleção
     - **Property 1: Limite de seleção**
     - **Validates: Requirements 1.3**
 
-  - [ ]* 3.2 Escrever property test para toggle round-trip
+  - [x] 3.2 Escrever property test para toggle round-trip
     - **Property 3: Toggle de seleção é round-trip**
     - **Validates: Requirements 1.6**
 
@@ -111,7 +111,7 @@ Implementação da funcionalidade de comparação de viagens lado a lado na pág
   - Mostrar mensagem de erro + botão fechar se uma viagem não existir (404/403)
   - _Requirements: 2.1, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2, 8.3_
 
-  - [ ]* 6.1 Escrever testes unitários para `ComparisonView`
+  - [x] 6.1 Escrever testes unitários para `ComparisonView`
     - Criar `app/frontend/src/components/trips/ComparisonView.test.tsx`
     - Testar renderização inicial com dados mock
     - Testar estado de loading e erro em cada secção
@@ -119,23 +119,23 @@ Implementação da funcionalidade de comparação de viagens lado a lado na pág
     - Testar casos extremos: ML score nulo, telemetria vazia, zero eventos
     - _Requirements: 2.4, 3.3, 3.4, 5.4, 6.5_
 
-  - [ ]* 6.2 Escrever property test para cabeçalho da ComparisonView
+  - [x] 6.2 Escrever property test para cabeçalho da ComparisonView
     - **Property 5: Cabeçalho contém identificadores das duas viagens**
     - **Validates: Requirements 2.3**
 
-  - [ ]* 6.3 Escrever property test para limite de pontos de telemetria
+  - [x] 6.3 Escrever property test para limite de pontos de telemetria
     - **Property 6: Limite de 500 pontos de telemetria**
     - **Validates: Requirements 3.5**
 
-  - [ ]* 6.4 Escrever property test para restauração de estado ao fechar
+  - [x] 6.4 Escrever property test para restauração de estado ao fechar
     - **Property 4: Fechar restaura estado da lista**
     - **Validates: Requirements 2.2**
 
-  - [ ]* 6.5 Escrever property test para Event Summary
+  - [x] 6.5 Escrever property test para Event Summary
     - **Property 12: Event summary exibe contagens corretas**
     - **Validates: Requirements 6.2, 6.3**
 
-  - [ ]* 6.6 Escrever property test para Trip Stats
+  - [x] 6.6 Escrever property test para Trip Stats
     - **Property 13: Trip stats exibe as quatro métricas**
     - **Validates: Requirements 7.2**
 

@@ -219,3 +219,62 @@ Ordenadas por prioridade/impacto académico
 
 [B5] Proteger endpoint de comando com JWT
      - Ficheiro: app/backend/src/controllers/command.controller.ts
+
+
+── FASE 5 — TESTES E VALIDAÇÃO ──────────────────────────────────────────────
+
+[ ] 5.1  Testes com dados simulados
+         → Cenários: condução normal, queda, falha de alternador,
+           sobreaquecimento em trânsito lento
+         → Validar que o backend deteta todos os eventos corretamente
+         → Validar que o ML Score é coerente com o Heuristic Score
+
+[ ] 5.2  Testes com dados reais (ficheiros GPX)
+         → Importar rotas GPX reais e validar análise pós-viagem
+         → Comparar com expectativas de condução real
+         → Testar snap-to-road do simulador com rotas GPX reais
+
+[ ] 5.3  Testes de integração
+         → Cadeia completa: Simulador → MQTT → Backend → InfluxDB
+           → WebSocket → Frontend → Notificações
+         → Validar pipeline ML: gerar dados → treinar → avaliar → frontend
+
+[ ] 5.4  Testes de usabilidade
+         → Testar dashboard com 2-3 utilizadores
+         → Feedback sobre visualizações, alertas e onboarding
+
+[ ] 5.5  Métricas de performance
+         → Latência: tempo desde geração do dado até visualização
+         → Taxa de falsos positivos nos alertas heurísticos
+         → Carga: quantos pontos/segundo o sistema suporta
+         → Tempo de inferência ML (target: < 500ms)
+
+── Testes automatizados existentes (a completar/validar) ────────────────────
+[~] ml/tests/test_features.py — property tests FeatureExtractor
+[~] ml/tests/test_infer.py — round-trip serialização + ML_Score [0,100]
+[~] app/tests/trip-ml-pipeline.service.test.ts — fallback + ComparisonReport
+[~] app/frontend/src/utils/analytics.test.ts
+[~] app/frontend/src/utils/alerts.test.ts
+[~] app/frontend/src/utils/settings.test.ts
+[~] app/frontend/src/utils/trips.test.ts
+[~] app/frontend/src/components/CommandPanel.test.tsx
+[~] app/frontend/src/components/auth/OnboardingGuard.test.tsx
+[~] app/frontend/src/pages/Garage.test.tsx
+
+
+── FASE 6 — DOCUMENTAÇÃO E ENTREGA ──────────────────────────────────────────
+
+[ ] 6.1  Relatório técnico do projeto
+         → Introdução, estado da arte, arquitetura, implementação
+         → Diagramas: sistema, base de dados, fluxo de dados, pipeline ML
+
+[ ] 6.2  Análise de resultados
+         → Métricas de deteção (precisão, recall dos alertas heurísticos)
+         → Comparação Heuristic Score vs ML Score em viagens reais
+         → Screenshots e demonstrações do dashboard
+
+[ ] 6.3  Manual de utilização
+         → Como instalar (Docker), como usar, como treinar o modelo ML
+
+[ ] 6.4  Apresentação final
+         → Slides + demo em tempo real do sistema completo

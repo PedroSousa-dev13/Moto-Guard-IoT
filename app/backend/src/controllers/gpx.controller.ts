@@ -3,6 +3,7 @@ import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
 import { parseGpx } from "../services/gpx-import.service";
 import { influxService } from "../services/influx.service";
+import { categorizeTripById } from "../services/trip-categorization.service";
 
 type GpxImportRequest = AuthRequest & { file?: Express.Multer.File };
 
@@ -40,22 +41,14 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
         ? await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
         : await tx.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
 
-      const ensuredMotorcycle = motorcycle
-        ? motorcycle
-        : await tx.motorcycle.create({
-            data: {
-              userId,
-              name: "GPX Import",
-              brand: null,
-              year: null,
-              profileId: null,
-              deviceId: null,
-            },
-          });
-
-      if (requestedMotorcycleId && !motorcycle) {
-        throw badRequest("Mota selecionada não encontrada");
+      if (!motorcycle) {
+        if (requestedMotorcycleId) {
+          throw badRequest("Mota selecionada não encontrada");
+        }
+        throw badRequest("Não tens motas registadas. Adiciona uma mota na Garagem antes de importar um GPX.");
       }
+
+      const ensuredMotorcycle = motorcycle;
 
       const trip = await tx.trip.create({
         data: {
@@ -95,6 +88,11 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
         avgSpeedKmh: parsed.avgSpeedKmh,
         maxSpeedKmh: parsed.maxSpeedKmh,
       },
+    });
+
+    // Fire-and-forget: categorize trip asynchronously
+    categorizeTripById(result.tripId, userId).catch((err) => {
+      console.error(`[trip-categorization] Erro ao categorizar viagem ${result.tripId}:`, err);
     });
   } catch (err) {
     const statusCode = typeof (err as any)?.statusCode === "number" ? (err as any).statusCode : null;

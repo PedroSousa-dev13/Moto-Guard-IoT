@@ -24,6 +24,7 @@ import { deriveGpxSeries } from "../utils/gpx";
 import { PlaybackSlider } from "../components/PlaybackSlider";
 import { PlaybackControls } from "../components/PlaybackControls";
 import { LazyChart } from "../components/LazyChart";
+import TripCategoryBadge from "../components/trips/TripCategoryBadge";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -831,6 +832,12 @@ export default function TripDetail() {
             </div>
           ))}
         </div>
+
+        {trip.category != null && (
+          <div style={{ marginTop: 10 }}>
+            <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
+          </div>
+        )}
 
         <div className="panel" style={{ marginTop: 14 }}>
           <div className="panel-header">

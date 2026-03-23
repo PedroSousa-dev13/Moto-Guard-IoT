@@ -18,6 +18,16 @@ export const TripStatus = {
 export type TripStatus = (typeof TripStatus)[keyof typeof TripStatus]
 
 
+export const TripCategory = {
+  COMMUTE: 'COMMUTE',
+  WEEKEND_RIDE: 'WEEKEND_RIDE',
+  TRACK_DAY: 'TRACK_DAY',
+  OFF_ROAD: 'OFF_ROAD'
+} as const
+
+export type TripCategory = (typeof TripCategory)[keyof typeof TripCategory]
+
+
 export const TripSource = {
   SIMULATOR: 'SIMULATOR',
   GPX_IMPORTED: 'GPX_IMPORTED',

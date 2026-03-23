@@ -150,6 +150,8 @@ export const TripScalarFieldEnum = {
   status: 'status',
   mlScore: 'mlScore',
   mlModelVersion: 'mlModelVersion',
+  category: 'category',
+  categoryConfidence: 'categoryConfidence',
   createdAt: 'createdAt'
 } as const
 

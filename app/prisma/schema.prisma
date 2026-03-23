@@ -104,10 +104,12 @@ model Trip {
   avgSpeedKmh     Float?      @map("avg_speed_kmh")
   maxRollDeg      Float?      @map("max_roll_deg")
   maxGForce       Float?      @map("max_g_force")
-  status          TripStatus  @default(ACTIVE)
-  mlScore         Float?      @map("ml_score")
-  mlModelVersion  String?     @map("ml_model_version")
-  createdAt       DateTime    @default(now()) @map("created_at")
+  status              TripStatus    @default(ACTIVE)
+  mlScore             Float?        @map("ml_score")
+  mlModelVersion      String?       @map("ml_model_version")
+  category            TripCategory? @map("category")
+  categoryConfidence  Float?        @map("category_confidence")
+  createdAt           DateTime      @default(now()) @map("created_at")
 
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   motorcycle      Motorcycle  @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
@@ -124,6 +126,13 @@ enum TripStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+enum TripCategory {
+  COMMUTE
+  WEEKEND_RIDE
+  TRACK_DAY
+  OFF_ROAD
 }
 
 enum TripSource {

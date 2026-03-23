@@ -10,6 +10,7 @@ import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
 import { runTripMlPipeline, getMlStatus } from "../services/trip-ml-pipeline.service";
 import { buildTripFeedItem } from "../services/trip-feed.service";
+import { categorizeTripById } from "../services/trip-categorization.service";
 
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
 type TripSourceFilter = (typeof VALID_TRIP_SOURCES)[number];
@@ -93,6 +94,8 @@ export async function listTripFeed(req: AuthRequest, res: Response): Promise<voi
           maxSpeedKmh: t.maxSpeedKmh,
           maxRollDeg: t.maxRollDeg,
           maxGForce: t.maxGForce,
+          category: t.category,
+          categoryConfidence: t.categoryConfidence,
           motorcycle: t.motorcycle ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category } : null,
           profile: t.motorcycle?.profile ?? null,
         },
@@ -171,6 +174,30 @@ export async function getMlStatusHandler(req: AuthRequest, res: Response): Promi
   } catch (err) {
     console.error("[getMlStatus] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor." });
+  }
+}
+
+// ─── Recategorizar viagem ────────────────────────────────────────────────────
+export async function categorizeTripHandler(req: AuthRequest, res: Response): Promise<void> {
+  const tripId = req.params.id as string;
+  const userId = req.userId!;
+
+  try {
+    const result = await categorizeTripById(tripId, userId);
+
+    if (result === null) {
+      res.status(404).json({ error: "Viagem não encontrada, não pertence ao utilizador ou não está concluída" });
+      return;
+    }
+
+    res.status(200).json({
+      category: result.category,
+      confidence: result.confidence,
+      matchedRules: result.matchedRules,
+    });
+  } catch (err) {
+    console.error("[categorizeTripHandler] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
 }
 
