@@ -15,6 +15,7 @@ import { SkeletonRow, SkeletonCard } from "../components/ui/Skeleton";
 import CompareBar from "../components/trips/CompareBar";
 import ComparisonView from "../components/trips/ComparisonView";
 import { ListStateSnapshot } from "../utils/tripComparison";
+import TripCategoryBadge from "../components/trips/TripCategoryBadge";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -486,6 +487,7 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
             <div className="trip-badges-v2">
               <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
               <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
+              <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
             </div>
           </div>
           <div className="trip-meta-line">
@@ -570,6 +572,7 @@ function TripListCard({
               <div className="trip-badges-v2">
                 <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
                 <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
+                <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
               </div>
             </div>
             <div className="trip-meta-line">

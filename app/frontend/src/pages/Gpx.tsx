@@ -45,7 +45,8 @@ export default function Gpx() {
     void load();
   }, []);
 
-  const canImport = !!file && !importing;
+  const hasMotorcycles = motorcycles.length > 0;
+  const canImport = !!file && !importing && hasMotorcycles;
 
   const selectedMotorcycle = useMemo(() => {
     if (selectedMotorcycleId === "AUTO") return null;
@@ -96,6 +97,11 @@ export default function Gpx() {
           </a>
         </div>
         <div className="panel-body">
+          {!hasMotorcycles && (
+            <div className="alert alert-danger" style={{ marginBottom: 12 }}>
+              Não tens motas registadas. <Link to="/garage">Adiciona uma mota na Garagem</Link> antes de importar um GPX.
+            </div>
+          )}
           <div className="form-grid" style={{ marginBottom: 12 }}>
             <div className="field field-span-2">
               <div className="field-label">Ficheiro (.gpx)</div>
@@ -112,13 +118,20 @@ export default function Gpx() {
                 className="control"
                 value={selectedMotorcycleId}
                 onChange={(e) => setSelectedMotorcycleId(e.target.value)}
+                disabled={!hasMotorcycles}
               >
-                <option value="AUTO">Automático (última mota)</option>
-                {motorcycles.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}{m.brand ? ` (${m.brand})` : ""}
-                  </option>
-                ))}
+                {motorcycles.length === 0 ? (
+                  <option value="AUTO">— sem motas registadas —</option>
+                ) : (
+                  <>
+                    <option value="AUTO">Automático (última mota)</option>
+                    {motorcycles.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}{m.brand ? ` (${m.brand})` : ""}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
               {selectedMotorcycle && (
                 <div className="page-subtitle" style={{ marginTop: 8 }}>

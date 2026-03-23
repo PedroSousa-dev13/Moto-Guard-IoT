@@ -26,6 +26,7 @@ import {
   type MotorcycleProfileThresholds,
 } from "./heuristics.service";
 import { EventType } from "../generated/prisma/enums";
+import { categorizeTripById } from "./trip-categorization.service";
 
 interface AlertEvent {
   status: string;
@@ -486,6 +487,14 @@ class SocketService {
       });
 
       console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
+
+      // Fire-and-forget: categorize trip asynchronously
+      const userId = this.lastUserIdByDevice.get(deviceId);
+      if (userId) {
+        categorizeTripById(tripId, userId).catch((err) => {
+          console.error(`[trip-categorization] Erro ao categorizar viagem ${tripId}:`, err);
+        });
+      }
       
       this.io?.emit("trip_ended", {
         deviceId,
@@ -593,6 +602,14 @@ class SocketService {
       });
 
       console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
+
+      // Fire-and-forget: categorize trip asynchronously
+      const userId = this.lastUserIdByDevice.get(deviceId);
+      if (userId) {
+        categorizeTripById(tripId, userId).catch((err) => {
+          console.error(`[trip-categorization] Erro ao categorizar viagem ${tripId}:`, err);
+        });
+      }
       
       this.io?.emit("trip_ended", {
         deviceId,
@@ -703,6 +720,11 @@ class SocketService {
       },
     });
 
+    // Fire-and-forget: categorize trip asynchronously
+    categorizeTripById(trip.id, association.userId).catch((err) => {
+      console.error(`[trip-categorization] Erro ao categorizar viagem ${trip.id}:`, err);
+    });
+
     return { tripId: trip.id, distanceKm, maxSpeedKmh };
   }
 
@@ -741,6 +763,11 @@ class SocketService {
         maxGForce: 0,
         avgSpeedKmh: 0,
       },
+    });
+
+    // Fire-and-forget: categorize trip asynchronously
+    categorizeTripById(trip.id, association.userId).catch((err) => {
+      console.error(`[trip-categorization] Erro ao categorizar viagem ${trip.id}:`, err);
     });
 
     return { tripId: trip.id, distanceKm, maxSpeedKmh };
