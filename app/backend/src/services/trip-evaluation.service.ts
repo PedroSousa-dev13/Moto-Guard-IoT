@@ -1,4 +1,3 @@
-import { prisma } from "./prisma.service";
 import { EventSeverity, EventType } from "../generated/prisma/enums";
 
 export interface TripEvaluation {
@@ -101,24 +100,3 @@ export function evaluateTripHeuristic(input: TripEvaluationInput): TripEvaluatio
   };
 }
 
-export async function evaluateTrip(tripId: string, userId: string): Promise<TripEvaluation | null> {
-  const trip = await prisma.trip.findFirst({
-    where: { id: tripId, userId },
-    include: {
-      motorcycle: { include: { profile: true } },
-      events: true,
-    },
-  });
-
-  if (!trip) return null;
-
-  return evaluateTripHeuristic({
-    trip: {
-      maxSpeedKmh: trip.maxSpeedKmh,
-      maxRollDeg: trip.maxRollDeg,
-      maxGForce: trip.maxGForce,
-    },
-    profile: trip.motorcycle.profile,
-    events: trip.events,
-  });
-}

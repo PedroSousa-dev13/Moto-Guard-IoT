@@ -5,7 +5,6 @@
 // Eixo X normalizado para [0%, 100%] para comparação independente da duração.
 // =============================================================================
 
-import React from "react";
 import {
   LineChart,
   Line,

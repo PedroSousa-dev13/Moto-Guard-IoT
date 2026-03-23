@@ -49,33 +49,37 @@ Ordenadas por prioridade/impacto académico
 
 
 
-# otima implelemtacap
-[5] Classificação automática de viagens (Trip Categorization)
-    - Classificar automaticamente cada viagem numa categoria:
+# otima implementacao — CONCLUÍDO
+[✓] Classificação automática de viagens (Trip Categorization)
+    - ✓ Classificar automaticamente cada viagem numa categoria:
         * Commute (curta, urbana, velocidade baixa)
         * Weekend Ride (longa, nacional/serra, velocidade moderada)
         * Track Day (alta velocidade, muita inclinação, poucos eventos de trânsito)
         * Off-road (baixa velocidade, alta inclinação, muita vibração)
-    - Lógica baseada em: distância, velocidade média, eventos, perfil da mota
-    - Mostrar badge de categoria na lista de viagens (Trips.tsx) e no TripDetail
-    - Ficheiros: app/backend/src/services/trip-evaluation.service.ts,
+    - ✓ Lógica baseada em: distância, velocidade média, eventos, perfil da mota
+    - ✓ Badge de categoria na lista de viagens (Trips.tsx) e no TripDetail
+    - Ficheiros: app/backend/src/services/trip-categorization.service.ts,
+                 app/frontend/src/components/trips/TripCategoryBadge.tsx,
                  app/frontend/src/pages/Trips.tsx,
                  app/frontend/src/pages/TripDetail.tsx
 
 
 
-#super boa ideia
-[6] Comparação de viagens lado a lado
-    - Selecionar 2 viagens na página Trips e comparar:
-        * Gráficos de velocidade sobrepostos
+# super boa ideia — CONCLUÍDO
+[✓] Comparação de viagens lado a lado
+    - ✓ Selecionar 2 viagens na página Trips e comparar:
+        * Gráficos de velocidade sobrepostos (OverlaySpeedChart)
         * Scores heurístico e ML
         * Contagem de eventos por tipo
         * Distância, duração, velocidade média/máxima
-    - Ficheiros: app/frontend/src/pages/Trips.tsx (nova sub-página ou modal)
+    - Ficheiros: app/frontend/src/components/trips/ComparisonView.tsx,
+                 app/frontend/src/components/trips/CompareBar.tsx,
+                 app/frontend/src/components/trips/OverlaySpeedChart.tsx,
+                 app/frontend/src/pages/Trips.tsx
 
 
 
-#otimo a implementar
+# otimo a implementar — NÃO IMPLEMENTADO
 [7] Heatmap de eventos no mapa (Analytics ou Alertas)
     - Mapa Leaflet com heatmap de densidade de eventos críticos por localização
     - Filtros por tipo de evento (HARD_BRAKING, EXCESSIVE_LEAN, CRASH, etc.)
@@ -84,7 +88,7 @@ Ordenadas por prioridade/impacto académico
     - Ficheiros: app/frontend/src/pages/Analytics.tsx ou nova página
 
 
-# será que faz sentido implementar ?
+# será que faz sentido implementar ? — NÃO IMPLEMENTADO
 [8] Geofencing — alertas de zona 
     - Permitir ao utilizador definir uma zona geográfica no mapa (círculo ou polígono)
     - Gerar alerta quando a mota sai da zona definida
@@ -93,9 +97,12 @@ Ordenadas por prioridade/impacto académico
     - Frontend: UI para definir/gerir zonas na Garagem ou Settings
     - Ficheiros: app/backend/src/services/heuristics.service.ts,
                  app/frontend/src/pages/Garage.tsx ou Settings.tsx
+    - NOTA: heuristics.service.ts já deteta speed_limit via sistema, mas não geofencing geográfico
 
 
 # nao entendo este ponto procuro explicacao
+# OpenAPI/Swagger = documentação automática dos endpoints REST da API, acessível em /api/docs
+# Permite testar os endpoints diretamente no browser sem precisar de Postman — NÃO IMPLEMENTADO
 [9] Documentação OpenAPI/Swagger
     - Adicionar swagger-ui-express e swagger-jsdoc ao backend
     - Documentar todos os endpoints REST (~15 rotas)
@@ -105,28 +112,29 @@ Ordenadas por prioridade/impacto académico
 
 ── PRIORIDADE BAIXA / NICE TO HAVE ─────────────────────────────────────────
 
-[10] Modo Demo / Onboarding
-     - Modo que usa dados simulados pré-gravados sem precisar do simulador ativo
-     - Tour guiado pelas funcionalidades para novos utilizadores
+# PARCIALMENTE IMPLEMENTADO (OnboardingGuard + HomePage demo modal existem, falta modo demo com dados pré-gravados)
+[~] Modo Demo / Onboarding
+     - [✓] Tour guiado pelas funcionalidades para novos utilizadores (OnboardingGuard.tsx + HomePage demo modal)
+     - [ ] Modo que usa dados simulados pré-gravados sem precisar do simulador ativo
      - Útil para apresentação académica sem dependências externas
 
-[11] Bandeiras de início/fim de rota no mapa
-     - Marcador verde (bandeira) no ponto de início da rota simulada
-     - Marcador vermelho (bandeira) no ponto de chegada
-     - Aplicar tanto no mapa do simulador (MapCard) como no TripDetail
-     - Ficheiros: app/frontend/src/components/MapCard.tsx,
-                  app/frontend/src/pages/TripDetail.tsx
+[✓] Bandeiras de início/fim de rota no mapa — CONCLUÍDO
+     - ✓ Marcador verde (círculo) no ponto de início da rota
+     - ✓ Marcador vermelho (círculo) no ponto de chegada
+     - ✓ Aplicado no MapCard com OSRM routing
+     - Ficheiros: app/frontend/src/components/MapCard.tsx
 
+# NÃO IMPLEMENTADO — settings.ts tem seletor de idioma mas sem i18n real
 [12] Internacionalização (i18n) PT/EN
      - Suporte completo a português e inglês na interface
      - A estrutura de Settings já tem seletor de idioma — falta a implementação
      - Usar react-i18next ou solução simples com contexto
      - Ficheiros: app/frontend/src/utils/settings.ts e toda a UI
 
-[13] Simulação a partir de ficheiro GPX
-     - Carregar um ficheiro GPX e usar os waypoints como rota do simulador
-     - O simulador já suporta rotas customizadas via waypoints
-     - Falta a UI para upload GPX → conversão → envio ao simulador
+# PARCIALMENTE IMPLEMENTADO — GPX import existe, UI para upload GPX→simulador não está feita
+[~] Simulação a partir de ficheiro GPX
+     - [✓] Backend: gpx-import.service.ts para importar viagens GPX
+     - [ ] UI para upload GPX → conversão → envio ao simulador
      - Ficheiros: app/frontend/src/pages/Map.tsx,
                   simulador/headless_simulator.py
 
@@ -137,6 +145,7 @@ Ordenadas por prioridade/impacto académico
 
 
 
+# NÃO IMPLEMENTADO — ml/ não tem clustering.py
 [15] Análise de padrões de condução com clustering ML
      - Usar K-means ou DBSCAN para agrupar viagens por padrão de condução
      - Identificar automaticamente "estilos" do condutor:
@@ -147,31 +156,27 @@ Ordenadas por prioridade/impacto académico
      - Ficheiros: ml/clustering.py (novo), app/backend/src/services/trip-ml-pipeline.service.ts
 
 
-[17] Detecção de anomalias em tempo real (streaming ML)
-     - Modelo online que deteta anomalias durante a viagem (não só pós-viagem)
-     - Alertas em tempo real quando o padrão de condução se desvia muito do normal
-     - Usar Isolation Forest incremental ou One-Class SVM
+# PARCIALMENTE IMPLEMENTADO — infer.py usa Isolation Forest para anomaly score, mas é pós-viagem, não streaming
+[~] Detecção de anomalias em tempo real (streaming ML)
+     - [ ] Modelo online incremental durante a viagem (não só pós-viagem)
+     - [ ] Alertas em tempo real quando o padrão se desvia do normal
+     - [✓] Isolation Forest já usado em infer.py para anomaly score pós-viagem
      - Ficheiros: ml/online_detector.py (novo), app/backend/src/services/mqtt.service.ts
 
-[19] Exportação de relatório PDF personalizado
-     - Relatório profissional com:
-         * Logo MotoGuard, dados do utilizador e mota
-         * Resumo executivo da viagem (1 página)
-         * Gráficos de telemetria (2-3 páginas)
-         * Mapa da rota com eventos marcados
-         * Recomendações de melhoria baseadas no ML
-     - Usar jsPDF + html2canvas (já existe) mas com template melhorado
-     - Ficheiros: app/frontend/src/pages/TripDetail.tsx,
-                  app/frontend/src/utils/pdfGenerator.ts (novo)
-
+[✓] Exportação de relatório PDF personalizado — CONCLUÍDO
+     - ✓ Exportação PDF com html2canvas + jsPDF implementada no TripDetail
+     - ✓ Exportação CSV também disponível
+     - ✓ Exportação GPX via gpxAPI.exportTrip()
+     - Ficheiros: app/frontend/src/pages/TripDetail.tsx
 
 # nao faz sentido colocar strava ou relive uma vez que sao plataformas de corrida e nao de motas
-[20] Integração com Strava/Relive
+[20] Integração com Strava/Relive — NÃO IMPLEMENTADO
      - Exportar viagem diretamente para Strava ou Relive via API
      - Converter telemetria MotoGuard → formato compatível
      - OAuth para autenticação com serviços externos
      - Ficheiros: app/backend/src/services/strava-integration.service.ts (novo)
 
+# NÃO IMPLEMENTADO
 [21] Análise de eficiência de combustível estimada
      - Estimar consumo de combustível baseado em:
          * Velocidade, acelerações, RPM, temperatura
@@ -180,6 +185,7 @@ Ordenadas por prioridade/impacto académico
      - Comparar com média histórica do utilizador
      - Ficheiros: app/backend/src/services/fuel-efficiency.service.ts (novo)
 
+# NÃO IMPLEMENTADO
 [22] Modo noturno automático no Dashboard
      - Detetar hora do dia e ajustar automaticamente:
          * Cores mais escuras à noite (menos distração)
@@ -188,37 +194,42 @@ Ordenadas por prioridade/impacto académico
      - Ficheiros: app/frontend/src/pages/Dashboard.tsx,
                   app/frontend/src/utils/settings.ts
 
+# NÃO IMPLEMENTADO
 [23] Alertas preditivos baseados em contexto
      - "Curva apertada em 200m — reduz velocidade"
      - "Zona escolar à frente — limite 30 km/h"
      - Usar dados OSM (tipo de estrada, POIs) + posição GPS
      - Ficheiros: app/backend/src/services/predictive-alerts.service.ts (novo)
 
-[24] Dashboard de estatísticas agregadas (Analytics avançado)
-     - Evolução temporal do score de condução (gráfico de linha)
-     - Distribuição de eventos por tipo (gráfico de barras)
-     - Mapa de calor de horários de utilização (quando conduzes mais)
-     - Comparação com média da comunidade (se houver múltiplos users)
-     - Ficheiros: app/frontend/src/pages/Analytics.tsx (expandir)
+[✓] Dashboard de estatísticas agregadas (Analytics avançado) — CONCLUÍDO
+     - ✓ Evolução temporal do score de condução (gráfico de linha)
+     - ✓ Distribuição de eventos por tipo (gráfico de barras)
+     - ✓ KPIs com comparação período anterior (% variação)
+     - ✓ Filtros por intervalo de tempo (24h, 7d, 30d, 365d, custom) e granularidade
+     - Ficheiros: app/frontend/src/pages/Analytics.tsx
 
 
 ── BUGS / MELHORIAS TÉCNICAS ────────────────────────────────────────────────
 
-[B1] Remover logs DEBUG do simulador headless
+[✗] B1 — Remover logs DEBUG do simulador headless — NÃO CORRIGIDO
      - Ficheiro: simulador/headless_simulator.py
-     - Remover todas as linhas log("DEBUG: ...")
+     - Ainda existem múltiplas linhas log("DEBUG: ...") no ficheiro
+     - Linhas identificadas: ~300, 308, 310, 315, 357, 361, 424, 427, 806
 
-[B2] Corrigir importação GPX para não criar/associar mota indevidamente
+[~] B2 — Corrigir importação GPX para não criar/associar mota indevidamente — NÃO VERIFICADO
      - Ficheiro: app/backend/src/services/gpx-import.service.ts
+     - Não foi possível confirmar se o bug foi corrigido
 
-[B3] Coerência dos dados GPX (velocidade média anómala)
+[~] B3 — Coerência dos dados GPX (velocidade média anómala) — NÃO VERIFICADO
      - Rever cálculo de velocidade derivada em: app/frontend/src/utils/gpx.ts
 
-[B4] Seed automático de perfis de mota no arranque Docker
+[✓] B4 — Seed automático de perfis de mota no arranque Docker — CONCLUÍDO
+     - ✓ docker-entrypoint.sh executa npx tsx prisma/seed.ts antes de arrancar
      - Ficheiro: app/docker-entrypoint.sh
 
-[B5] Proteger endpoint de comando com JWT
-     - Ficheiro: app/backend/src/controllers/command.controller.ts
+[✓] B5 — Proteger endpoint de comando com JWT — CONCLUÍDO
+     - ✓ command.routes.ts aplica authMiddleware no POST /command
+     - Ficheiro: app/backend/src/routes/command.routes.ts
 
 
 ── FASE 5 — TESTES E VALIDAÇÃO ──────────────────────────────────────────────

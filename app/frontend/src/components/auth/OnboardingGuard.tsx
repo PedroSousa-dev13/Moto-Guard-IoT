@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { motorcyclesAPI } from '../../services/api';
+import { useDemoContext } from '../../demo/DemoContext';
 
 type GuardStatus = 'loading' | 'ok' | 'redirect' | 'error';
 
@@ -14,6 +15,7 @@ interface OnboardingGuardProps {
 const ADMIN_EMAIL = 'admin@admin.com';
 
 const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
+  const { isDemoMode } = useDemoContext();
   const { user } = useAuth();
   const location = useLocation();
   const [status, setStatus] = useState<GuardStatus>('loading');
@@ -38,6 +40,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
 
   useEffect(() => {
     if (isAdmin) return;
+    if (isDemoMode) return;
     // Re-check after visiting /garage (user may have added a moto)
     if (prevPathRef.current === '/garage' && location.pathname !== '/garage') {
       checkedRef.current = false;
@@ -45,7 +48,9 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
     prevPathRef.current = location.pathname;
     if (checkedRef.current) return;
     void check();
-  }, [isAdmin, location.pathname]);
+  }, [isAdmin, isDemoMode, location.pathname]);
+
+  if (isDemoMode) return <>{children ?? <Outlet />}</>;
 
   if (isAdmin) return <>{children ?? <Outlet />}</>;
 

@@ -1,7 +1,7 @@
 import { CSSProperties, ReactNode, useState } from "react";
 import {
   Activity, Gauge, Thermometer, Zap, Navigation, Wind,
-  AlertTriangle, Shield, TrendingDown, BarChart2, Info,
+  AlertTriangle, Shield, BarChart2, Info,
   ChevronDown, ChevronUp, Bike
 } from "lucide-react";
 
