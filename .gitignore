@@ -425,3 +425,4 @@ docker/mosquitto/log/
 
 # ─── MotoGuard: app backend node_modules ────────────────────────────────────
 app/node_modules/
+.env
