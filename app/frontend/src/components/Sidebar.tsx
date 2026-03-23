@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useDemoContext } from '../demo/DemoContext';
 import { 
   LayoutDashboard, 
   BarChart3,
@@ -57,7 +58,11 @@ function getInitials(name?: string): string {
 
 const Sidebar: FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { isDemoMode, demoUser, exitDemoMode } = useDemoContext();
   const location = useLocation();
+
+  const displayUser = isDemoMode ? demoUser : user;
+  const showUser = isAuthenticated || isDemoMode;
 
   return (
     <aside className="sidebar">
@@ -71,12 +76,12 @@ const Sidebar: FC = () => {
             <div className="brand-logo-tagline">IoT Platform</div>
           </div>
         </div>
-        {isAuthenticated && (
+        {showUser && (
           <div className="user-info">
-            <div className="user-avatar-sidebar">{getInitials(user?.name)}</div>
+            <div className="user-avatar-sidebar">{getInitials(displayUser?.name)}</div>
             <div className="user-info-text">
-              <span className="user-name">{user?.name}</span>
-              <span className="user-email">{user?.email}</span>
+              <span className="user-name">{displayUser?.name}</span>
+              <span className="user-email">{displayUser?.email}</span>
             </div>
           </div>
         )}
@@ -102,11 +107,11 @@ const Sidebar: FC = () => {
         ))}
       </nav>
 
-      {isAuthenticated && (
+      {showUser && (
         <div className="sidebar-footer">
-          <button onClick={logout} className="sidebar-logout-btn">
+          <button onClick={isDemoMode ? exitDemoMode : logout} className="sidebar-logout-btn">
             <LogOut size={15} />
-            <span>Terminar sessão</span>
+            <span>{isDemoMode ? 'Sair do Demo' : 'Terminar sessão'}</span>
           </button>
         </div>
       )}

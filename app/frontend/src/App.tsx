@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { DemoProvider } from './demo/DemoContext';
+import DemoBanner from './demo/DemoBanner';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OnboardingGuard from './components/auth/OnboardingGuard';
@@ -33,6 +35,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <DemoProvider>
         <div className="App">
           <Layout>
             <Routes>
@@ -49,7 +52,10 @@ function App() {
               <Route element={
                 <ProtectedRoute>
                   <OnboardingGuard>
-                    <Outlet />
+                    <>
+                      <DemoBanner />
+                      <Outlet />
+                    </>
                   </OnboardingGuard>
                 </ProtectedRoute>
               }>
@@ -68,6 +74,7 @@ function App() {
             </Routes>
           </Layout>
         </div>
+        </DemoProvider>
       </Router>
     </AuthProvider>
   );

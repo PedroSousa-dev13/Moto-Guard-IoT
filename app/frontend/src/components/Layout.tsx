@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../hooks/useAuth';
+import { useDemoContext } from '../demo/DemoContext';
 import OfflineBanner from './OfflineBanner';
 
 interface LayoutProps {
@@ -11,8 +12,9 @@ interface LayoutProps {
 
 const Layout: FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoContext();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="layout layout-auth">
         <Navbar />

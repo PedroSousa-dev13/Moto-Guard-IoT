@@ -1,13 +1,14 @@
-import { FC, CSSProperties, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { FC, useMemo, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useDemoContext } from "../demo/DemoContext";
 import LoginSidebar from "../components/auth/LoginSidebar";
 import './HomePage.css';
 
 const HomePage: FC = () => {
   const { isAuthenticated } = useAuth();
+  const { activateDemo } = useDemoContext();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -350,6 +351,9 @@ const HomePage: FC = () => {
               <div className="demo-actions">
                 <button className="btn-primary" onClick={handleCreateAccount}>
                   🚀 Criar Conta Gratuita
+                </button>
+                <button className="btn-primary" onClick={() => { activateDemo(); setIsDemoOpen(false); }}>
+                  🎮 Explorar em Modo Demo
                 </button>
                 <button className="btn-secondary" onClick={() => setIsDemoOpen(false)}>
                   Fechar

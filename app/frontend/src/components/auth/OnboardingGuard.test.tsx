@@ -16,6 +16,12 @@ vi.mock("../../services/api", () => ({
   motorcyclesAPI: { getAll: () => mockGetAll() },
 }));
 
+// Mock useDemoContext — returns isDemoMode: false by default
+const mockUseDemoContext = vi.fn(() => ({ isDemoMode: false, registerEmitter: vi.fn() }));
+vi.mock("../../demo/DemoContext", () => ({
+  useDemoContext: () => mockUseDemoContext(),
+}));
+
 // Render the guard as a layout route (the way App.tsx uses it)
 function renderGuard(path: string, user: { email: string } | null = null) {
   mockUseAuth.mockReturnValue({ user });
@@ -39,6 +45,8 @@ function renderGuard(path: string, user: { email: string } | null = null) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Restore default: isDemoMode=false so existing tests are unaffected
+  mockUseDemoContext.mockImplementation(() => ({ isDemoMode: false, registerEmitter: vi.fn() }));
 });
 
 describe("OnboardingGuard — admin bypass", () => {
@@ -119,5 +127,27 @@ describe("OnboardingGuard — API error", () => {
     await waitFor(() => {
       expect(screen.getByText("Não foi possível verificar as tuas motas.")).toBeInTheDocument();
     });
+  });
+});
+
+// Property 2: OnboardingGuard bypassa verificação em Demo Mode
+// Feature: demo-mode, Property 2: OnboardingGuard bypassa verificação em Demo Mode
+describe("OnboardingGuard — demo mode bypass", () => {
+  it("renders children immediately when isDemoMode=true without API call", () => {
+    mockUseDemoContext.mockReturnValue({ isDemoMode: true, registerEmitter: vi.fn() });
+    mockUseAuth.mockReturnValue({ user: { email: "user@example.com" } });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route element={<OnboardingGuard />}>
+            <Route path="/dashboard" element={<div>Protected Content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Protected Content")).toBeInTheDocument();
+    expect(mockGetAll).not.toHaveBeenCalled();
   });
 });
