@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, ReactNode, FormEvent } from "react";
 import Card from "../components/ui/Card";
 import { useAuth } from "../hooks/useAuth";
-import { authAPI } from "../services/api";
+import { useI18n } from "../i18n";
 import {
   applyTheme, defaultSettings, defaultThresholds, loadSettings, saveSettings,
-  type AlertMinSeverity, type AppSettings, type Language,
+  type AlertMinSeverity, type AppSettings, type Language, type MapStyle,
 } from "../utils/settings";
 import {
   Settings2, Bell, Sliders, Info, Sun, Moon, Globe, Gauge,
@@ -13,27 +13,28 @@ import {
 
 type Tab = "prefs" | "alerts" | "thresholds" | "about";
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "prefs",      label: "Preferências", icon: <Settings2 size={15} /> },
-  { id: "alerts",     label: "Alertas",      icon: <Bell size={15} /> },
-  { id: "thresholds", label: "Limiares",     icon: <Sliders size={15} /> },
-  { id: "about",      label: "Sobre",        icon: <Info size={15} /> },
-];
-
 interface Msg { type: "success" | "error"; text: string }
 
 export default function Settings() {
   const { user } = useAuth();
+  const { t, setLanguage: setI18nLanguage } = useI18n();
   const [activeTab, setActiveTab] = useState<Tab>("prefs");
   const [form, setForm] = useState<AppSettings>(() => loadSettings());
   const [isSaving, setIsSaving] = useState(false);
   const [msg, setMsg] = useState<Msg | null>(null);
 
-  useEffect(() => { document.title = "Definições — MotoGuard"; }, []);
+  const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
+    { id: "prefs",      label: t('settings.preferences'), icon: <Settings2 size={15} /> },
+    { id: "alerts",     label: t('settings.alerts'), icon: <Bell size={15} /> },
+    { id: "thresholds", label: t('settings.thresholds'), icon: <Sliders size={15} /> },
+    { id: "about",      label: t('settings.about'), icon: <Info size={15} /> },
+  ];
+
+  useEffect(() => { document.title = `${t('settings.title')} — MotoGuard`; }, [t]);
 
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(loadSettings()), [form]);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (isSaving) return;
     setIsSaving(true);
@@ -41,9 +42,10 @@ export default function Settings() {
     try {
       saveSettings(form);
       applyTheme(form.theme);
-      setMsg({ type: "success", text: "Definições guardadas com sucesso." });
+      setI18nLanguage(form.language);
+      setMsg({ type: "success", text: t('settings.saveSuccess') });
     } catch {
-      setMsg({ type: "error", text: "Erro ao guardar definições." });
+      setMsg({ type: "error", text: t('settings.saveError') });
     } finally {
       setIsSaving(false);
     }
@@ -61,16 +63,16 @@ export default function Settings() {
     <div className="page">
       <div className="page-header">
         <div className="header-main">
-          <div className="page-title"><Settings2 className="title-icon" size={24} />Definições</div>
-          <div className="page-subtitle">Preferências e configuração da aplicação</div>
+          <div className="page-title"><Settings2 className="title-icon" size={24} />{t('settings.title')}</div>
+          <div className="page-subtitle">{t('settings.subtitle')}</div>
         </div>
         {isDirty && (
           <div className="page-actions">
             <button className="btn btn-ghost btn-sm" onClick={() => { setForm(loadSettings()); setMsg(null); }}>
-              <RotateCcw size={14} /> Descartar
+              <RotateCcw size={14} /> {t('common.discard')}
             </button>
             <button className="btn btn-primary btn-sm" onClick={(e) => void handleSave(e)} disabled={isSaving}>
-              <Check size={14} /> {isSaving ? "A guardar..." : "Guardar alterações"}
+              <Check size={14} /> {isSaving ? t('settings.saving') : t('settings.saveChanges')}
             </button>
           </div>
         )}
@@ -97,40 +99,40 @@ export default function Settings() {
       {activeTab === "prefs" && (
         <form onSubmit={(e) => void handleSave(e)} style={{ display: "grid", gap: 16 }}>
 
-          <Card title="Aparência">
+          <Card title={t('settings.appearance')}>
             <div className="settings-option-group">
               <div className="settings-option-row">
                 <div className="settings-option-info">
                   <Sun size={18} className="settings-option-icon" />
                   <div>
-                    <div className="settings-option-label">Tema</div>
-                    <div className="settings-option-desc">Escolhe entre tema claro ou escuro</div>
+                    <div className="settings-option-label">{t('settings.theme')}</div>
+                    <div className="settings-option-desc">{t('settings.themeLight')} / {t('settings.themeDark')}</div>
                   </div>
                 </div>
                 <div className="theme-toggle-group">
                   <button type="button"
                     className={`theme-btn ${form.theme === "light" ? "active" : ""}`}
                     onClick={() => setForm((p) => ({ ...p, theme: "light" }))}>
-                    <Sun size={14} /> Claro
+                    <Sun size={14} /> {t('settings.themeLight')}
                   </button>
                   <button type="button"
                     className={`theme-btn ${form.theme === "dark" ? "active" : ""}`}
                     onClick={() => setForm((p) => ({ ...p, theme: "dark" }))}>
-                    <Moon size={14} /> Escuro
+                    <Moon size={14} /> {t('settings.themeDark')}
                   </button>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card title="Localização & Unidades">
+          <Card title={t('settings.language')}>
             <div className="settings-option-group">
               <div className="settings-option-row">
                 <div className="settings-option-info">
                   <Globe size={18} className="settings-option-icon" />
                   <div>
-                    <div className="settings-option-label">Idioma</div>
-                    <div className="settings-option-desc">Idioma da interface</div>
+                    <div className="settings-option-label">{t('settings.language')}</div>
+                    <div className="settings-option-desc">{t('settings.languageDesc')}</div>
                   </div>
                 </div>
                 <select className="control control-sm settings-select"
@@ -146,33 +148,35 @@ export default function Settings() {
                 <div className="settings-option-info">
                   <Gauge size={18} className="settings-option-icon" />
                   <div>
-                    <div className="settings-option-label">Sistema de unidades</div>
-                    <div className="settings-option-desc">Métrico (km/h, °C) ou Imperial (mph, °F)</div>
+                    <div className="settings-option-label">{t('settings.units')}</div>
+                    <div className="settings-option-desc">{t('settings.unitsDesc')}</div>
                   </div>
                 </div>
                 <select className="control control-sm settings-select"
                   value={form.units}
                   onChange={(e) => setForm((p) => ({ ...p, units: e.target.value as AppSettings["units"] }))}>
-                  <option value="metric">Métrico</option>
-                  <option value="imperial">Imperial</option>
+                  <option value="metric">{t('settings.unitsMetric')}</option>
+                  <option value="imperial">{t('settings.unitsImperial')}</option>
                 </select>
               </div>
             </div>
           </Card>
 
-          <Card title="Mapa">
+          <Card title={t('map.title')}>
             <div className="settings-option-group">
               <div className="settings-option-row">
                 <div className="settings-option-info">
                   <Activity size={18} className="settings-option-icon" />
                   <div>
-                    <div className="settings-option-label">Vista padrão do mapa</div>
-                    <div className="settings-option-desc">Tipo de mapa ao abrir o simulador</div>
+                    <div className="settings-option-label">{t('settings.mapStyle')}</div>
+                    <div className="settings-option-desc">{t('settings.mapStyleDesc')}</div>
                   </div>
                 </div>
-                <select className="control control-sm settings-select">
-                  <option value="streets">Ruas (OSM)</option>
-                  <option value="satellite">Satélite</option>
+                <select className="control control-sm settings-select"
+                  value={form.mapStyle}
+                  onChange={(e) => setForm((p) => ({ ...p, mapStyle: e.target.value as MapStyle }))}>
+                  <option value="streets">{t('settings.mapStyleStreets')}</option>
+                  <option value="satellite">{t('settings.mapStyleSatellite')}</option>
                 </select>
               </div>
               <div className="settings-divider" />
@@ -180,12 +184,14 @@ export default function Settings() {
                 <div className="settings-option-info">
                   <Activity size={18} className="settings-option-icon" />
                   <div>
-                    <div className="settings-option-label">Modo piloto automático</div>
-                    <div className="settings-option-desc">Seguir e rodar o mapa com a mota</div>
+                    <div className="settings-option-label">{t('settings.mapAutopilot')}</div>
+                    <div className="settings-option-desc">{t('settings.mapAutopilotDesc')}</div>
                   </div>
                 </div>
                 <label className="settings-toggle">
-                  <input type="checkbox" />
+                  <input type="checkbox"
+                    checked={form.mapAutopilot}
+                    onChange={(e) => setForm((p) => ({ ...p, mapAutopilot: e.target.checked }))} />
                   <span className="toggle-track" />
                 </label>
               </div>
@@ -194,10 +200,10 @@ export default function Settings() {
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" className="btn btn-ghost" onClick={() => { setForm(defaultSettings()); setMsg(null); }}>
-              <RotateCcw size={14} /> Repor padrão
+              <RotateCcw size={14} /> {t('settings.resetDefault')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSaving || !isDirty}>
-              <Check size={14} /> {isSaving ? "A guardar..." : "Guardar"}
+              <Check size={14} /> {isSaving ? t('settings.saving') : t('common.save')}
             </button>
           </div>
         </form>

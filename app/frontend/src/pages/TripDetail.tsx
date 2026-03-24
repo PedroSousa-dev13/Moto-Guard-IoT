@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo, startTransition } from "react";
 import { Link, useParams } from "react-router-dom";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -20,6 +21,10 @@ import {
 import { gpxAPI, tripsAPI } from "../services/api";
 import type { Trip, TripTelemetryResponse, TripEvent, TripEvaluationResponse } from "../types/index";
 import { deriveGpxSeries } from "../utils/gpx";
+import { PlaybackSlider } from "../components/PlaybackSlider";
+import { PlaybackControls } from "../components/PlaybackControls";
+import { LazyChart } from "../components/LazyChart";
+import TripCategoryBadge from "../components/trips/TripCategoryBadge";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -49,6 +54,22 @@ function eventColor(severity: TripEvent["severity"]) {
   }
 }
 
+// Downsample array to max N points using Largest-Triangle-Three-Buckets (simplified)
+// Keeps the shape of the curve while drastically reducing point count
+function downsample<T extends { t: number }>(data: T[], maxPoints: number): T[] {
+  if (data.length <= maxPoints) return data;
+  const step = data.length / maxPoints;
+  const result: T[] = [data[0]];
+  for (let i = 1; i < maxPoints - 1; i++) {
+    const idx = Math.round(i * step);
+    result.push(data[idx]);
+  }
+  result.push(data[data.length - 1]);
+  return result;
+}
+
+const MAX_CHART_POINTS = 1000;
+
 export default function TripDetail() {
   const { id } = useParams();
   const tripId = id as string | undefined;
@@ -62,12 +83,26 @@ export default function TripDetail() {
   const [exportingGpx, setExportingGpx] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState<import("../types/index").TripEvaluationResponse | null>(null);
+  const [timeIndex, setTimeIndex] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [isPreloading, setIsPreloading] = useState<boolean>(false);
+
+  // Ref to track current index without triggering re-renders on every tick
+  const timeIndexRef = useRef<number>(0);
+  const lastRenderRef = useRef<number>(0);
+  const lastPanRef = useRef<number>(0);
+  // Refs to data arrays so the animation loop doesn't need closure over large arrays
+  const gpxSeriesRef = useRef<ReturnType<typeof deriveGpxSeries>>([]);
+  const telemetryDataRef = useRef<TripTelemetryResponse["data"] | null>(null);
+  const tripSourceRef = useRef<string | undefined>(undefined);
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const eventsLayerRef = useRef<L.LayerGroup | null>(null);
   const reportRef = useRef<HTMLDivElement | null>(null);
+  const playbackMarkerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     const tId = tripId;
@@ -87,8 +122,11 @@ export default function TripDetail() {
           const telem = await tripsAPI.getTelemetry(id);
           if (cancelled) return;
           setTelemetryRes(telem.data);
+          telemetryDataRef.current = telem.data.data;
+          tripSourceRef.current = tripRes.data.source;
         } else {
           setTelemetryRes(null);
+          telemetryDataRef.current = null;
         }
 
         // Carregar avaliação ML (não bloqueia o carregamento principal)
@@ -127,7 +165,7 @@ export default function TripDetail() {
 
   const chartSeries = useMemo(() => {
     const points = telemetryRes?.data ?? [];
-    return points
+    const full = points
       .map((p) => ({
         t: new Date(p.time).getTime(),
         time: p.time,
@@ -140,23 +178,36 @@ export default function TripDetail() {
         tireR: typeof p.tire_pressure_rear_bar === "number" ? p.tire_pressure_rear_bar : null,
       }))
       .filter((p) => Number.isFinite(p.t));
+    if (full.length > MAX_CHART_POINTS) {
+      console.log(`[CHART] Telemetria: ${full.length} pontos → downsample para ${MAX_CHART_POINTS}`);
+    }
+    return downsample(full, MAX_CHART_POINTS);
   }, [telemetryRes]);
 
   const gpxSeries = useMemo(() => {
     if (trip?.source !== "GPX_IMPORTED") return [];
     const pts = trip.gpxData?.waypoints ?? [];
-    return deriveGpxSeries(pts);
+    const series = deriveGpxSeries(pts);
+    // Store full-resolution data in ref for map/slider/animation
+    gpxSeriesRef.current = series;
+    tripSourceRef.current = trip?.source;
+    const count = series.length;
+    if (count > MAX_CHART_POINTS) {
+      console.log(`[CHART] GPX: ${count} pontos → downsample para ${MAX_CHART_POINTS} para gráficos`);
+    }
+    // Return downsampled version for charts only
+    return downsample(series, MAX_CHART_POINTS);
   }, [trip?.gpxData?.waypoints, trip?.source]);
 
   const rpmVsSpeed = useMemo(() => {
     const points = telemetryRes?.data ?? [];
-    const out: Array<{ speed: number; rpm: number }> = [];
+    const out: Array<{ speed: number; rpm: number; t: number }> = [];
     for (const p of points) {
       if (typeof p.speed_kmh === "number" && typeof p.rpm === "number") {
-        out.push({ speed: p.speed_kmh, rpm: p.rpm });
+        out.push({ speed: p.speed_kmh, rpm: p.rpm, t: new Date(p.time).getTime() });
       }
     }
-    return out;
+    return downsample(out, MAX_CHART_POINTS);
   }, [telemetryRes]);
 
   const summary = useMemo(() => {
@@ -234,6 +285,128 @@ export default function TripDetail() {
     };
   }, [gpxSeries, telemetryRes, trip]);
 
+  // Always read from full-resolution refs so slider/animation are in sync for long trips
+  const getCurrentDataPoint = useCallback((index: number) => {
+    if (tripSourceRef.current === "GPX_IMPORTED") {
+      const point = gpxSeriesRef.current[index];
+      if (!point) return null;
+      return {
+        lat: point.lat,
+        lon: point.lon,
+        time: point.time,
+        speedKmh: point.speedKmh ?? undefined,
+      };
+    }
+    const point = telemetryDataRef.current?.[index];
+    if (!point) return null;
+    return {
+      latitude: point.latitude,
+      longitude: point.longitude,
+      time: point.time,
+      speed_kmh: point.speed_kmh,
+      rpm: point.rpm,
+      engine_temp_c: point.engine_temp_c,
+      roll_deg: point.roll_deg,
+      oil_pressure_bar: point.oil_pressure_bar,
+      tire_pressure_front_bar: point.tire_pressure_front_bar,
+      tire_pressure_rear_bar: point.tire_pressure_rear_bar,
+    };
+  }, []); // no deps — reads from refs only
+
+  const maxIndex = useMemo(() => {
+    if (trip?.source === "GPX_IMPORTED") {
+      // Use full-resolution ref length so slider matches animation loop
+      return Math.max(0, gpxSeriesRef.current.length - 1);
+    }
+    return Math.max(0, (telemetryDataRef.current?.length ?? 0) - 1);
+  }, [trip?.source, trip?.gpxData?.waypoints, telemetryRes]);
+
+  const currentTimeFormatted = useMemo(() => {
+    const point = getCurrentDataPoint(timeIndex);
+    if (!point) return "00:00:00";
+    return new Date(point.time).toLocaleTimeString("pt-PT");
+  }, [timeIndex, getCurrentDataPoint]);
+
+  // Total duration string derived from first/last data point timestamps
+  const totalDurationFormatted = useMemo(() => {
+    const first = getCurrentDataPoint(0);
+    const last = getCurrentDataPoint(maxIndex);
+    if (!first || !last) return "";
+    const diffMs = new Date(last.time).getTime() - new Date(first.time).getTime();
+    if (diffMs <= 0) return "";
+    const totalSec = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }, [maxIndex, getCurrentDataPoint]);
+
+  // Elapsed time from start to current position
+  const elapsedTimeFormatted = useMemo(() => {
+    const first = getCurrentDataPoint(0);
+    const current = getCurrentDataPoint(timeIndex);
+    if (!first || !current) return "0:00";
+    const diffMs = new Date(current.time).getTime() - new Date(first.time).getTime();
+    if (diffMs < 0) return "0:00";
+    const totalSec = Math.floor(diffMs / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }, [timeIndex, getCurrentDataPoint]);
+
+  // Aggressive throttle for currentTimestamp to minimize chart re-renders
+  const currentTimestamp = useMemo(() => {
+    // During playback, throttle heavily — charts update at most every 500ms anyway
+    const throttleFactor = isPlaying ? (playbackSpeed >= 5 ? 50 : 30) : 1;
+    const throttledIndex = Math.floor(timeIndex / throttleFactor) * throttleFactor;
+    const point = getCurrentDataPoint(throttledIndex);
+    if (!point) return 0;
+    return new Date(point.time).getTime();
+  }, [Math.floor(timeIndex / (isPlaying ? (playbackSpeed >= 5 ? 50 : 30) : 1)), getCurrentDataPoint, isPlaying, playbackSpeed]);
+
+  const hasPlaybackData = useMemo(() => {
+    if (trip?.source === "GPX_IMPORTED") {
+      return gpxSeriesRef.current.length > 0;
+    }
+    return (telemetryDataRef.current?.length ?? 0) > 0;
+  }, [trip?.source, trip?.gpxData?.waypoints, telemetryRes]);
+
+  // Always show chart cursors
+  const showChartCursors = true;
+
+  const handlePlay = useCallback(() => {
+    if (timeIndex >= maxIndex) {
+      setTimeIndex(0);
+      timeIndexRef.current = 0;
+    }
+    const dataSize = tripSourceRef.current === "GPX_IMPORTED"
+      ? gpxSeriesRef.current.length
+      : (telemetryDataRef.current?.length ?? 0);
+    console.log(`[REPLAY] A preparar — source: ${tripSourceRef.current}, pontos: ${dataSize}, speed: ${playbackSpeed}x`);
+    // Preload: give browser one frame to settle before starting animation
+    setIsPreloading(true);
+    setTimeout(() => {
+      setIsPreloading(false);
+      setIsPlaying(true);
+    }, 400);
+  }, [timeIndex, maxIndex, playbackSpeed]);
+
+  const handlePause = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    setIsPlaying(false);
+    setTimeIndex(0);
+  }, []);
+
+  const handleSpeedChange = useCallback((speed: number) => {
+    setPlaybackSpeed(speed);
+  }, []);
+
   useEffect(() => {
     if (isLoading) return;
     if (!mapContainerRef.current) return;
@@ -299,6 +472,126 @@ export default function TripDetail() {
       mapRef.current.setView([41.2951, -7.7463], 13);
     }
   }, [routePoints, trip?.events]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Create playback marker if it doesn't exist
+    if (!playbackMarkerRef.current) {
+      const icon = L.divIcon({
+        className: 'playback-marker',
+        html: '<div style="background: #eab308; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      playbackMarkerRef.current = L.marker([0, 0], { icon, interactive: true }).addTo(mapRef.current);
+    }
+
+    // Always update marker when slider is dragged (not playing)
+    if (!isPlaying) {
+      const point = getCurrentDataPoint(timeIndex);
+      if (point) {
+        const lat = 'lat' in point ? point.lat : point.latitude;
+        const lon = 'lon' in point ? point.lon : point.longitude;
+        const speed = 'speedKmh' in point ? point.speedKmh : point.speed_kmh;
+        if (typeof lat === 'number' && typeof lon === 'number') {
+          playbackMarkerRef.current.setLatLng([lat, lon]);
+          // Pan map smoothly to follow the dragged position
+          mapRef.current.panTo([lat, lon], { animate: true, duration: 0.25 });
+          const popupContent = `<div style="min-width:150px"><div style="font-weight:600;margin-bottom:4px">Posição</div><div style="font-size:12px;color:#71717a">${currentTimeFormatted}</div>${speed != null ? `<div style="font-size:12px;margin-top:4px">${speed.toFixed(1)} km/h</div>` : ''}</div>`;
+          playbackMarkerRef.current.bindPopup(popupContent);
+        }
+      }
+    }
+  }, [timeIndex, isPlaying, getCurrentDataPoint, currentTimeFormatted]);
+
+  // Single unified animation loop — reads from refs, zero closure over large arrays
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    timeIndexRef.current = timeIndex;
+    lastRenderRef.current = Date.now();
+    lastPanRef.current = Date.now();
+
+    let frameCount = 0;
+    let totalFrameTime = 0;
+    let slowFrames = 0;
+    const sessionStart = Date.now();
+
+    console.log(`[REPLAY] Iniciado — source: ${tripSourceRef.current}, maxIndex: ${maxIndex}, speed: ${playbackSpeed}x`);
+
+    const intervalId = setInterval(() => {
+      const frameStart = Date.now();
+      const nextIndex = timeIndexRef.current + playbackSpeed;
+
+      if (nextIndex >= maxIndex) {
+        timeIndexRef.current = maxIndex;
+        setTimeIndex(maxIndex);
+        setIsPlaying(false);
+        const totalTime = Date.now() - sessionStart;
+        console.log(`[REPLAY] Concluído — ${frameCount} frames em ${totalTime}ms, frames lentos (>150ms): ${slowFrames}`);
+        return;
+      }
+
+      timeIndexRef.current = nextIndex;
+      const idx = Math.floor(nextIndex);
+
+      // Read position directly from refs — no React closure over large arrays
+      let lat: number | undefined;
+      let lon: number | undefined;
+      if (tripSourceRef.current === "GPX_IMPORTED") {
+        const pt = gpxSeriesRef.current[idx];
+        if (pt) { lat = pt.lat; lon = pt.lon; }
+      } else {
+        const pt = telemetryDataRef.current?.[idx];
+        if (pt && typeof pt.latitude === "number" && typeof pt.longitude === "number") {
+          lat = pt.latitude; lon = pt.longitude;
+        }
+      }
+
+      // Update map marker directly (no React re-render)
+      if (lat !== undefined && lon !== undefined && playbackMarkerRef.current && mapRef.current) {
+        playbackMarkerRef.current.setLatLng([lat, lon]);
+        // Pan map only every 500ms to avoid blocking Leaflet
+        const nowPan = Date.now();
+        if (nowPan - lastPanRef.current >= 500) {
+          mapRef.current.setView([lat, lon], mapRef.current.getZoom(), { animate: false });
+          lastPanRef.current = nowPan;
+        }
+      }
+
+      // Throttle React state update to every 500ms (for slider + charts) — non-urgent transition
+      const now = Date.now();
+      if (now - lastRenderRef.current >= 500) {
+        lastRenderRef.current = now;
+        startTransition(() => {
+          setTimeIndex(idx);
+        });
+      }
+
+      // Track frame performance
+      const frameDuration = Date.now() - frameStart;
+      frameCount++;
+      totalFrameTime += frameDuration;
+      if (frameDuration > 150) {
+        slowFrames++;
+        console.warn(`[REPLAY] Frame lento — idx: ${idx}, duração: ${frameDuration}ms`);
+      }
+      // Log summary every 50 frames
+      if (frameCount % 50 === 0) {
+        const avg = (totalFrameTime / frameCount).toFixed(1);
+        console.log(`[REPLAY] ${frameCount} frames — avg: ${avg}ms/frame, lentos: ${slowFrames}, idx: ${idx}/${maxIndex}`);
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(intervalId);
+      if (frameCount > 0) {
+        const avg = (totalFrameTime / frameCount).toFixed(1);
+        console.log(`[REPLAY] Parado — ${frameCount} frames, avg: ${avg}ms/frame, lentos: ${slowFrames}`);
+      }
+    };
+  }, [isPlaying, playbackSpeed, maxIndex]);
 
   if (isLoading) {
     return (
@@ -540,6 +833,12 @@ export default function TripDetail() {
           ))}
         </div>
 
+        {trip.category != null && (
+          <div style={{ marginTop: 10 }}>
+            <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
+          </div>
+        )}
+
         <div className="panel" style={{ marginTop: 14 }}>
           <div className="panel-header">
             <div className="panel-title">🤖 Avaliação de Condução</div>
@@ -637,6 +936,28 @@ export default function TripDetail() {
             <div className="map-shell">
               <div ref={mapContainerRef} className="map-canvas" />
             </div>
+            
+            <PlaybackSlider
+              value={timeIndex}
+              max={maxIndex}
+              currentTime={currentTimeFormatted}
+              elapsedTime={elapsedTimeFormatted}
+              totalDuration={totalDurationFormatted}
+              disabled={!hasPlaybackData}
+              onChange={setTimeIndex}
+            />
+            
+            <PlaybackControls
+              isPlaying={isPlaying}
+              isPreloading={isPreloading}
+              playbackSpeed={playbackSpeed}
+              disabled={!hasPlaybackData}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onStop={handleStop}
+              onSpeedChange={handleSpeedChange}
+            />
+            
             <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
               <span className="badge-pill" style={{ backgroundColor: "rgba(59,130,246,0.15)", color: "#3b82f6" }}>
                 Rota
@@ -664,7 +985,7 @@ export default function TripDetail() {
           <div className="panel-body">
             {trip.source === "GPX_IMPORTED" ? (
               <div className="tile-grid" style={{ gap: 14 }}>
-                <ChartCard title="Velocidade (km/h) — derivada do GPX">
+                <ChartCard interactive={!isPlaying} title="Velocidade (km/h) — derivada do GPX">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={gpxSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -675,13 +996,21 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="speedKmh" stroke="#3b82f6" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="speedKmh" stroke="#3b82f6" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Altitude (m)">
+                <ChartCard interactive={!isPlaying} title="Altitude (m)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={gpxSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -692,13 +1021,21 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="ele" stroke="#22c55e" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="ele" stroke="#22c55e" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Distância acumulada (km)">
+                <ChartCard interactive={!isPlaying} title="Distância acumulada (km)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={gpxSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -709,15 +1046,23 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="distanceKm" stroke="#a855f7" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="distanceKm" stroke="#a855f7" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
               </div>
             ) : (
               <div className="tile-grid" style={{ gap: 14 }}>
-                <ChartCard title="Velocidade (km/h)">
+                <ChartCard interactive={!isPlaying} title="Velocidade (km/h)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -728,27 +1073,41 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip
-                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")}
-                      />
-                      <Line type="monotone" dataKey="speed" stroke="#3b82f6" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="speed" stroke="#3b82f6" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="RPM vs Velocidade">
+                <ChartCard interactive={!isPlaying} title="RPM vs Velocidade">
                   <ResponsiveContainer width="100%" height={240}>
                     <ScatterChart>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                       <XAxis dataKey="speed" type="number" name="Velocidade" unit=" km/h" />
                       <YAxis dataKey="rpm" type="number" name="RPM" />
-                      <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                      {!isPlaying && <Tooltip cursor={{ strokeDasharray: "3 3" }} />}
                       <Scatter data={rpmVsSpeed} fill="#22c55e" />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </ScatterChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Temperatura do motor (°C)">
+                <ChartCard interactive={!isPlaying} title="Temperatura do motor (°C)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -759,15 +1118,21 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip
-                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")}
-                      />
-                      <Line type="monotone" dataKey="temp" stroke="#f97316" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="temp" stroke="#f97316" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Inclinação (roll °)">
+                <ChartCard interactive={!isPlaying} title="Inclinação (roll °)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -778,15 +1143,21 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip
-                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")}
-                      />
-                      <Line type="monotone" dataKey="roll" stroke="#a855f7" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="roll" stroke="#a855f7" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Pressão do óleo (bar)">
+                <ChartCard interactive={!isPlaying} title="Pressão do óleo (bar)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -797,15 +1168,21 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip
-                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")}
-                      />
-                      <Line type="monotone" dataKey="oil" stroke="#38bdf8" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="oil" stroke="#38bdf8" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Pressão dos pneus (bar)">
+                <ChartCard interactive={!isPlaying} title="Pressão dos pneus (bar)">
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -816,11 +1193,17 @@ export default function TripDetail() {
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
                       />
                       <YAxis />
-                      <Tooltip
-                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")}
-                      />
-                      <Line type="monotone" dataKey="tireF" name="Frente" stroke="#22c55e" dot={false} />
-                      <Line type="monotone" dataKey="tireR" name="Trás" stroke="#eab308" dot={false} />
+                      {!isPlaying && <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />}
+                      <Line type="monotone" dataKey="tireF" name="Frente" stroke="#22c55e" dot={false} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="tireR" name="Trás" stroke="#eab308" dot={false} isAnimationActive={false} />
+                      {showChartCursors && (
+                        <ReferenceLine
+                          x={currentTimestamp}
+                          stroke="#eab308"
+                          strokeWidth={2}
+                          strokeDasharray="3 3"
+                        />
+                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -833,13 +1216,23 @@ export default function TripDetail() {
   );
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+const ChartCard = memo(function ChartCard({ title, children, interactive = true }: { title: string; children: React.ReactNode; interactive?: boolean }) {
   return (
     <div className="card" style={{ padding: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
         <h2 style={{ margin: 0, fontSize: 16 }}>{title}</h2>
       </div>
-      {children}
+      <LazyChart>
+        <div style={{ position: "relative" }}>
+          {children}
+          {!interactive && (
+            <div style={{
+              position: "absolute", inset: 0,
+              cursor: "default", zIndex: 10,
+            }} />
+          )}
+        </div>
+      </LazyChart>
     </div>
   );
-}
+});

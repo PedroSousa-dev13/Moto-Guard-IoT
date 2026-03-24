@@ -1,4 +1,3 @@
-import React from 'react';
 import type { TelemetryData } from "../types/telemetry";
 import Card from "./ui/Card";
 import { Gauge, Zap, Disc, ArrowUpCircle } from 'lucide-react';

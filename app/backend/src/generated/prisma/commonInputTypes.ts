@@ -227,6 +227,13 @@ export type EnumTripStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTripStatusFilter<$PrismaModel> | $Enums.TripStatus
 }
 
+export type EnumTripCategoryNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.TripCategory | Prisma.EnumTripCategoryFieldRefInput<$PrismaModel> | null
+  in?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel> | $Enums.TripCategory | null
+}
+
 export type EnumTripSourceWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.TripSource | Prisma.EnumTripSourceFieldRefInput<$PrismaModel>
   in?: $Enums.TripSource[] | Prisma.ListEnumTripSourceFieldRefInput<$PrismaModel>
@@ -275,6 +282,16 @@ export type EnumTripStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumTripStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumTripStatusFilter<$PrismaModel>
+}
+
+export type EnumTripCategoryNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TripCategory | Prisma.EnumTripCategoryFieldRefInput<$PrismaModel> | null
+  in?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumTripCategoryNullableWithAggregatesFilter<$PrismaModel> | $Enums.TripCategory | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel>
 }
 
 export type EnumEventTypeFilter<$PrismaModel = never> = {
@@ -566,6 +583,13 @@ export type NestedEnumTripStatusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumTripStatusFilter<$PrismaModel> | $Enums.TripStatus
 }
 
+export type NestedEnumTripCategoryNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.TripCategory | Prisma.EnumTripCategoryFieldRefInput<$PrismaModel> | null
+  in?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel> | $Enums.TripCategory | null
+}
+
 export type NestedEnumTripSourceWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.TripSource | Prisma.EnumTripSourceFieldRefInput<$PrismaModel>
   in?: $Enums.TripSource[] | Prisma.ListEnumTripSourceFieldRefInput<$PrismaModel>
@@ -614,6 +638,16 @@ export type NestedEnumTripStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumTripStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumTripStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumTripCategoryNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TripCategory | Prisma.EnumTripCategoryFieldRefInput<$PrismaModel> | null
+  in?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.TripCategory[] | Prisma.ListEnumTripCategoryFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumTripCategoryNullableWithAggregatesFilter<$PrismaModel> | $Enums.TripCategory | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTripCategoryNullableFilter<$PrismaModel>
 }
 
 export type NestedEnumEventTypeFilter<$PrismaModel = never> = {

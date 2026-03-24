@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { tripsAPI, motorcyclesAPI } from "../services/api";
 import { Trip, TripFeedItem, TripSource, TripStatus, Motorcycle } from "../types";
@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import { SkeletonRow, SkeletonCard } from "../components/ui/Skeleton";
+import CompareBar from "../components/trips/CompareBar";
+import ComparisonView from "../components/trips/ComparisonView";
+import { ListStateSnapshot } from "../utils/tripComparison";
+import TripCategoryBadge from "../components/trips/TripCategoryBadge";
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -122,6 +126,11 @@ export default function Trips() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
+  // ── Comparison state ─────────────────────────────────────────────────────
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [listStateSnapshot, setListStateSnapshot] = useState<ListStateSnapshot | null>(null);
+
   useEffect(() => {
     document.title = "Viagens — MotoGuard";
     void loadMotos();
@@ -175,6 +184,46 @@ export default function Trips() {
       const res = await tripsAPI.getById(tripId);
       setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, ...res.data } : t));
     } finally { setDetailLoadingId((p) => p === tripId ? null : p); }
+  }
+
+  // ── Comparison handlers ──────────────────────────────────────────────────
+  function handleCompareToggle(tripId: string) {
+    setSelectedForComparison((prev) => {
+      if (prev.includes(tripId)) return prev.filter((id) => id !== tripId);
+      if (prev.length >= 2) return prev; // ignore if already 2 and this isn't one of them
+      return [...prev, tripId];
+    });
+  }
+
+  function handleOpenComparison() {
+    setListStateSnapshot({
+      page,
+      pageSize,
+      statusFilter,
+      sourceFilter,
+      selectedMotoId,
+      fromDate,
+      toDate,
+      onlyWithEvents,
+      expandedId,
+    });
+    setComparisonOpen(true);
+  }
+
+  function handleCloseComparison() {
+    if (listStateSnapshot) {
+      setPage(listStateSnapshot.page);
+      setPageSize(listStateSnapshot.pageSize);
+      setStatusFilter(listStateSnapshot.statusFilter);
+      setSourceFilter(listStateSnapshot.sourceFilter);
+      setSelectedMotoId(listStateSnapshot.selectedMotoId);
+      setFromDate(listStateSnapshot.fromDate);
+      setToDate(listStateSnapshot.toDate);
+      setOnlyWithEvents(listStateSnapshot.onlyWithEvents);
+      setExpandedId(listStateSnapshot.expandedId);
+    }
+    setComparisonOpen(false);
+    setListStateSnapshot(null);
   }
 
   // ── Filtering ────────────────────────────────────────────────────────────
@@ -352,6 +401,8 @@ export default function Trips() {
                 trip={trip}
                 expandedId={expandedId}
                 detailLoadingId={detailLoadingId}
+                selectedForComparison={selectedForComparison}
+                onCompareToggle={handleCompareToggle}
                 onToggle={async (id) => {
                   setExpandedId((p) => p === id ? null : id);
                   if (expandedId !== id) await ensureDetails(id);
@@ -361,6 +412,14 @@ export default function Trips() {
           </div>
         )}
       </div>
+
+      {view === "LIST" && (
+        <CompareBar
+          selectedCount={selectedForComparison.length}
+          onClear={() => setSelectedForComparison([])}
+          onCompare={handleOpenComparison}
+        />
+      )}
 
       {activeCount > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
@@ -383,6 +442,14 @@ export default function Trips() {
             </button>
           </div>
         </div>
+      )}
+
+      {comparisonOpen && selectedForComparison.length === 2 && (
+        <ComparisonView
+          tripIds={selectedForComparison as [string, string]}
+          trips={trips}
+          onClose={handleCloseComparison}
+        />
       )}
     </div>
   );
@@ -420,6 +487,7 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
             <div className="trip-badges-v2">
               <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
               <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
+              <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
             </div>
           </div>
           <div className="trip-meta-line">
@@ -462,12 +530,14 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
 // ─── List Card ────────────────────────────────────────────────────────────────
 
 function TripListCard({
-  trip, expandedId, detailLoadingId, onToggle,
+  trip, expandedId, detailLoadingId, onToggle, selectedForComparison, onCompareToggle,
 }: {
   trip: Trip;
   expandedId: string | null;
   detailLoadingId: string | null;
   onToggle: (id: string) => void | Promise<void>;
+  selectedForComparison: string[];
+  onCompareToggle: (tripId: string) => void;
 }) {
   const badge = statusBadge(trip.status);
   const src   = sourceBadge(trip.source);
@@ -475,9 +545,11 @@ function TripListCard({
   const evCount = trip.events?.length ?? trip._count?.events ?? 0;
   const isDetailLoading = detailLoadingId === trip.id;
   const motoImg = imageFromCategory((trip.motorcycle as any)?.category);
+  const isSelected = selectedForComparison.includes(trip.id);
+  const isDisabled = selectedForComparison.length >= 2 && !isSelected;
 
   return (
-    <div className={`trip-card-v2 ${isOpen ? "open" : ""}`} style={{ display: "flex", overflow: "hidden" }}>
+    <div className={`trip-card-v2 ${isOpen ? "open" : ""} ${isSelected ? "compare-selected" : ""}`} style={{ display: "flex", overflow: "hidden" }}>
       {/* Moto image strip — lateral, imagem rodada 90° */}
       <div style={{ width: 80, minWidth: 80, flexShrink: 0, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         <img
@@ -500,6 +572,7 @@ function TripListCard({
               <div className="trip-badges-v2">
                 <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
                 <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
+                <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
               </div>
             </div>
             <div className="trip-meta-line">
@@ -523,6 +596,17 @@ function TripListCard({
             <div className="expand-icon">{isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</div>
           </div>
         </button>
+
+        {/* Compare checkbox — visible only in list view (rendered by parent) */}
+        <label className="compare-checkbox" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            disabled={isDisabled}
+            onChange={() => onCompareToggle(trip.id)}
+          />
+          <span className="compare-checkbox-label">Comparar</span>
+        </label>
 
         {isOpen && (
           <div className="trip-expanded-content">

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { CSSProperties, ReactNode, useState } from "react";
 import {
   Activity, Gauge, Thermometer, Zap, Navigation, Wind,
-  AlertTriangle, Shield, TrendingDown, BarChart2, Info,
+  AlertTriangle, Shield, BarChart2, Info,
   ChevronDown, ChevronUp, Bike
 } from "lucide-react";
 
@@ -19,7 +19,7 @@ interface DataField {
 interface Section {
   id: string;
   title: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
   fields: DataField[];
 }
@@ -352,7 +352,7 @@ export default function About() {
       </div>
 
       {/* Flow */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 8 } as React.CSSProperties}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 8 } as CSSProperties}>
         {[
           { icon: <Wind size={14} />, label: "Simulador Python", color: "#4f46e5" },
           { icon: null, label: "→", color: "var(--muted)" },

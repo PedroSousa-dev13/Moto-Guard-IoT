@@ -967,6 +967,8 @@ export const TripScalarFieldEnum = {
   status: 'status',
   mlScore: 'mlScore',
   mlModelVersion: 'mlModelVersion',
+  category: 'category',
+  categoryConfidence: 'categoryConfidence',
   createdAt: 'createdAt'
 } as const
 
@@ -1135,6 +1137,20 @@ export type EnumTripStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'TripStatus[]'
  */
 export type ListEnumTripStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'TripCategory'
+ */
+export type EnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripCategory'>
+    
+
+
+/**
+ * Reference to a field of type 'TripCategory[]'
+ */
+export type ListEnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripCategory[]'>
     
 
 

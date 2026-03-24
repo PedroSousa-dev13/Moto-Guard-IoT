@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
 import { tripsAPI } from "../services/api";
@@ -65,29 +66,10 @@ function LiveDot({ active }: { active: boolean }) {
   );
 }
 
-function StatChip({
-  icon, label, value, unit, color,
-}: {
-  icon: React.ReactNode; label: string; value: string; unit?: string; color?: string;
-}) {
-  return (
-    <div className="db-stat-chip">
-      <div className="db-stat-chip-icon">{icon}</div>
-      <div className="db-stat-chip-body">
-        <span className="db-stat-chip-label">{label}</span>
-        <span className="db-stat-chip-value" style={color ? { color } : undefined}>
-          {value}
-          {unit && <span className="db-stat-chip-unit">{unit}</span>}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function GaugeBlock({
   icon, value, unit, label, color,
 }: {
-  icon: React.ReactNode; value: string; unit: string; label: string; color?: string;
+  icon: ReactNode; value: string; unit: string; label: string; color?: string;
 }) {
   return (
     <div className="db-gauge">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motorcyclesAPI } from "../services/api";
 import type { Motorcycle } from "../types";
@@ -86,7 +86,7 @@ export default function Garage() {
     setSaveError(null);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (saving) return;
     if (!form.category) {
@@ -284,9 +284,9 @@ export default function Garage() {
                   </div>
                 ) : (
                   <div className="garage-card-actions">
-                    <button className="btn btn-primary btn-sm" disabled={!moto.category}
-                      title={moto.category ? "Abrir simulador" : "Sem categoria"}
-                      onClick={() => navigate(`/simulator-contexts?moto=${moto.id}`)}>
+                    <button className="btn btn-primary btn-sm" disabled={!moto.deviceId}
+                      title={moto.deviceId ? "Abrir dashboard para esta mota" : "Sem device ID associado"}
+                      onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}>
                       <Activity size={13} /> Monitorizar
                     </button>
                     <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips?moto=${moto.id}`)}>

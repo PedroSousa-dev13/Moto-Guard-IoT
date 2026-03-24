@@ -4,7 +4,7 @@
 // Sino no Navbar com dropdown de notificações recentes + toast global.
 // =============================================================================
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Bell, X, CheckCheck, ExternalLink } from "lucide-react";

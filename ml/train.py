@@ -47,7 +47,7 @@ def load_trips_from_db(conn) -> list[dict]:
                 t.id, t.source,
                 t.max_speed_kmh   AS "maxSpeedKmh",
                 t.max_roll_deg    AS "maxRollDeg",
-                t.max_gforce      AS "maxGForce",
+                t.max_g_force     AS "maxGForce",
                 t.distance_km     AS "distanceKm",
                 t.avg_speed_kmh   AS "avgSpeedKmh",
                 t.started_at      AS "startedAt",

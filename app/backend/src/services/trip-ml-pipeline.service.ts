@@ -53,7 +53,6 @@ interface MlInferenceResult {
 
 const ML_INFER_SCRIPT = path.resolve(process.cwd(), "..", "ml", "infer.py");
 const ML_MODEL_PATH = path.resolve(process.cwd(), "..", env.ML_MODEL_PATH);
-const ML_METADATA_PATH = ML_MODEL_PATH; // metadados estão no mesmo .pkl — lidos via Python
 
 // ── Inferência via child_process ──────────────────────────────────────────────
 
@@ -152,6 +151,7 @@ export async function runTripMlPipeline(
     include: {
       motorcycle: { include: { profile: true } },
       events: true,
+      gpxData: true,
     },
   });
 
@@ -195,6 +195,7 @@ export async function runTripMlPipeline(
   const tripData = {
     trip: {
       id: trip.id,
+      source: trip.source,
       maxSpeedKmh: trip.maxSpeedKmh ?? 0,
       maxRollDeg: trip.maxRollDeg ?? 0,
       maxGForce: trip.maxGForce ?? 0,
@@ -212,6 +213,10 @@ export async function runTripMlPipeline(
           crashGForce: profile.crashGForce,
         }
       : null,
+    // Para viagens GPX, incluir waypoints
+    gpx_waypoints: trip.source === "GPX_IMPORTED" && trip.gpxData
+      ? (trip.gpxData.waypoints as any) || []
+      : undefined,
   };
 
   try {
