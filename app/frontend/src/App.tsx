@@ -23,6 +23,7 @@ import Garage from './pages/Garage';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import About from './pages/About';
+import RealSimulator from './pages/RealSimulator';
 import './App.css';
 import './Layout.css';
 
@@ -73,6 +74,7 @@ function App() {
                       <Route path="/alertas" element={<Alertas />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/profile" element={<Profile />} />
+                      <Route path="/real-simulator" element={<RealSimulator />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

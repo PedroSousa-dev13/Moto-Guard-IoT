@@ -15,7 +15,8 @@ import {
   User as UserIcon,
   LogOut,
   Bike,
-  Info
+  Info,
+  PlayCircle
 } from 'lucide-react';
 
 function getInitials(name?: string): string {
@@ -59,6 +60,7 @@ const Sidebar: FC = () => {
       label: t('sidebar.system'),
       items: [
         { path: '/simulator-contexts', label: t('sidebar.simulator'), icon: <Cpu size={16} /> },
+        { path: '/real-simulator', label: t('sidebar.realSimulator'), icon: <PlayCircle size={16} /> },
         { path: '/settings', label: t('nav.settings'), icon: <SlidersHorizontal size={16} /> },
         { path: '/profile', label: t('nav.profile'), icon: <UserIcon size={16} /> },
         { path: '/about', label: t('sidebar.howItWorks'), icon: <Info size={16} /> },
