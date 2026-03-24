@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { translations } from '../translations';
+import { translations, translationsWithEs } from '../translations';
 
 describe('translations', () => {
   it('should have pt, en translations', () => {
@@ -125,6 +125,40 @@ describe('translations', () => {
     unitKeys.forEach(key => {
       expect(translations.pt).toHaveProperty(key);
       expect(translations.en).toHaveProperty(key);
+    });
+  });
+});
+
+describe('translationsWithEs — Spanish dictionary', () => {
+  it('should have the es property', () => {
+    expect(translationsWithEs).toHaveProperty('es');
+  });
+
+  it('translationsWithEs.es["common.save"] should be "Guardar" (not "Save")', () => {
+    expect(translationsWithEs.es['common.save']).toBe('Guardar');
+    expect(translationsWithEs.es['common.save']).not.toBe('Save');
+  });
+
+  it('translationsWithEs.es["settings.title"] should be "Configuración" (not "Settings")', () => {
+    expect(translationsWithEs.es['settings.title']).toBe('Configuración');
+    expect(translationsWithEs.es['settings.title']).not.toBe('Settings');
+  });
+
+  it('translationsWithEs.es["nav.trips"] should be "Viajes" (not "Trips")', () => {
+    expect(translationsWithEs.es['nav.trips']).toBe('Viajes');
+    expect(translationsWithEs.es['nav.trips']).not.toBe('Trips');
+  });
+
+  it('ES dictionary should have at least as many keys as PT (parity)', () => {
+    const ptKeyCount = Object.keys(translationsWithEs.pt).length;
+    const esKeyCount = Object.keys(translationsWithEs.es).length;
+    expect(esKeyCount).toBeGreaterThanOrEqual(ptKeyCount);
+  });
+
+  it('ES dictionary should have no empty values', () => {
+    Object.entries(translationsWithEs.es).forEach(([key, value]) => {
+      expect(value as string, `ES translation for "${key}" should not be empty`).toBeTruthy();
+      expect((value as string).trim(), `ES translation for "${key}" should not be whitespace`).toBeTruthy();
     });
   });
 });
