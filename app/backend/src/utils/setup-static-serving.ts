@@ -25,7 +25,8 @@ export function setupStaticServing(app: Application, distPath: string): boolean 
 
   app.use(express.static(distPath));
 
-  app.get("*", (_req, res) => {
+  // SPA fallback: serve index.html para todas as rotas excepto /api/*
+  app.get(/^(?!\/api).*$/, (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 

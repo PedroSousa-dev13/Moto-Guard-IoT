@@ -3007,3 +3007,71 @@ input[type="range"]:disabled::-moz-range-thumb {
   .cv-events-sev-row { grid-template-columns: 1fr; gap: 8px; }
   .cv-events-sev-vals { justify-content: flex-start; gap: 12px; }
 }
+
+/* ── Event Heatmap ─────────────────────────────────────────────────────────── */
+
+.event-heatmap-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heatmap-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.heatmap-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.heatmap-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heatmap-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.heatmap-toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.heatmap-stats {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heatmap-legend-gradient {
+  width: 120px;
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #3b82f6, #22c55e, #f59e0b, #ef4444);
+  flex-shrink: 0;
+}
+
+.heatmap-map {
+  border: 1px solid var(--border);
+}
