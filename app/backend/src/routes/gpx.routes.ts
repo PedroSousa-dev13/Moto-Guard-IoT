@@ -31,7 +31,7 @@ router.post("/gpx/import", authMiddleware, (req, res, next) => {
     res.status(400).json({ error: "Erro no upload do ficheiro" });
   });
 }, importGpx);
+
 router.get("/gpx/export/:tripId", authMiddleware, exportTripGpx);
 
 export default router;
-

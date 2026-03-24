@@ -17,6 +17,8 @@ import type {
 } from "../types/telemetry";
 import { pushAlert } from "../utils/alerts";
 import { loadSettings } from "../utils/settings";
+import { useDemoContext } from "../demo/DemoContext";
+import { DemoSocketEmitter } from "../demo/demoSocketEmitter";
 
 function getStoredUserId(): string | null {
   const rememberMe = localStorage.getItem("rememberMe") === "true";
@@ -33,6 +35,7 @@ function getStoredUserId(): string | null {
 }
 
 export function useSocket() {
+  const { isDemoMode, registerEmitter } = useDemoContext();
   const socketRef = useRef<Socket | null>(null);
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
   const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
@@ -63,6 +66,10 @@ export function useSocket() {
   // ── Enviar comando ao simulador (via WebSocket → backend → MQTT) ──────
   const sendCommand = useCallback(
     (cmd: SimulatorCommand) => {
+      if (isDemoMode) {
+        addLog("Comando desativado em modo demo", "#71717a");
+        return;
+      }
       if (socketRef.current) {
         const shouldDefaultToSimulatorDevice =
           cmd.acao === "definir_modelo" ||
@@ -84,7 +91,7 @@ export function useSocket() {
         addLog(`Comando enviado: ${JSON.stringify(payload)}`, "#3b82f6");
       }
     },
-    [addLog, activeDeviceId, lastDeviceId]
+    [addLog, activeDeviceId, lastDeviceId, isDemoMode]
   );
 
   const devices = useMemo(() => {
@@ -99,6 +106,44 @@ export function useSocket() {
 
   // ── Efeito: ligar Socket.IO ao montar ─────────────────────────────────
   useEffect(() => {
+    if (isDemoMode) {
+      // Demo mode: use DemoSocketEmitter instead of Socket.IO
+      const emitter = new DemoSocketEmitter();
+      registerEmitter(emitter);
+
+      emitter.on("connect", () => {
+        setStatus((prev) => ({ ...prev, ws: true }));
+        addLog("WebSocket conectado (modo demo)", "#22c55e");
+      });
+
+      emitter.on("status", (data: unknown) => {
+        const d = data as { mqttConnected: boolean; telemetryCount: number; hasData: boolean };
+        setStatus((prev) => ({ ...prev, mqtt: d.mqttConnected, hasData: d.hasData }));
+        addLog(`Estado demo: MQTT=${d.mqttConnected ? "✓" : "✗"} | msgs=${d.telemetryCount}`, "#71717a");
+      });
+
+      emitter.on("telemetry_update", (data: unknown) => {
+        const payload = data as TelemetryPayload;
+        const deviceId = payload.system.device_id;
+        setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: payload }));
+        setLastDeviceId(deviceId);
+        setActiveDeviceId((prev) => (prev ? prev : deviceId));
+        setMsgCount((prev) => prev + 1);
+        setStatus((prev) => ({ ...prev, mqtt: true, hasData: true }));
+      });
+
+      emitter.on("trip_started", (data: unknown) => {
+        const d = data as TripSocketEvent;
+        addLog(`Viagem iniciada: ${d.motoModel} (${d.deviceId})`, "#22c55e");
+      });
+
+      emitter.start();
+      addLog("Dashboard MotoGuard iniciado — modo demo ativo", "#71717a");
+
+      return () => emitter.stop();
+    }
+
+    // Real Socket.IO connection
     const socket = io();
     socketRef.current = socket;
 
@@ -194,7 +239,7 @@ export function useSocket() {
     return () => {
       socket.disconnect();
     };
-  }, [addLog]);
+  }, [addLog, isDemoMode, registerEmitter]);
 
   return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView };
 }

@@ -1,6 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { DemoProvider } from './demo/DemoContext';
+import { I18nProvider } from './i18n';
+import { TranslatedApp } from './i18n/TranslatedApp';
+import DemoBanner from './demo/DemoBanner';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OnboardingGuard from './components/auth/OnboardingGuard';
@@ -31,45 +35,54 @@ function HomeOrDashboard() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Layout>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="/" element={<HomeOrDashboard />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/garage" element={
-                <ProtectedRoute>
-                  <Garage />
-                </ProtectedRoute>
-              } />
-              {/* All other protected routes share a single OnboardingGuard instance */}
-              <Route element={
-                <ProtectedRoute>
-                  <OnboardingGuard>
-                    <Outlet />
-                  </OnboardingGuard>
-                </ProtectedRoute>
-              }>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/trips" element={<Trips />} />
-                <Route path="/trips/:id" element={<TripDetail />} />
-                <Route path="/map" element={<Map />} />
-                <Route path="/gpx" element={<Gpx />} />
-                <Route path="/simulator-contexts" element={<SimulatorContexts />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/alertas" element={<Alertas />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/profile" element={<Profile />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Layout>
-        </div>
-      </Router>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <Router>
+          <TranslatedApp>
+            <DemoProvider>
+              <div className="App">
+                <Layout>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                    <Route path="/" element={<HomeOrDashboard />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/garage" element={
+                      <ProtectedRoute>
+                        <Garage />
+                      </ProtectedRoute>
+                    } />
+                    {/* All other protected routes share a single OnboardingGuard instance */}
+                    <Route element={
+                      <ProtectedRoute>
+                        <OnboardingGuard>
+                          <>
+                            <DemoBanner />
+                            <Outlet />
+                          </>
+                        </OnboardingGuard>
+                      </ProtectedRoute>
+                    }>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/trips" element={<Trips />} />
+                      <Route path="/trips/:id" element={<TripDetail />} />
+                      <Route path="/map" element={<Map />} />
+                      <Route path="/gpx" element={<Gpx />} />
+                      <Route path="/simulator-contexts" element={<SimulatorContexts />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/alertas" element={<Alertas />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/profile" element={<Profile />} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              </div>
+            </DemoProvider>
+          </TranslatedApp>
+        </Router>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
 

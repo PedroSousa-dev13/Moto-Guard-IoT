@@ -2,8 +2,6 @@
 // MotoGuard — CompareBar
 // =============================================================================
 
-import React from "react";
-
 export interface CompareBarProps {
   selectedCount: number;
   onClear: () => void;

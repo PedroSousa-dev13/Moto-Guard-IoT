@@ -10,7 +10,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../services/prisma.service";
 import { env } from "../config/env";
-import { encrypt, decrypt } from "../utils/crypto";
+import { encrypt } from "../utils/crypto";
 import type { AuthRequest } from "../middleware/auth.middleware";
 
 // ─── Registo ────────────────────────────────────────────────────────────────
