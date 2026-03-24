@@ -53,7 +53,6 @@ interface MlInferenceResult {
 
 const ML_INFER_SCRIPT = path.resolve(process.cwd(), "..", "ml", "infer.py");
 const ML_MODEL_PATH = path.resolve(process.cwd(), "..", env.ML_MODEL_PATH);
-const ML_METADATA_PATH = ML_MODEL_PATH; // metadados estão no mesmo .pkl — lidos via Python
 
 // ── Inferência via child_process ──────────────────────────────────────────────
 

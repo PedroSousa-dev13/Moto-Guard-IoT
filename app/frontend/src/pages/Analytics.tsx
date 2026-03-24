@@ -15,7 +15,8 @@ import {
   YAxis,
   Legend,
 } from "recharts";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, Map } from "lucide-react";
+import EventHeatmap from "../components/EventHeatmap";
 import {
   aggregateFeedSeries,
   computePeriodStats,
@@ -23,6 +24,8 @@ import {
   type PresetRange,
 } from "../utils/analytics";
 import { exportCsv, exportChartsPng } from "../utils/export";
+
+type AnalyticsTab = "charts" | "heatmap";
 
 function formatDateTime(date: string) {
   return new Date(date).toLocaleString("pt-PT", {
@@ -65,6 +68,7 @@ function pctColor(curr: number | null, prev: number | null, higherIsBetter = tru
 }
 
 export default function Analytics() {
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>("charts");
   const [range, setRange] = useState<PresetRange>("7d");
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [from, setFrom] = useState<string>("");
@@ -194,7 +198,24 @@ export default function Analytics() {
             {lastUpdatedAt ? `Atualizado: ${formatDateTime(lastUpdatedAt)}` : "—"}
           </div>
         </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            className={`btn btn-sm${activeTab === "charts" ? " btn-primary" : " btn-ghost"}`}
+            onClick={() => setActiveTab("charts")}
+          >
+            <BarChart2 size={14} style={{ marginRight: 4 }} />
+            Gráficos
+          </button>
+          <button
+            className={`btn btn-sm${activeTab === "heatmap" ? " btn-primary" : " btn-ghost"}`}
+            onClick={() => setActiveTab("heatmap")}
+          >
+            <Map size={14} style={{ marginRight: 4 }} />
+            Heatmap
+          </button>
+        </div>
         <div className="page-actions" style={{ flexWrap: "wrap" }}>
+          {activeTab === "charts" && <>
           <select
             className="control control-sm"
             value={range}
@@ -238,8 +259,17 @@ export default function Analytics() {
           >
             {exporting ? "A exportar..." : "PNG"}
           </button>
+          </>}
         </div>
       </div>
+
+      {activeTab === "heatmap" && (
+        <Card title="Heatmap de Eventos Críticos" subtitle="Densidade geográfica de eventos por localização">
+          <EventHeatmap />
+        </Card>
+      )}
+
+      {activeTab === "charts" && <>
 
       {range === "custom" && (
         <Card title="Intervalo customizado">
@@ -404,6 +434,7 @@ export default function Analytics() {
           </Card>
         </div>
       )}
+      </>}
     </div>
   );
 }
