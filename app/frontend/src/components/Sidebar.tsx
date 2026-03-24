@@ -2,6 +2,7 @@ import { FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useDemoContext } from '../demo/DemoContext';
+import { useI18n } from '../i18n';
 import { 
   LayoutDashboard, 
   BarChart3,
@@ -17,35 +18,6 @@ import {
   Info
 } from 'lucide-react';
 
-const navGroups = [
-  {
-    label: 'Monitorização',
-    items: [
-      { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
-      { path: '/map', label: 'Mapa', icon: <MapIcon size={16} /> },
-      { path: '/analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
-      { path: '/alertas', label: 'Alertas', icon: <Bell size={16} /> },
-    ],
-  },
-  {
-    label: 'Dados',
-    items: [
-      { path: '/garage', label: 'Garagem', icon: <Bike size={16} /> },
-      { path: '/trips', label: 'Viagens', icon: <Route size={16} /> },
-      { path: '/gpx', label: 'GPX', icon: <Compass size={16} /> },
-    ],
-  },
-  {
-    label: 'Sistema',
-    items: [
-      { path: '/simulator-contexts', label: 'Simulador', icon: <Cpu size={16} /> },
-      { path: '/settings', label: 'Settings', icon: <SlidersHorizontal size={16} /> },
-      { path: '/profile', label: 'Perfil', icon: <UserIcon size={16} /> },
-      { path: '/about', label: 'Como Funciona', icon: <Info size={16} /> },
-    ],
-  },
-];
-
 function getInitials(name?: string): string {
   if (!name) return '?';
   return name
@@ -59,10 +31,40 @@ function getInitials(name?: string): string {
 const Sidebar: FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDemoMode, demoUser, exitDemoMode } = useDemoContext();
+  const { t } = useI18n();
   const location = useLocation();
 
   const displayUser = isDemoMode ? demoUser : user;
   const showUser = isAuthenticated || isDemoMode;
+
+  const navGroups = [
+    {
+      label: t('sidebar.monitoring'),
+      items: [
+        { path: '/dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard size={16} /> },
+        { path: '/map', label: t('nav.map'), icon: <MapIcon size={16} /> },
+        { path: '/analytics', label: t('nav.analytics'), icon: <BarChart3 size={16} /> },
+        { path: '/alertas', label: t('nav.alerts'), icon: <Bell size={16} /> },
+      ],
+    },
+    {
+      label: t('sidebar.data'),
+      items: [
+        { path: '/garage', label: t('nav.garage'), icon: <Bike size={16} /> },
+        { path: '/trips', label: t('nav.trips'), icon: <Route size={16} /> },
+        { path: '/gpx', label: t('sidebar.gpx'), icon: <Compass size={16} /> },
+      ],
+    },
+    {
+      label: t('sidebar.system'),
+      items: [
+        { path: '/simulator-contexts', label: t('sidebar.simulator'), icon: <Cpu size={16} /> },
+        { path: '/settings', label: t('nav.settings'), icon: <SlidersHorizontal size={16} /> },
+        { path: '/profile', label: t('nav.profile'), icon: <UserIcon size={16} /> },
+        { path: '/about', label: t('sidebar.howItWorks'), icon: <Info size={16} /> },
+      ],
+    },
+  ];
 
   return (
     <aside className="sidebar">
@@ -111,7 +113,7 @@ const Sidebar: FC = () => {
         <div className="sidebar-footer">
           <button onClick={isDemoMode ? exitDemoMode : logout} className="sidebar-logout-btn">
             <LogOut size={15} />
-            <span>{isDemoMode ? 'Sair do Demo' : 'Terminar sessão'}</span>
+            <span>{isDemoMode ? t('demo.exit') : t('nav.logout')}</span>
           </button>
         </div>
       )}

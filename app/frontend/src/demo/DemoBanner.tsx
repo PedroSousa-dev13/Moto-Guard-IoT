@@ -1,8 +1,10 @@
 import React from 'react';
 import { useDemoContext } from './DemoContext';
+import { useI18n } from '../i18n';
 
 export default function DemoBanner() {
   const { isDemoMode, exitDemoMode } = useDemoContext();
+  const { t } = useI18n();
 
   if (!isDemoMode) return null;
 
@@ -23,7 +25,7 @@ export default function DemoBanner() {
         zIndex: 1000,
       }}
     >
-      <span>Modo Demo — dados simulados</span>
+      <span>{t('demo.banner')}</span>
       <button
         onClick={exitDemoMode}
         style={{
@@ -37,7 +39,7 @@ export default function DemoBanner() {
           fontSize: '0.85rem',
         }}
       >
-        Sair do Modo Demo
+        {t('demo.exit')}
       </button>
     </div>
   );

@@ -185,10 +185,15 @@ def infer(trip_data: dict, model_path: Path = DEFAULT_MODEL_PATH) -> dict:
         raw_score = float(raw_scores[0])
 
         # Normalizar para [0, 100]
-        # score_samples está tipicamente em [-0.5, 0.5] para IsolationForest
-        # Normalizar para [-1, 1] antes de converter
-        normalized = max(-1.0, min(1.0, raw_score * 2))
-        ml_score = _raw_score_to_ml_score(normalized)
+        # O range de score_samples varia por modelo e dataset
+        # Usar sigmoid para mapear suavemente raw_score → [0, 100]
+        # raw_score típico: [-0.6, -0.05] onde mais negativo = mais anómalo
+        import math
+        k = 15  # steepness (menor = mais suave)
+        midpoint = -0.30  # ponto médio ajustado para GPX
+        sigmoid = 1 / (1 + math.exp(-k * (raw_score - midpoint)))
+        ml_score = round(sigmoid * 100)
+        ml_score = max(0, min(100, ml_score))
 
         dominant_features = _get_dominant_features(feature_vector, scaler, feature_names)
         feedback_label = _build_feedback_label(dominant_features, ml_score)
