@@ -18,6 +18,8 @@ function describeParseError(error: ParseError): string {
       return "O ficheiro CSV está vazio ou não contém linhas de dados válidas.";
     case "INVALID_EXTENSION":
       return "Extensão inválida. Apenas ficheiros .csv são suportados.";
+    case "NO_GPS_DATA":
+      return "Nenhum dado GPS encontrado. O simulador requer coordenadas GPS para funcionar.";
     default:
       return error.message;
   }
@@ -209,6 +211,13 @@ export default function CsvDropzone({ onParsed }: CsvDropzoneProps) {
           <span style={{ fontWeight: 600, color: "#f9fafb", marginBottom: 2 }}>Pré-visualização</span>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px" }}>
+            <span>
+              <span style={{ color: "#9ca3af" }}>Formato: </span>
+              <span style={{ color: "#a5f3fc", fontWeight: 500 }}>
+                {preview.format === 'riderdata' ? 'RiderData' : 'Genérico'}
+              </span>
+            </span>
+
             <span>
               <span style={{ color: "#9ca3af" }}>Linhas: </span>
               <span style={{ color: "#a5f3fc", fontWeight: 500 }}>{preview.rows.length}</span>
