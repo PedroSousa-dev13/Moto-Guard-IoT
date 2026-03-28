@@ -1,5 +1,5 @@
 // Feature: real-simulator, Property 10: Time format MM:SS is always valid
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { formatTime } from '../utils';
 

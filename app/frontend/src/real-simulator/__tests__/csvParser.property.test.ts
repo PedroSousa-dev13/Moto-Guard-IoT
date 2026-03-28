@@ -6,7 +6,7 @@
 import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 import { parseCSV } from '../csvParser';
-import type { ParseResult, ParseError } from '../csvParser';
+import type { ParseResult, ParseError, ParsedRow } from '../csvParser';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -319,7 +319,7 @@ describe('Property 3 — Column mapping case-insensitive and complete', () => {
           const row = result.rows[0];
 
           for (const [field, expected] of Object.entries(DEFAULTS)) {
-            const actual = row[field as keyof ParsedRow] as number;
+            const actual = (row as any)[field] as number;
             if (Math.abs(actual - expected) > 0.0001) return false;
           }
 
