@@ -1,11 +1,27 @@
 import { Response } from "express";
 import { prisma } from "../services/prisma.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
-import { parseGpx } from "../services/gpx-import.service";
+import { parseGpx, type ParsedGpx } from "../services/gpx-import.service";
 import { influxService } from "../services/influx.service";
 import { categorizeTripById } from "../services/trip-categorization.service";
 
 type GpxImportRequest = AuthRequest & { file?: Express.Multer.File };
+
+// Type for the new parse endpoint response
+interface ParsedGpxRoute extends ParsedGpx {
+  simulatorRoute: {
+    start: { latitude: number; longitude: number };
+    end: { latitude: number; longitude: number };
+    loop: boolean;
+  };
+}
+
+interface GpxParseResult {
+  success: boolean;
+  route?: ParsedGpxRoute;
+  error?: string;
+  validationErrors?: string[];
+}
 
 function badRequest(message: string): Error & { statusCode: number } {
   const err = new Error(message) as Error & { statusCode: number };
@@ -102,6 +118,107 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     }
     console.error("[importGpx] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
+}
+
+export async function parseGpxFile(req: GpxImportRequest, res: Response): Promise<void> {
+  const file = req.file;
+
+  if (!file) {
+    res.status(400).json({ 
+      success: false, 
+      error: "GPX file is required",
+      validationErrors: ["No file provided in request"]
+    });
+    return;
+  }
+
+  // Validate file extension
+  const filename = file.originalname || "";
+  if (!filename.toLowerCase().endsWith('.gpx')) {
+    res.status(400).json({
+      success: false,
+      error: "Only .gpx files are supported",
+      validationErrors: ["File must have .gpx extension"]
+    });
+    return;
+  }
+
+  // Validate file size (10MB limit as per requirements)
+  const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSizeBytes) {
+    res.status(413).json({
+      success: false,
+      error: "File size exceeds 10MB limit",
+      validationErrors: [`File size ${Math.round(file.size / 1024 / 1024)}MB exceeds maximum allowed size of 10MB`]
+    });
+    return;
+  }
+
+  try {
+    const xml = file.buffer.toString("utf8");
+    const parsed = parseGpx(xml);
+
+    if (parsed.waypoints.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "GPX file contains no valid waypoints",
+        validationErrors: ["No trackpoints (trkpt) or waypoints (wpt) found in GPX file"]
+      });
+      return;
+    }
+
+    // Validate minimum waypoint requirement (at least 2 for route creation)
+    if (parsed.waypoints.length < 2) {
+      res.status(400).json({
+        success: false,
+        error: "GPX file must contain at least 2 waypoints",
+        validationErrors: [`Found ${parsed.waypoints.length} waypoint(s), minimum 2 required for route creation`]
+      });
+      return;
+    }
+
+    // Create simulator-compatible route format
+    const firstWaypoint = parsed.waypoints[0];
+    const lastWaypoint = parsed.waypoints[parsed.waypoints.length - 1];
+
+    const route: ParsedGpxRoute = {
+      ...parsed,
+      simulatorRoute: {
+        start: { 
+          latitude: firstWaypoint.lat, 
+          longitude: firstWaypoint.lon 
+        },
+        end: { 
+          latitude: lastWaypoint.lat, 
+          longitude: lastWaypoint.lon 
+        },
+        loop: false // GPX imports are never loops as per requirements
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      route
+    });
+
+  } catch (err) {
+    console.error("[parseGpxFile] Error parsing GPX:", err);
+    
+    // Handle XML parsing errors specifically
+    if (err instanceof Error && err.message.includes('XML')) {
+      res.status(400).json({
+        success: false,
+        error: "Invalid GPX file format",
+        validationErrors: ["GPX file appears to be corrupted or contains invalid XML"]
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Internal server error while processing GPX file"
+    });
   }
 }
 
@@ -224,4 +341,3 @@ export async function exportTripGpx(req: AuthRequest, res: Response): Promise<vo
   res.setHeader("Content-Disposition", `attachment; filename="${safeFilename(filename)}"`);
   res.status(200).send(gpx);
 }
-

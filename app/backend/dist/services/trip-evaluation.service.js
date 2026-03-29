@@ -1,27 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluateTrip = evaluateTrip;
-const prisma_service_1 = require("./prisma.service");
+exports.evaluateTripHeuristic = evaluateTripHeuristic;
+const enums_1 = require("../generated/prisma/enums");
 function clamp(value, lo, hi) {
     return Math.max(lo, Math.min(hi, value));
 }
-async function evaluateTrip(tripId, userId) {
-    const trip = await prisma_service_1.prisma.trip.findFirst({
-        where: { id: tripId, userId },
-        include: {
-            motorcycle: { include: { profile: true } },
-            events: true,
-        },
-    });
-    if (!trip)
-        return null;
+function evaluateTripHeuristic(input) {
     const severityCounts = {
         INFO: 0,
         WARNING: 0,
         CRITICAL: 0,
     };
     const typeCounts = {};
-    for (const ev of trip.events) {
+    for (const ev of input.events) {
         severityCounts[ev.severity] = (severityCounts[ev.severity] ?? 0) + 1;
         typeCounts[ev.type] = (typeCounts[ev.type] ?? 0) + 1;
     }
@@ -30,23 +21,29 @@ async function evaluateTrip(tripId, userId) {
     score -= severityCounts.CRITICAL * 25;
     score -= severityCounts.WARNING * 12;
     score -= severityCounts.INFO * 5;
-    const profile = trip.motorcycle.profile;
+    // Penalidade extra por excesso de velocidade (por ocorrência)
+    // Extra penalty for speeding events (on top of base severity penalty)
+    const speedingCriticalCount = input.events.filter((e) => e.type === enums_1.EventType.SPEEDING && e.severity === enums_1.EventSeverity.CRITICAL).length;
+    const speedingWarningCount = input.events.filter((e) => e.type === enums_1.EventType.SPEEDING && e.severity === enums_1.EventSeverity.WARNING).length;
+    score -= speedingCriticalCount * 15;
+    score -= speedingWarningCount * 8;
+    const profile = input.profile;
     if (profile) {
-        const maxSpeed = trip.maxSpeedKmh ?? 0;
+        const maxSpeed = input.trip.maxSpeedKmh ?? 0;
         if (maxSpeed > 0 && profile.maxSpeedKmh > 0) {
             if (maxSpeed > profile.maxSpeedKmh * 1.05)
                 penalties.push({ reason: "Velocidade acima do limite do perfil", points: 20 });
             else if (maxSpeed > profile.maxSpeedKmh * 0.9)
                 penalties.push({ reason: "Velocidade muito alta para o perfil", points: 10 });
         }
-        const maxRoll = Math.abs(trip.maxRollDeg ?? 0);
+        const maxRoll = Math.abs(input.trip.maxRollDeg ?? 0);
         if (maxRoll > 0 && profile.typicalMaxRollDeg > 0) {
             if (maxRoll > profile.crashRollThreshold * 0.9)
                 penalties.push({ reason: "Inclinação próxima de queda", points: 20 });
             else if (maxRoll > profile.typicalMaxRollDeg * 1.15)
                 penalties.push({ reason: "Inclinação acima do típico", points: 10 });
         }
-        const maxG = trip.maxGForce ?? 0;
+        const maxG = input.trip.maxGForce ?? 0;
         if (maxG > 0) {
             if (maxG >= profile.crashGForce)
                 penalties.push({ reason: "Picos de G-force elevados", points: 12 });
@@ -56,7 +53,13 @@ async function evaluateTrip(tripId, userId) {
     }
     for (const p of penalties)
         score -= p.points;
-    score = clamp(Math.round(score), 0, 100);
+    // Queda detectada → score vai sempre a 0, independentemente do resto
+    if ((typeCounts[enums_1.EventType.CRASH_DETECTED] ?? 0) > 0) {
+        score = 0;
+    }
+    else {
+        score = clamp(Math.round(score), 0, 100);
+    }
     return {
         score,
         model: "heuristic-v1",

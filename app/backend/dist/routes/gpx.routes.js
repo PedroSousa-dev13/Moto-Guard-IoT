@@ -12,7 +12,13 @@ const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits: { fileSize: 15 * 1024 * 1024 },
 });
+// Separate upload configuration for parse endpoint with 10MB limit
+const parseUpload = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit as per requirements
+});
 const uploadSingle = upload.single("file");
+const parseUploadSingle = parseUpload.single("file");
 router.post("/gpx/import", auth_middleware_1.authMiddleware, (req, res, next) => {
     uploadSingle(req, res, (err) => {
         if (!err) {
@@ -29,6 +35,31 @@ router.post("/gpx/import", auth_middleware_1.authMiddleware, (req, res, next) =>
         res.status(400).json({ error: "Erro no upload do ficheiro" });
     });
 }, gpx_controller_1.importGpx);
+// New parse endpoint for GPX upload UI
+router.post("/gpx/parse", auth_middleware_1.authMiddleware, (req, res, next) => {
+    parseUploadSingle(req, res, (err) => {
+        if (!err) {
+            next();
+            return;
+        }
+        if (err instanceof multer_1.default.MulterError) {
+            const message = err.code === "LIMIT_FILE_SIZE"
+                ? "File size exceeds 10MB limit"
+                : `Upload error: ${err.code}`;
+            res.status(413).json({
+                success: false,
+                error: message,
+                validationErrors: [message]
+            });
+            return;
+        }
+        res.status(400).json({
+            success: false,
+            error: "File upload error",
+            validationErrors: ["Failed to process uploaded file"]
+        });
+    });
+}, gpx_controller_1.parseGpxFile);
 router.get("/gpx/export/:tripId", auth_middleware_1.authMiddleware, gpx_controller_1.exportTripGpx);
 exports.default = router;
 //# sourceMappingURL=gpx.routes.js.map

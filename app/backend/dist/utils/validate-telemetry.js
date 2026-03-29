@@ -34,7 +34,6 @@ function validateTelemetryPayload(data) {
         "active_safety",
         "health",
         "location",
-        "environment",
         "system",
     ];
     for (const block of requiredBlocks) {

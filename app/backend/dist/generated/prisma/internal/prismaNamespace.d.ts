@@ -737,6 +737,8 @@ export declare const UserScalarFieldEnum: {
     readonly passwordHash: "passwordHash";
     readonly name: "name";
     readonly resetToken: "resetToken";
+    readonly emergencyContact: "emergencyContact";
+    readonly resendApiKey: "resendApiKey";
     readonly createdAt: "createdAt";
     readonly updatedAt: "updatedAt";
 };
@@ -771,9 +773,13 @@ export declare const MotorcycleScalarFieldEnum: {
     readonly profileId: "profileId";
     readonly name: "name";
     readonly brand: "brand";
+    readonly model: "model";
     readonly year: "year";
+    readonly plate: "plate";
+    readonly category: "category";
     readonly deviceId: "deviceId";
     readonly createdAt: "createdAt";
+    readonly updatedAt: "updatedAt";
 };
 export type MotorcycleScalarFieldEnum = (typeof MotorcycleScalarFieldEnum)[keyof typeof MotorcycleScalarFieldEnum];
 export declare const TripScalarFieldEnum: {
@@ -789,6 +795,10 @@ export declare const TripScalarFieldEnum: {
     readonly maxRollDeg: "maxRollDeg";
     readonly maxGForce: "maxGForce";
     readonly status: "status";
+    readonly mlScore: "mlScore";
+    readonly mlModelVersion: "mlModelVersion";
+    readonly category: "category";
+    readonly categoryConfidence: "categoryConfidence";
     readonly createdAt: "createdAt";
 };
 export type TripScalarFieldEnum = (typeof TripScalarFieldEnum)[keyof typeof TripScalarFieldEnum];
@@ -897,6 +907,14 @@ export type EnumTripStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'TripStatus[]'
  */
 export type ListEnumTripStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripStatus[]'>;
+/**
+ * Reference to a field of type 'TripCategory'
+ */
+export type EnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripCategory'>;
+/**
+ * Reference to a field of type 'TripCategory[]'
+ */
+export type ListEnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripCategory[]'>;
 /**
  * Reference to a field of type 'EventType'
  */

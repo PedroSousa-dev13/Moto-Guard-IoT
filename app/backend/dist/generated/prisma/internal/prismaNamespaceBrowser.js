@@ -97,6 +97,8 @@ exports.UserScalarFieldEnum = {
     passwordHash: 'passwordHash',
     name: 'name',
     resetToken: 'resetToken',
+    emergencyContact: 'emergencyContact',
+    resendApiKey: 'resendApiKey',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };
@@ -129,9 +131,13 @@ exports.MotorcycleScalarFieldEnum = {
     profileId: 'profileId',
     name: 'name',
     brand: 'brand',
+    model: 'model',
     year: 'year',
+    plate: 'plate',
+    category: 'category',
     deviceId: 'deviceId',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
 };
 exports.TripScalarFieldEnum = {
     id: 'id',
@@ -146,6 +152,10 @@ exports.TripScalarFieldEnum = {
     maxRollDeg: 'maxRollDeg',
     maxGForce: 'maxGForce',
     status: 'status',
+    mlScore: 'mlScore',
+    mlModelVersion: 'mlModelVersion',
+    category: 'category',
+    categoryConfidence: 'categoryConfidence',
     createdAt: 'createdAt'
 };
 exports.TripEventScalarFieldEnum = {

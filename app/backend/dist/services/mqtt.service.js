@@ -71,12 +71,6 @@ class MqttService {
                     for (const handler of this.onTelemetryHandlers) {
                         handler(payload);
                     }
-                    if (telemetry_store_1.telemetryStore.count % 10 === 0) {
-                        const vel = payload?.telemetry?.speed_kmh ?? "?";
-                        const rpm = payload?.telemetry?.rpm ?? "?";
-                        const evento = payload?.system?.event_status ?? "?";
-                        console.log(`[#${telemetry_store_1.telemetryStore.count}] vel=${vel} km/h | rpm=${rpm} | evento=${evento}`);
-                    }
                 }
                 catch (err) {
                     console.error("Erro ao parsear telemetria:", err.message);

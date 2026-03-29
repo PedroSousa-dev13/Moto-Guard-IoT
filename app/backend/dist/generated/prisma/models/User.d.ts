@@ -16,6 +16,8 @@ export type UserMinAggregateOutputType = {
     passwordHash: string | null;
     name: string | null;
     resetToken: string | null;
+    emergencyContact: string | null;
+    resendApiKey: string | null;
     createdAt: Date | null;
     updatedAt: Date | null;
 };
@@ -25,6 +27,8 @@ export type UserMaxAggregateOutputType = {
     passwordHash: string | null;
     name: string | null;
     resetToken: string | null;
+    emergencyContact: string | null;
+    resendApiKey: string | null;
     createdAt: Date | null;
     updatedAt: Date | null;
 };
@@ -34,6 +38,8 @@ export type UserCountAggregateOutputType = {
     passwordHash: number;
     name: number;
     resetToken: number;
+    emergencyContact: number;
+    resendApiKey: number;
     createdAt: number;
     updatedAt: number;
     _all: number;
@@ -44,6 +50,8 @@ export type UserMinAggregateInputType = {
     passwordHash?: true;
     name?: true;
     resetToken?: true;
+    emergencyContact?: true;
+    resendApiKey?: true;
     createdAt?: true;
     updatedAt?: true;
 };
@@ -53,6 +61,8 @@ export type UserMaxAggregateInputType = {
     passwordHash?: true;
     name?: true;
     resetToken?: true;
+    emergencyContact?: true;
+    resendApiKey?: true;
     createdAt?: true;
     updatedAt?: true;
 };
@@ -62,6 +72,8 @@ export type UserCountAggregateInputType = {
     passwordHash?: true;
     name?: true;
     resetToken?: true;
+    emergencyContact?: true;
+    resendApiKey?: true;
     createdAt?: true;
     updatedAt?: true;
     _all?: true;
@@ -134,6 +146,8 @@ export type UserGroupByOutputType = {
     passwordHash: string;
     name: string;
     resetToken: string | null;
+    emergencyContact: string | null;
+    resendApiKey: string | null;
     createdAt: Date;
     updatedAt: Date;
     _count: UserCountAggregateOutputType | null;
@@ -152,6 +166,8 @@ export type UserWhereInput = {
     passwordHash?: Prisma.StringFilter<"User"> | string;
     name?: Prisma.StringFilter<"User"> | string;
     resetToken?: Prisma.StringNullableFilter<"User"> | string | null;
+    emergencyContact?: Prisma.StringNullableFilter<"User"> | string | null;
+    resendApiKey?: Prisma.StringNullableFilter<"User"> | string | null;
     createdAt?: Prisma.DateTimeFilter<"User"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string;
     motorcycles?: Prisma.MotorcycleListRelationFilter;
@@ -163,6 +179,8 @@ export type UserOrderByWithRelationInput = {
     passwordHash?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     resetToken?: Prisma.SortOrderInput | Prisma.SortOrder;
+    emergencyContact?: Prisma.SortOrderInput | Prisma.SortOrder;
+    resendApiKey?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
     motorcycles?: Prisma.MotorcycleOrderByRelationAggregateInput;
@@ -177,6 +195,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
     passwordHash?: Prisma.StringFilter<"User"> | string;
     name?: Prisma.StringFilter<"User"> | string;
     resetToken?: Prisma.StringNullableFilter<"User"> | string | null;
+    emergencyContact?: Prisma.StringNullableFilter<"User"> | string | null;
+    resendApiKey?: Prisma.StringNullableFilter<"User"> | string | null;
     createdAt?: Prisma.DateTimeFilter<"User"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string;
     motorcycles?: Prisma.MotorcycleListRelationFilter;
@@ -188,6 +208,8 @@ export type UserOrderByWithAggregationInput = {
     passwordHash?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     resetToken?: Prisma.SortOrderInput | Prisma.SortOrder;
+    emergencyContact?: Prisma.SortOrderInput | Prisma.SortOrder;
+    resendApiKey?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
     _count?: Prisma.UserCountOrderByAggregateInput;
@@ -203,6 +225,8 @@ export type UserScalarWhereWithAggregatesInput = {
     passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string;
     name?: Prisma.StringWithAggregatesFilter<"User"> | string;
     resetToken?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
+    emergencyContact?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
+    resendApiKey?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
     updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string;
 };
@@ -212,6 +236,8 @@ export type UserCreateInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     motorcycles?: Prisma.MotorcycleCreateNestedManyWithoutUserInput;
@@ -223,6 +249,8 @@ export type UserUncheckedCreateInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     motorcycles?: Prisma.MotorcycleUncheckedCreateNestedManyWithoutUserInput;
@@ -234,6 +262,8 @@ export type UserUpdateInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     motorcycles?: Prisma.MotorcycleUpdateManyWithoutUserNestedInput;
@@ -245,6 +275,8 @@ export type UserUncheckedUpdateInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     motorcycles?: Prisma.MotorcycleUncheckedUpdateManyWithoutUserNestedInput;
@@ -256,6 +288,8 @@ export type UserCreateManyInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 };
@@ -265,6 +299,8 @@ export type UserUpdateManyMutationInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -274,6 +310,8 @@ export type UserUncheckedUpdateManyInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -283,6 +321,8 @@ export type UserCountOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     resetToken?: Prisma.SortOrder;
+    emergencyContact?: Prisma.SortOrder;
+    resendApiKey?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -292,6 +332,8 @@ export type UserMaxOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     resetToken?: Prisma.SortOrder;
+    emergencyContact?: Prisma.SortOrder;
+    resendApiKey?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -301,6 +343,8 @@ export type UserMinOrderByAggregateInput = {
     passwordHash?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     resetToken?: Prisma.SortOrder;
+    emergencyContact?: Prisma.SortOrder;
+    resendApiKey?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -347,6 +391,8 @@ export type UserCreateWithoutMotorcyclesInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     trips?: Prisma.TripCreateNestedManyWithoutUserInput;
@@ -357,6 +403,8 @@ export type UserUncheckedCreateWithoutMotorcyclesInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     trips?: Prisma.TripUncheckedCreateNestedManyWithoutUserInput;
@@ -380,6 +428,8 @@ export type UserUpdateWithoutMotorcyclesInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     trips?: Prisma.TripUpdateManyWithoutUserNestedInput;
@@ -390,6 +440,8 @@ export type UserUncheckedUpdateWithoutMotorcyclesInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     trips?: Prisma.TripUncheckedUpdateManyWithoutUserNestedInput;
@@ -400,6 +452,8 @@ export type UserCreateWithoutTripsInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     motorcycles?: Prisma.MotorcycleCreateNestedManyWithoutUserInput;
@@ -410,6 +464,8 @@ export type UserUncheckedCreateWithoutTripsInput = {
     passwordHash: string;
     name: string;
     resetToken?: string | null;
+    emergencyContact?: string | null;
+    resendApiKey?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     motorcycles?: Prisma.MotorcycleUncheckedCreateNestedManyWithoutUserInput;
@@ -433,6 +489,8 @@ export type UserUpdateWithoutTripsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     motorcycles?: Prisma.MotorcycleUpdateManyWithoutUserNestedInput;
@@ -443,6 +501,8 @@ export type UserUncheckedUpdateWithoutTripsInput = {
     passwordHash?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     resetToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    emergencyContact?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    resendApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     motorcycles?: Prisma.MotorcycleUncheckedUpdateManyWithoutUserNestedInput;
@@ -485,6 +545,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
     passwordHash?: boolean;
     name?: boolean;
     resetToken?: boolean;
+    emergencyContact?: boolean;
+    resendApiKey?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
     motorcycles?: boolean | Prisma.User$motorcyclesArgs<ExtArgs>;
@@ -497,6 +559,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     passwordHash?: boolean;
     name?: boolean;
     resetToken?: boolean;
+    emergencyContact?: boolean;
+    resendApiKey?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 }, ExtArgs["result"]["user"]>;
@@ -506,6 +570,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     passwordHash?: boolean;
     name?: boolean;
     resetToken?: boolean;
+    emergencyContact?: boolean;
+    resendApiKey?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 }, ExtArgs["result"]["user"]>;
@@ -515,10 +581,12 @@ export type UserSelectScalar = {
     passwordHash?: boolean;
     name?: boolean;
     resetToken?: boolean;
+    emergencyContact?: boolean;
+    resendApiKey?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 };
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "name" | "resetToken" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>;
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "name" | "resetToken" | "emergencyContact" | "resendApiKey" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>;
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     motorcycles?: boolean | Prisma.User$motorcyclesArgs<ExtArgs>;
     trips?: boolean | Prisma.User$tripsArgs<ExtArgs>;
@@ -538,6 +606,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
         passwordHash: string;
         name: string;
         resetToken: string | null;
+        emergencyContact: string | null;
+        resendApiKey: string | null;
         createdAt: Date;
         updatedAt: Date;
     }, ExtArgs["result"]["user"]>;
@@ -901,6 +971,8 @@ export interface UserFieldRefs {
     readonly passwordHash: Prisma.FieldRef<"User", 'String'>;
     readonly name: Prisma.FieldRef<"User", 'String'>;
     readonly resetToken: Prisma.FieldRef<"User", 'String'>;
+    readonly emergencyContact: Prisma.FieldRef<"User", 'String'>;
+    readonly resendApiKey: Prisma.FieldRef<"User", 'String'>;
     readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>;
     readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>;
 }

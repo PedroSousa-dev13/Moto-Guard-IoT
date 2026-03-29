@@ -22,6 +22,7 @@ declare class SocketService {
     init(httpServer: http.Server): void;
     private getProfileThresholds;
     private handleHeuristicEvents;
+    private static readonly CRASH_STATUSES;
     private handleAlertEvent;
     private handleTripLifecycle;
     private startTrip;
@@ -41,6 +42,7 @@ declare class SocketService {
     private normalizeEventStatus;
     /** Persiste evento de risco na base de dados (etapa 1.12) */
     private persistTripEvent;
+    private notifyEmergencyContact;
     private mapStatusToEventType;
 }
 export declare const socketService: SocketService;

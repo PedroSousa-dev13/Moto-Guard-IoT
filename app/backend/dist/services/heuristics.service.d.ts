@@ -13,6 +13,7 @@ export interface HeuristicState {
     gForceWindow: number[];
     overheatTicks: number;
     lowVoltageTicks: number;
+    speedingTicks: number;
     lastEventAtByType: Partial<Record<EventType, number>>;
     temps: number[];
     volts: number[];

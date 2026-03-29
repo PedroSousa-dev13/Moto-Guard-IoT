@@ -29,6 +29,7 @@ function getLatestTelemetry(_req, res) {
 async function getTripTelemetry(req, res) {
     const userId = req.userId;
     const tripId = req.params.tripId;
+    const t0 = Date.now();
     // Verificar que a viagem pertence ao utilizador
     const trip = await prisma_service_1.prisma.trip.findFirst({
         where: { id: tripId, userId },
@@ -39,11 +40,8 @@ async function getTripTelemetry(req, res) {
         return;
     }
     if (trip.source === "GPX_IMPORTED") {
-        res.json({
-            trip,
-            total_points: 0,
-            data: [],
-        });
+        console.log(`[TELEMETRY] ${tripId} — GPX_IMPORTED, sem dados InfluxDB (${Date.now() - t0}ms)`);
+        res.json({ trip, total_points: 0, data: [] });
         return;
     }
     // Obter deviceId da mota associada à viagem (para filtrar no InfluxDB)
@@ -52,24 +50,24 @@ async function getTripTelemetry(req, res) {
         select: { deviceId: true },
     });
     if (!motorcycle?.deviceId) {
-        res.json({
-            trip,
-            total_points: 0,
-            data: [],
-        });
+        console.warn(`[TELEMETRY] ${tripId} — sem deviceId associado (${Date.now() - t0}ms)`);
+        res.json({ trip, total_points: 0, data: [] });
         return;
     }
     try {
+        const t1 = Date.now();
         const points = await influx_service_1.influxService.queryTripTelemetry(trip.startedAt, trip.endedAt, motorcycle?.deviceId);
-        res.json({
-            trip,
-            total_points: points.length,
-            data: points,
-        });
+        const influxMs = Date.now() - t1;
+        const totalMs = Date.now() - t0;
+        console.log(`[TELEMETRY] ${tripId} — ${points.length} pontos, InfluxDB: ${influxMs}ms, total: ${totalMs}ms`);
+        if (influxMs > 2000) {
+            console.warn(`[TELEMETRY SLOW] InfluxDB demorou ${influxMs}ms para ${tripId} — considera reduzir o range ou adicionar downsampling`);
+        }
+        res.json({ trip, total_points: points.length, data: points });
     }
     catch (err) {
-        console.error("Erro ao consultar InfluxDB:", err.message);
-        res.status(503).json({ error: "Não foi possível consultar o InfluxDB" });
+        console.warn(`[TELEMETRY] InfluxDB indisponível para ${tripId} (${Date.now() - t0}ms):`, err.message);
+        res.json({ trip, total_points: 0, data: [] });
     }
 }
 //# sourceMappingURL=telemetry.controller.js.map
