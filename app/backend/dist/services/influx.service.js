@@ -30,17 +30,37 @@ class InfluxService {
     client;
     writeApi;
     queryApi;
+    _available = true;
     constructor() {
         this.client = new influxdb_client_1.InfluxDB({
             url: env_1.env.INFLUXDB_URL,
             token: env_1.env.INFLUXDB_TOKEN,
         });
         // Escrita em lote: flush a cada 5 s ou quando atingir 20 pontos
-        this.writeApi = this.client.getWriteApi(env_1.env.INFLUXDB_ORG, env_1.env.INFLUXDB_BUCKET, "ms", { batchSize: 20, flushInterval: 5000 });
+        this.writeApi = this.client.getWriteApi(env_1.env.INFLUXDB_ORG, env_1.env.INFLUXDB_BUCKET, "ms", {
+            batchSize: 20,
+            flushInterval: 5000,
+            writeFailed: (_error, _lines, _attempt, expires) => {
+                // Se o bucket não existe (404) ou token inválido (401/403), desativa writes
+                const msg = _error?.statusCode;
+                if (msg === 404 || msg === 401 || msg === 403) {
+                    if (this._available) {
+                        console.warn(`[InfluxDB] Indisponível (${msg}) — writes desativados. Cria o bucket "${env_1.env.INFLUXDB_BUCKET}" para ativar.`);
+                        this._available = false;
+                    }
+                }
+                return Promise.resolve();
+            },
+        });
         this.queryApi = this.client.getQueryApi(env_1.env.INFLUXDB_ORG);
+    }
+    get available() {
+        return this._available;
     }
     // ─── Escrever ponto de telemetria ─────────────────────────────────────────
     writeTelemetry(payload) {
+        if (!this._available)
+            return;
         try {
             const point = new influxdb_client_1.Point("telemetry")
                 // Tags (indexadas — usadas para filtrar por dispositivo/modelo)
@@ -73,10 +93,13 @@ class InfluxService {
         }
         catch (err) {
             console.error("❌ InfluxDB write error:", err.message);
+            this._available = false;
         }
     }
     // ─── Consultar telemetria de uma viagem ───────────────────────────────────
     async queryTripTelemetry(startedAt, endedAt, deviceId) {
+        if (!this._available)
+            return [];
         const stop = (endedAt ?? new Date()).toISOString();
         const deviceFilter = deviceId
             ? `  |> filter(fn: (r) => r.device_id == "${deviceId}")`
@@ -107,6 +130,57 @@ ${deviceFilter}
             });
         });
         return rows;
+    }
+    // ─── Garantir que o bucket existe (cria se necessário) ───────────────────
+    async ensureBucket() {
+        try {
+            // 1. Obter o orgId a partir do nome da org
+            const orgsRes = await fetch(`${env_1.env.INFLUXDB_URL}/api/v2/orgs?org=${encodeURIComponent(env_1.env.INFLUXDB_ORG)}`, { headers: { Authorization: `Token ${env_1.env.INFLUXDB_TOKEN}` } });
+            if (!orgsRes.ok) {
+                console.warn(`[InfluxDB] Não foi possível obter orgs (${orgsRes.status}) — a ignorar criação de bucket.`);
+                return;
+            }
+            const orgsData = await orgsRes.json();
+            const orgId = orgsData.orgs?.[0]?.id;
+            if (!orgId) {
+                console.warn("[InfluxDB] Org não encontrada — a ignorar criação de bucket.");
+                return;
+            }
+            // 2. Verificar se o bucket já existe
+            const bucketsRes = await fetch(`${env_1.env.INFLUXDB_URL}/api/v2/buckets?org=${encodeURIComponent(env_1.env.INFLUXDB_ORG)}&name=${encodeURIComponent(env_1.env.INFLUXDB_BUCKET)}`, { headers: { Authorization: `Token ${env_1.env.INFLUXDB_TOKEN}` } });
+            if (bucketsRes.ok) {
+                const bucketsData = await bucketsRes.json();
+                if ((bucketsData.buckets?.length ?? 0) > 0) {
+                    console.log(`[InfluxDB] Bucket "${env_1.env.INFLUXDB_BUCKET}" já existe.`);
+                    this._available = true;
+                    return;
+                }
+            }
+            // 3. Criar o bucket
+            const createRes = await fetch(`${env_1.env.INFLUXDB_URL}/api/v2/buckets`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Token ${env_1.env.INFLUXDB_TOKEN}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    orgID: orgId,
+                    name: env_1.env.INFLUXDB_BUCKET,
+                    retentionRules: [{ type: "expire", everySeconds: 60 * 60 * 24 * 30 }], // 30 dias
+                }),
+            });
+            if (createRes.ok) {
+                console.log(`[InfluxDB] Bucket "${env_1.env.INFLUXDB_BUCKET}" criado com sucesso.`);
+                this._available = true;
+            }
+            else {
+                const body = await createRes.text();
+                console.warn(`[InfluxDB] Falha ao criar bucket: ${createRes.status} — ${body}`);
+            }
+        }
+        catch (err) {
+            console.warn("[InfluxDB] Não foi possível verificar/criar bucket:", err.message);
+        }
     }
     // ─── Flush e fecho (graceful shutdown) ────────────────────────────────────
     async close() {

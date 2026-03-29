@@ -13,8 +13,12 @@ const telemetry_store_1 = require("./telemetry.store");
 const prisma_service_1 = require("./prisma.service");
 const influx_service_1 = require("./influx.service");
 const device_association_service_1 = require("./device-association.service");
+const email_service_1 = require("./email.service");
+const crypto_1 = require("../utils/crypto");
+const env_1 = require("../config/env");
 const heuristics_service_1 = require("./heuristics.service");
 const enums_1 = require("../generated/prisma/enums");
+const trip_categorization_service_1 = require("./trip-categorization.service");
 class SocketService {
     io = null;
     _connectedClients = 0;
@@ -150,9 +154,6 @@ class SocketService {
     async handleHeuristicEvents(payload) {
         const deviceId = payload.system.device_id;
         const tripId = this.activeTripIdByDevice.get(deviceId) ?? null;
-        if (!tripId) {
-            return;
-        }
         const state = this.heuristicStateByDevice.get(deviceId) ?? (0, heuristics_service_1.createInitialHeuristicState)();
         this.heuristicStateByDevice.set(deviceId, state);
         const nowMs = Date.now();
@@ -169,6 +170,21 @@ class SocketService {
         const thresholds = await this.getProfileThresholds(deviceId, payload.system.moto_model);
         const evaluation = (0, heuristics_service_1.evaluateTelemetryRisk)(payload, state, thresholds, nowMs, dtSec);
         if (evaluation.events.length === 0) {
+            return;
+        }
+        // Emit heuristic alerts to frontend regardless of active trip
+        for (const ev of evaluation.events) {
+            this.io?.emit("alert", {
+                status: ev.type,
+                severity: ev.severity,
+                message: ev.message,
+                deviceId,
+                motoModel: payload.system.moto_model,
+                timestamp: payload.system.timestamp,
+            });
+        }
+        // Only persist to DB if there's an active trip
+        if (!tripId) {
             return;
         }
         const occurredAtSafe = new Date(payload.system.timestamp);
@@ -200,6 +216,9 @@ class SocketService {
             }
         }
     }
+    static CRASH_STATUSES = new Set([
+        "CRASH", "QUEDA", "FALL", "CRASH_DETECTED", "QUEDA_CONFIRMADA",
+    ]);
     async handleAlertEvent(payload) {
         const deviceId = payload.system.device_id;
         const status = this.normalizeEventStatus(payload.system.event_status);
@@ -212,8 +231,23 @@ class SocketService {
                 timestamp: payload.system.timestamp,
             };
             this.io?.emit("alert", alert);
-            // Persistir evento de risco na BD (etapa 1.12)
+            // Persistir evento de risco na BD
             await this.persistTripEvent(payload, status);
+            // Queda detectada → terminar viagem imediatamente
+            if (SocketService.CRASH_STATUSES.has(status)) {
+                console.log(`Queda detetada (${status}) para device ${deviceId} — a terminar viagem.`);
+                try {
+                    await this.forceEndTrip(deviceId);
+                    this.clearDeviceRuntimeState(deviceId);
+                    telemetry_store_1.telemetryStore.clearLatestIfDevice(deviceId);
+                    this.io?.emit("status", telemetry_store_1.telemetryStore.getStatus(mqtt_service_1.mqttService.connected));
+                }
+                catch (error) {
+                    console.error("Erro ao terminar viagem após queda:", error);
+                }
+                // Notificar contacto de emergência
+                void this.notifyEmergencyContact(deviceId, payload);
+            }
         }
         this.lastEventStatusByDevice.set(deviceId, status);
     }
@@ -362,6 +396,13 @@ class SocketService {
                 },
             });
             console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
+            // Fire-and-forget: categorize trip asynchronously
+            const userId = this.lastUserIdByDevice.get(deviceId);
+            if (userId) {
+                (0, trip_categorization_service_1.categorizeTripById)(tripId, userId).catch((err) => {
+                    console.error(`[trip-categorization] Erro ao categorizar viagem ${tripId}:`, err);
+                });
+            }
             this.io?.emit("trip_ended", {
                 deviceId,
                 motoModel: payload.system.moto_model,
@@ -450,6 +491,13 @@ class SocketService {
                 },
             });
             console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
+            // Fire-and-forget: categorize trip asynchronously
+            const userId = this.lastUserIdByDevice.get(deviceId);
+            if (userId) {
+                (0, trip_categorization_service_1.categorizeTripById)(tripId, userId).catch((err) => {
+                    console.error(`[trip-categorization] Erro ao categorizar viagem ${tripId}:`, err);
+                });
+            }
             this.io?.emit("trip_ended", {
                 deviceId,
                 motoModel: lastPayload?.system.moto_model ?? "—",
@@ -545,6 +593,10 @@ class SocketService {
                 avgSpeedKmh: maxSpeedKmh,
             },
         });
+        // Fire-and-forget: categorize trip asynchronously
+        (0, trip_categorization_service_1.categorizeTripById)(trip.id, association.userId).catch((err) => {
+            console.error(`[trip-categorization] Erro ao categorizar viagem ${trip.id}:`, err);
+        });
         return { tripId: trip.id, distanceKm, maxSpeedKmh };
     }
     async createCompletedTripWithoutTelemetry(deviceId, endedAt) {
@@ -574,6 +626,10 @@ class SocketService {
                 maxGForce: 0,
                 avgSpeedKmh: 0,
             },
+        });
+        // Fire-and-forget: categorize trip asynchronously
+        (0, trip_categorization_service_1.categorizeTripById)(trip.id, association.userId).catch((err) => {
+            console.error(`[trip-categorization] Erro ao categorizar viagem ${trip.id}:`, err);
         });
         return { tripId: trip.id, distanceKm, maxSpeedKmh };
     }
@@ -637,6 +693,45 @@ class SocketService {
         }
         catch (error) {
             console.error("Erro ao persistir evento de risco:", error);
+        }
+    }
+    async notifyEmergencyContact(deviceId, payload) {
+        try {
+            const userId = this.lastUserIdByDevice.get(deviceId);
+            if (!userId) {
+                console.warn(`[notifyEmergencyContact] userId não encontrado para device ${deviceId}`);
+                return;
+            }
+            const user = await prisma_service_1.prisma.user.findUnique({
+                where: { id: userId },
+                select: { name: true, emergencyContact: true, resendApiKey: true },
+            });
+            if (!user?.emergencyContact) {
+                console.warn(`[notifyEmergencyContact] Sem contacto de emergência para userId ${userId} — email não enviado.`);
+                return;
+            }
+            const tripId = this.activeTripIdByDevice.get(deviceId) ?? null;
+            // Desencriptar a API key do utilizador (se configurada)
+            let resendApiKey = null;
+            if (user.resendApiKey) {
+                try {
+                    resendApiKey = (0, crypto_1.decrypt)(user.resendApiKey, env_1.env.JWT_SECRET);
+                }
+                catch { /* ignora */ }
+            }
+            await (0, email_service_1.sendCrashAlert)({
+                toEmail: user.emergencyContact,
+                riderName: user.name,
+                timestamp: payload.system.timestamp,
+                latitude: payload.location?.latitude ?? null,
+                longitude: payload.location?.longitude ?? null,
+                tripId,
+                deviceId,
+                resendApiKey,
+            });
+        }
+        catch (err) {
+            console.error("[notifyEmergencyContact] Erro:", err);
         }
     }
     mapStatusToEventType(status) {

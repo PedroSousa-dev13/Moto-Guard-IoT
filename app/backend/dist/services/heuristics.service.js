@@ -9,6 +9,7 @@ function createInitialHeuristicState() {
         gForceWindow: [],
         overheatTicks: 0,
         lowVoltageTicks: 0,
+        speedingTicks: 0,
         lastEventAtByType: {},
         temps: [],
         volts: [],
@@ -196,6 +197,30 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
             severity: enums_1.EventSeverity.INFO,
             message: "Tendência de pressão: possível perda lenta",
         });
+    }
+    // ── Excesso de velocidade ──────────────────────────────────────────────
+    const legalLimit = payload.system?.speed_limit_kmh ?? 0;
+    if (legalLimit > 0 && speed > 0) {
+        if (speed > legalLimit * 1.10) {
+            state.speedingTicks += 1;
+        }
+        else {
+            state.speedingTicks = 0;
+        }
+        if (state.speedingTicks >= 3) {
+            const excess = speed - legalLimit;
+            const isCritical = speed > legalLimit * 1.25;
+            if (shouldEmit(enums_1.EventType.SPEEDING, 8000)) {
+                events.push({
+                    type: enums_1.EventType.SPEEDING,
+                    severity: isCritical ? enums_1.EventSeverity.CRITICAL : enums_1.EventSeverity.WARNING,
+                    message: `Excesso de velocidade: ${speed.toFixed(0)} km/h (limite: ${legalLimit} km/h, +${excess.toFixed(0)} km/h)`,
+                });
+            }
+        }
+    }
+    else {
+        state.speedingTicks = 0;
     }
     state.prevPayload = payload;
     return { events };

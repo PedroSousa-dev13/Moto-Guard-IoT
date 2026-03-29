@@ -1124,6 +1124,291 @@ button { font-family: inherit; }
   border-radius: var(--radius-sm);
 }
 
+/* ── GPX Upload Styles ─────────────────────────────────────────────────────── */
+.gpx-upload-area {
+  margin: 12px 0;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gpx-upload-area:hover:not(.disabled) {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.gpx-upload-area.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  transform: scale(1.02);
+}
+
+.gpx-upload-area.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gpx-upload-label {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.gpx-upload-icon {
+  margin-bottom: 4px;
+  font-size: 2rem;
+  opacity: 0.7;
+  color: var(--accent);
+}
+
+.gpx-upload-text {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.gpx-upload-primary {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.gpx-upload-secondary {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* File Upload Progress */
+.gpx-upload-progress {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gpx-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gpx-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.gpx-progress-text {
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Selected File Display */
+.gpx-selected-file {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.gpx-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gpx-file-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.gpx-file-size {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* Route Preview Styles */
+.gpx-route-preview {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gpx-route-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gpx-route-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.gpx-route-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gpx-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.gpx-stat-icon {
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.gpx-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gpx-stat-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gpx-stat-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Route Endpoints */
+.gpx-route-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gpx-endpoint {
+  padding: 8px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.gpx-endpoint-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.gpx-endpoint-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gpx-endpoint-coords {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.gpx-endpoint-elevation {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Route Timing */
+.gpx-route-timing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.gpx-timing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.gpx-timing-label {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.gpx-timing-value {
+  color: var(--text);
+  font-family: monospace;
+}
+
+/* Route Actions */
+.gpx-route-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gpx-route-warning,
+.gpx-route-success {
+  margin-top: 8px;
+}
+
+.gpx-route-info {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.gpx-route-stats {
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+}
+
 @media (max-width: 900px) {
   .map-routes-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow: auto; }
   .routes-panel { max-height: 280px; }

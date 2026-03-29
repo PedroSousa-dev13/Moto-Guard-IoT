@@ -9,11 +9,17 @@
 * 🟢 You can import this file directly.
 */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EventSeverity = exports.EventType = exports.TripSource = exports.TripStatus = void 0;
+exports.EventSeverity = exports.EventType = exports.TripSource = exports.TripCategory = exports.TripStatus = void 0;
 exports.TripStatus = {
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED'
+};
+exports.TripCategory = {
+    COMMUTE: 'COMMUTE',
+    WEEKEND_RIDE: 'WEEKEND_RIDE',
+    TRACK_DAY: 'TRACK_DAY',
+    OFF_ROAD: 'OFF_ROAD'
 };
 exports.TripSource = {
     SIMULATOR: 'SIMULATOR',
@@ -29,7 +35,8 @@ exports.EventType = {
     CRASH_DETECTED: 'CRASH_DETECTED',
     RAPID_ACCELERATION: 'RAPID_ACCELERATION',
     TIRE_PRESSURE_LOW: 'TIRE_PRESSURE_LOW',
-    OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW'
+    OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW',
+    SPEEDING: 'SPEEDING'
 };
 exports.EventSeverity = {
     INFO: 'INFO',

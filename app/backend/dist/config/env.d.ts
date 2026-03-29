@@ -12,5 +12,10 @@ export declare const env: {
     readonly INFLUXDB_BUCKET: string;
     readonly DATABASE_URL: string;
     readonly JWT_SECRET: string;
+    readonly ML_ENABLED: boolean;
+    readonly ML_MODEL_PATH: string;
+    readonly RESEND_API_KEY: string;
+    readonly RESEND_FROM: string;
+    readonly APP_URL: string;
 };
 //# sourceMappingURL=env.d.ts.map

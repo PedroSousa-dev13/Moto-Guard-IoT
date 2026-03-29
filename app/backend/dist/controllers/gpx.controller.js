@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.importGpx = importGpx;
+exports.parseGpxFile = parseGpxFile;
 exports.exportTripGpx = exportTripGpx;
 const prisma_service_1 = require("../services/prisma.service");
 const gpx_import_service_1 = require("../services/gpx-import.service");
 const influx_service_1 = require("../services/influx.service");
+const trip_categorization_service_1 = require("../services/trip-categorization.service");
 function badRequest(message) {
     const err = new Error(message);
     err.statusCode = 400;
@@ -31,21 +33,13 @@ async function importGpx(req, res) {
             const motorcycle = requestedMotorcycleId
                 ? await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
                 : await tx.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
-            const ensuredMotorcycle = motorcycle
-                ? motorcycle
-                : await tx.motorcycle.create({
-                    data: {
-                        userId,
-                        name: "GPX Import",
-                        brand: null,
-                        year: null,
-                        profileId: null,
-                        deviceId: null,
-                    },
-                });
-            if (requestedMotorcycleId && !motorcycle) {
-                throw badRequest("Mota selecionada não encontrada");
+            if (!motorcycle) {
+                if (requestedMotorcycleId) {
+                    throw badRequest("Mota selecionada não encontrada");
+                }
+                throw badRequest("Não tens motas registadas. Adiciona uma mota na Garagem antes de importar um GPX.");
             }
+            const ensuredMotorcycle = motorcycle;
             const trip = await tx.trip.create({
                 data: {
                     userId,
@@ -82,6 +76,10 @@ async function importGpx(req, res) {
                 maxSpeedKmh: parsed.maxSpeedKmh,
             },
         });
+        // Fire-and-forget: categorize trip asynchronously
+        (0, trip_categorization_service_1.categorizeTripById)(result.tripId, userId).catch((err) => {
+            console.error(`[trip-categorization] Erro ao categorizar viagem ${result.tripId}:`, err);
+        });
     }
     catch (err) {
         const statusCode = typeof err?.statusCode === "number" ? err.statusCode : null;
@@ -91,6 +89,95 @@ async function importGpx(req, res) {
         }
         console.error("[importGpx] Erro interno:", err);
         res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+    }
+}
+async function parseGpxFile(req, res) {
+    const file = req.file;
+    if (!file) {
+        res.status(400).json({
+            success: false,
+            error: "GPX file is required",
+            validationErrors: ["No file provided in request"]
+        });
+        return;
+    }
+    // Validate file extension
+    const filename = file.originalname || "";
+    if (!filename.toLowerCase().endsWith('.gpx')) {
+        res.status(400).json({
+            success: false,
+            error: "Only .gpx files are supported",
+            validationErrors: ["File must have .gpx extension"]
+        });
+        return;
+    }
+    // Validate file size (10MB limit as per requirements)
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSizeBytes) {
+        res.status(413).json({
+            success: false,
+            error: "File size exceeds 10MB limit",
+            validationErrors: [`File size ${Math.round(file.size / 1024 / 1024)}MB exceeds maximum allowed size of 10MB`]
+        });
+        return;
+    }
+    try {
+        const xml = file.buffer.toString("utf8");
+        const parsed = (0, gpx_import_service_1.parseGpx)(xml);
+        if (parsed.waypoints.length === 0) {
+            res.status(400).json({
+                success: false,
+                error: "GPX file contains no valid waypoints",
+                validationErrors: ["No trackpoints (trkpt) or waypoints (wpt) found in GPX file"]
+            });
+            return;
+        }
+        // Validate minimum waypoint requirement (at least 2 for route creation)
+        if (parsed.waypoints.length < 2) {
+            res.status(400).json({
+                success: false,
+                error: "GPX file must contain at least 2 waypoints",
+                validationErrors: [`Found ${parsed.waypoints.length} waypoint(s), minimum 2 required for route creation`]
+            });
+            return;
+        }
+        // Create simulator-compatible route format
+        const firstWaypoint = parsed.waypoints[0];
+        const lastWaypoint = parsed.waypoints[parsed.waypoints.length - 1];
+        const route = {
+            ...parsed,
+            simulatorRoute: {
+                start: {
+                    latitude: firstWaypoint.lat,
+                    longitude: firstWaypoint.lon
+                },
+                end: {
+                    latitude: lastWaypoint.lat,
+                    longitude: lastWaypoint.lon
+                },
+                loop: false // GPX imports are never loops as per requirements
+            }
+        };
+        res.status(200).json({
+            success: true,
+            route
+        });
+    }
+    catch (err) {
+        console.error("[parseGpxFile] Error parsing GPX:", err);
+        // Handle XML parsing errors specifically
+        if (err instanceof Error && err.message.includes('XML')) {
+            res.status(400).json({
+                success: false,
+                error: "Invalid GPX file format",
+                validationErrors: ["GPX file appears to be corrupted or contains invalid XML"]
+            });
+            return;
+        }
+        res.status(500).json({
+            success: false,
+            error: "Internal server error while processing GPX file"
+        });
     }
 }
 function safeFilename(name) {

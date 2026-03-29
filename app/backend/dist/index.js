@@ -22,6 +22,8 @@ const routes_1 = __importDefault(require("./routes"));
 const mqtt_service_1 = require("./services/mqtt.service");
 const socket_service_1 = require("./services/socket.service");
 const prisma_service_1 = require("./services/prisma.service");
+const influx_service_1 = require("./services/influx.service");
+const perf_logger_middleware_1 = require("./middleware/perf-logger.middleware");
 // ─── Handlers globais de erros não capturados ────────────────────────────────
 // Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
 // stream, rejeição de Promise sem .catch(), etc.) mata o processo inteiro.
@@ -36,6 +38,7 @@ const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: "10mb" }));
+app.use(perf_logger_middleware_1.perfLogger);
 app.use("/api", routes_1.default);
 // ─── Serve frontend estático (Opção B / produção) ────────────────────────────
 // Só activo se o build do React existir. Em dev (Opção A) é um no-op.
@@ -51,6 +54,8 @@ async function start() {
     catch (err) {
         console.error("Falha ao conectar ao PostgreSQL:", err);
     }
+    // Garantir que o bucket do InfluxDB existe (cria automaticamente se necessário)
+    await influx_service_1.influxService.ensureBucket();
     server.listen(env_1.env.PORT, () => {
         console.log(`MotoGuard Backend a correr na porta ${env_1.env.PORT}`);
         console.log(`Dashboard:    http://localhost:${env_1.env.PORT}`);

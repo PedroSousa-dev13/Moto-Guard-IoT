@@ -9,5 +9,22 @@ export interface TripEvaluation {
         points: number;
     }>;
 }
-export declare function evaluateTrip(tripId: string, userId: string): Promise<TripEvaluation | null>;
+export type TripEvaluationInput = {
+    trip: {
+        maxSpeedKmh?: number | null;
+        maxRollDeg?: number | null;
+        maxGForce?: number | null;
+    };
+    profile?: {
+        maxSpeedKmh: number;
+        typicalMaxRollDeg: number;
+        crashRollThreshold: number;
+        crashGForce: number;
+    } | null;
+    events: Array<{
+        severity: EventSeverity;
+        type: EventType;
+    }>;
+};
+export declare function evaluateTripHeuristic(input: TripEvaluationInput): TripEvaluation;
 //# sourceMappingURL=trip-evaluation.service.d.ts.map
