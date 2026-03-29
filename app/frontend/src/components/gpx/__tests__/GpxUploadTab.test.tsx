@@ -9,6 +9,7 @@ describe('GpxUploadTab', () => {
     gpxUploading: false,
     gpxError: null,
     gpxProcessing: false,
+    gpxSending: false,
     gpxSent: false,
     onFileSelect: vi.fn(),
     onClearRoute: vi.fn(),

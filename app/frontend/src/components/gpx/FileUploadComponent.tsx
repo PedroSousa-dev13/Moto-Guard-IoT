@@ -144,33 +144,35 @@ export default function FileUploadComponent({
         </div>
       </div>
 
-      {isUploading && progress > 0 && (
+      {isUploading && (
         <div className="gpx-upload-progress">
           <div 
-            className="gpx-progress-bar"
+            className={`gpx-progress-bar${progress > 0 ? '' : ' gpx-progress-indeterminate'}`}
             role="progressbar"
-            aria-valuenow={progress}
+            aria-valuenow={progress > 0 ? progress : undefined}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Progresso do upload do ficheiro GPX"
           >
             <div 
               className="gpx-progress-fill" 
-              style={{ width: `${progress}%` }}
+              style={{ width: progress > 0 ? `${progress}%` : '100%' }}
             />
           </div>
-          <div className="gpx-progress-text">
-            {progress.toFixed(0)}%
-          </div>
+          {progress > 0 && (
+            <div className="gpx-progress-text">
+              {progress.toFixed(0)}%
+            </div>
+          )}
         </div>
       )}
 
       {selectedFile && !isUploading && (
-        <div className="gpx-selected-file">
+        <div className="gpx-selected-file gpx-upload-success">
           <div className="gpx-file-info">
             <div className="gpx-file-name">{selectedFile.name}</div>
             <div className="gpx-file-size">
-              {(selectedFile.size / 1024).toFixed(1)} KB
+              {(selectedFile.size / 1024).toFixed(1)} KB · Ficheiro carregado ✓
             </div>
           </div>
           <button 

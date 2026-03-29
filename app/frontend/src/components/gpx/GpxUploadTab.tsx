@@ -38,6 +38,7 @@ interface GpxUploadTabProps {
   gpxUploading: boolean;
   gpxError: string | null;
   gpxProcessing: boolean;
+  gpxSending: boolean;
   gpxSent: boolean;
   uploadProgress?: number;
   onFileSelect: (file: File) => void;
@@ -53,6 +54,7 @@ export default function GpxUploadTab({
   gpxUploading,
   gpxError,
   gpxProcessing,
+  gpxSending,
   gpxSent,
   uploadProgress = 0,
   onFileSelect,
@@ -65,11 +67,12 @@ export default function GpxUploadTab({
 
   const handleClearRoute = () => {
     onClearRoute();
-    // Clear any error states
     if (gpxError) {
-      onError('');
+      onError("");
     }
   };
+
+  const gpxFileBusy = gpxUploading || gpxProcessing;
 
   return (
     <div className="routes-panel custom-route-panel">
@@ -85,14 +88,20 @@ export default function GpxUploadTab({
         <FileUploadComponent
           onFileSelect={onFileSelect}
           onError={onError}
-          isUploading={gpxUploading}
+          isUploading={gpxFileBusy}
           progress={uploadProgress}
-          disabled={gpxProcessing}
+          disabled={gpxFileBusy}
         />
 
         {gpxError && (
           <div className="alert alert-danger" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
             {gpxError}
+          </div>
+        )}
+
+        {gpxRoute && !gpxFileBusy && !gpxError && (
+          <div className="alert alert-success" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
+            GPX processado com sucesso. Revisa a pré-visualização abaixo e envia para o simulador quando estiveres pronto.
           </div>
         )}
 
@@ -107,9 +116,9 @@ export default function GpxUploadTab({
               route={gpxRoute}
               onSendToSimulator={onSendToSimulator}
               onClearRoute={handleClearRoute}
-              isSending={gpxProcessing}
+              isSending={gpxSending}
               routeSent={gpxSent}
-              disabled={gpxUploading}
+              disabled={gpxFileBusy}
             />
           </>
         )}

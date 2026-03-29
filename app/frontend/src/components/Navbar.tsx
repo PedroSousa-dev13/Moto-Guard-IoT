@@ -1,6 +1,7 @@
-import { FC } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { FC, useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import { Bike, Settings, LogOut, LogIn } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 
@@ -12,6 +13,13 @@ function getInitials(name?: string): string {
 const Navbar: FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useI18n();
+
+  const goToLogin = useCallback(() => {
+    if (location.pathname === '/login') return;
+    navigate('/login', { state: { from: location } });
+  }, [navigate, location]);
 
   return (
     <nav className="navbar">
@@ -48,11 +56,13 @@ const Navbar: FC = () => {
           </>
         ) : (
           <button
-            onClick={() => navigate("/login", { state: { from: location } })}
+            type="button"
+            onClick={goToLogin}
             className="btn btn-primary login-btn"
+            aria-label={t('auth.login')}
           >
-            <LogIn size={18} />
-            <span>Entrar</span>
+            <LogIn size={18} aria-hidden />
+            <span>{t('auth.login')}</span>
           </button>
         )}
       </div>

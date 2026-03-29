@@ -48,7 +48,7 @@ export default function RouteActionsComponent({
           title="Limpar rota carregada"
         >
           <RotateCcw size={13} /> 
-          Limpar
+          Limpar Rota
         </button>
         
         <button
@@ -76,7 +76,7 @@ export default function RouteActionsComponent({
           ) : (
             <>
               <Play size={13} /> 
-              Usar esta rota
+              Enviar para Simulador
             </>
           )}
         </button>

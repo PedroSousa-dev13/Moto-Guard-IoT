@@ -198,4 +198,149 @@ describe('FileUploadComponent', () => {
     expect(progressBar).toHaveAttribute('aria-valuemax', '100');
     expect(progressBar).toHaveAttribute('aria-label', 'Progresso do upload do ficheiro GPX');
   });
+
+  it('validates empty file', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const emptyFile = new File([], 'empty.gpx', { type: 'application/gpx+xml' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [emptyFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(defaultProps.onError).toHaveBeenCalledWith('O ficheiro selecionado está vazio');
+      expect(defaultProps.onFileSelect).not.toHaveBeenCalled();
+    });
+  });
+
+  it('validates file extension case-insensitively', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const upperCaseFile = new File(['<?xml version="1.0"?><gpx></gpx>'], 'test.GPX', { type: 'application/gpx+xml' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [upperCaseFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(defaultProps.onFileSelect).toHaveBeenCalledWith(upperCaseFile);
+      expect(defaultProps.onError).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects files with .gpx in the middle of the name but wrong extension', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const invalidFile = new File(['content'], 'my.gpx.backup.txt', { type: 'text/plain' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [invalidFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(defaultProps.onError).toHaveBeenCalledWith('Por favor seleciona um ficheiro .gpx');
+      expect(defaultProps.onFileSelect).not.toHaveBeenCalled();
+    });
+  });
+
+  it('validates file at exactly 10MB boundary', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const exactSizeFile = new File(['x'.repeat(10 * 1024 * 1024)], 'exact.gpx', { type: 'application/gpx+xml' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [exactSizeFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(defaultProps.onFileSelect).toHaveBeenCalledWith(exactSizeFile);
+      expect(defaultProps.onError).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects file just over 10MB', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const overSizeFile = new File(['x'.repeat(10 * 1024 * 1024 + 1)], 'over.gpx', { type: 'application/gpx+xml' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [overSizeFile],
+      writable: false,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(defaultProps.onError).toHaveBeenCalledWith('O ficheiro é demasiado grande. Máximo permitido: 10MB');
+      expect(defaultProps.onFileSelect).not.toHaveBeenCalled();
+    });
+  });
+
+  it('prevents drag and drop when uploading', () => {
+    render(<FileUploadComponent {...defaultProps} isUploading={true} />);
+    
+    const dropArea = document.querySelector('.gpx-upload-area') as HTMLElement;
+    const validFile = new File(['<?xml version="1.0"?><gpx></gpx>'], 'test.gpx', { type: 'application/gpx+xml' });
+    
+    // Should not set drag over state when uploading
+    fireEvent.dragOver(dropArea);
+    expect(dropArea).not.toHaveClass('drag-over');
+    
+    // Should not process drop when uploading
+    fireEvent.drop(dropArea, {
+      dataTransfer: {
+        files: [validFile],
+      },
+    });
+    
+    expect(defaultProps.onFileSelect).not.toHaveBeenCalled();
+  });
+
+  it('clears file input value when clearing file', async () => {
+    render(<FileUploadComponent {...defaultProps} />);
+    
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const validFile = new File(['<?xml version="1.0"?><gpx></gpx>'], 'test.gpx', { type: 'application/gpx+xml' });
+    
+    Object.defineProperty(fileInput, 'files', {
+      value: [validFile],
+      writable: false,
+    });
+    
+    // Mock the value property to be writable for testing
+    Object.defineProperty(fileInput, 'value', {
+      value: 'test.gpx',
+      writable: true,
+      configurable: true,
+    });
+    
+    fireEvent.change(fileInput);
+    
+    await waitFor(() => {
+      expect(screen.getByText('test.gpx')).toBeInTheDocument();
+    });
+    
+    const clearButton = screen.getByTitle('Remover ficheiro');
+    fireEvent.click(clearButton);
+    
+    expect(fileInput.value).toBe('');
+  });
 });

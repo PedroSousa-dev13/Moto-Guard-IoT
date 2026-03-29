@@ -22,6 +22,9 @@ export default defineConfig({
       "/api": {
         target: BACKEND_URL,
         changeOrigin: true,
+        // Evita fechar a ligação cedo em uploads GPX / pedidos longos (menos ERR_CONNECTION_ABORTED no dev)
+        timeout: 120_000,
+        proxyTimeout: 120_000,
       },
       // Proxy WebSocket (Socket.IO) para o backend
       "/socket.io": {
