@@ -10,7 +10,8 @@ export const api = axios.create({
   },
 });
 
-function getStoredToken(): string | null {
+/** Token JWT em localStorage/session (mesma lógica que o interceptor axios). */
+export function getStoredToken(): string | null {
   const rememberMe = localStorage.getItem("rememberMe") === "true";
   if (rememberMe) {
     return localStorage.getItem("token");

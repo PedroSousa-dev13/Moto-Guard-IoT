@@ -7,6 +7,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { GpxUploadTab } from "../components/gpx";
+import { postGpxForParse } from "../utils/gpxParseClient";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, shadowUrl: markerShadow });
@@ -270,6 +271,8 @@ export default function Map() {
   const previewLineRef = useRef<L.Polyline | null>(null);
   const startDotRef = useRef<L.CircleMarker | null>(null);
   const endDotRef = useRef<L.CircleMarker | null>(null);
+  // Track the last rendered GPX route to avoid re-fitting bounds on tab switch
+  const lastRenderedGpxRouteRef = useRef<any | null>(null);
 
   // ── Preset routes state ──
   const [selectedRoute, setSelectedRoute] = useState<PresetRoute | null>(null);
@@ -298,6 +301,8 @@ export default function Map() {
   const [gpxUploading, setGpxUploading] = useState(false);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const [gpxProcessing, setGpxProcessing] = useState(false);
+  const [gpxUploadProgress, setGpxUploadProgress] = useState(0);
+  const [gpxSending, setGpxSending] = useState(false);
   const [gpxSent, setGpxSent] = useState(false);
 
   const lat = telemetry?.location?.latitude;
@@ -451,13 +456,22 @@ export default function Map() {
     container.style.cursor = clickMode ? "crosshair" : "";
   }, [clickMode]);
 
-  // Clear custom preview when switching to preset mode
+  // Clear previews and route state when switching tabs
   useEffect(() => {
     if (mode === "preset") {
       previewLineRef.current?.remove(); previewLineRef.current = null;
       startDotRef.current?.remove(); startDotRef.current = null;
       endDotRef.current?.remove(); endDotRef.current = null;
       setClickMode(null);
+      // Clear GPX state when leaving GPX tab
+      setGpxRoute(null);
+      setGpxError(null);
+      setGpxSent(false);
+      setGpxUploading(false);
+      setGpxProcessing(false);
+      setGpxUploadProgress(0);
+      setGpxSending(false);
+      lastRenderedGpxRouteRef.current = null;
     } else if (mode === "custom") {
       // Clear preset and GPX preview when switching to custom
       previewLineRef.current?.remove(); previewLineRef.current = null;
@@ -465,6 +479,13 @@ export default function Map() {
       endDotRef.current?.remove(); endDotRef.current = null;
       setSelectedRoute(null);
       setGpxRoute(null);
+      setGpxError(null);
+      setGpxSent(false);
+      setGpxUploading(false);
+      setGpxProcessing(false);
+      setGpxUploadProgress(0);
+      setGpxSending(false);
+      lastRenderedGpxRouteRef.current = null;
     } else if (mode === "gpx") {
       // Clear preset and custom preview when switching to GPX
       previewLineRef.current?.remove(); previewLineRef.current = null;
@@ -474,6 +495,46 @@ export default function Map() {
       setClickMode(null);
     }
   }, [mode]);
+
+  // ── GPX route rendering ──
+  useEffect(() => {
+    if (mode !== "gpx") return;
+    const map = mapRef.current;
+
+    // Clear previous preview
+    previewLineRef.current?.remove(); previewLineRef.current = null;
+    startDotRef.current?.remove(); startDotRef.current = null;
+    endDotRef.current?.remove(); endDotRef.current = null;
+
+    if (!gpxRoute?.waypoints?.length) return;
+
+    const coords: [number, number][] = gpxRoute.waypoints.map(
+      (wp: { latitude: number; longitude: number }) => [wp.latitude, wp.longitude]
+    );
+    if (coords.length < 2 || !map) return;
+
+    const start = coords[0];
+    const end = coords[coords.length - 1];
+
+    startDotRef.current = L.circleMarker(start, {
+      radius: 9, color: "#16a34a", fillColor: "#22c55e", fillOpacity: 1, weight: 2,
+    }).addTo(map).bindTooltip("Início", { permanent: false });
+
+    endDotRef.current = L.circleMarker(end, {
+      radius: 9, color: "#b91c1c", fillColor: "#ef4444", fillOpacity: 1, weight: 2,
+    }).addTo(map).bindTooltip("Fim", { permanent: false });
+
+    previewLineRef.current = L.polyline(coords, {
+      color: "#3b82f6", weight: 5, opacity: 0.85,
+    }).addTo(map);
+
+    // Only fit bounds when a new route is loaded, not when switching back to the tab
+    const isNewRoute = lastRenderedGpxRouteRef.current !== gpxRoute;
+    if (isNewRoute) {
+      map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], animate: true });
+      lastRenderedGpxRouteRef.current = gpxRoute;
+    }
+  }, [gpxRoute, mode]);
 
   // Live position
   useEffect(() => {
@@ -604,20 +665,86 @@ export default function Map() {
   }
 
   // ── GPX handling functions ──
-  function handleGpxFileSelect(file: File) {
+  async function handleGpxFileSelect(file: File) {
     setGpxUploading(true);
+    setGpxProcessing(true);
+    setGpxUploadProgress(0);
     setGpxError(null);
-    
-    // TODO: Implement actual file upload and parsing
-    // For now, simulate the upload process
-    setTimeout(() => {
+    setGpxRoute(null);
+    lastRenderedGpxRouteRef.current = null;
+
+    try {
+      const { status, body: result } = await postGpxForParse(file, {
+        timeoutMs: 30000,
+        onUploadProgress: (p) => setGpxUploadProgress(p),
+        onUploadFinished: () => setGpxUploading(false),
+      });
+
+      if (status === 503) {
+        setGpxError("Server is temporarily unavailable. Please try again later.");
+        setGpxUploading(false);
+        setGpxProcessing(false);
+        setGpxUploadProgress(0);
+        return;
+      }
+
+      if (!result.success) {
+        const errorMsg =
+          result.error || "Unable to process GPX file. Please check the file format.";
+        const validationErrors = result.validationErrors?.join(", ") || "";
+        setGpxError(validationErrors ? `${errorMsg}: ${validationErrors}` : errorMsg);
+        setGpxUploading(false);
+        setGpxProcessing(false);
+        setGpxUploadProgress(0);
+        return;
+      }
+
+      const route = result.route;
+      const transformedRoute = {
+        waypoints: route.waypoints.map((wp: any) => ({
+          latitude: wp.lat,
+          longitude: wp.lon,
+          elevation: wp.ele,
+          time: wp.time ? new Date(wp.time) : undefined,
+        })),
+        distanceKm: route.distanceKm,
+        totalTimeSec: route.totalTimeSec,
+        avgSpeedKmh: route.avgSpeedKmh,
+        maxSpeedKmh: route.maxSpeedKmh,
+        startedAt: route.startedAt ? new Date(route.startedAt) : undefined,
+        endedAt: route.endedAt ? new Date(route.endedAt) : undefined,
+        bounds: route.bounds
+          ? {
+              north: route.bounds.maxLat,
+              south: route.bounds.minLat,
+              east: route.bounds.maxLon,
+              west: route.bounds.minLon,
+            }
+          : undefined,
+        simulatorRoute: route.simulatorRoute,
+      };
+
+      setGpxRoute(transformedRoute);
       setGpxUploading(false);
-      setGpxError("GPX parsing not yet implemented");
-    }, 1000);
+      setGpxProcessing(false);
+      setGpxUploadProgress(0);
+    } catch (error) {
+      console.error("Error uploading GPX file:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        setGpxError(
+          "Pedido de upload interrompido (ligação cancelada ou página alterada). Tenta enviar o ficheiro outra vez."
+        );
+      } else {
+        setGpxError("Upload failed. Please try again.");
+      }
+      setGpxUploading(false);
+      setGpxProcessing(false);
+      setGpxUploadProgress(0);
+    }
   }
 
   function handleGpxError(error: string) {
-    setGpxError(error);
+    setGpxError(error.trim() === "" ? null : error);
   }
 
   function clearGpxRoute() {
@@ -626,6 +753,9 @@ export default function Map() {
     setGpxSent(false);
     setGpxProcessing(false);
     setGpxUploading(false);
+    setGpxUploadProgress(0);
+    setGpxSending(false);
+    lastRenderedGpxRouteRef.current = null;
     
     // Clear map preview
     previewLineRef.current?.remove(); previewLineRef.current = null;
@@ -634,17 +764,20 @@ export default function Map() {
   }
 
   function sendGpxToSimulator() {
-    if (!gpxRoute) return;
-    
-    setGpxProcessing(true);
-    
-    // TODO: Implement actual GPX to simulator conversion
-    // For now, simulate the process
+    if (!gpxRoute?.simulatorRoute) return;
+
+    setGpxSending(true);
+    const cmd = {
+      acao: "definir_rota",
+      route: gpxRoute.simulatorRoute,
+    };
+    sendCommand(cmd);
+    localStorage.setItem("sim_route", JSON.stringify(cmd.route));
+    setGpxSent(true);
     setTimeout(() => {
-      setGpxProcessing(false);
-      setGpxSent(true);
-      setTimeout(() => navigate("/simulator-contexts"), 800);
-    }, 1500);
+      setGpxSending(false);
+      navigate("/simulator-contexts");
+    }, 800);
   }
 
   function handleGpxMapRender(waypoints: any[]) {
@@ -901,7 +1034,9 @@ export default function Map() {
             gpxUploading={gpxUploading}
             gpxError={gpxError}
             gpxProcessing={gpxProcessing}
+            gpxSending={gpxSending}
             gpxSent={gpxSent}
+            uploadProgress={gpxUploadProgress}
             onFileSelect={handleGpxFileSelect}
             onClearRoute={clearGpxRoute}
             onSendToSimulator={sendGpxToSimulator}
@@ -935,10 +1070,16 @@ export default function Map() {
                 <div className="map-overlay-text">Seleciona um ficheiro GPX para importar uma rota e visualizá-la no mapa.</div>
               </div>
             )}
-            {(loadingPreview || customLoadingPreview || gpxProcessing) && (
+            {(loadingPreview ||
+              customLoadingPreview ||
+              (mode === "gpx" && (gpxUploading || gpxProcessing))) && (
               <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.55)", borderRadius: 8, padding: "6px 12px", display: "flex", alignItems: "center", gap: 6, color: "#fff", fontSize: "0.8rem", zIndex: 1000 }}>
-                <Loader2 size={14} className="animate-spin" /> 
-                {gpxProcessing ? "A processar GPX..." : "A calcular rota..."}
+                <Loader2 size={14} className="animate-spin" />
+                {mode === "gpx" && gpxUploading
+                  ? "A enviar ficheiro..."
+                  : mode === "gpx" && gpxProcessing
+                    ? "A processar GPX..."
+                    : "A calcular rota..."}
               </div>
             )}
             {clickMode && (
