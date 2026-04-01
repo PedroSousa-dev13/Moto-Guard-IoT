@@ -29,4 +29,24 @@ describe("parseGpx", () => {
     expect(parsed.endedAt).toBeInstanceOf(Date);
     expect(parsed.totalTimeSec).toBeTypeOf("number");
   });
+
+  it("prefers rtept over a short trk when rte has more points (rota planeada vs trk resumo)", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Resumo</name><trkseg>
+    <trkpt lat="-26.281" lon="-49.338"><time>2020-01-01T10:00:00Z</time></trkpt>
+    <trkpt lat="-26.280" lon="-49.337"><time>2020-01-01T10:01:00Z</time></trkpt>
+  </trkseg></trk>
+  <rte><name>Rota</name>
+    <rtept lat="-26.50" lon="-49.50"></rtept>
+    <rtept lat="-26.00" lon="-49.00"></rtept>
+    <rtept lat="-25.50" lon="-48.50"></rtept>
+  </rte>
+</gpx>`;
+    const parsed = parseGpx(xml);
+    expect(parsed.waypoints).toHaveLength(3);
+    expect(parsed.waypoints[0].lat).toBe(-26.5);
+    expect(parsed.waypoints[2].lat).toBe(-25.5);
+    expect(parsed.distanceKm).toBeGreaterThan(1);
+  });
 });
