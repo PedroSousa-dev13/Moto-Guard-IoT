@@ -550,15 +550,26 @@ export default function Map() {
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear previous preview
+    if (!selectedRoute) {
+      // Não limpar refs partilhadas em modo GPX ou rota personalizada — o efeito GPX/custom corre antes
+      // e este efeito (declarado depois) apagava a polyline inteira, deixando só marcadores sobrepostos.
+      if (mode !== "preset") return;
+
+      previewLineRef.current?.remove();
+      startDotRef.current?.remove();
+      endDotRef.current?.remove();
+      previewLineRef.current = null;
+      startDotRef.current = null;
+      endDotRef.current = null;
+      return;
+    }
+
     previewLineRef.current?.remove();
     startDotRef.current?.remove();
     endDotRef.current?.remove();
     previewLineRef.current = null;
     startDotRef.current = null;
     endDotRef.current = null;
-
-    if (!selectedRoute) return;
 
     const { start, end, center, zoom } = selectedRoute;
     map.setView(center, zoom, { animate: true });
@@ -607,7 +618,7 @@ export default function Map() {
       .finally(() => { if (!cancelled) setLoadingPreview(false); });
 
     return () => { cancelled = true; };
-  }, [selectedRoute]);
+  }, [selectedRoute, mode]);
 
   function toggleDistrict(name: string) {
     setExpandedDistricts(prev => {
