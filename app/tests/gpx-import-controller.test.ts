@@ -26,7 +26,7 @@ describe("importGpx", () => {
     vi.clearAllMocks();
   });
 
-  it("creates a default motorcycle when user has none", async () => {
+  it("returns 400 when user has no motorcycles", async () => {
     vi.mocked(parseGpx).mockReturnValue({
       waypoints: [{ lat: 41.0, lon: -7.0, time: "2026-03-15T08:00:00.000Z" }],
       bounds: { minLat: 41, maxLat: 41, minLon: -7, maxLon: -7 },
@@ -41,14 +41,10 @@ describe("importGpx", () => {
     const tx = {
       motorcycle: {
         findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue({ id: "m-new" }),
+        create: vi.fn(),
       },
-      trip: {
-        create: vi.fn().mockResolvedValue({ id: "t-new" }),
-      },
-      gpxData: {
-        create: vi.fn().mockResolvedValue({ id: "g-new" }),
-      },
+      trip: { create: vi.fn() },
+      gpxData: { create: vi.fn() },
     };
 
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(tx));
@@ -66,20 +62,12 @@ describe("importGpx", () => {
 
     await importGpx(req, res as any);
 
-    expect(tx.motorcycle.create).toHaveBeenCalled();
-    expect(tx.trip.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          motorcycleId: "m-new",
-          source: "GPX_IMPORTED",
-        }),
-      }),
-    );
-    expect(res.status).toHaveBeenCalledWith(201);
+    expect(tx.motorcycle.create).not.toHaveBeenCalled();
+    expect(tx.trip.create).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        tripId: "t-new",
-        gpxDataId: "g-new",
+        error: expect.stringContaining("motas registadas"),
       }),
     );
   });
