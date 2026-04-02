@@ -4,12 +4,13 @@ import { Link } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
 import { tripsAPI } from "../services/api";
 import { loadAlerts } from "../utils/alerts";
+import { loadSettings, isNightTime, getNightModePhase, type Theme } from "../utils/settings";
 import {
   Gauge, Zap, Disc, ArrowUpCircle,
   MoveHorizontal, Activity,
   Wifi, WifiOff, Radio, AlertTriangle,
   MapPin, Clock, Route, ChevronRight,
-  Cpu, Bell
+  Cpu, Bell, Moon, Sun
 } from "lucide-react";
 import type { TripFeedItem } from "../types";
 import "./Dashboard.css";
@@ -86,8 +87,35 @@ function GaugeBlock({
 export default function Dashboard() {
   const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal } = useSocket();
   const [lastTrip, setLastTrip] = useState<TripFeedItem | null>(null);
+  const [nightMode, setNightMode] = useState<{ enabled: boolean; phase: ReturnType<typeof getNightModePhase>; auto: boolean }>({ enabled: false, phase: "day", auto: false });
 
   useEffect(() => { document.title = "Dashboard — MotoGuard"; }, []);
+
+  // Auto night mode detection
+  useEffect(() => {
+    const checkNightMode = () => {
+      const settings = loadSettings();
+      const isAutoTheme = settings.theme === "auto";
+      const isNight = isNightTime();
+      const phase = getNightModePhase();
+
+      // Apply dark theme during night when auto mode is enabled
+      if (isAutoTheme) {
+        document.documentElement.dataset.theme = isNight ? "dark" : "light";
+        document.documentElement.dataset.nightMode = isNight ? "on" : "off";
+      } else {
+        delete document.documentElement.dataset.nightMode;
+      }
+
+      setNightMode({ enabled: isNight, phase, auto: isAutoTheme });
+    };
+
+    checkNightMode();
+    // Check every minute for time transitions
+    const interval = setInterval(checkNightMode, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     tripsAPI.getFeed(undefined, 1)
@@ -112,7 +140,21 @@ export default function Dashboard() {
       {/* ── HEADER ── */}
       <div className="db-header">
         <div className="db-header-left">
-          <div className="db-header-title">Dashboard</div>
+          <div className="db-header-title">
+            Dashboard
+            {nightMode.enabled && nightMode.auto && (
+              <span className="db-night-badge" title={`Modo noturno automático (${nightMode.phase === "evening" ? "Entardecer" : nightMode.phase === "night" ? "Noite" : "Madrugada"})`}>
+                <Moon size={12} />
+                <span>Noite</span>
+              </span>
+            )}
+            {!nightMode.enabled && nightMode.auto && (
+              <span className="db-day-badge" title="Modo diurno automático">
+                <Sun size={12} />
+                <span>Dia</span>
+              </span>
+            )}
+          </div>
           <div className="db-header-meta">
             {hasData ? (
               <>

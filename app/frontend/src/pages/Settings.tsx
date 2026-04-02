@@ -9,6 +9,7 @@ import {
 import {
   Settings2, Bell, Sliders, Info, Sun, Moon, Globe, Gauge,
   Activity, Thermometer, Zap, Shield, Trash2, Check, RotateCcw,
+  Monitor,
 } from "lucide-react";
 
 type Tab = "prefs" | "alerts" | "thresholds" | "about";
@@ -41,7 +42,8 @@ export default function Settings() {
     setMsg(null);
     try {
       saveSettings(form);
-      applyTheme(form.theme);
+      // Apply theme with night mode detection for Dashboard
+      applyTheme(form.theme, true);
       setI18nLanguage(form.language);
       setMsg({ type: "success", text: t('settings.saveSuccess') });
     } catch {
@@ -106,7 +108,7 @@ export default function Settings() {
                   <Sun size={18} className="settings-option-icon" />
                   <div>
                     <div className="settings-option-label">{t('settings.theme')}</div>
-                    <div className="settings-option-desc">{t('settings.themeLight')} / {t('settings.themeDark')}</div>
+                    <div className="settings-option-desc">{t('settings.themeLight')} / {t('settings.themeDark')} / Auto (18h-6h)</div>
                   </div>
                 </div>
                 <div className="theme-toggle-group">
@@ -119,6 +121,13 @@ export default function Settings() {
                     className={`theme-btn ${form.theme === "dark" ? "active" : ""}`}
                     onClick={() => setForm((p) => ({ ...p, theme: "dark" }))}>
                     <Moon size={14} /> {t('settings.themeDark')}
+                  </button>
+                  <button type="button"
+                    className={`theme-btn ${form.theme === "auto" ? "active" : ""}`}
+                    onClick={() => setForm((p) => ({ ...p, theme: "auto" }))}
+                    title="Ativa o tema escuro automaticamente das 18h às 6h"
+                  >
+                    <Monitor size={14} /> Auto
                   </button>
                 </div>
               </div>

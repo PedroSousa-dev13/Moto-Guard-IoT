@@ -1,4 +1,4 @@
-export type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "auto";
 export type Units = "metric" | "imperial";
 export type Language = "pt" | "en" | "es";
 export type AlertMinSeverity = "INFO" | "WARNING" | "CRITICAL";
@@ -79,7 +79,9 @@ export function loadSettings(): AppSettings {
     const pt = (parsed.thresholds ?? {}) as Partial<Thresholds>;
     const maxStored = Number(parsed.alerts?.maxStored);
     return {
-      theme: parsed.theme === "dark" ? "dark" : "light",
+      theme: (["light", "dark", "auto"] as Theme[]).includes(parsed.theme as Theme)
+        ? (parsed.theme as Theme)
+        : base.theme,
       units: parsed.units === "imperial" ? "imperial" : "metric",
       language: (["pt", "en", "es"] as Language[]).includes(parsed.language as Language)
         ? (parsed.language as Language)
@@ -118,6 +120,54 @@ export function saveSettings(s: AppSettings) {
   applyTheme(s.theme);
 }
 
-export function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
+/**
+ * Check if current time is considered "night" (18:00 - 06:00)
+ * This is used for automatic night mode in the Dashboard
+ */
+export function isNightTime(): boolean {
+  const hour = new Date().getHours();
+  return hour >= 18 || hour < 6;
+}
+
+/**
+ * Get the effective theme based on current settings.
+ * If theme is "auto", returns "dark" during night time (18:00-06:00), "light" otherwise.
+ */
+export function getEffectiveTheme(theme: Theme): "light" | "dark" {
+  if (theme === "auto") {
+    return isNightTime() ? "dark" : "light";
+  }
+  return theme;
+}
+
+/**
+ * Apply theme to the document.
+ * For Dashboard, this also adds a data attribute for night mode specific styles.
+ */
+export function applyTheme(theme: Theme, applyNightMode: boolean = false) {
+  const effectiveTheme = getEffectiveTheme(theme);
+  document.documentElement.dataset.theme = effectiveTheme;
+
+  // For Dashboard night mode auto-detection
+  if (applyNightMode && theme === "auto") {
+    const isNight = isNightTime();
+    document.documentElement.dataset.nightMode = isNight ? "on" : "off";
+  } else {
+    delete document.documentElement.dataset.nightMode;
+  }
+}
+
+/**
+ * Get night mode phase for more granular styling
+ * - "evening": 18:00 - 21:00 (transition period)
+ * - "night": 21:00 - 05:00 (full night)
+ * - "early": 05:00 - 06:00 (transition period)
+ * - "day": 06:00 - 18:00 (day time)
+ */
+export function getNightModePhase(): "evening" | "night" | "early" | "day" {
+  const hour = new Date().getHours();
+  if (hour >= 18 && hour < 21) return "evening";
+  if (hour >= 21 || hour < 5) return "night";
+  if (hour >= 5 && hour < 6) return "early";
+  return "day";
 }
