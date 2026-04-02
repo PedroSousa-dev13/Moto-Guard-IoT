@@ -194,43 +194,13 @@ class RouteCursor:
 
     def speed_limit_kmh(self, steps: int = 8) -> float | None:
         max_curve = self.max_curve_deg(steps=steps)
-        # Thresholds mais altos para não travar em rotas OSRM (waypoints densos)
-        if max_curve > 90:
-            return 40.0   # curva muito fechada (quase inversão)
         if max_curve > 65:
-            return 65.0   # curva fechada
-        if max_curve > 45:
-            return 90.0   # curva moderada
-        return None       # recta ou curva suave — sem limite extra
-
-    def legal_speed_limit_kmh(self) -> float:
-        """
-        Limite de velocidade legal da via actual.
-        Combina distância média entre waypoints com a velocidade máxima observada
-        na rota para classificar o tipo de via com mais precisão.
-
-          · urbano       → 50 km/h   (waypoints densos, avg < 80m)
-          · suburbano    → 50 km/h   (avg 80-200m mas rota curta)
-          · estrada      → 90 km/h   (avg 200-500m)
-          · auto-estrada → 120 km/h  (avg > 500m)
-        """
-        n = len(self.waypoints) - 1
-        if n <= 0:
-            return 50.0
-        total_m = sum(self._segment_len_m(i) for i in range(n))
-        avg_seg_m = total_m / n
-
-        # Waypoints muito próximos → via urbana
-        if avg_seg_m < 80:
-            return 50.0
-        # Rota curta (< 3km total) com waypoints moderados → ainda urbana/suburbana
-        if total_m < 3000 and avg_seg_m < 250:
-            return 50.0
-        # Waypoints muito espaçados → auto-estrada
-        if avg_seg_m > 500:
-            return 120.0
-        # Caso geral → estrada nacional
-        return 90.0
+            return 40.0
+        if max_curve > 40:
+            return 65.0
+        if max_curve > 22:
+            return 90.0
+        return None
 
     def distance_to_end_m(self) -> float | None:
         """

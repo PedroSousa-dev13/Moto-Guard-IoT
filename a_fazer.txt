@@ -103,13 +103,6 @@ Atualizado após limpeza de itens concluídos
          * Brilho reduzido nos gauges
      - Ficheiros: app/frontend/src/pages/Dashboard.tsx, app/frontend/src/utils/settings.ts
 
-[12] Alertas preditivos baseados em contexto
-     - "Curva apertada em 200m — reduz velocidade"
-     - "Zona escolar à frente — limite 30 km/h"
-     - Usar dados OSM (tipo de estrada, POIs) + posição GPS
-     - Ficheiros: app/backend/src/services/predictive-alerts.service.ts (novo)
-
-
 ── BUGS / MELHORIAS TÉCNICAS ────────────────────────────────────────────────
 
 [B1] Remover logs DEBUG do simulador headless

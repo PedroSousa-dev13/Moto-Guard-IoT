@@ -297,7 +297,6 @@ class HeadlessSimulator:
         log("MQTT desconectado — a tentar reconectar…")
 
     def _on_message(self, client, userdata, msg):
-        log(f"DEBUG: Mensagem MQTT recebida - topic={msg.topic}, payload={msg.payload}")
         try:
             dados = json.loads(msg.payload.decode("utf-8"))
         except Exception:
@@ -305,14 +304,11 @@ class HeadlessSimulator:
             return
 
         device_id = dados.get("device_id")
-        log(f"DEBUG: Comando recebido - device_id={device_id}, acao={dados.get('acao')}, DEVICE_ID={DEVICE_ID}")
         if device_id and device_id != DEVICE_ID:
-            log(f"DEBUG: Comando ignorado - device_id {device_id} != {DEVICE_ID}")
             return
 
         acao_raw = dados.get("acao", "")
         acao = str(acao_raw).strip().lower()
-        log(f"DEBUG: Processando acao='{acao}' (raw={acao_raw!r})")
         if acao == "definir_modelo":
             modelo = dados.get("modelo", "")
             log(f"Comando: definir_modelo → '{modelo}'")
@@ -354,11 +350,9 @@ class HeadlessSimulator:
                 log("Comando: definir_rota inválido — faltam coordenadas (latitude/longitude)")
                 return
             wps = get_route_between((float(start_lat), float(start_lng)), (float(end_lat), float(end_lng)))
-            log(f"DEBUG _aplicar_rota: Gerados {len(wps)} waypoints da rota")
             self.route_cursor = RouteCursor(wps, close_loop=loop)
             self.route_cursor.reset(0)
             start_point = self.route_cursor.waypoints[0]
-            log(f"DEBUG: Primeiro waypoint da rota: ({start_point[0]:.6f}, {start_point[1]:.6f})")
             self.tele.lat = start_point[0]
             self.tele.lng = start_point[1]
             self._route_override = True
@@ -421,10 +415,7 @@ class HeadlessSimulator:
             self._route_override_waypoints = rota_salva
             self._route_override_loop = loop_salvo
             self.route_cursor = RouteCursor(rota_salva, close_loop=loop_salvo)
-            log(f"DEBUG: Rota customizada restaurada após reset")
 
-        # DEBUG: Verificar estado da rota antes de aplicar
-        log(f"DEBUG _aplicar_modelo: _route_override={self._route_override}, waypoints existem={bool(self._route_override_waypoints)}")
         if self._route_override and self._route_override_waypoints:
             self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
         else:
@@ -801,9 +792,6 @@ class HeadlessSimulator:
             speed_ms = s.velocidade / 3.6
             dist_m = speed_ms * PUBLISH_INTERVAL
             lat, lng, bearing = self.route_cursor.step(dist_m)
-            # DEBUG: Verificar se GPS está a avançar
-            if self._tick_count % 50 == 0:  # Log a cada 50 ticks (~5 segundos)
-                log(f"DEBUG GPS: vel={s.velocidade:.1f}km/h dist={dist_m:.1f}m lat={lat:.6f} lng={lng:.6f} bearing={bearing:.1f}°")
             s.lat = lat
             s.lng = lng
             s._target_yaw = bearing
@@ -960,3 +948,4 @@ if __name__ == "__main__":
 
     sim = HeadlessSimulator(modelo=args.modelo)
     sim.run()
+

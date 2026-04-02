@@ -22,23 +22,13 @@ interface MapCardProps {
   imu?: IMUData | null;
   msgCount: number;
   resetSignal?: number;
-  routeSignal?: number;
   sendCommand: (cmd: SimulatorCommand) => void;
-  onRouteStartChange?: (coords: { lat: number; lng: number } | null) => void;
 }
 
 const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
-// Rota padrão: Vila Real, ~1.5 km, ~80 segundos a 1x (velocidade média ~65 km/h)
-// Percurso: Centro → Av. Carvalho Araújo → Rotunda Norte
-const DEFAULT_ROUTE = {
-  start: { latitude: 41.2951, longitude: -7.7463 },
-  end:   { latitude: 41.3045, longitude: -7.7388 },
-  loop: false,
-};
-
-export default function MapCard({ location, telemetry, imu, msgCount, resetSignal, routeSignal, sendCommand, onRouteStartChange }: MapCardProps) {
+export default function MapCard({ location, telemetry, imu, msgCount, resetSignal, sendCommand }: MapCardProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
@@ -62,59 +52,18 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
     typeof location?.longitude === "number" &&
     Number.isFinite(location.longitude);
 
-  // ── Ler rota do localStorage (lazy init para evitar race condition) ──
-  function readStoredRoute(): { start: L.LatLngTuple | null; end: L.LatLngTuple | null } {
-    try {
-      const raw = localStorage.getItem("sim_route");
-      if (!raw) return { start: null, end: null };
-      const route = JSON.parse(raw);
-      const start: L.LatLngTuple | null =
-        typeof route?.start?.latitude === "number" && typeof route?.start?.longitude === "number"
-          ? [route.start.latitude, route.start.longitude]
-          : null;
-      const end: L.LatLngTuple | null =
-        typeof route?.end?.latitude === "number" && typeof route?.end?.longitude === "number"
-          ? [route.end.latitude, route.end.longitude]
-          : null;
-      return { start, end };
-    } catch { return { start: null, end: null }; }
-  }
-
-  const storedRoute = readStoredRoute();
-  const [routeStart, setRouteStart] = useState<L.LatLngTuple | null>(storedRoute.start);
-  const [routeEnd, setRouteEnd] = useState<L.LatLngTuple | null>(storedRoute.end);
-  const routeStartRef = useRef<L.LatLngTuple | null>(storedRoute.start);
-  const routeEndRef = useRef<L.LatLngTuple | null>(storedRoute.end);
+  const [routeStart, setRouteStart] = useState<L.LatLngTuple | null>(null);
+  const [routeEnd, setRouteEnd] = useState<L.LatLngTuple | null>(null);
+  const routeStartRef = useRef<L.LatLngTuple | null>(null);
+  const routeEndRef = useRef<L.LatLngTuple | null>(null);
 
   useEffect(() => {
     routeStartRef.current = routeStart;
-    onRouteStartChange?.(routeStart ? { lat: routeStart[0], lng: routeStart[1] } : null);
   }, [routeStart]);
 
   useEffect(() => {
     routeEndRef.current = routeEnd;
   }, [routeEnd]);
-
-  // ── Reagir a nova rota enviada (routeSignal) ──────────────────────────
-  useEffect(() => {
-    if (!routeSignal) return;
-    try {
-      const raw = localStorage.getItem("sim_route");
-      if (!raw) return;
-      const route = JSON.parse(raw);
-      const start: L.LatLngTuple | null =
-        typeof route?.start?.latitude === "number" && typeof route?.start?.longitude === "number"
-          ? [route.start.latitude, route.start.longitude] : null;
-      const end: L.LatLngTuple | null =
-        typeof route?.end?.latitude === "number" && typeof route?.end?.longitude === "number"
-          ? [route.end.latitude, route.end.longitude] : null;
-      if (start) {
-        setRouteStart(start);
-        if (mapRef.current) mapRef.current.setView(start, 15, { animate: true });
-      }
-      if (end) setRouteEnd(end);
-    } catch { /* ignorar */ }
-  }, [routeSignal]);
 
   // ── Alternar Tipo de Mapa ──────────────────────────────────────────
   useEffect(() => {
@@ -138,40 +87,9 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Ler rota guardada para centrar o mapa no ponto de partida desde o início
-    let initialLat = DEFAULT_LAT;
-    let initialLng = DEFAULT_LNG;
-    let storedStart: L.LatLngTuple | null = null;
-    let storedEnd: L.LatLngTuple | null = null;
-    try {
-      const raw = localStorage.getItem("sim_route");
-      if (raw) {
-        const route = JSON.parse(raw);
-        if (typeof route?.start?.latitude === "number" && typeof route?.start?.longitude === "number") {
-          initialLat = route.start.latitude;
-          initialLng = route.start.longitude;
-          storedStart = [route.start.latitude, route.start.longitude];
-        }
-        if (typeof route?.end?.latitude === "number" && typeof route?.end?.longitude === "number") {
-          storedEnd = [route.end.latitude, route.end.longitude];
-        }
-      }
-    } catch { /* ignorar */ }
-    
-    // Calcular zoom baseado na distância entre pontos (se ambos existirem)
-    let initialZoom = 15;
-    if (storedStart && storedEnd) {
-      const latDiff = Math.abs(storedStart[0] - storedEnd[0]);
-      const lngDiff = Math.abs(storedStart[1] - storedEnd[1]);
-      const maxDiff = Math.max(latDiff, lngDiff);
-      if (maxDiff > 0.1) initialZoom = 11;
-      else if (maxDiff > 0.05) initialZoom = 13;
-      else if (maxDiff > 0.01) initialZoom = 14;
-      else initialZoom = 16;
-    }
     const map = L.map(containerRef.current, {
       zoomControl: false, 
-    }).setView([initialLat, initialLng], initialZoom);
+    }).setView([DEFAULT_LAT, DEFAULT_LNG], 16); // Zoom 16 para parecer com a imagem
     
     L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -181,9 +99,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
        maxZoom: 19,
      }).addTo(map);
 
-    // Criar marker na posição inicial da rota (se existir) ou default
-    const markerPos: L.LatLngTuple = storedStart || [DEFAULT_LAT, DEFAULT_LNG];
-    const marker = L.marker(markerPos, { opacity: storedStart ? 1 : 0 })
+    const marker = L.marker([DEFAULT_LAT, DEFAULT_LNG], { opacity: 0 })
       .addTo(map)
       .bindPopup("MotoGuard IoT");
 
@@ -197,44 +113,6 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
     mapRef.current = map;
     markerRef.current = marker;
     trailRef.current = trail;
-
-    // ── Desenhar círculos de início/fim se já existir rota guardada ──
-    if (storedStart) {
-      startMarkerRef.current = L.circleMarker(storedStart, {
-        radius: 7, color: "#16a34a", fillColor: "#22c55e", fillOpacity: 0.9, weight: 2,
-      }).addTo(map);
-    }
-    if (storedEnd) {
-      endMarkerRef.current = L.circleMarker(storedEnd, {
-        radius: 7, color: "#b91c1c", fillColor: "#ef4444", fillOpacity: 0.9, weight: 2,
-      }).addTo(map);
-    }
-    if (storedStart && storedEnd) {
-      // Desenhar linha tracejada inicial (será substituída pela OSRM se disponível)
-      selectionLineRef.current = L.polyline([storedStart, storedEnd], {
-        color: "#f97316", weight: 3, dashArray: "6 6",
-      }).addTo(map);
-      
-      // Tentar buscar geometria real da rota via OSRM
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${storedStart[1]},${storedStart[0]};${storedEnd[1]},${storedEnd[0]}?overview=full&geometries=geojson`;
-      fetch(osrmUrl)
-        .then(r => r.json())
-        .then(data => {
-          if (!mapRef.current || !selectionLineRef.current) return;
-          const coords: [number, number][] = (data?.routes?.[0]?.geometry?.coordinates ?? [])
-            .map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
-          if (coords.length >= 2) {
-            // Substituir linha tracejada por geometria real
-            selectionLineRef.current.remove();
-            selectionLineRef.current = L.polyline(coords, {
-              color: "#3b82f6", weight: 4, opacity: 0.8,
-            }).addTo(mapRef.current);
-          }
-        })
-        .catch(() => {
-          // Manter linha tracejada se OSRM falhar
-        });
-    }
 
     const onClick = (e: L.LeafletMouseEvent) => {
       // Se estivermos a arrastar um ponto, não fazemos nada no clique normal
@@ -337,24 +215,18 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
       trailPointsRef.current.push([lat, lng]);
       if (trailPointsRef.current.length > 500) trailPointsRef.current.shift();
       trailRef.current.setLatLngs(trailPointsRef.current);
-
-      // Só mover o mapa se há telemetria real (não usar defaults)
-      if (pilotMode) {
-        mapRef.current.setView(pos, mapRef.current.getZoom(), { animate: false });
-      } else if (msgCount % 5 === 0) {
-        mapRef.current.panTo(pos, { animate: true, duration: 0.5 });
-      }
     }
-    // Se não há telemetria mas há routeStart, não mover o mapa (manter na posição da rota)
+
+    // No Pilot Mode, centramos sempre e rodamos o mapa
+    if (pilotMode) {
+      mapRef.current.setView(pos, mapRef.current.getZoom(), { animate: false }); // Animate false para evitar lag na rotação
+    } else if (msgCount % 5 === 0) {
+      mapRef.current.panTo(pos, { animate: true, duration: 0.5 });
+    }
   }, [hasLiveLocation, lat, lng, msgCount, routeStart, pilotMode]);
 
   useEffect(() => {
-    if (!resetSignal || !mapRef.current || !markerRef.current || !trailRef.current) return;
-    
-    // Só fazer reset se não há rota guardada (reset explícito)
-    const hasStoredRoute = localStorage.getItem("sim_route");
-    if (hasStoredRoute) return;
-    
+    if (!mapRef.current || !markerRef.current || !trailRef.current) return;
     trailPointsRef.current = [];
     trailRef.current.setLatLngs([]);
     markerRef.current.setLatLng([DEFAULT_LAT, DEFAULT_LNG]);
@@ -560,17 +432,9 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
             <button
               className="btn btn-sm"
               onClick={() => {
-                localStorage.setItem("sim_route", JSON.stringify(DEFAULT_ROUTE));
-                sendCommand({ acao: "definir_rota", route: DEFAULT_ROUTE });
+                sendCommand({ acao: "reset_rota" });
+                localStorage.removeItem("sim_route");
                 clearRouteSelection();
-                onRouteStartChange?.({ lat: DEFAULT_ROUTE.start.latitude, lng: DEFAULT_ROUTE.start.longitude });
-                if (trailRef.current) {
-                  trailPointsRef.current = [];
-                  trailRef.current.setLatLngs([]);
-                }
-                if (mapRef.current) {
-                  mapRef.current.setView([DEFAULT_ROUTE.start.latitude, DEFAULT_ROUTE.start.longitude], 15);
-                }
               }}
             >
               <MapIcon size={16} />
