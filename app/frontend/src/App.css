@@ -2061,6 +2061,11 @@ button { font-family: inherit; }
 .theme-btn:hover { border-color: var(--border-strong); color: var(--text); }
 .theme-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
+/* Auto theme button has a special gradient when active */
+.theme-btn.active[title*="Auto"] {
+  background: linear-gradient(135deg, var(--accent-light) 0%, rgba(91, 106, 240, 0.15) 100%);
+}
+
 /* Thresholds */
 .settings-thresholds-info {
   display: flex;
