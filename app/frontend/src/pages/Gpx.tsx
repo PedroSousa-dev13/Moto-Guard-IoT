@@ -17,7 +17,7 @@ export default function Gpx() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
-  const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<string>("AUTO");
+  const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<string>("");
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<{
@@ -46,10 +46,20 @@ export default function Gpx() {
   }, []);
 
   const hasMotorcycles = motorcycles.length > 0;
-  const canImport = !!file && !importing && hasMotorcycles;
+  const canImport = !!file && !importing && hasMotorcycles && !!selectedMotorcycleId;
+
+  useEffect(() => {
+    if (!hasMotorcycles) {
+      setSelectedMotorcycleId("");
+      return;
+    }
+    if (!motorcycles.some((m) => m.id === selectedMotorcycleId)) {
+      setSelectedMotorcycleId(motorcycles[0].id);
+    }
+  }, [hasMotorcycles, motorcycles, selectedMotorcycleId]);
 
   const selectedMotorcycle = useMemo(() => {
-    if (selectedMotorcycleId === "AUTO") return null;
+    if (!selectedMotorcycleId) return null;
     return motorcycles.find((m) => m.id === selectedMotorcycleId) ?? null;
   }, [motorcycles, selectedMotorcycleId]);
 
@@ -59,7 +69,12 @@ export default function Gpx() {
       setImporting(true);
       setImportError(null);
       setImportSuccess(null);
-      const res = await gpxAPI.import(file, selectedMotorcycleId === "AUTO" ? undefined : selectedMotorcycleId);
+      if (!selectedMotorcycleId) {
+        setImportError("Seleciona uma mota para associar a viagem GPX.");
+        return;
+      }
+
+      const res = await gpxAPI.import(file, selectedMotorcycleId);
       setImportSuccess({
         tripId: res.data.tripId,
         points: res.data.stats.points,
@@ -121,10 +136,9 @@ export default function Gpx() {
                 disabled={!hasMotorcycles}
               >
                 {motorcycles.length === 0 ? (
-                  <option value="AUTO">— sem motas registadas —</option>
+                  <option value="">— sem motas registadas —</option>
                 ) : (
                   <>
-                    <option value="AUTO">Automático (última mota)</option>
                     {motorcycles.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}{m.brand ? ` (${m.brand})` : ""}

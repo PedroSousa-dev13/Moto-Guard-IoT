@@ -38,9 +38,17 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     return;
   }
 
-  const requestedMotorcycleId = typeof req.body?.motorcycleId === "string" ? req.body.motorcycleId : null;
+  const requestedMotorcycleId =
+    typeof req.body?.motorcycleId === "string" && req.body.motorcycleId.trim() !== ""
+      ? req.body.motorcycleId.trim()
+      : null;
 
   try {
+    if (!requestedMotorcycleId) {
+      res.status(400).json({ error: "Seleciona uma mota para associar a viagem GPX." });
+      return;
+    }
+
     const xml = file.buffer.toString("utf8");
     const parsed = parseGpx(xml);
 
@@ -53,15 +61,10 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     const endedAt = parsed.endedAt ?? startedAt;
 
     const result = await prisma.$transaction(async (tx) => {
-      const motorcycle = requestedMotorcycleId
-        ? await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
-        : await tx.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
+      const motorcycle = await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } });
 
       if (!motorcycle) {
-        if (requestedMotorcycleId) {
-          throw badRequest("Mota selecionada não encontrada");
-        }
-        throw badRequest("Não tens motas registadas. Adiciona uma mota na Garagem antes de importar um GPX.");
+        throw badRequest("Mota selecionada não encontrada");
       }
 
       const ensuredMotorcycle = motorcycle;
