@@ -126,12 +126,10 @@ export const telemetryAPI = {
 };
 
 export const gpxAPI = {
-  import: (file: File, motorcycleId?: string) => {
+  import: (file: File, motorcycleId: string) => {
     const form = new FormData();
     form.append("file", file);
-    if (motorcycleId) {
-      form.append("motorcycleId", motorcycleId);
-    }
+    form.append("motorcycleId", motorcycleId);
     return api.post<GpxImportResponse>("/gpx/import", form, {
       headers: { "Content-Type": "multipart/form-data" },
     });

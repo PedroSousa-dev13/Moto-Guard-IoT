@@ -121,6 +121,10 @@ Atualizado após limpeza de itens concluídos
      - Ajustar sigmoid ou retreinar modelo com contamination mais alto
      - Ficheiro: ml/infer.py
 
+            ✅ Pipeline GPX analisado e documentado (features, limitações, origem dos dados)
+            ✅ Recomendações para gerador de dados sintéticos GPX adicionadas (ver acima)
+            Próximos passos: implementar gerador, recalibrar score e validar com viagens reais
+
 
 ── FASE 5 — TESTES E VALIDAÇÃO ──────────────────────────────────────────────
 
@@ -175,15 +179,15 @@ Atualizado após limpeza de itens concluídos
 ── NOTAS ────────────────────────────────────────────────────────────────────
 
 REMOVIDOS (já implementados):
-- Slider interativo no TripDetail
-- Replay animado de viagem
-- Classificação automática de viagens (Trip Categorization)
-- Comparação de viagens lado a lado
-- Bandeiras de início/fim de rota no mapa
-- Exportação de relatório PDF/CSV/GPX
-- Dashboard de estatísticas agregadas (Analytics)
-- Seed automático de perfis de mota
-- Proteção de endpoint de comando com JWT
+✅ Slider interativo no TripDetail
+✅ Replay animado de viagem
+✅ Classificação automática de viagens (Trip Categorization)
+✅ Comparação de viagens lado a lado
+✅ Bandeiras de início/fim de rota no mapa
+✅ Exportação de relatório PDF/CSV/GPX
+✅ Dashboard de estatísticas agregadas (Analytics)
+✅ Seed automático de perfis de mota
+✅ Proteção de endpoint de comando com JWT
 
 NÃO IMPLEMENTAR (fora de âmbito):
 - Geofencing (tipo GEOFENCE existe mas lógica não prioritária)
