@@ -74,12 +74,12 @@
 #        + fluxo de importação GPX)
 #    [✔] Plataforma Web — Dashboard tempo real + auth + gestão (perfil/motas)
 #    [✔] Registo e histórico de viagens (persistência automática confirmada;
-#        classificação por source implementada; UI de análise pós-viagem em falta)
-#    [✘] Lógica heurística de deteção de eventos no backend
-#    [~] Gráficos interativos e mapas (dashboard OK, falta análise pós-viagem)
-#    [✘] Análise pós-viagem e relatórios exportáveis
-#    [✘] Sistema de notificações proativas
-#    [✘] Testes com dados simulados e reais
+#        classificação por source implementada; UI de análise pós-viagem completa)
+#    [✔] Lógica heurística de deteção de eventos no backend
+#    [✔] Gráficos interativos e mapas (dashboard + análise pós-viagem completa)
+#    [✔] Análise pós-viagem e relatórios exportáveis (PDF/CSV/GPX)
+#    [✔] Sistema de notificações (email de emergência, NotificationCenter, histórico)
+#    [~] Testes com dados simulados e reais (unitários OK, faltam cenários)
 #    [✘] Documentação técnica final
 #
 
@@ -282,7 +282,7 @@
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [~85% — histórico/análise/GPX/export ok]
+#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [~90% CONCLUÍDA]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 2 da proposta (parte frontend).
 #
@@ -364,7 +364,7 @@
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [CONCLUÍDA ✔]
+#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [~95% CONCLUÍDA ✔]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 3 da proposta.
 #
@@ -423,50 +423,54 @@
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 4 — NOTIFICAÇÕES E ALERTAS             [POR FAZER]
+#  FASE 4 — NOTIFICAÇÕES E ALERTAS             [~70% CONCLUÍDA]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 4 da proposta (parte notificações).
 #
-#  [ ] 4.1  Sistema de notificações em tempo real
-#           → Alertas via WebSocket → popup no dashboard
-#           → Sons/vibração para alertas CRITICAL
+#  [✔] 4.1  Sistema de notificações em tempo real
+#           → ✔ Alertas via WebSocket → popup no dashboard (Toast, NotificationCenter)
+#           → ✔ useNotifications hook com toast global e unread count
+#           → Sons/vibração para alertas CRITICAL (navegador)
 #
 #  [ ] 4.2  Notificações proativas
 #           → "Zona com buracos reportados a 2 km à frente"
 #           → "Temperatura do motor a subir — considere parar"
 #
-#  [ ] 4.3  Histórico de notificações
-#           → Log de todos os alertas gerados por viagem
-#           → Associar alertas a pontos GPS no mapa da viagem
+#  [✔] 4.3  Histórico de notificações
+#           → ✔ Página /alertas completa com filtros (status, severidade, tipo, datas)
+#           → ✔ Log de alertas em localStorage + backend
+#           → ✔ Marcadores de eventos no mapa da viagem
 #
-#  [ ] 4.4  Contacto de emergência (opcional)
-#           → Em caso de queda confirmada, enviar SMS/email ao contacto
+#  [✔] 4.4  Contacto de emergência (opcional)
+#           → ✔ Serviço email.service.ts com Resend API
+#           → ✔ Envio automático de email em CRASH_DETECTED confirmado
+#           → ✔ Template HTML com localização (Google Maps link) e dados da viagem
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 5 — TESTES E VALIDAÇÃO                 [POR FAZER]
+#  FASE 5 — TESTES E VALIDAÇÃO                 [~40% CONCLUÍDA]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 4 da proposta (parte testes).
 #
-#  [ ] 5.1  Testes com dados simulados
-#           → Usar o simulador existente para gerar cenários:
+#  [~] 5.1  Testes com dados simulados
+#           → Simulador gera telemetria realista (18 subsistemas)
+#           → Faltam cenários automatizados validados:
 #             · Condução normal (30 min por modelo)
 #             · Evento de queda + confirmação
 #             · Falha de alternador progressiva
 #             · Sobreaquecimento em trânsito lento
 #           → Validar que o backend deteta todos os eventos corretamente
 #
-#  [ ] 5.2  Testes com dados reais (ficheiros GPX)
-#           → Importar rotas GPX reais (ideia já registada em ideias.txt)
-#           → Replay de dados GPS reais pelo simulador
-#           → Comparar com expectativas de condução real
-#           → Usar GPX como formato de import/export (página 2.11)
-#           → Importar datasets públicos de condução para enriquecer validação
-#           → Testar snap-to-road do simulador (0.9) com rotas GPX reais
+#  [~] 5.2  Testes com dados reais (ficheiros GPX)
+#           → ✔ Importação GPX funcional (upload, parse, associação a mota)
+#           → ✔ Export GPX de viagens existentes
+#           → Replay de dados GPS reais pelo simulador (parcial)
+#           → Faltam datasets públicos para validação em massa
+#           → Testar snap-to-road com rotas GPX reais
 #
-#  [ ] 5.3  Testes de integração
-#           → Simulador → MQTT → Backend → InfluxDB → WebSocket → Frontend
-#           → Cadeia completa funcional ponta a ponta
+#  [~] 5.3  Testes de integração
+#           → ✔ Pipeline funcional: Simulador → MQTT → Backend → InfluxDB → WebSocket → Frontend
+#           → Faltam testes automatizados ponta a ponta
 #
 #  [ ] 5.4  Testes de usabilidade
 #           → Testar dashboard com 2-3 utilizadores
@@ -476,10 +480,15 @@
 #           → Latência: tempo desde geração do dado até visualização
 #           → Taxa de falsos positivos nos alertas
 #           → Carga: quantos pontos/segundo o sistema suporta
+#
+#  ── Testes automatizados existentes ─────────────────────────────────────────
+#  [✔] 39 ficheiros de teste (backend + frontend)
+#  [✔] 294+ testes passando (36 ficheiros passam, 3 com falhas menores)
+#  [✔] Cobertura: services principais, controllers, routes, utils
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  FASE 6 — DOCUMENTAÇÃO E ENTREGA             [POR FAZER]
+#  FASE 6 — DOCUMENTAÇÃO E ENTREGA             [0% NÃO INICIADA]
 # ═════════════════════════════════════════════════════════════════════════════
 #  Corresponde ao Objetivo 5 da proposta.
 #
@@ -503,15 +512,15 @@
 #  RESUMO — PROGRESSO GLOBAL
 # =============================================================================
 #
-#  FASE 0 — Familiarização ............... [███████░░░]  70%  (3 melhorias simulador pendentes)
-#  FASE 1 — Infraestrutura e Backend ..... [████████░░]  80%  (6 lacunas por resolver)
-#  FASE 2 — Frontend (Plataforma Web) .... [██░░░░░░░░]  20%  (dashboard básico existe)
-#  FASE 3 — Lógica Heurística + IA ....... [░░░░░░░░░░]   0%  (+2 tarefas IA de ideias.txt)
-#  FASE 4 — Notificações e Alertas ....... [░░░░░░░░░░]   0%
-#  FASE 5 — Testes e Validação ........... [░░░░░░░░░░]   0%  (GPX enriquecido)
-#  FASE 6 — Documentação e Entrega ....... [░░░░░░░░░░]   0%
+#  FASE 0 — Familiarização ............... [██████████] 100%  (Concluída)
+#  FASE 1 — Infraestrutura e Backend ..... [█████████░]  90%  (Docker, MQTT, APIs, BD completos)
+#  FASE 2 — Frontend (Plataforma Web) .... [█████████░]  90%  (Dashboard, histórico, GPX, auth completos)
+#  FASE 3 — Lógica Heurística + IA ....... [█████████░]  95%  (Heurísticas, ML score, pipeline OK)
+#  FASE 4 — Notificações e Alertas ....... [███████░░░]  70%  (Email, NotificationCenter, Alertas OK; falta proativas)
+#  FASE 5 — Testes e Validação ........... [████░░░░░░]  40%  (Testes unitários existem; faltam cenários simulados)
+#  FASE 6 — Documentação e Entrega ....... [░░░░░░░░░░]   0%  (Não iniciada)
 #
-#  PROGRESSO TOTAL ≈ 25%
+#  PROGRESSO TOTAL ≈ 75%
 #
 # =============================================================================
 

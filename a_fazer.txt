@@ -65,9 +65,10 @@ Atualizado após limpeza de itens concluídos
     - Ficheiros: app/frontend/src/i18n/*, app/frontend/src/pages/Settings.tsx
     - Documentação: app/frontend/src/i18n/README.md
 
-[7] UI para upload GPX → simulador
+[7] ✅ UI para upload GPX → simulador (CONCLUÍDO)
     - Backend gpx-import.service.ts já existe
-    - Falta UI para upload GPX → conversão → envio ao simulador
+    - UI implementada: GpxUploadTab component em Map.tsx
+    - Integração completa: upload → parse → envio ao simulador
     - Ficheiros: app/frontend/src/pages/Map.tsx, simulador/headless_simulator.py
 
 
@@ -96,25 +97,32 @@ Atualizado após limpeza de itens concluídos
      - Comparar com média histórica do utilizador
      - Ficheiros: app/backend/src/services/fuel-efficiency.service.ts (novo)
 
-[11] Modo noturno automático no Dashboard
+[11] ✅ Modo noturno automático no Dashboard (CONCLUÍDO)
      - Detetar hora do dia e ajustar automaticamente:
          * Cores mais escuras à noite (menos distração)
          * Alertas visuais mais subtis
          * Brilho reduzido nos gauges
+     - Implementação completa: auto-detecção por hora, badge visual "Noite"
      - Ficheiros: app/frontend/src/pages/Dashboard.tsx, app/frontend/src/utils/settings.ts
 
 ── BUGS / MELHORIAS TÉCNICAS ────────────────────────────────────────────────
 
-[B1] Remover logs DEBUG do simulador headless
+[B1] ✅ Remover logs DEBUG do simulador headless (CONCLUÍDO)
      - Ficheiro: simulador/headless_simulator.py
-     - Múltiplas linhas log("DEBUG: ...") no ficheiro
-     - Linhas identificadas: ~300, 308, 310, 315, 357, 361, 424, 427, 806
+     - Logs DEBUG removidos — verificação: nenhuma ocorrência de "DEBUG:" encontrada
 
-[B2] Verificar importação GPX (não criar/associar mota indevidamente)
-     - Ficheiro: app/backend/src/services/gpx-import.service.ts
+[B2] ✅ Verificar importação GPX (não criar/associar mota indevidamente) (CONCLUÍDO)
+     - Problema: Era possível importar GPX sem verificar se utilizador tem motas
+     - Correção: Adicionada verificação dupla no importGpx:
+         1. Verificar se utilizador tem motas registadas (findMany)
+         2. Verificar se mota solicitada pertence ao utilizador (findFirst com userId)
+     - Erro específico agora: "Mota selecionada não encontrada ou não pertence ao utilizador"
+     - Ficheiro: app/backend/src/controllers/gpx.controller.ts
 
-[B3] Coerência dos dados GPX (velocidade média anómala)
-     - Rever cálculo de velocidade derivada em: app/frontend/src/utils/gpx.ts
+[B3] ✅ Coerência dos dados GPX (velocidade média anómala) (CONCLUÍDO)
+     - Problema: cumKm só era incrementado quando speed passava validação
+     - Correção: mover cumKm += dKm para fora do bloco de validação de speed
+     - Ficheiro: app/frontend/src/utils/gpx.ts
 
 [B4] Calibração do ML Score para viagens GPX
      - Score continua a dar 0 para viagens reais (raw_score muito negativo)
