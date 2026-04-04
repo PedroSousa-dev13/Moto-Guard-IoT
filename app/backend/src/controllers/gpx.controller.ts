@@ -61,10 +61,24 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     const endedAt = parsed.endedAt ?? startedAt;
 
     const result = await prisma.$transaction(async (tx) => {
-      const motorcycle = await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } });
+      // Verify user has at least one motorcycle (prevents GPX import for users without garage)
+      const userMotorcycles = await tx.motorcycle.findMany({
+        where: { userId },
+        select: { id: true },
+        take: 1,
+      });
+
+      if (userMotorcycles.length === 0) {
+        throw badRequest("Não tens motas registadas. Adiciona uma mota na Garagem antes de importar um GPX.");
+      }
+
+      // Verify the requested motorcycle belongs to this user
+      const motorcycle = await tx.motorcycle.findFirst({
+        where: { id: requestedMotorcycleId, userId },
+      });
 
       if (!motorcycle) {
-        throw badRequest("Mota selecionada não encontrada");
+        throw badRequest("Mota selecionada não encontrada ou não pertence ao utilizador");
       }
 
       const ensuredMotorcycle = motorcycle;

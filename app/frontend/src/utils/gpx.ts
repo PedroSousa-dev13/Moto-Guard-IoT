@@ -51,12 +51,13 @@ export function deriveGpxSeries(points: GpxPoint[]): DerivedGpxSample[] {
 
     if (prev) {
       const dtSec = (t - prev.t) / 1000;
+      const dKm = haversineKm(prev.lat, prev.lon, p.lat, p.lon);
+      // Always accumulate distance; only compute speed when timing is valid
+      cumKm += dKm;
       if (dtSec > 0) {
-        const dKm = haversineKm(prev.lat, prev.lon, p.lat, p.lon);
         const candidateSpeed = (dKm / dtSec) * 3600;
         if (Number.isFinite(candidateSpeed) && candidateSpeed >= 0 && candidateSpeed <= 250) {
           speedKmh = candidateSpeed;
-          cumKm += dKm;
         }
       }
     }

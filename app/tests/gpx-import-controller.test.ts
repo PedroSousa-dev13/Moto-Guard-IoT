@@ -40,6 +40,7 @@ describe("importGpx", () => {
 
     const tx = {
       motorcycle: {
+        findMany: vi.fn().mockResolvedValue([]), // User has no motorcycles
         findFirst: vi.fn().mockResolvedValue(null),
         create: vi.fn(),
       },
@@ -51,7 +52,7 @@ describe("importGpx", () => {
 
     const req = {
       userId: "u1",
-      body: {},
+      body: { motorcycleId: "m1" }, // Provide motorcycleId to pass initial check
       file: {
         buffer: Buffer.from("<gpx></gpx>"),
         originalname: "file.gpx",
@@ -86,7 +87,8 @@ describe("importGpx", () => {
 
     const tx = {
       motorcycle: {
-        findFirst: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([{ id: "m1" }]), // User has motorcycles
+        findFirst: vi.fn().mockResolvedValue(null), // But the requested one doesn't exist/belong to user
         create: vi.fn(),
       },
       trip: { create: vi.fn() },
@@ -109,7 +111,7 @@ describe("importGpx", () => {
     await importGpx(req, res as any);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: "Mota selecionada não encontrada" });
+    expect(res.json).toHaveBeenCalledWith({ error: "Mota selecionada não encontrada ou não pertence ao utilizador" });
   });
 });
 
