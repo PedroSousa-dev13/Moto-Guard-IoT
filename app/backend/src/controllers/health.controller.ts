@@ -1,9 +1,3 @@
-// =============================================================================
-// MotoGuard IoT — Controller: Health
-// =============================================================================
-// Endpoint de health check — retorna estado geral do backend.
-// =============================================================================
-
 import { Request, Response } from "express";
 import { env } from "../config/env";
 import { mqttService } from "../services/mqtt.service";
