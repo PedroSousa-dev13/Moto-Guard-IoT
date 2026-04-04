@@ -10,9 +10,15 @@ interface Motorcycle3DViewProps {
   speed: number;
   rpm: number;
   engineTempStatus: 'ok' | 'warning' | 'critical';
+  lat?: number;
+  lng?: number;
+  originLat?: number;
+  originLng?: number;
+  hasMapOrigin?: boolean;
+  modelColor?: string;
 }
 
-function Model({ roll, pitch, yaw, speed, rpm, engineTempStatus }: Motorcycle3DViewProps) {
+function Model({ roll, pitch, yaw, speed, rpm, engineTempStatus, lat, lng, originLat, originLng, hasMapOrigin, modelColor }: Motorcycle3DViewProps) {
   const fbx = useFBX('/motorcycle.fbx');
   const wheelsRef = useRef<THREE.Object3D[]>([]);
   const groupRef = useRef<THREE.Group>(null);

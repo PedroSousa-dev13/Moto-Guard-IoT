@@ -22,13 +22,15 @@ interface MapCardProps {
   imu?: IMUData | null;
   msgCount: number;
   resetSignal?: number;
+  routeSignal?: number;
   sendCommand: (cmd: SimulatorCommand) => void;
+  onRouteStartChange?: (routeStart: { lat: number; lng: number } | null) => void;
 }
 
 const DEFAULT_LAT = 41.2951;
 const DEFAULT_LNG = -7.7463;
 
-export default function MapCard({ location, telemetry, imu, msgCount, resetSignal, sendCommand }: MapCardProps) {
+export default function MapCard({ location, telemetry, imu, msgCount, resetSignal, routeSignal, sendCommand, onRouteStartChange }: MapCardProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
