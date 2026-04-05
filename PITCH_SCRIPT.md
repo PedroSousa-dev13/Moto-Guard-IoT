@@ -18,59 +18,59 @@
 
 Olá, meu nome é [seu nome]. Sou aluno do segundo ano de Engenharia Informática, e durante este semestre desenvolvemos o **MotoGuard IoT**, uma plataforma web de telemetria inteligente para motociclos.
 
-Deixem-me começar com o **problema**: os condutores de motociclos enfrentam desafios reais de segurança. Numa curva perigosa a alta velocidade, não têm perceção de dados críticos como inclinação ou risco de deslizamento. Quando voltam a casa, gostariam de compreender o que aconteceu durante a viagem — porque tiveram uma travagem brusca, em que curva viram mais risco, qual foi a aceleração máxima. As plataformas de telemetria existentes? São caras, complexas, pensadas apenas para competição. Isto deixa os motociclistas normais sem acesso a dados de segurança que poderiam salvar vidas.
+Deixem-me começar com o **problema real**: os condutores de motas enfrentam desafios que as plataformas tradicionais não resolvem. Numa curva perigosa a alta velocidade, não têm perceção de dados críticos como inclinação ou risco de deslizamento. Quando voltam a casa, gostariam de compreender o que aconteceu — porque tiveram uma travagem brusca, em que curva tiveram mais risco, qual foi a aceleração máxima. As plataformas de telemetria existentes? São caras, complexas, pensadas apenas para competição profissional. Isto deixa os condutores normais sem acesso a dados que poderiam salvar vidas.
 
-**A nossa solução:** uma plataforma web acessível, integrada e inteligente que captura dados de sensores IMU e GPS do motociclo, transforma números brutos em visualizações claras, e alerta os condutores sobre eventos de risco em tempo real.
+**A notre solução:** uma plataforma web acessível que captura dados de sensores IMU e GPS, transforma números brutos em visualizações claras e inteligentes.
 
-Implementámos **funcionalidades reais e operacionais**:
+Implementámos **duas funcionalidades principais focadas na experiência do utilizador**:
 
-Primeiro, um **dashboard dinâmico** que visualiza em tempo real a inclinação, acelerações e velocidade. O condutor está sempre consciente de fatores críticos.
+Primeira, um **dashboard dinâmico em tempo real** onde o condutor visualiza a inclinação, aceleração e velocidade enquanto conduz. É como ter um engenheiro de telemetria sentado ao seu lado — dados críticos sempre visíveis.
 
-Segundo, um **histórico completo de viagens** com mapa e análise detalhada. Cada viagem fica guardada — análises pós-viagem mostram cada curva, cada travagem, cada momento de risco.
+Mas mais importante: **streaming de viagens em direto**. Isto significa que enquanto o condutor está na estrada, cada de viagem é transmitida para a plataforma em tempo real. Não é apenas dados brutos — é visualização ao vivo no mapa. O utilizador consegue ver exatamente onde está, qual é a velocidade naquele ponto, qual é a inclinação, e tudo isto sincronizado com som de alerta se algo de risco for detetado. E se o utilizador quer partilhar a viagem com amigos ou com a comunidade? Consegue fazer isso ao vivo, enquanto conduz.
 
-Terceiro, **detecção automática de eventos de risco** usando algoritmos heurísticos. O sistema identifica travagens bruscas, vibrações anómalas, manobras agressivas — tudo isso sem necessidade de intervenção manual.
+Terceira, um **histórico completo de viagens com visualização em mapa**. Cada viagem é registada, mapeada e analisada. O condutor consegue revisitar qualquer momento da sua experiência — vê cada curva, cada travagem, cada pico de aceleração. É análise profunda de comportamento de condução acessível a todos.
 
-Quarto, um **sistema de alertas inteligente** que notifica o condutor de forma proativa sobre situações perigosas.
+**Qual é o impacto direto?** Segurança pessoal aumentada. Conhecimento concreto sobre o seu comportamento de condução. Tomada de decisão mais informada nas próximas viagens.
 
-E finalmente, **autenticação segura e perfil personalizado**, porque cada utilizador controla os seus próprios dados e padrões de condução.
+**Estado atual**: a plataforma está **totalmente operacional**. Temos dados fluindo em tempo real, visualizações responsivas, e um armazenamento robusto de histórico de viagens. O utilizador consegue hoje mesmo registar-se, conectar os seus sensores, e começar a recolher dados sobre a sua condução.
 
-**Qual é o impacto?** Segurança pessoal aumentada. Dados concretos sobre o comportamento na condução. Uma comunidade de condutores que partilha informações sobre estradas perigosas.
-
-Atualmente, a plataforma está **totalmente operacional e testada**. O backend foi desenvolvido em Node.js com Prisma para gestão robusta de dados. O frontend em React com Vite garante uma experiência rápida e responsiva. Conseguimos integrar dados em tempo real via MQTT. Os testes mostram que conseguimos detetar eventos de risco com precisão.
-
-Os **próximos passos** incluem testes com dados reais de motociclos em condições de estrada, melhorias no modelo de detecção usando técnicas de machine learning, e integração de alertas comunitários sobre condições adversas de estrada.
-
-**MotoGuard IoT** transforma telemetria bruta em segurança inteligente — e essa é a visão que nos guiou neste projeto. Obrigado.
+**MotoGuard IoT** coloca dados de telemetria profissionais nas mãos de qualquer motociclista que quer ser mais seguro. Obrigado.
 
 ---
 
 ## 🎬 SCRIPT - ALUNO 2
 
-Olá, meu nome é [seu nome]. Faço Engenharia Informática, e neste semestre participei no desenvolvimento do **MotoGuard IoT**, um projeto inovador que traz telemetria inteligente para motociclos.
+Ola eu sou o Pedro Sousa e estou a fazer  o projeto motoguard iot juntamente com o meu colega nuno americano 
 
-Quero começar a contar o **problema que identificámos**: motociclistas de todo o mundo enfrentam um desafio comum — a falta de acesso a dados de telemetria em tempo real. Quando estão numa curva apertada, não sabem exatamente qual é o ângulo de inclinação ou se estão perto dos limites de segurança. Após a viagem, gostariam de analisar o seu desempenho — mas as ferramentas existentes são caríssimas ou restritas a profissionais e competidores. O motociclista comum fica sem dados que poderiam melhorar significativamente a sua segurança.
 
-**A direção que escolhemos:** desenvolver uma **plataforma web acessível, integrada e inteligente** que processa dados brutos de sensores IMU e GPS, converte-os em gráficos compreensíveis, e fornece alertas sobre comportamentos de risco.
+nesta parte do pitch vou focar 
+inteligência técnica por trás  desta plataforma.
 
-Durante este semestre, **concretizámos várias funcionalidades essenciais**:
+A questão que nos colocámos foi: como transformar sensores brutos em decisões inteligentes? 
 
-Um **dashboard de tempo real** onde o utilizador visualiza inclinação, aceleração e velocidade enquanto conduz. É como ter um engenheiro de telemetria sentado ao lado.
+**Primeira prioridade: detecção automática de risco**. Implementámos algoritmos heurísticos  que analisam dados de aceleração, inclinação e mudanças de velocidade em tempo real e  identifica automaticamente travagens de emergência, vibrações anómalas, manobras agressivas.
 
-Um **histórico de viagens completo com visualização em mapa**. Cada viagem é registada, mapeada e analisada. O condutor pode revistar qualquer momento da sua experiência de condução.
+**Segunda prioridade: notificações inteligentes e proativas**. Não queremos bombardear o utilizador com alertas. Portanto, desenvolvemos um sistema que além de detetar o risco, **prioriza o que realmente importa**. Um alerta só chega ao utilizador se estiver num contexto de condução ativa, e com informação acionável.
 
-**Algoritmos de detecção de risco** baseados em heurísticas. O sistema reconhece automaticamente travagens de emergência, vibrações anómalas, e manobras que fogem do padrão normal — tudo em background.
+**Terceira prioridade: segurança e privacidade dos dados**. Implementámos autenticação robusta e perfis personalizados — cada utilizador tem controlo total sobre os seus dados. Além disso, desenvolvemos uma secção de gestão de motas onde o utilizador consegue registar os dados específicos da sua moto e simular comportamentos antes de ter dados reais, permitindo personalizar alertas e limiares de risco. 
 
-Um **sistema de notificações proativo** que alerta o utilizador quando algo de risco é detectado.
+**Agora, a parte técnica da arquitetura**: 
 
-E um **sistema de autenticação seguro** com perfis personalizados, garantindo que cada condutor tem controlo total sobre os seus dados.
+No backend, escolhemos **Node.js com Prisma ORM**. Isto permite-nos processar fluxos de dados contínuos de sensores, armazenar informação de forma estruturada, e escalar eficientemente. 
 
-**O valor prático?** Um condutor mais seguro, com conhecimento real sobre o seu desempenho. Uma comunidade que partilha informações sobre estradas perigosas. Dados que podem ser usados para melhorar técnica de condução.
+No frontend, trabalhámos com **React e Vite**, garantindo uma experiência rápida e responsiva — porque lag numa aplicação de dados em tempo real é inaceitável.
 
-**Estado atual do projeto**: temos uma plataforma **totalmente funcional**. A arquitetura backend foi desenhada em Node.js com Prisma ORM, permitindo processamento robusto de dados de sensores. O frontend em React com Vite oferece uma interface rápida e reativa. Conseguimos integração de dados via MQTT em tempo real. Realizámos testes com dados simulados que validam a precisão da detecção de eventos.
+E para integração de dados em tempo real, **implementámos MQTT**. É eficiente, leve, e perfeito para dispositivos IoT com conectividade limitada.
+´
 
-**O que vem a seguir**: testes piloto com motociclos reais, refinamento dos algoritmos com machine learning, e expansão do sistema de alertas comunitários para mapear estradas problemáticas em tempo real.
+e voces perguntam como testamos a plataforma sem dados reais?
+**simulador de dados** que gera telemetria realista durante desenvolvimento. Porquê? Para garantir que o sistema é robusto antes de termos motas reais a fornecer dados. Este simulador reproduz cenários reais — curvas apertadas, travagens bruscas, vibrações e até mesmo quedas — permitindo-nos validar algoritmos em produção.
 
-**MotoGuard IoT** representa uma mudança: telemetria que era exclusiva de campeões MotoGP agora está acessível a qualquer motociclista que queira ser mais seguro. Obrigado.
+**Estado atual**: testes com dados simulados mostram precisão alta na detecção de eventos de risco. A arquitetura escala bem. A plataforma está pronta para dados reais.
+
+**Próximos passos — e isto é importante**: **machine learning**. Os algoritmos heurísticos são bons, mas dados reais de motociclistas podem treinar modelos muito mais precisos Isto requer recolha de dados, anotação, e treino de modelos.
+
+**MotoGuard IoT** não é apenas interface bonita — é sistema inteligente por trás. E essa inteligência é o que torna esta plataforma realmente diferente. Obrigado.
 
 ---
 
@@ -102,7 +102,7 @@ Cada script foi pensado para **~2 minutos**. Ajuste o ritmo conforme necessário
 
 ## 🎥 Checklist Técnico do Vídeo
 
-- ✅ Filmado em **meio corpo** (ombros até cintura)
+- ✅ Filmado **de pé** (meio corpo, ombros até cintura)
 - ✅ **Local silencioso** com boa iluminação
 - ✅ **Sem cortes de edição** — discurso fluido
 - ✅ Qualidade de imagem e som clara
