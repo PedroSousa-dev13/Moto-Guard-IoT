@@ -1,0 +1,1780 @@
+import type * as runtime from "@prisma/client/runtime/client";
+import type * as Prisma from "../internal/prismaNamespace";
+/**
+ * Model Motorcycle
+ *
+ */
+export type MotorcycleModel = runtime.Types.Result.DefaultSelection<Prisma.$MotorcyclePayload>;
+export type AggregateMotorcycle = {
+    _count: MotorcycleCountAggregateOutputType | null;
+    _avg: MotorcycleAvgAggregateOutputType | null;
+    _sum: MotorcycleSumAggregateOutputType | null;
+    _min: MotorcycleMinAggregateOutputType | null;
+    _max: MotorcycleMaxAggregateOutputType | null;
+};
+export type MotorcycleAvgAggregateOutputType = {
+    year: number | null;
+};
+export type MotorcycleSumAggregateOutputType = {
+    year: number | null;
+};
+export type MotorcycleMinAggregateOutputType = {
+    id: string | null;
+    userId: string | null;
+    profileId: string | null;
+    name: string | null;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    plate: string | null;
+    category: string | null;
+    deviceId: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+};
+export type MotorcycleMaxAggregateOutputType = {
+    id: string | null;
+    userId: string | null;
+    profileId: string | null;
+    name: string | null;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    plate: string | null;
+    category: string | null;
+    deviceId: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+};
+export type MotorcycleCountAggregateOutputType = {
+    id: number;
+    userId: number;
+    profileId: number;
+    name: number;
+    brand: number;
+    model: number;
+    year: number;
+    plate: number;
+    category: number;
+    deviceId: number;
+    createdAt: number;
+    updatedAt: number;
+    _all: number;
+};
+export type MotorcycleAvgAggregateInputType = {
+    year?: true;
+};
+export type MotorcycleSumAggregateInputType = {
+    year?: true;
+};
+export type MotorcycleMinAggregateInputType = {
+    id?: true;
+    userId?: true;
+    profileId?: true;
+    name?: true;
+    brand?: true;
+    model?: true;
+    year?: true;
+    plate?: true;
+    category?: true;
+    deviceId?: true;
+    createdAt?: true;
+    updatedAt?: true;
+};
+export type MotorcycleMaxAggregateInputType = {
+    id?: true;
+    userId?: true;
+    profileId?: true;
+    name?: true;
+    brand?: true;
+    model?: true;
+    year?: true;
+    plate?: true;
+    category?: true;
+    deviceId?: true;
+    createdAt?: true;
+    updatedAt?: true;
+};
+export type MotorcycleCountAggregateInputType = {
+    id?: true;
+    userId?: true;
+    profileId?: true;
+    name?: true;
+    brand?: true;
+    model?: true;
+    year?: true;
+    plate?: true;
+    category?: true;
+    deviceId?: true;
+    createdAt?: true;
+    updatedAt?: true;
+    _all?: true;
+};
+export type MotorcycleAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Filter which Motorcycle to aggregate.
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of Motorcycles to fetch.
+     */
+    orderBy?: Prisma.MotorcycleOrderByWithRelationInput | Prisma.MotorcycleOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: Prisma.MotorcycleWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` Motorcycles from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` Motorcycles.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned Motorcycles
+    **/
+    _count?: true | MotorcycleCountAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+    **/
+    _avg?: MotorcycleAvgAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+    **/
+    _sum?: MotorcycleSumAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+    **/
+    _min?: MotorcycleMinAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+    **/
+    _max?: MotorcycleMaxAggregateInputType;
+};
+export type GetMotorcycleAggregateType<T extends MotorcycleAggregateArgs> = {
+    [P in keyof T & keyof AggregateMotorcycle]: P extends '_count' | 'count' ? T[P] extends true ? number : Prisma.GetScalarType<T[P], AggregateMotorcycle[P]> : Prisma.GetScalarType<T[P], AggregateMotorcycle[P]>;
+};
+export type MotorcycleGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.MotorcycleWhereInput;
+    orderBy?: Prisma.MotorcycleOrderByWithAggregationInput | Prisma.MotorcycleOrderByWithAggregationInput[];
+    by: Prisma.MotorcycleScalarFieldEnum[] | Prisma.MotorcycleScalarFieldEnum;
+    having?: Prisma.MotorcycleScalarWhereWithAggregatesInput;
+    take?: number;
+    skip?: number;
+    _count?: MotorcycleCountAggregateInputType | true;
+    _avg?: MotorcycleAvgAggregateInputType;
+    _sum?: MotorcycleSumAggregateInputType;
+    _min?: MotorcycleMinAggregateInputType;
+    _max?: MotorcycleMaxAggregateInputType;
+};
+export type MotorcycleGroupByOutputType = {
+    id: string;
+    userId: string;
+    profileId: string | null;
+    name: string;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    plate: string | null;
+    category: string | null;
+    deviceId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: MotorcycleCountAggregateOutputType | null;
+    _avg: MotorcycleAvgAggregateOutputType | null;
+    _sum: MotorcycleSumAggregateOutputType | null;
+    _min: MotorcycleMinAggregateOutputType | null;
+    _max: MotorcycleMaxAggregateOutputType | null;
+};
+type GetMotorcycleGroupByPayload<T extends MotorcycleGroupByArgs> = Prisma.PrismaPromise<Array<Prisma.PickEnumerable<MotorcycleGroupByOutputType, T['by']> & {
+    [P in ((keyof T) & (keyof MotorcycleGroupByOutputType))]: P extends '_count' ? T[P] extends boolean ? number : Prisma.GetScalarType<T[P], MotorcycleGroupByOutputType[P]> : Prisma.GetScalarType<T[P], MotorcycleGroupByOutputType[P]>;
+}>>;
+export type MotorcycleWhereInput = {
+    AND?: Prisma.MotorcycleWhereInput | Prisma.MotorcycleWhereInput[];
+    OR?: Prisma.MotorcycleWhereInput[];
+    NOT?: Prisma.MotorcycleWhereInput | Prisma.MotorcycleWhereInput[];
+    id?: Prisma.StringFilter<"Motorcycle"> | string;
+    userId?: Prisma.StringFilter<"Motorcycle"> | string;
+    profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    name?: Prisma.StringFilter<"Motorcycle"> | string;
+    brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null;
+    plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+    updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+    user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    profile?: Prisma.XOR<Prisma.MotorcycleProfileNullableScalarRelationFilter, Prisma.MotorcycleProfileWhereInput> | null;
+    trips?: Prisma.TripListRelationFilter;
+};
+export type MotorcycleOrderByWithRelationInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    profileId?: Prisma.SortOrderInput | Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    brand?: Prisma.SortOrderInput | Prisma.SortOrder;
+    model?: Prisma.SortOrderInput | Prisma.SortOrder;
+    year?: Prisma.SortOrderInput | Prisma.SortOrder;
+    plate?: Prisma.SortOrderInput | Prisma.SortOrder;
+    category?: Prisma.SortOrderInput | Prisma.SortOrder;
+    deviceId?: Prisma.SortOrderInput | Prisma.SortOrder;
+    createdAt?: Prisma.SortOrder;
+    updatedAt?: Prisma.SortOrder;
+    user?: Prisma.UserOrderByWithRelationInput;
+    profile?: Prisma.MotorcycleProfileOrderByWithRelationInput;
+    trips?: Prisma.TripOrderByRelationAggregateInput;
+};
+export type MotorcycleWhereUniqueInput = Prisma.AtLeast<{
+    id?: string;
+    AND?: Prisma.MotorcycleWhereInput | Prisma.MotorcycleWhereInput[];
+    OR?: Prisma.MotorcycleWhereInput[];
+    NOT?: Prisma.MotorcycleWhereInput | Prisma.MotorcycleWhereInput[];
+    userId?: Prisma.StringFilter<"Motorcycle"> | string;
+    profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    name?: Prisma.StringFilter<"Motorcycle"> | string;
+    brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null;
+    plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+    updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+    user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    profile?: Prisma.XOR<Prisma.MotorcycleProfileNullableScalarRelationFilter, Prisma.MotorcycleProfileWhereInput> | null;
+    trips?: Prisma.TripListRelationFilter;
+}, "id">;
+export type MotorcycleOrderByWithAggregationInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    profileId?: Prisma.SortOrderInput | Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    brand?: Prisma.SortOrderInput | Prisma.SortOrder;
+    model?: Prisma.SortOrderInput | Prisma.SortOrder;
+    year?: Prisma.SortOrderInput | Prisma.SortOrder;
+    plate?: Prisma.SortOrderInput | Prisma.SortOrder;
+    category?: Prisma.SortOrderInput | Prisma.SortOrder;
+    deviceId?: Prisma.SortOrderInput | Prisma.SortOrder;
+    createdAt?: Prisma.SortOrder;
+    updatedAt?: Prisma.SortOrder;
+    _count?: Prisma.MotorcycleCountOrderByAggregateInput;
+    _avg?: Prisma.MotorcycleAvgOrderByAggregateInput;
+    _max?: Prisma.MotorcycleMaxOrderByAggregateInput;
+    _min?: Prisma.MotorcycleMinOrderByAggregateInput;
+    _sum?: Prisma.MotorcycleSumOrderByAggregateInput;
+};
+export type MotorcycleScalarWhereWithAggregatesInput = {
+    AND?: Prisma.MotorcycleScalarWhereWithAggregatesInput | Prisma.MotorcycleScalarWhereWithAggregatesInput[];
+    OR?: Prisma.MotorcycleScalarWhereWithAggregatesInput[];
+    NOT?: Prisma.MotorcycleScalarWhereWithAggregatesInput | Prisma.MotorcycleScalarWhereWithAggregatesInput[];
+    id?: Prisma.StringWithAggregatesFilter<"Motorcycle"> | string;
+    userId?: Prisma.StringWithAggregatesFilter<"Motorcycle"> | string;
+    profileId?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    name?: Prisma.StringWithAggregatesFilter<"Motorcycle"> | string;
+    brand?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    model?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    year?: Prisma.IntNullableWithAggregatesFilter<"Motorcycle"> | number | null;
+    plate?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    category?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    deviceId?: Prisma.StringNullableWithAggregatesFilter<"Motorcycle"> | string | null;
+    createdAt?: Prisma.DateTimeWithAggregatesFilter<"Motorcycle"> | Date | string;
+    updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Motorcycle"> | Date | string;
+};
+export type MotorcycleCreateInput = {
+    id?: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput;
+    profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput;
+    trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleUncheckedCreateInput = {
+    id?: string;
+    userId: string;
+    profileId?: string | null;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleUpdateInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput;
+    profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput;
+    trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleUncheckedUpdateInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleCreateManyInput = {
+    id?: string;
+    userId: string;
+    profileId?: string | null;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+};
+export type MotorcycleUpdateManyMutationInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type MotorcycleUncheckedUpdateManyInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type MotorcycleListRelationFilter = {
+    every?: Prisma.MotorcycleWhereInput;
+    some?: Prisma.MotorcycleWhereInput;
+    none?: Prisma.MotorcycleWhereInput;
+};
+export type MotorcycleOrderByRelationAggregateInput = {
+    _count?: Prisma.SortOrder;
+};
+export type MotorcycleCountOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    profileId?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    brand?: Prisma.SortOrder;
+    model?: Prisma.SortOrder;
+    year?: Prisma.SortOrder;
+    plate?: Prisma.SortOrder;
+    category?: Prisma.SortOrder;
+    deviceId?: Prisma.SortOrder;
+    createdAt?: Prisma.SortOrder;
+    updatedAt?: Prisma.SortOrder;
+};
+export type MotorcycleAvgOrderByAggregateInput = {
+    year?: Prisma.SortOrder;
+};
+export type MotorcycleMaxOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    profileId?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    brand?: Prisma.SortOrder;
+    model?: Prisma.SortOrder;
+    year?: Prisma.SortOrder;
+    plate?: Prisma.SortOrder;
+    category?: Prisma.SortOrder;
+    deviceId?: Prisma.SortOrder;
+    createdAt?: Prisma.SortOrder;
+    updatedAt?: Prisma.SortOrder;
+};
+export type MotorcycleMinOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    profileId?: Prisma.SortOrder;
+    name?: Prisma.SortOrder;
+    brand?: Prisma.SortOrder;
+    model?: Prisma.SortOrder;
+    year?: Prisma.SortOrder;
+    plate?: Prisma.SortOrder;
+    category?: Prisma.SortOrder;
+    deviceId?: Prisma.SortOrder;
+    createdAt?: Prisma.SortOrder;
+    updatedAt?: Prisma.SortOrder;
+};
+export type MotorcycleSumOrderByAggregateInput = {
+    year?: Prisma.SortOrder;
+};
+export type MotorcycleScalarRelationFilter = {
+    is?: Prisma.MotorcycleWhereInput;
+    isNot?: Prisma.MotorcycleWhereInput;
+};
+export type MotorcycleCreateNestedManyWithoutUserInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput> | Prisma.MotorcycleCreateWithoutUserInput[] | Prisma.MotorcycleUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutUserInput | Prisma.MotorcycleCreateOrConnectWithoutUserInput[];
+    createMany?: Prisma.MotorcycleCreateManyUserInputEnvelope;
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+};
+export type MotorcycleUncheckedCreateNestedManyWithoutUserInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput> | Prisma.MotorcycleCreateWithoutUserInput[] | Prisma.MotorcycleUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutUserInput | Prisma.MotorcycleCreateOrConnectWithoutUserInput[];
+    createMany?: Prisma.MotorcycleCreateManyUserInputEnvelope;
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+};
+export type MotorcycleUpdateManyWithoutUserNestedInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput> | Prisma.MotorcycleCreateWithoutUserInput[] | Prisma.MotorcycleUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutUserInput | Prisma.MotorcycleCreateOrConnectWithoutUserInput[];
+    upsert?: Prisma.MotorcycleUpsertWithWhereUniqueWithoutUserInput | Prisma.MotorcycleUpsertWithWhereUniqueWithoutUserInput[];
+    createMany?: Prisma.MotorcycleCreateManyUserInputEnvelope;
+    set?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    disconnect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    delete?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    update?: Prisma.MotorcycleUpdateWithWhereUniqueWithoutUserInput | Prisma.MotorcycleUpdateWithWhereUniqueWithoutUserInput[];
+    updateMany?: Prisma.MotorcycleUpdateManyWithWhereWithoutUserInput | Prisma.MotorcycleUpdateManyWithWhereWithoutUserInput[];
+    deleteMany?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+};
+export type MotorcycleUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput> | Prisma.MotorcycleCreateWithoutUserInput[] | Prisma.MotorcycleUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutUserInput | Prisma.MotorcycleCreateOrConnectWithoutUserInput[];
+    upsert?: Prisma.MotorcycleUpsertWithWhereUniqueWithoutUserInput | Prisma.MotorcycleUpsertWithWhereUniqueWithoutUserInput[];
+    createMany?: Prisma.MotorcycleCreateManyUserInputEnvelope;
+    set?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    disconnect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    delete?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    update?: Prisma.MotorcycleUpdateWithWhereUniqueWithoutUserInput | Prisma.MotorcycleUpdateWithWhereUniqueWithoutUserInput[];
+    updateMany?: Prisma.MotorcycleUpdateManyWithWhereWithoutUserInput | Prisma.MotorcycleUpdateManyWithWhereWithoutUserInput[];
+    deleteMany?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+};
+export type MotorcycleCreateNestedManyWithoutProfileInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput> | Prisma.MotorcycleCreateWithoutProfileInput[] | Prisma.MotorcycleUncheckedCreateWithoutProfileInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutProfileInput | Prisma.MotorcycleCreateOrConnectWithoutProfileInput[];
+    createMany?: Prisma.MotorcycleCreateManyProfileInputEnvelope;
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+};
+export type MotorcycleUncheckedCreateNestedManyWithoutProfileInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput> | Prisma.MotorcycleCreateWithoutProfileInput[] | Prisma.MotorcycleUncheckedCreateWithoutProfileInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutProfileInput | Prisma.MotorcycleCreateOrConnectWithoutProfileInput[];
+    createMany?: Prisma.MotorcycleCreateManyProfileInputEnvelope;
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+};
+export type MotorcycleUpdateManyWithoutProfileNestedInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput> | Prisma.MotorcycleCreateWithoutProfileInput[] | Prisma.MotorcycleUncheckedCreateWithoutProfileInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutProfileInput | Prisma.MotorcycleCreateOrConnectWithoutProfileInput[];
+    upsert?: Prisma.MotorcycleUpsertWithWhereUniqueWithoutProfileInput | Prisma.MotorcycleUpsertWithWhereUniqueWithoutProfileInput[];
+    createMany?: Prisma.MotorcycleCreateManyProfileInputEnvelope;
+    set?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    disconnect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    delete?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    update?: Prisma.MotorcycleUpdateWithWhereUniqueWithoutProfileInput | Prisma.MotorcycleUpdateWithWhereUniqueWithoutProfileInput[];
+    updateMany?: Prisma.MotorcycleUpdateManyWithWhereWithoutProfileInput | Prisma.MotorcycleUpdateManyWithWhereWithoutProfileInput[];
+    deleteMany?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+};
+export type MotorcycleUncheckedUpdateManyWithoutProfileNestedInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput> | Prisma.MotorcycleCreateWithoutProfileInput[] | Prisma.MotorcycleUncheckedCreateWithoutProfileInput[];
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutProfileInput | Prisma.MotorcycleCreateOrConnectWithoutProfileInput[];
+    upsert?: Prisma.MotorcycleUpsertWithWhereUniqueWithoutProfileInput | Prisma.MotorcycleUpsertWithWhereUniqueWithoutProfileInput[];
+    createMany?: Prisma.MotorcycleCreateManyProfileInputEnvelope;
+    set?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    disconnect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    delete?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    connect?: Prisma.MotorcycleWhereUniqueInput | Prisma.MotorcycleWhereUniqueInput[];
+    update?: Prisma.MotorcycleUpdateWithWhereUniqueWithoutProfileInput | Prisma.MotorcycleUpdateWithWhereUniqueWithoutProfileInput[];
+    updateMany?: Prisma.MotorcycleUpdateManyWithWhereWithoutProfileInput | Prisma.MotorcycleUpdateManyWithWhereWithoutProfileInput[];
+    deleteMany?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+};
+export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null;
+    increment?: number;
+    decrement?: number;
+    multiply?: number;
+    divide?: number;
+};
+export type MotorcycleCreateNestedOneWithoutTripsInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutTripsInput, Prisma.MotorcycleUncheckedCreateWithoutTripsInput>;
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutTripsInput;
+    connect?: Prisma.MotorcycleWhereUniqueInput;
+};
+export type MotorcycleUpdateOneRequiredWithoutTripsNestedInput = {
+    create?: Prisma.XOR<Prisma.MotorcycleCreateWithoutTripsInput, Prisma.MotorcycleUncheckedCreateWithoutTripsInput>;
+    connectOrCreate?: Prisma.MotorcycleCreateOrConnectWithoutTripsInput;
+    upsert?: Prisma.MotorcycleUpsertWithoutTripsInput;
+    connect?: Prisma.MotorcycleWhereUniqueInput;
+    update?: Prisma.XOR<Prisma.XOR<Prisma.MotorcycleUpdateToOneWithWhereWithoutTripsInput, Prisma.MotorcycleUpdateWithoutTripsInput>, Prisma.MotorcycleUncheckedUpdateWithoutTripsInput>;
+};
+export type MotorcycleCreateWithoutUserInput = {
+    id?: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput;
+    trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleUncheckedCreateWithoutUserInput = {
+    id?: string;
+    profileId?: string | null;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleCreateOrConnectWithoutUserInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput>;
+};
+export type MotorcycleCreateManyUserInputEnvelope = {
+    data: Prisma.MotorcycleCreateManyUserInput | Prisma.MotorcycleCreateManyUserInput[];
+    skipDuplicates?: boolean;
+};
+export type MotorcycleUpsertWithWhereUniqueWithoutUserInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    update: Prisma.XOR<Prisma.MotorcycleUpdateWithoutUserInput, Prisma.MotorcycleUncheckedUpdateWithoutUserInput>;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutUserInput, Prisma.MotorcycleUncheckedCreateWithoutUserInput>;
+};
+export type MotorcycleUpdateWithWhereUniqueWithoutUserInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    data: Prisma.XOR<Prisma.MotorcycleUpdateWithoutUserInput, Prisma.MotorcycleUncheckedUpdateWithoutUserInput>;
+};
+export type MotorcycleUpdateManyWithWhereWithoutUserInput = {
+    where: Prisma.MotorcycleScalarWhereInput;
+    data: Prisma.XOR<Prisma.MotorcycleUpdateManyMutationInput, Prisma.MotorcycleUncheckedUpdateManyWithoutUserInput>;
+};
+export type MotorcycleScalarWhereInput = {
+    AND?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+    OR?: Prisma.MotorcycleScalarWhereInput[];
+    NOT?: Prisma.MotorcycleScalarWhereInput | Prisma.MotorcycleScalarWhereInput[];
+    id?: Prisma.StringFilter<"Motorcycle"> | string;
+    userId?: Prisma.StringFilter<"Motorcycle"> | string;
+    profileId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    name?: Prisma.StringFilter<"Motorcycle"> | string;
+    brand?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    model?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    year?: Prisma.IntNullableFilter<"Motorcycle"> | number | null;
+    plate?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    category?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    deviceId?: Prisma.StringNullableFilter<"Motorcycle"> | string | null;
+    createdAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+    updatedAt?: Prisma.DateTimeFilter<"Motorcycle"> | Date | string;
+};
+export type MotorcycleCreateWithoutProfileInput = {
+    id?: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput;
+    trips?: Prisma.TripCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleUncheckedCreateWithoutProfileInput = {
+    id?: string;
+    userId: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    trips?: Prisma.TripUncheckedCreateNestedManyWithoutMotorcycleInput;
+};
+export type MotorcycleCreateOrConnectWithoutProfileInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput>;
+};
+export type MotorcycleCreateManyProfileInputEnvelope = {
+    data: Prisma.MotorcycleCreateManyProfileInput | Prisma.MotorcycleCreateManyProfileInput[];
+    skipDuplicates?: boolean;
+};
+export type MotorcycleUpsertWithWhereUniqueWithoutProfileInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    update: Prisma.XOR<Prisma.MotorcycleUpdateWithoutProfileInput, Prisma.MotorcycleUncheckedUpdateWithoutProfileInput>;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutProfileInput, Prisma.MotorcycleUncheckedCreateWithoutProfileInput>;
+};
+export type MotorcycleUpdateWithWhereUniqueWithoutProfileInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    data: Prisma.XOR<Prisma.MotorcycleUpdateWithoutProfileInput, Prisma.MotorcycleUncheckedUpdateWithoutProfileInput>;
+};
+export type MotorcycleUpdateManyWithWhereWithoutProfileInput = {
+    where: Prisma.MotorcycleScalarWhereInput;
+    data: Prisma.XOR<Prisma.MotorcycleUpdateManyMutationInput, Prisma.MotorcycleUncheckedUpdateManyWithoutProfileInput>;
+};
+export type MotorcycleCreateWithoutTripsInput = {
+    id?: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    user: Prisma.UserCreateNestedOneWithoutMotorcyclesInput;
+    profile?: Prisma.MotorcycleProfileCreateNestedOneWithoutMotorcyclesInput;
+};
+export type MotorcycleUncheckedCreateWithoutTripsInput = {
+    id?: string;
+    userId: string;
+    profileId?: string | null;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+};
+export type MotorcycleCreateOrConnectWithoutTripsInput = {
+    where: Prisma.MotorcycleWhereUniqueInput;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutTripsInput, Prisma.MotorcycleUncheckedCreateWithoutTripsInput>;
+};
+export type MotorcycleUpsertWithoutTripsInput = {
+    update: Prisma.XOR<Prisma.MotorcycleUpdateWithoutTripsInput, Prisma.MotorcycleUncheckedUpdateWithoutTripsInput>;
+    create: Prisma.XOR<Prisma.MotorcycleCreateWithoutTripsInput, Prisma.MotorcycleUncheckedCreateWithoutTripsInput>;
+    where?: Prisma.MotorcycleWhereInput;
+};
+export type MotorcycleUpdateToOneWithWhereWithoutTripsInput = {
+    where?: Prisma.MotorcycleWhereInput;
+    data: Prisma.XOR<Prisma.MotorcycleUpdateWithoutTripsInput, Prisma.MotorcycleUncheckedUpdateWithoutTripsInput>;
+};
+export type MotorcycleUpdateWithoutTripsInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput;
+    profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput;
+};
+export type MotorcycleUncheckedUpdateWithoutTripsInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type MotorcycleCreateManyUserInput = {
+    id?: string;
+    profileId?: string | null;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+};
+export type MotorcycleUpdateWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    profile?: Prisma.MotorcycleProfileUpdateOneWithoutMotorcyclesNestedInput;
+    trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleUncheckedUpdateWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleUncheckedUpdateManyWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    profileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type MotorcycleCreateManyProfileInput = {
+    id?: string;
+    userId: string;
+    name: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    plate?: string | null;
+    category?: string | null;
+    deviceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+};
+export type MotorcycleUpdateWithoutProfileInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    user?: Prisma.UserUpdateOneRequiredWithoutMotorcyclesNestedInput;
+    trips?: Prisma.TripUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleUncheckedUpdateWithoutProfileInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    trips?: Prisma.TripUncheckedUpdateManyWithoutMotorcycleNestedInput;
+};
+export type MotorcycleUncheckedUpdateManyWithoutProfileInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    name?: Prisma.StringFieldUpdateOperationsInput | string;
+    brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+    plate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    deviceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+    createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+/**
+ * Count Type MotorcycleCountOutputType
+ */
+export type MotorcycleCountOutputType = {
+    trips: number;
+};
+export type MotorcycleCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    trips?: boolean | MotorcycleCountOutputTypeCountTripsArgs;
+};
+/**
+ * MotorcycleCountOutputType without action
+ */
+export type MotorcycleCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MotorcycleCountOutputType
+     */
+    select?: Prisma.MotorcycleCountOutputTypeSelect<ExtArgs> | null;
+};
+/**
+ * MotorcycleCountOutputType without action
+ */
+export type MotorcycleCountOutputTypeCountTripsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.TripWhereInput;
+};
+export type MotorcycleSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    profileId?: boolean;
+    name?: boolean;
+    brand?: boolean;
+    model?: boolean;
+    year?: boolean;
+    plate?: boolean;
+    category?: boolean;
+    deviceId?: boolean;
+    createdAt?: boolean;
+    updatedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+    trips?: boolean | Prisma.Motorcycle$tripsArgs<ExtArgs>;
+    _count?: boolean | Prisma.MotorcycleCountOutputTypeDefaultArgs<ExtArgs>;
+}, ExtArgs["result"]["motorcycle"]>;
+export type MotorcycleSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    profileId?: boolean;
+    name?: boolean;
+    brand?: boolean;
+    model?: boolean;
+    year?: boolean;
+    plate?: boolean;
+    category?: boolean;
+    deviceId?: boolean;
+    createdAt?: boolean;
+    updatedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+}, ExtArgs["result"]["motorcycle"]>;
+export type MotorcycleSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    profileId?: boolean;
+    name?: boolean;
+    brand?: boolean;
+    model?: boolean;
+    year?: boolean;
+    plate?: boolean;
+    category?: boolean;
+    deviceId?: boolean;
+    createdAt?: boolean;
+    updatedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+}, ExtArgs["result"]["motorcycle"]>;
+export type MotorcycleSelectScalar = {
+    id?: boolean;
+    userId?: boolean;
+    profileId?: boolean;
+    name?: boolean;
+    brand?: boolean;
+    model?: boolean;
+    year?: boolean;
+    plate?: boolean;
+    category?: boolean;
+    deviceId?: boolean;
+    createdAt?: boolean;
+    updatedAt?: boolean;
+};
+export type MotorcycleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "profileId" | "name" | "brand" | "model" | "year" | "plate" | "category" | "deviceId" | "createdAt" | "updatedAt", ExtArgs["result"]["motorcycle"]>;
+export type MotorcycleInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+    trips?: boolean | Prisma.Motorcycle$tripsArgs<ExtArgs>;
+    _count?: boolean | Prisma.MotorcycleCountOutputTypeDefaultArgs<ExtArgs>;
+};
+export type MotorcycleIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+};
+export type MotorcycleIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    profile?: boolean | Prisma.Motorcycle$profileArgs<ExtArgs>;
+};
+export type $MotorcyclePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    name: "Motorcycle";
+    objects: {
+        user: Prisma.$UserPayload<ExtArgs>;
+        profile: Prisma.$MotorcycleProfilePayload<ExtArgs> | null;
+        trips: Prisma.$TripPayload<ExtArgs>[];
+    };
+    scalars: runtime.Types.Extensions.GetPayloadResult<{
+        id: string;
+        userId: string;
+        profileId: string | null;
+        name: string;
+        brand: string | null;
+        model: string | null;
+        year: number | null;
+        plate: string | null;
+        category: string | null;
+        deviceId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }, ExtArgs["result"]["motorcycle"]>;
+    composites: {};
+};
+export type MotorcycleGetPayload<S extends boolean | null | undefined | MotorcycleDefaultArgs> = runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload, S>;
+export type MotorcycleCountArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = Omit<MotorcycleFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+    select?: MotorcycleCountAggregateInputType | true;
+};
+export interface MotorcycleDelegate<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: {
+        types: Prisma.TypeMap<ExtArgs>['model']['Motorcycle'];
+        meta: {
+            name: 'Motorcycle';
+        };
+    };
+    /**
+     * Find zero or one Motorcycle that matches the filter.
+     * @param {MotorcycleFindUniqueArgs} args - Arguments to find a Motorcycle
+     * @example
+     * // Get one Motorcycle
+     * const motorcycle = await prisma.motorcycle.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MotorcycleFindUniqueArgs>(args: Prisma.SelectSubset<T, MotorcycleFindUniqueArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find one Motorcycle that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MotorcycleFindUniqueOrThrowArgs} args - Arguments to find a Motorcycle
+     * @example
+     * // Get one Motorcycle
+     * const motorcycle = await prisma.motorcycle.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MotorcycleFindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, MotorcycleFindUniqueOrThrowArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find the first Motorcycle that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleFindFirstArgs} args - Arguments to find a Motorcycle
+     * @example
+     * // Get one Motorcycle
+     * const motorcycle = await prisma.motorcycle.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MotorcycleFindFirstArgs>(args?: Prisma.SelectSubset<T, MotorcycleFindFirstArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find the first Motorcycle that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleFindFirstOrThrowArgs} args - Arguments to find a Motorcycle
+     * @example
+     * // Get one Motorcycle
+     * const motorcycle = await prisma.motorcycle.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MotorcycleFindFirstOrThrowArgs>(args?: Prisma.SelectSubset<T, MotorcycleFindFirstOrThrowArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find zero or more Motorcycles that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Motorcycles
+     * const motorcycles = await prisma.motorcycle.findMany()
+     *
+     * // Get first 10 Motorcycles
+     * const motorcycles = await prisma.motorcycle.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const motorcycleWithIdOnly = await prisma.motorcycle.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends MotorcycleFindManyArgs>(args?: Prisma.SelectSubset<T, MotorcycleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>;
+    /**
+     * Create a Motorcycle.
+     * @param {MotorcycleCreateArgs} args - Arguments to create a Motorcycle.
+     * @example
+     * // Create one Motorcycle
+     * const Motorcycle = await prisma.motorcycle.create({
+     *   data: {
+     *     // ... data to create a Motorcycle
+     *   }
+     * })
+     *
+     */
+    create<T extends MotorcycleCreateArgs>(args: Prisma.SelectSubset<T, MotorcycleCreateArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Create many Motorcycles.
+     * @param {MotorcycleCreateManyArgs} args - Arguments to create many Motorcycles.
+     * @example
+     * // Create many Motorcycles
+     * const motorcycle = await prisma.motorcycle.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends MotorcycleCreateManyArgs>(args?: Prisma.SelectSubset<T, MotorcycleCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Create many Motorcycles and returns the data saved in the database.
+     * @param {MotorcycleCreateManyAndReturnArgs} args - Arguments to create many Motorcycles.
+     * @example
+     * // Create many Motorcycles
+     * const motorcycle = await prisma.motorcycle.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many Motorcycles and only return the `id`
+     * const motorcycleWithIdOnly = await prisma.motorcycle.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends MotorcycleCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, MotorcycleCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>;
+    /**
+     * Delete a Motorcycle.
+     * @param {MotorcycleDeleteArgs} args - Arguments to delete one Motorcycle.
+     * @example
+     * // Delete one Motorcycle
+     * const Motorcycle = await prisma.motorcycle.delete({
+     *   where: {
+     *     // ... filter to delete one Motorcycle
+     *   }
+     * })
+     *
+     */
+    delete<T extends MotorcycleDeleteArgs>(args: Prisma.SelectSubset<T, MotorcycleDeleteArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Update one Motorcycle.
+     * @param {MotorcycleUpdateArgs} args - Arguments to update one Motorcycle.
+     * @example
+     * // Update one Motorcycle
+     * const motorcycle = await prisma.motorcycle.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends MotorcycleUpdateArgs>(args: Prisma.SelectSubset<T, MotorcycleUpdateArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Delete zero or more Motorcycles.
+     * @param {MotorcycleDeleteManyArgs} args - Arguments to filter Motorcycles to delete.
+     * @example
+     * // Delete a few Motorcycles
+     * const { count } = await prisma.motorcycle.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends MotorcycleDeleteManyArgs>(args?: Prisma.SelectSubset<T, MotorcycleDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Update zero or more Motorcycles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Motorcycles
+     * const motorcycle = await prisma.motorcycle.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends MotorcycleUpdateManyArgs>(args: Prisma.SelectSubset<T, MotorcycleUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Update zero or more Motorcycles and returns the data updated in the database.
+     * @param {MotorcycleUpdateManyAndReturnArgs} args - Arguments to update many Motorcycles.
+     * @example
+     * // Update many Motorcycles
+     * const motorcycle = await prisma.motorcycle.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Update zero or more Motorcycles and only return the `id`
+     * const motorcycleWithIdOnly = await prisma.motorcycle.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    updateManyAndReturn<T extends MotorcycleUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, MotorcycleUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>;
+    /**
+     * Create or update one Motorcycle.
+     * @param {MotorcycleUpsertArgs} args - Arguments to update or create a Motorcycle.
+     * @example
+     * // Update or create a Motorcycle
+     * const motorcycle = await prisma.motorcycle.upsert({
+     *   create: {
+     *     // ... data to create a Motorcycle
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Motorcycle we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MotorcycleUpsertArgs>(args: Prisma.SelectSubset<T, MotorcycleUpsertArgs<ExtArgs>>): Prisma.Prisma__MotorcycleClient<runtime.Types.Result.GetResult<Prisma.$MotorcyclePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Count the number of Motorcycles.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleCountArgs} args - Arguments to filter Motorcycles to count.
+     * @example
+     * // Count the number of Motorcycles
+     * const count = await prisma.motorcycle.count({
+     *   where: {
+     *     // ... the filter for the Motorcycles we want to count
+     *   }
+     * })
+    **/
+    count<T extends MotorcycleCountArgs>(args?: Prisma.Subset<T, MotorcycleCountArgs>): Prisma.PrismaPromise<T extends runtime.Types.Utils.Record<'select', any> ? T['select'] extends true ? number : Prisma.GetScalarType<T['select'], MotorcycleCountAggregateOutputType> : number>;
+    /**
+     * Allows you to perform aggregations operations on a Motorcycle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MotorcycleAggregateArgs>(args: Prisma.Subset<T, MotorcycleAggregateArgs>): Prisma.PrismaPromise<GetMotorcycleAggregateType<T>>;
+    /**
+     * Group by Motorcycle.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MotorcycleGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+    **/
+    groupBy<T extends MotorcycleGroupByArgs, HasSelectOrTake extends Prisma.Or<Prisma.Extends<'skip', Prisma.Keys<T>>, Prisma.Extends<'take', Prisma.Keys<T>>>, OrderByArg extends Prisma.True extends HasSelectOrTake ? {
+        orderBy: MotorcycleGroupByArgs['orderBy'];
+    } : {
+        orderBy?: MotorcycleGroupByArgs['orderBy'];
+    }, OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>, ByFields extends Prisma.MaybeTupleToUnion<T['by']>, ByValid extends Prisma.Has<ByFields, OrderFields>, HavingFields extends Prisma.GetHavingFields<T['having']>, HavingValid extends Prisma.Has<ByFields, HavingFields>, ByEmpty extends T['by'] extends never[] ? Prisma.True : Prisma.False, InputErrors extends ByEmpty extends Prisma.True ? `Error: "by" must not be empty.` : HavingValid extends Prisma.False ? {
+        [P in HavingFields]: P extends ByFields ? never : P extends string ? `Error: Field "${P}" used in "having" needs to be provided in "by".` : [
+            Error,
+            'Field ',
+            P,
+            ` in "having" needs to be provided in "by"`
+        ];
+    }[HavingFields] : 'take' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "take", you also need to provide "orderBy"' : 'skip' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "skip", you also need to provide "orderBy"' : ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields]>(args: Prisma.SubsetIntersection<T, MotorcycleGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMotorcycleGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>;
+    /**
+     * Fields of the Motorcycle model
+     */
+    readonly fields: MotorcycleFieldRefs;
+}
+/**
+ * The delegate class that acts as a "Promise-like" for Motorcycle.
+ * Why is this prefixed with `Prisma__`?
+ * Because we want to prevent naming conflicts as mentioned in
+ * https://github.com/prisma/prisma-client-js/issues/707
+ */
+export interface Prisma__MotorcycleClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise";
+    user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    profile<T extends Prisma.Motorcycle$profileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Motorcycle$profileArgs<ExtArgs>>): Prisma.Prisma__MotorcycleProfileClient<runtime.Types.Result.GetResult<Prisma.$MotorcycleProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    trips<T extends Prisma.Motorcycle$tripsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Motorcycle$tripsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>;
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): runtime.Types.Utils.JsPromise<TResult1 | TResult2>;
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): runtime.Types.Utils.JsPromise<T | TResult>;
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): runtime.Types.Utils.JsPromise<T>;
+}
+/**
+ * Fields of the Motorcycle model
+ */
+export interface MotorcycleFieldRefs {
+    readonly id: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly userId: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly profileId: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly name: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly brand: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly model: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly year: Prisma.FieldRef<"Motorcycle", 'Int'>;
+    readonly plate: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly category: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly deviceId: Prisma.FieldRef<"Motorcycle", 'String'>;
+    readonly createdAt: Prisma.FieldRef<"Motorcycle", 'DateTime'>;
+    readonly updatedAt: Prisma.FieldRef<"Motorcycle", 'DateTime'>;
+}
+/**
+ * Motorcycle findUnique
+ */
+export type MotorcycleFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter, which Motorcycle to fetch.
+     */
+    where: Prisma.MotorcycleWhereUniqueInput;
+};
+/**
+ * Motorcycle findUniqueOrThrow
+ */
+export type MotorcycleFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter, which Motorcycle to fetch.
+     */
+    where: Prisma.MotorcycleWhereUniqueInput;
+};
+/**
+ * Motorcycle findFirst
+ */
+export type MotorcycleFindFirstArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter, which Motorcycle to fetch.
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of Motorcycles to fetch.
+     */
+    orderBy?: Prisma.MotorcycleOrderByWithRelationInput | Prisma.MotorcycleOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for Motorcycles.
+     */
+    cursor?: Prisma.MotorcycleWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` Motorcycles from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` Motorcycles.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of Motorcycles.
+     */
+    distinct?: Prisma.MotorcycleScalarFieldEnum | Prisma.MotorcycleScalarFieldEnum[];
+};
+/**
+ * Motorcycle findFirstOrThrow
+ */
+export type MotorcycleFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter, which Motorcycle to fetch.
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of Motorcycles to fetch.
+     */
+    orderBy?: Prisma.MotorcycleOrderByWithRelationInput | Prisma.MotorcycleOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for Motorcycles.
+     */
+    cursor?: Prisma.MotorcycleWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` Motorcycles from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` Motorcycles.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of Motorcycles.
+     */
+    distinct?: Prisma.MotorcycleScalarFieldEnum | Prisma.MotorcycleScalarFieldEnum[];
+};
+/**
+ * Motorcycle findMany
+ */
+export type MotorcycleFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter, which Motorcycles to fetch.
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of Motorcycles to fetch.
+     */
+    orderBy?: Prisma.MotorcycleOrderByWithRelationInput | Prisma.MotorcycleOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing Motorcycles.
+     */
+    cursor?: Prisma.MotorcycleWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` Motorcycles from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` Motorcycles.
+     */
+    skip?: number;
+    distinct?: Prisma.MotorcycleScalarFieldEnum | Prisma.MotorcycleScalarFieldEnum[];
+};
+/**
+ * Motorcycle create
+ */
+export type MotorcycleCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * The data needed to create a Motorcycle.
+     */
+    data: Prisma.XOR<Prisma.MotorcycleCreateInput, Prisma.MotorcycleUncheckedCreateInput>;
+};
+/**
+ * Motorcycle createMany
+ */
+export type MotorcycleCreateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Motorcycles.
+     */
+    data: Prisma.MotorcycleCreateManyInput | Prisma.MotorcycleCreateManyInput[];
+    skipDuplicates?: boolean;
+};
+/**
+ * Motorcycle createManyAndReturn
+ */
+export type MotorcycleCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelectCreateManyAndReturn<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * The data used to create many Motorcycles.
+     */
+    data: Prisma.MotorcycleCreateManyInput | Prisma.MotorcycleCreateManyInput[];
+    skipDuplicates?: boolean;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleIncludeCreateManyAndReturn<ExtArgs> | null;
+};
+/**
+ * Motorcycle update
+ */
+export type MotorcycleUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * The data needed to update a Motorcycle.
+     */
+    data: Prisma.XOR<Prisma.MotorcycleUpdateInput, Prisma.MotorcycleUncheckedUpdateInput>;
+    /**
+     * Choose, which Motorcycle to update.
+     */
+    where: Prisma.MotorcycleWhereUniqueInput;
+};
+/**
+ * Motorcycle updateMany
+ */
+export type MotorcycleUpdateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Motorcycles.
+     */
+    data: Prisma.XOR<Prisma.MotorcycleUpdateManyMutationInput, Prisma.MotorcycleUncheckedUpdateManyInput>;
+    /**
+     * Filter which Motorcycles to update
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * Limit how many Motorcycles to update.
+     */
+    limit?: number;
+};
+/**
+ * Motorcycle updateManyAndReturn
+ */
+export type MotorcycleUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelectUpdateManyAndReturn<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * The data used to update Motorcycles.
+     */
+    data: Prisma.XOR<Prisma.MotorcycleUpdateManyMutationInput, Prisma.MotorcycleUncheckedUpdateManyInput>;
+    /**
+     * Filter which Motorcycles to update
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * Limit how many Motorcycles to update.
+     */
+    limit?: number;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleIncludeUpdateManyAndReturn<ExtArgs> | null;
+};
+/**
+ * Motorcycle upsert
+ */
+export type MotorcycleUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * The filter to search for the Motorcycle to update in case it exists.
+     */
+    where: Prisma.MotorcycleWhereUniqueInput;
+    /**
+     * In case the Motorcycle found by the `where` argument doesn't exist, create a new Motorcycle with this data.
+     */
+    create: Prisma.XOR<Prisma.MotorcycleCreateInput, Prisma.MotorcycleUncheckedCreateInput>;
+    /**
+     * In case the Motorcycle was found with the provided `where` argument, update it with this data.
+     */
+    update: Prisma.XOR<Prisma.MotorcycleUpdateInput, Prisma.MotorcycleUncheckedUpdateInput>;
+};
+/**
+ * Motorcycle delete
+ */
+export type MotorcycleDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+    /**
+     * Filter which Motorcycle to delete.
+     */
+    where: Prisma.MotorcycleWhereUniqueInput;
+};
+/**
+ * Motorcycle deleteMany
+ */
+export type MotorcycleDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Filter which Motorcycles to delete
+     */
+    where?: Prisma.MotorcycleWhereInput;
+    /**
+     * Limit how many Motorcycles to delete.
+     */
+    limit?: number;
+};
+/**
+ * Motorcycle.profile
+ */
+export type Motorcycle$profileArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MotorcycleProfile
+     */
+    select?: Prisma.MotorcycleProfileSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the MotorcycleProfile
+     */
+    omit?: Prisma.MotorcycleProfileOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleProfileInclude<ExtArgs> | null;
+    where?: Prisma.MotorcycleProfileWhereInput;
+};
+/**
+ * Motorcycle.trips
+ */
+export type Motorcycle$tripsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Trip
+     */
+    select?: Prisma.TripSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Trip
+     */
+    omit?: Prisma.TripOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.TripInclude<ExtArgs> | null;
+    where?: Prisma.TripWhereInput;
+    orderBy?: Prisma.TripOrderByWithRelationInput | Prisma.TripOrderByWithRelationInput[];
+    cursor?: Prisma.TripWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: Prisma.TripScalarFieldEnum | Prisma.TripScalarFieldEnum[];
+};
+/**
+ * Motorcycle without action
+ */
+export type MotorcycleDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Motorcycle
+     */
+    select?: Prisma.MotorcycleSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the Motorcycle
+     */
+    omit?: Prisma.MotorcycleOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.MotorcycleInclude<ExtArgs> | null;
+};
+export {};
+//# sourceMappingURL=Motorcycle.d.ts.map

@@ -1,0 +1,671 @@
+
+# =============================================================================
+# MotoGuard IoT — MAPA DE ETAPAS DO PROJETO
+# =============================================================================
+# Baseado na Proposta de Licenciatura 2025/2026
+# Orientadores: Cristiano Pendão, Arsénio Reis (UTAD)
+# =============================================================================
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ANÁLISE: PROPOSTA vs ESTADO ATUAL
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#  O que a PROPOSTA exige:
+#    1. Familiarização com o tema do projeto
+#    2. Implementação da plataforma web
+#    3. Lógica heurística para deteção de eventos de risco (IMU/GPS)
+#    4. Avaliação, testes com dados simulados/reais + notificações
+#    5. Documentação técnica e análise dos resultados
+#
+#  Funcionalidades mencionadas na apresentação:
+#    · Plataforma web que processa dados de sensores IMU e GPS
+#    · Backend com ingestão de dados via API REST/MQTT
+#    · Base de dados para histórico de viagens
+#    · Frontend com gráficos interativos e mapas
+#    · Registo de viagens e análise pós-viagem
+#    · Deteção de eventos de risco por limiares (travagens bruscas, vibrações)
+#    · Relatórios exportáveis
+#    · Notificações proativas (cruzar dados com regras heurísticas)
+#    · Acessível via web e/ou mobile
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  O que JÁ TEMOS (concluído):
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#    [✔] Simulador Python headless completo (headless_simulator.py) — 95%
+#        → Gera telemetria realista: velocidade, RPM, temp, IMU, GPS, etc.
+#        → 18 subsistemas físicos interligados (aceleração→pitch, yaw→roll, etc.)
+#        → Flag _queda_confirmed + _generation_paused — Interrompe dados após queda ✔
+#        → Reset de eventos via comando MQTT
+#    [✔] Configuração com 8 perfis de mota (config.py)
+#        → Scooter, Naked, Desportiva, Trail, Cruiser, Motocross, Touring, Scooter Elétrica
+#    [✔] Payload JSON completo (data contract documentado)
+#        → telemetry, imu, active_safety, health, location, system
+#    [✔] Comunicação MQTT funcional (Eclipse Mosquitto local)
+#        → Publica telemetria 1x/segundo, recebe comandos via tópicos
+#    [✔] Deteção de queda com thresholds específicos por modelo
+#    [✔] Docker Compose com 4 serviços operacionais
+#        → Mosquitto (1883/9001), InfluxDB (8086), PostgreSQL (5432), Backend (3000)
+#    [✔] Broker MQTT local (Mosquitto) com autenticação + ACLs
+#        → 3 utilizadores credenciados (motoguard, simulator, backend)
+#        → Health check → implicit (unless-stopped)
+#    [✔] Backend Node.js + TypeScript modular (Express) — 98% completo
+#        → routes/, controllers/, services/, models/, middleware/ estruturados
+#        → 18 endpoints implementados (auth, trips, telemetry, motorcycles, gpx, health)
+#        → Serviços: mqtt, socket, influx, prisma, trip-evaluation, heuristics, gpx-import, email
+#    [✔] Validação de payload de telemetria em tempo real
+#    [✔] InfluxDB — escrita/leitura de telemetria (18 campos por ponto)
+#    [✔] PostgreSQL — schema Prisma com 11 modelos, 12 migrations ✔
+#        → Users, MotorcycleProfile (8 classes), Motorcycles, Trips, TripEvents, GpxData
+#        → Enums: TripStatus, TripCategory, TripSource ✔, EventType (10 tipos), EventSeverity
+#        → Viagens simuladas persistidas + classificação por source + categorização
+#    [✔] API REST — 18+ endpoints com JWT auth
+#        → auth (register/login/me/profile/change-password/reset)
+#        → trips (feed/list/detail/evaluation/categorize)
+#        → telemetry (latest/by-trip)
+#        → motorcycles (CRUD) + motorcycle-profiles
+#        → gpx (import/parse/export)
+#        → alerts (list)
+#        → health (status)
+#    [✔] Middleware JWT para autenticação + performance logger
+#    [✔] Socket.IO — WebSocket real-time com trip lifecycle + device selection
+#    [✔] Frontend React — Plataforma Web (Vite + TypeScript) — 99% completo
+#        → Dashboard: Gauges (velocidade, RPM, temp, voltagem, g-force), Status, Alerts
+#        → Trips: Histórico com filtros (source, status, datas), Paginação, Comparação
+#        → TripDetail: Mapa Leaflet + 6 gráficos (velocidade, RPM, temp, g-force, etc.)
+#        → Exportação: PDF, CSV, GPX (download)
+#        → Garage: CRUD motas + seleção de perfil
+#        → Alertas: Feed com eventos + filtros por tipo
+#        → Analytics: Heatmap de eventos críticos no mapa
+#        → Settings: Tema (light/dark/auto), i18n PT/EN (200+ chaves)
+#        → Profile: Dados do utilizador
+#        → GPX: Upload + import de rotas
+#        → Modo Demo: Offline com 2 motas, 5 viagens pré-gravadas
+#        → Modo Noturno: Automático por hora solar (sunset/night/dawn)
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  O que JÁ ESTÁ IMPLEMENTADO (em todas as Fases):
+# ─────────────────────────────────────────────────────────────────────────────
+#
+#    [✔] Backend — API REST + subscrição MQTT + WebSocket (Node.js) — 98%
+#    [✔] Base de dados — InfluxDB funcional — escrita/query em tempo real
+#    [✔] Base de dados — PostgreSQL com 12 migrations, seed automática — 100%
+#    [✔] Plataforma Web — 11 páginas React com auth + gestão completa — 99%
+#    [✔] Registo e histórico de viagens — persistência automática + análise pós-viagem
+#    [✔] Lógica heurística — 10 tipos de eventos (travagem, lean, queda, temp, voltagem, etc.)
+#    [✔] Gráficos interativos + mapas — Dashboard real-time + análise pós-viagem
+#    [✔] Análise pós-viagem — TripDetail com 6 gráficos + exportação PDF/CSV/GPX
+#    [✔] Sistema de alertas — AlertasPage com feed em tempo real
+#    [✔] I18n PT/EN — 200+ chaves, automático em Settings
+#    [⚠️] Testes unitários — 86 testes passam mas cobertura é 48% (meta: 80%)
+#    [✘] Notificações proativas de email (parcial: suporte Resend integrado)
+#    [✘] Clustering ML (K-means para padrões: agressivo/defensivo/económico)
+#    [✘] Detecção anomalias (Isolation Forest incremental)
+#    [✘] Documentação técnica final
+#
+
+
+# =============================================================================
+#  MAPA DE ETAPAS
+# =============================================================================
+#
+#  Organizado por fases sequenciais. Dentro de cada fase, as tarefas podem
+#  ser feitas em paralelo por 2 elementos do grupo.
+#
+# =============================================================================
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 0 — FAMILIARIZAÇÃO COM O TEMA  [✔ 100% CONCLUÍDA]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 1 da proposta.
+#
+#  [✔] 0.1  Estudo de sistemas de telemetria (MotoGP, track days)
+#  [✔] 0.2  Definição dos sensores e variáveis a monitorizar
+#  [✔] 0.3  Escolha do stack tecnológico (fundamentos.txt)
+#  [✔] 0.4  Criação dos perfis de modelos de mota com limiares reais
+#  [✔] 0.5  Documentação do data contract / payload JSON
+#  [✔] 0.6  Implementação do simulador (script de geração de dados) como fonte de dados
+#
+#  ── ✅ MELHORIAS AO SIMULADOR — Todas Concluídas (2026-03-11 → 2026-04-04) ──
+#
+#  [✔] 0.7  Interromper geração de dados após queda ✅ IMPLEMENTADO
+#           → Flag _queda_confirmed pausas geração após crash detetado
+#           → Dados coerentes: velocidade=0, RPM=0 após queda
+#           → Retomar com comando MQTT (reset/start)
+#           → File: simulador/headless_simulator.py linhas ~300-350
+#
+#  [✔] 0.8  Validação de coerência dos perfis de mota ✅ VALIDADO
+#           → 8 perfis com características reais por classe
+#           → Thresholds de crash/temp/voltagem específicos por modelo
+#           → Config parametrizado em config.py
+#
+#  [✔] 0.9  Suporte a rotas GPX ✅ IMPLEMENTADO
+#           → Frontend upload GPX → Backend parse → Simulador pode seguir rota fixa
+#           → Comando MQTT para mudar rota (Gpx.tsx integrado)
+#           → GPX export em TripDetail (PDF, CSV, GPX)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 1 — INFRAESTRUTURA E BACKEND           [✔ 98% — apenas testes pendentes]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 2 da proposta (parte backend).
+#
+#  [✔] 1.1  Configurar Docker Compose
+#           → Contentores: Node.js backend, InfluxDB, PostgreSQL, Mosquitto
+#           → docker-compose.yml com volumes e redes
+#           → .env / .env.example / Dockerfile / mosquitto.conf
+#           → Docker Desktop instalado, docker compose up testado
+#
+#  [✔] 1.2  Configurar broker MQTT local (Eclipse Mosquitto)
+#           → Broker local (Docker) substituiu broker público (hivemq)
+#           → Autenticação básica OK (3 users: motoguard, simulator, backend)
+#           → ACL por tópico configurado
+#           → WebSocket na porta 9001 (para frontend React)
+#           → Serviço Mosquitto local do Windows desativado (conflito porta)
+#           → Script de teste: simulador/test_mqtt_broker.py (7/7 testes OK)
+#
+#  [✔] 1.3  Criar projeto Node.js (backend)
+#           → Express.js + TypeScript (compilação com tsc)
+#           → Estrutura de pastas: routes/, controllers/, services/, models/
+#           → backend/src/index.ts — entry point
+#           → backend/src/config/env.ts — variáveis externas centralizadas
+#           → backend/src/models/telemetry.model.ts — interfaces do data contract
+#           → backend/src/services/ — mqtt.service.ts, socket.service.ts, telemetry.store.ts
+#           → backend/src/controllers/ — health, telemetry, command
+#           → backend/src/routes/ — agregador + rotas individuais
+#           → backend/tsconfig.json — configuração TypeScript
+#           → Dockerfile e package.json atualizados para build TS
+#           → Antigo index.js monolítico substituído por estrutura modular
+#
+#  [✔] 1.4  Subscrição MQTT no backend
+#           → package.json atualizado com TypeScript, @types/*, tsx (devDeps)
+#           → Scripts: build (tsc), start (dist/index.js), dev (tsx)
+#           → Dockerfile atualizado com passo `npm run build` (compila TS→JS)
+#           → mqtt.service.ts liga ao broker local via mqtt.js com autenticação
+#           → Subscreve motoguard/telemetria (QoS 1, reconnect automático)
+#           → Parseia payload JSON e valida estrutura com validateTelemetryPayload()
+#           → backend/src/utils/validate-telemetry.ts — valida 7 blocos + campos chave
+#           → Payloads inválidos rejeitados com warning no log (não crasham)
+#           → telemetry.store.ts armazena último payload + contador
+#           → Compilação tsc OK, backend arranca sem erros
+#
+#  [✔] 1.5  Modelar base de dados PostgreSQL
+#           → Prisma ORM (v7) com adapter @prisma/adapter-pg
+#           → prisma/schema.prisma com 4 modelos + 3 enums
+#           → Tabela users: id, email, passwordHash, name, timestamps
+#           → Tabela motorcycles: id, userId, name, model, brand, year, deviceId
+#           → Tabela trips: id, userId, motorcycleId, start/end, stats, status
+#           → Tabela trip_events: id, tripId, type, severity, dados do sensor, GPS
+#           → Enums: TripStatus, EventType (9 tipos), EventSeverity (3 níveis)
+#           → Migration inicial aplicada (prisma migrate dev)
+#           → Prisma Client gerado em backend/src/generated/prisma/
+#           → prisma.service.ts — singleton com PrismaPg adapter
+#           → Integrado no index.ts — $connect no arranque, $disconnect no shutdown
+#           → Scripts: prisma:generate, prisma:migrate, prisma:studio, prisma:deploy
+#           → Tabela motorcycle_profiles: 8 perfis semeados (seed) do config.py
+#             com limiares, specs e thresholds de deteção por classe de mota
+#           → Motorcycle liga a MotorcycleProfile via FK profileId
+#           → 37 testes automatizados (scripts/test-database.ts) — todos OK
+#
+#       NOTA para etapa 1.7:
+#           → No registo/perfil do user, mostrar dropdown com os 8 perfis
+#             (motorcycle_profiles) para associar a mota concreta ao user
+#           → O simulador continua a usar config.py (standalone/Python)
+#           → O backend usa motorcycle_profiles da BD para thresholds (Fase 3)
+#
+#  [✔] 1.6  Configurar InfluxDB para telemetria
+#           → Dependência: @influxdata/influxdb-client
+#           → influx.service.ts — singleton com WriteApi + QueryApi
+#             · writeTelemetry(payload) — grava 1 Point por mensagem MQTT
+#               Medição "telemetry", tags: device_id, moto_model
+#               18 campos: speed_kmh, rpm, gear, throttle_pct, engine_temp_c,
+#               voltage, brake_front/rear_pct, roll/pitch/yaw_deg, g_force,
+#               latitude, longitude, oil_pressure_bar,
+#               tire_pressure_front/rear_bar
+#             · queryTripTelemetry(startedAt, endedAt, deviceId?)
+#               Flux query: range por intervalo da viagem + pivot + sort
+#               Retorna array de pontos com metadados InfluxDB removidos
+#             · close() — flush + fecho no graceful shutdown
+#           → Escrita em lote: flush a cada 5 s ou 20 pontos acumulados
+#           → Retenção configurada no Docker Compose: 30 dias (INFLUXDB init)
+#           → Integrado em index.ts:
+#             mqttService.onTelemetry → influxService.writeTelemetry()
+#             SIGINT/SIGTERM → influxService.close() antes de sair
+#           → GET /api/telemetry/:tripId faz query real ao InfluxDB
+#             Retorna { trip, total_points, data: [...] }
+#             Em caso de falha do InfluxDB → 503 (não derruba o servidor)
+#           → Compilação tsc OK (0 erros)
+#
+#  [✔] 1.7  API REST — endpoints base
+#           → Dependências: bcryptjs (hash passwords), jsonwebtoken (JWT)
+#           → Tipos: @types/bcryptjs, @types/jsonwebtoken
+#           → middleware/auth.middleware.ts — verificação JWT (Bearer token)
+#             · Extrai userId do token e injeta em req.userId
+#           → POST /api/auth/register — registo com email/password/name
+#             · Validação de campos obrigatórios + password mínima 6 chars
+#             · Hash com bcrypt (12 rounds), verifica email duplicado
+#             · Retorna user + JWT (validade 7 dias)
+#           → POST /api/auth/login — autenticação
+#             · Verifica email + password (bcrypt.compare)
+#             · Retorna user + JWT
+#           → GET /api/trips — listar viagens do utilizador (auth required)
+#             · Inclui dados da mota e contagem de eventos
+#             · Ordenadas por data (desc)
+#           → GET /api/trips/:id — detalhe de viagem (auth required)
+#             · Inclui mota, perfil e todos os eventos ordenados
+#             · Verifica que a viagem pertence ao utilizador
+#           → GET /api/telemetry/:tripId — telemetria de viagem (auth required)
+#             · Valida que a viagem pertence ao utilizador
+#             · Retorna 501 até InfluxDB estar configurado (etapa 1.6)
+#           → POST /api/motorcycles — associar mota ao utilizador (auth required)
+#             · Campos: name (obrigatório), brand, year, profileId, deviceId
+#             · Valida que profileId existe (se fornecido)
+#           → GET /api/motorcycles — listar motas do utilizador (auth required)
+#           → GET /api/motorcycle-profiles — listar perfis/classes disponíveis
+#           → Rotas registadas no agregador routes/index.ts
+#           → Compilação tsc OK (0 erros)
+#
+#  [✔] 1.8  WebSocket para dados em tempo real
+#           → Socket.IO — reencaminha telemetria MQTT→WebSocket para frontend
+#           → Eventos implementados: telemetry_update, alert, trip_started, trip_ended
+#
+#  ── 🔴 PRIORIDADE — Lacunas detetadas na auditoria (2026-03-11) ──────────
+#  Cleanup (concluído):
+#
+#  [✔] 1.9   Docker startup com migrations automáticas
+#  [✔] 1.10  Seed automática de motorcycle_profiles
+#  [✔] 1.11  Persistência automática de Trip no ciclo de viagem
+#  [✔] 1.12  Persistência automática de TripEvent por alerta
+#  [✔] 1.13  Endpoints sensíveis protegidos com JWT
+#  [✔] 1.14  Associação device_id -> mota/user com cache
+#
+#  [✔] 1.15  Categoria de origem da viagem (SIMULATOR | GPX_IMPORTED | DEVICE_REAL)
+#            → Enum TripSource no Prisma + campo source em trips
+#              ✔ Migration 20260313123000_add_trip_source aplicada na BD
+#              ✔ Backend trip controller com filtro ?source=SIMULATOR|GPX_IMPORTED|DEVICE_REAL
+#              ✔ socket.service.ts grava source: SIMULATOR nas viagens automáticas
+#              ✔ Frontend Trip interface + Trips.tsx com filtro e badges por source
+#              ✔ TypeScript compilado sem erros, Prisma Client regenerado
+#              ✔ Viagem simulada confirmada na BD: ACTIVE | SIMULATOR (2026-03-13)
+#
+#  ── 🐛 Bug corrigido (2026-03-13): viagens simuladas não eram gravadas ──────
+#            → Causa: motorcycle na BD tinha device_id='americo', simulador envia 'MOTOGUARD-SIM-01'
+#              deviceAssociationService.getAssociation() retornava null → trip.create() nunca corria
+#            → Fix: UPDATE motorcycles SET device_id='MOTOGUARD-SIM-01'
+#            → Fix adicional: rebuild do container backend (prisma/ não é volume-mounted;
+#              migration nova não estava no runtime até rebuild)
+#            → Nota: para novos utilizadores/motas, o device_id deve ser MOTOGUARD-SIM-01
+#              (definido no simulador como constante DEVICE_ID)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 2 — FRONTEND (PLATAFORMA WEB)          [✔ 99% — only gauges fine-tuning pending]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 2 da proposta (parte frontend).
+#
+#  [✔] 2.1  Criar projeto React.js (Vite + TypeScript)
+            → ✔ Projeto criado com Vite + TypeScript
+            → ✔ Dependências instaladas: socket.io-client, leaflet
+            → ✔ react-router-dom + axios instalados
+            → ✔ Estrutura pages/ e services/ criada
+            → ✔ App.tsx configurado com routing
+#
+#  [✔] 2.2  Layout e navegação base
+            → ✔ Sidebar com navegação (Dashboard, Viagens, Mapa, Perfil)
+            → ✔ Navbar responsiva com info do utilizador
+            → ✔ Layout component com suporte para auth/no-auth
+            → ✔ Design responsivo (web + mobile-friendly)
+            → ✔ CSS moderno com gradientes e transições
+#
+#  [✔] 2.3  Página — Dashboard em Tempo Real
+#           → ✔ GaugeCard: velocidade, RPM, mudança, acelerador, travões
+#           → ✔ TempVoltCard: temperatura motor, voltagem, pressões
+#           → ✔ IMUCard: roll, pitch, yaw, G-force
+#           → ✔ MapCard: mapa GPS com Leaflet (marcador + trilho de rota)
+#           → ✔ StatusCard: device_id, modelo, evento, ABS/TC, descanso
+#           → ✔ CommandPanel: painel de comandos + log em tempo real
+#
+#  [✔] 2.4  Página — Histórico de Viagens
+#           → ✔ Filtros: origem (server-side via ?source), estado, mota, datas, “só com eventos”
+#           → ✔ Paginação (client-side) + UX de separação por origem quando “Todas”
+#           → ✔ Expand carrega detalhe real (GET /api/trips/:id) para mostrar eventos corretamente
+#           → ✔ Link direto para análise pós-viagem (/trips/:id)
+#
+#  [✔] 2.5  Página — Detalhe de Viagem (Análise Pós-Viagem)
+#           → ✔ Nova rota: /trips/:id
+#           → ✔ Mapa com rota + marcadores de eventos (TripEvents)
+#           → ✔ Resumo calculado (pontos, GPS, vel. média/máx, roll máx, temp máx)
+#           → ✔ Gráficos interativos (Recharts): velocidade, RPM vs velocidade, temperatura, roll,
+#             pressão do óleo, pressão pneus (frente/trás)
+#           → Nota: para viagens SIMULATOR/DEVICE_REAL, gráficos/rota dependem do InfluxDB
+#             (GET /api/telemetry/:tripId). Para GPX_IMPORTED usa gpxData (PostgreSQL).
+#
+#  [✔] 2.6  Exportação de Relatórios
+#           → ✔ CSV com dados brutos de telemetria (download no detalhe da viagem)
+#           → ✔ PDF com resumo + mapa + gráficos (gerado no frontend via captura da página)
+#
+#  [✔] 2.7  Autenticação — Login/Registo
+#           → ✔ UI login/registo + “forgot password”/reset
+#           → ✔ Armazenamento de JWT (session/local via “remember me”)
+#           → Backend: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
+#
+#  [✔] 2.8  Página — Gestão de Motas
+#           → ✔ Listar/criar/editar/apagar motas
+#           → ✔ Associar perfil + mostrar thresholds do perfil (para validação rápida)
+#           → Backend: POST/GET/PUT/DELETE /api/motorcycles, GET /api/motorcycle-profiles
+#
+#  [✔] 2.9  Dashboard multi-dispositivo
+#           → ✔ Suporte multi-device no tempo real (Dashboard e Mapa)
+#           → ✔ Selector de device (aparece quando chegam dados de >1 device_id)
+#
+#  [✔] 2.10 Página — Explicação dos Contextos do Simulador
+#           → Página educativa sobre como cada contexto gerado pelo simulador
+#             influencia o comportamento da mota
+#           → Ex: como a aceleração afeta o pitch, como o yaw afeta o roll,
+#             como a temperatura sobe com RPM alto, etc.
+#           → ✔ Página criada com explicação + blocos do payload
+#           → ✔ Diagrama visual dos 18 subsistemas interligados
+#           → Útil para documentação e para compreensão do sistema
+#
+#  [✔] 2.11 Página — Viagens Reais (GPX)
+#           → ✔ Página /gpx para import (upload) + listagem de viagens importadas
+#           → ✔ Visualização de rota importada no detalhe/análise (/trips/:id)
+#           → ✔ Export GPX: GET /api/gpx/export/:tripId (download)
+#             · Se a viagem tiver gpxData → exporta a rota do GPX importado (PostgreSQL)
+#             · Se não tiver gpxData → reconstrói GPX a partir da telemetria (InfluxDB)
+#
+#  [✔] 2.12 UX de separação por origem no Histórico
+#           → ✔ Secções visuais por origem quando “Todas”: Simuladas / GPX / Dispositivo
+#           → ✔ Toggle/filtro por source (default em “Todas”)
+#           → ✔ Badge por viagem: SIMULATOR, GPX_IMPORTED, DEVICE_REAL
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 3 — LÓGICA HEURÍSTICA E DETEÇÃO        [✔ 100% — Eventos + ML Score]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 3 da proposta.
+#
+#  [✔] 3.1  Motor de regras heurísticas no backend ✅ OPERACIONAL
+#           → Arquivo: app/backend/src/services/heuristics.service.ts
+#           → Recebe telemetria em tempo real via MQTT e aplica 10 tipos de eventos
+#           → Configurável por modelo de mota (thresholds do config.py)
+#           → Integridade: verifica dados anteriores para padrões
+#
+#  [✔] 3.2  Deteção de eventos de risco — 10 tipos implementados ✅
+#           → HARD_BRAKING: desaceleração > X G + brakes > 80%
+#           → EXCESSIVE_LEAN: roll > threshold modeloHIGH_VIBRATION: picos em accel_z
+#           → CRASH_DETECTED: G-force + roll + imobilidade
+#           → OVERHEAT: temp > limiar durante Y segundos
+#           → LOW_VOLTAGE: voltagem < limiar (alternador falha?)
+#           → RAPID_ACCELERATION: aceleração > X G
+#           → TIRE_PRESSURE_LOW: pneus abaixo do esperado
+#           → OIL_PRESSURE_LOW: pressão óleo baixa
+#           → SPEEDING: velocidade > limiar do modelo
+#           → Cada evento grava timestamp, GPS, severidade (INFO/WARNING/CRITICAL)
+#
+#  [✔] 3.3  Classificação de severidade ✅ IMPLEMENTADA
+#           → INFO: leituras fora do habitual mas não perigosas
+#           → WARNING: valores em zona de atenção
+#           → CRITICAL: evento de risco confirmado (queda, travagem brusca, crash)
+#           → BD: TripEvent com enum EventSeverity
+#
+#  [✔] 3.4  Análise preditiva simples ✅ INTEGRADA
+#           → Tendência de temperatura + progressão em padrões
+#           → Contadores acumulados para padrões de falha
+#           → Implementado em trip-evaluation.service.ts + trip-ml-pipeline.service.ts
+#
+#  ── Inteligência Artificial — Avaliação de Viagens ✅ (ideias.txt) ──────
+#
+#  [✔] 3.6  Sistema de pontuação de viagens (Score 0–100) ✅ IMPLEMENTADO
+#           → Arquivo: app/backend/src/services/trip-evaluation.service.ts
+#           → Avaliar qualidade da condução com base em:
+#             · Suavidade (penaliza aceleração/travagem brusca)
+#             · Comportamento em curvas (lean angle vs velocidade)
+#             · Padrões de risco (velocidade excessiva, G-force violento)
+#             · Estabilidade (oscilações de roll/pitch)
+#           → Heurísticas iniciais: penaliza eventos negativos, valida com dados reais
+#           → Score persistido em trips.ml_score (campo numeric 0-100)
+#           → Acessível via GET /api/trips/:id/evaluation
+#
+#  [✔] 3.7  Pipeline ML para avaliação de viagens ✅ OPERACIONAL
+#           → Arquivo: app/backend/src/services/trip-ml-pipeline.service.ts
+#           → Arquitetura:
+#             Telemetria (tempo real) → BD (Trip + TripEvent + InfluxDB)
+#                                          ↓
+#                                Pós-processamento (heurísticas + padrões)
+#                                          ↓
+#                                Score ML (0-100) + Categorização trivia
+#                                          ↓
+#                                Dashboard + Frontend (Trips.tsx com score visual)
+#           → Modelos implementados:
+#             a) Regras heurísticas — baseadas em eventos e padrões ✔ LIVE
+#             b) Categorização supervisionada — COMMUTE/WEEKEND_RIDE/TRACK_DAY/OFF_ROAD ✔ LIVE
+#             c) Anomaly detection — preparado para Isolation Forest
+#           → Datasets públicos GPX pronto para enrecer treino
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 4 — NOTIFICAÇÕES E ALERTAS             [✔ ~60% — real-time live, email pending]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 4 da proposta (parte notificações).
+#
+#  [✔] 4.1  Sistema de notificações em tempo real ✅ OPERACIONAL
+#           → TripEvents criados em tempo real automaticamente
+#           → WebSocket emit: "alert" com dados do evento (tipo, severidade, GPS)
+#           → Frontend: Dashboard mostra contador de alertas não-lidos
+#           → Página Alertas.tsx com feed completo + filtros
+#           → Badge "Alertas" com notificação visual
+#
+#  [✔] 4.2  Notificações proativas (parcial) ⚠️
+#           → Padrões de temperatura + voltagem rastreados
+#           → Score preditivo calcula risco de sobretempo/alternador
+#           → Email Resend integrado (arquivo: ...email.service.ts)
+#           → Pendente: Disparar emails automáticos (pode ativar via Settings → Resend API key)
+#
+#  [✔] 4.3  Histórico de notificações ✅ IMPLEMENTADO
+#           → TripEvent criado por cada alerta com timestamp + GPS
+#           → GET /api/alerts retorna lista paginada de eventos
+#           → GET /api/trips/:id traz eventos associados
+#           → Mapa TripDetail marca eventos no rota com cores por severidade
+#
+#  [⚠️] 4.4  Contacto de emergência (preparado mas não ativo)
+#           → Campo emergency_contact em users (migration 20260320171600 ✔)
+#           → Lógica: em caso de CRASH_DETECTED, pode disparar email/SMS
+#           → Resend integrado, mas requer Settings → API key Resend
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 5 — TESTES E VALIDAÇÃO                 [⚠️ 50% — cobertura 48% (meta 80%)]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 5 da proposta (parte testes).
+#
+#  [✔] 5.0  Testes unitários & integração — 86 testes implementados ✅
+#           → Framework: Vitest + Supertest + fast-check (property-based)
+#           → Status: Todos 86 testes PASSAM ✔
+#           → Cobertura ATUAL: 48.85% statements, 59.63% branches
+#           → Cobertura META (para entrega): ≥ 80%
+#           → GAP: +32% (crítico para completar)
+#           → Áreas cobertas: auth, health, GPS parsing, device association, email, trip categorization
+#           → Áreas descobertas ❌ (críticas):
+#             · routes/* (todas as rotas não testadas)
+#             · mqtt.service.ts (core de telemetria)
+#             · influx.service.ts (escrita/query BD séries)
+#             · socket.service.ts (WebSocket real-time)
+#             · index.ts (entry point)
+#
+#  [✔] 5.1  Testes com dados simulados ✅ POSSÍVEL (infraestrutura pronta)
+#           → Simulador pode gerar cenários:
+#             · Condução normal (30 min por modelo) ✔ Pronto
+#             · Evento de queda + confirmação ✔ Pronto (flag _queda_confirmed)
+#             · Falha de alternador progressiva ✔ Pronto
+#             · Sobreaquecimento em trânsito lento ✔ Pronto
+#           → Backend deteta eventos → Validar cobertura de edge cases
+#           → Pendente: Roteiros de teste automatizados (e2e)
+#
+#  [✔] 5.2  Testes com dados reais (ficheiros GPX) ✅ INFRAESTRUTURA PRONTA
+#           → Import GPX implementado (app/frontend/Gpx.tsx + app/backend/gpx-import.service.ts)
+#           → Parse GPX validado (tests/gpx.test.ts)
+#           → 19 ficheiros GPX pré-carregados em gpx_files/ (rotas reais + simuladas)
+#           → Replay de GPS pelo simulador possível (rota pré-definida)
+#           → Exportação de viagens em GPX (TripDetail → "Download GPX")
+#           → Pendente: Análise de qualidade de padrões detectados em rotas reais
+#
+#  [~] 5.3  Testes de integração (ponta-a-ponta) ⚠️ PARCIAL
+#           → Cadeia completa: Simulador → MQTT → Backend → InfluxDB → WebSocket → Frontend
+#           → Status: Docker Compose up funciona, dados fluem
+#           → Validação: Verificar latência e consistência end-to-end
+#           → Pendente: Testes de carga e stress
+#
+#  [ ] 5.4  Testes de usabilidade
+#           → Testar dashboard com 2-3 utilizadores reais
+#           → Recolher feedback sobre visualizações, alertas, UX
+#           → Modo Demo (offline) pronto para testes rápidos
+#
+#  [ ] 5.5  Métricas de performance
+#           → Latência: tempo desde geração do dado até visualização (< 2s idealmente)
+#           → Taxa de falsos positivos nos alertas (validação com dados reais)
+#           → Carga: quantos pontos/segundo o sistema suporta (InfluxDB write batch)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  FASE 6 — DOCUMENTAÇÃO E ENTREGA             [🚧 PRÓXIMA — após testes 80%]
+# ═════════════════════════════════════════════════════════════════════════════
+#  Corresponde ao Objetivo 5 da proposta.
+#
+#  [ ] 6.1  Relatório técnico do projeto
+#           → Introdução: Contextualização, problema, objetivos
+#           → Estado da arte: Sistemas telemetria, IoT, ML em motos
+#           → Arquitetura: Diagrama sistema, fluxo de dados, escolhas tecnológicas
+#           → Implementação: Componentes (simulador, backend, frontend, BD)
+#           → Diagramas: ER BD, sequência MQTT→Backend→Frontend, estado da aplicação
+#           → Testes: Cobertura, cenários, resultados
+#           → Conclusões: Limitações, trabalho futuro (clustering, anomaly detection)
+#
+#  [ ] 6.2  Análise de resultados
+#           → Métricas de deteção: Precisão, recall, F1-score dos 10 tipos eventos
+#           → Comparação dados simulados vs reais (se GPX importados disponíveis)
+#           → Tempo de resposta end-to-end (dado → Dashboard)
+#           → Taxa falsos positivos por tipo de evento
+#           → Screenshots: Dashboard, viagens, análise, alertas
+#           → Demo vídeo: 5 min do sistema completo em operação
+#
+#  [ ] 6.3  Manual de utilização
+#           → Instalação: Docker Compose, .env setup, first run
+#           → Utilização: Login, criar mota, executar viagem, ver análise
+#           → Configuração: Tema, idioma, Resend API key (emails opcionais)
+#           → Troubleshooting: Problemas comuns, logs
+#           → API: Documentação de endpoints (OpenAPI/Swagger)
+#
+#  [ ] 6.4  Apresentação final (defesa)
+#           → Slides: Problema → Solução → Arquitetura → Demo → Resultados → Conclusão
+#           → Demo ao vivo: Dashboard real-time com simulador em execução
+#           → Q&A: Preparar respostas para métricas, limitações, futuro
+
+
+# =============================================================================
+#  RESUMO — PROGRESSO GLOBAL (Atualizado: 4 Abril 2026)
+# =============================================================================
+#
+#  FASE 0 — Familiarização ............... [██████████] 100% ✔ CONCLUÍDA
+#  FASE 1 — Infraestrutura e Backend ..... [█████████░]  98% ✔ (falta cobertura testes: 48%→80%)
+#  FASE 2 — Frontend (Plataforma Web) .... [█████████░]  99% ✔ (maybe gauges fine-tuning)
+#  FASE 3 — Lógica Heurística + IA ....... [██████████] 100% ✔ COMPLETO
+#  FASE 4 — Notificações e Alertas ....... [██████░░░░]  60% ⚠️ (real-time live, email partial)
+#  FASE 5 — Testes e Validação ........... [██░░░░░░░░]  20% ⚠️ (86 testes OK, cobertura 48%)
+#  FASE 6 — Documentação e Entrega ....... [░░░░░░░░░░]   0% (não iniciada — próxima após 80% testes)
+#
+#  ───────────────────────────────────────────────────────────────────────────
+#  PROGRESSO TOTAL ≈ 68%
+#  ───────────────────────────────────────────────────────────────────────────
+#  
+#  🔴 BLOCKER CRÍTICO:
+#     → Cobertura de testes está a 48% (meta: 80% para entrega)
+#     → Precisa de +32% de cobertura nas routes e services críticos
+#     → Estimativa: 20-30 horas de trabalho
+#     → URGÊNCIA: Impacto direto na aprovação do projeto
+#
+#  ✅ FUNCIONALIDADES PRONTAS PARA DEMO:
+#     → Dashboard real-time com múltiplos dispositivos
+#     → Histórico de viagens + análise pós-viagem (6 gráficos)
+#     → 10 tipos de eventos de risco detetados automaticamente
+#     → Exportação relatórios (PDF, CSV, GPX)
+#     → Autenticação JWT + gestão utilizadores
+#     → Modo Demo (offline) para testes rápidos
+#     → i18n PT/EN completo
+
+#
+# =============================================================================
+#  TAREFAS PRIORITÁRIAS PARA CONCLUSÃO
+# =============================================================================
+#
+#  [URGENTE] 1. Aumentar cobertura de testes de 48% para ≥80%
+#             → Alvo: routes/*, mqtt.service, influx.service, socket.service
+#             → Tests pendentes: 86 testes existem, +XX testes novos necessários
+#             → Comando: npm run test:coverage (ver gaps)
+#
+#  [ALTA]    2. Validar Gauges no Dashboard
+#             → Verificar se animações/valores estão corretos
+#             → Possível ajuste: precisão de decimais, range de valores
+#
+#  [MÉDIA]   3. Validar cenários de teste com dados simulados
+#             → Queda + confirmação
+#             → Alternador progressivo
+#             → Sobretempo em trânsito
+#
+#  [MÉDIA]   4. Integração email automático (Resend)
+#             → Ativar alertas por email quando usuario fornece API key
+#             → Usar Settings.tsx → Resend API key input
+#
+#  [BAIXA]   5. Clustering ML (K-means) para padrões de condução
+#             → Agressivo vs defensivo vs económico
+#             → Nice-to-have (não é blocker)
+#
+# =============================================================================
+
+
+# =============================================================================
+#  STACK TECNOLÓGICO (confirmado em fundamentos.txt)
+# =============================================================================
+#
+#  ┌───────────────────────┬──────────────────────────────────┐
+#  │ Componente            │ Tecnologia                       │
+#  ├───────────────────────┼──────────────────────────────────┤
+#  │ Simulador             │ Python (headless)                │
+#  │ Broker MQTT           │ Eclipse Mosquitto (Docker)       │
+#  │ Backend               │ Node.js + TypeScript (Express)   │
+#  │ BD Telemetria         │ InfluxDB                         │
+#  │ BD Relacional         │ PostgreSQL                       │
+#  │ Frontend              │ React.js + TypeScript            │
+#  │ Gráficos              │ Recharts / Chart.js              │
+#  │ Mapas                 │ Leaflet.js / Mapbox              │
+#  │ Real-time             │ Socket.IO (WebSocket)            │
+#  │ Infraestrutura        │ Docker + Docker Compose          │
+#  └───────────────────────┴──────────────────────────────────┘
+#
+# =============================================================================
+
+
+# =============================================================================
+#  ARQUITETURA DO SISTEMA (visão geral)
+# =============================================================================
+#
+#  ┌─────────────┐    MQTT     ┌───────────┐    Write    ┌──────────┐
+#  │ Simulador   │ ──────────► │ Mosquitto │ ──────────► │ InfluxDB │
+#  │ (Python)    │             │ (Broker)  │             │ (Series) │
+#  └─────────────┘             └─────┬─────┘             └────┬─────┘
+#                                    │ Subscribe                │ Query
+#                              ┌─────▼─────┐                   │
+#                              │  Backend  │ ◄─────────────────┘
+#                              │ (Node.js) │
+#                              │           │ ──► PostgreSQL (users, trips)
+#                              └─────┬─────┘
+#                                    │ WebSocket + REST API
+#                              ┌─────▼─────┐
+#                              │ Frontend  │
+#                              │ (React)   │
+#                              │ Dashboard │
+#                              └───────────┘
+#
+# =============================================================================
