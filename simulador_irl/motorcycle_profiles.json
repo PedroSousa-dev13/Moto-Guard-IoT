@@ -1,0 +1,71 @@
+{
+  "Scooter": {
+    "description": "Scooter com transmissão CVT",
+    "rpm_max": 9000,
+    "rpm_idle": 1500,
+    "temp_motor_min": 60,
+    "temp_motor_max": 90,
+    "voltagem_nominal": 14.2,
+    "voltagem_min": 11.5,
+    "voltagem_max": 14.5,
+    "peso_kg": 130,
+    "transmissao": "CVT",
+    "gear_ratios": {
+      "type": "CVT",
+      "min_ratio": 2.0,
+      "max_ratio": 0.5
+    },
+    "wheel_diameter_m": 0.4,
+    "final_drive_ratio": 1.0,
+    "throttle_response": 0.25,
+    "engine_inertia": 0.1
+  },
+  "Naked": {
+    "description": "Moto naked com 6 velocidades",
+    "rpm_max": 12000,
+    "rpm_idle": 1200,
+    "temp_motor_min": 70,
+    "temp_motor_max": 105,
+    "voltagem_nominal": 14.2,
+    "voltagem_min": 11.5,
+    "voltagem_max": 14.5,
+    "peso_kg": 190,
+    "transmissao": "manual",
+    "gear_ratios": {
+      "1": 15.0,
+      "2": 12.0,
+      "3": 9.5,
+      "4": 7.5,
+      "5": 6.0,
+      "6": 5.0
+    },
+    "wheel_diameter_m": 0.6,
+    "final_drive_ratio": 2.8,
+    "throttle_response": 0.35,
+    "engine_inertia": 0.15
+  },
+  "Desportiva": {
+    "description": "Moto desportiva com 6 velocidades",
+    "rpm_max": 15000,
+    "rpm_idle": 1000,
+    "temp_motor_min": 80,
+    "temp_motor_max": 110,
+    "voltagem_nominal": 14.2,
+    "voltagem_min": 11.5,
+    "voltagem_max": 14.5,
+    "peso_kg": 200,
+    "transmissao": "manual",
+    "gear_ratios": {
+      "1": 16.0,
+      "2": 13.0,
+      "3": 10.0,
+      "4": 8.0,
+      "5": 6.5,
+      "6": 5.5
+    },
+    "wheel_diameter_m": 0.6,
+    "final_drive_ratio": 2.5,
+    "throttle_response": 0.4,
+    "engine_inertia": 0.2
+  }
+}

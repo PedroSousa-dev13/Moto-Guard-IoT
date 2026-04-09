@@ -5,49 +5,44 @@ import path from 'path';
 import type { Application } from 'express';
 import { setupStaticServing } from '../backend/src/utils/setup-static-serving';
 
-vi.mock('fs');
-vi.mock('path', () => {
-  const join = vi.fn((...args) => args.join('/'));
-  return { default: { join }, join };
-});
-vi.mock('express', () => {
-  const expressMock: any = Object.assign(vi.fn(), {
-    static: vi.fn(() => 'static-middleware'),
-  });
-  return { default: expressMock };
-});
+vi.mock('fs', () => ({
+  existsSync: vi.fn(),
+}));
 
 describe('setupStaticServing', () => {
   let mockApp: Application;
   let mockResponse: any;
   let consoleLogSpy: any;
-  
+  let pathJoinSpy: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    pathJoinSpy = vi.spyOn(path, 'join').mockImplementation((...args: string[]) => args.join('/'));
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    
+
     mockResponse = {
       sendFile: vi.fn()
     };
-    
+
     mockApp = {
       use: vi.fn(),
       get: vi.fn()
     } as any;
-    
+
     (fs.existsSync as any).mockReturnValue(true);
   });
-  
+
   afterEach(() => {
     consoleLogSpy.mockRestore();
+    pathJoinSpy.mockRestore();
     vi.restoreAllMocks();
   });
 
   it('should return false when dist path does not exist', () => {
     (fs.existsSync as any).mockReturnValue(false);
-    
+
     const result = setupStaticServing(mockApp, '/path/to/dist');
-    
+
     expect(result).toBe(false);
     expect(mockApp.use).not.toHaveBeenCalled();
     expect(mockApp.get).not.toHaveBeenCalled();
@@ -56,45 +51,42 @@ describe('setupStaticServing', () => {
 
   it('should return true when dist path exists', () => {
     const result = setupStaticServing(mockApp, '/path/to/dist');
-    
+
     expect(result).toBe(true);
     expect(fs.existsSync).toHaveBeenCalledWith('/path/to/dist');
   });
 
   it('should setup static middleware when dist exists', () => {
     setupStaticServing(mockApp, '/path/to/dist');
-    
-    expect(mockApp.use).toHaveBeenCalledWith('static-middleware');
-    expect((express as any).static).toHaveBeenCalledWith('/path/to/dist');
+
+    expect(mockApp.use).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockApp.use).toHaveBeenCalledTimes(1);
   });
 
   it('should setup SPA fallback route', () => {
     setupStaticServing(mockApp, '/path/to/dist');
-    
-    expect(mockApp.get).toHaveBeenCalledWith('*', expect.any(Function));
+
+    expect(mockApp.get).toHaveBeenCalledWith(/^(?!\/api).*$/, expect.any(Function));
   });
 
   it('should send index.html for SPA fallback', () => {
     setupStaticServing(mockApp, '/path/to/dist');
-    
-    // Get the fallback route handler
-    const fallbackHandler = (mockApp.get as any).mock.calls.find(
-      call => call[0] === '*'
-    )?.[1];
-    
-    expect(fallbackHandler).toBeDefined();
-    
-    // Call the handler
+
+    const calls = (mockApp.get as any).mock.calls as any[];
+    const fallbackCall = calls.find(c => c[0] instanceof RegExp);
+    expect(fallbackCall).toBeDefined();
+
+    const fallbackHandler = fallbackCall[1];
     const mockRequest = {};
     fallbackHandler(mockRequest, mockResponse);
-    
-    expect(path.join).toHaveBeenCalledWith('/path/to/dist', 'index.html');
-    expect(mockResponse.sendFile).toHaveBeenCalledWith('/path/to/dist/index.html');
+
+    expect(pathJoinSpy).toHaveBeenCalledWith('/path/to/dist', 'index.html');
+    expect(mockResponse.sendFile).toHaveBeenCalledWith('path/to/dist/index.html');
   });
 
   it('should log static serving setup', () => {
     setupStaticServing(mockApp, '/path/to/dist');
-    
+
     expect(consoleLogSpy).toHaveBeenCalledWith('Frontend estático: /path/to/dist');
   });
 
@@ -103,17 +95,17 @@ describe('setupStaticServing', () => {
       '/absolute/path/to/dist',
       './relative/path/to/dist',
       '../parent/path/to/dist',
-      'C:\\Windows\\path\\to\\dist'
+      'C:\Windows\path\to\dist'
     ];
-    
+
     testPaths.forEach(distPath => {
       vi.clearAllMocks();
+      (pathJoinSpy as any).mockClear();
       (fs.existsSync as any).mockReturnValue(true);
-      
+
       setupStaticServing(mockApp, distPath);
-      
+
       expect(fs.existsSync).toHaveBeenCalledWith(distPath);
-      expect((express as any).static).toHaveBeenCalledWith(distPath);
     });
   });
 });

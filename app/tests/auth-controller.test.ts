@@ -224,6 +224,7 @@ describe("me", () => {
       name: "Ana",
       createdAt: new Date("2026-03-16T00:00:00.000Z"),
       updatedAt: new Date("2026-03-16T00:00:00.000Z"),
+      emergencyContact: null,
     };
     vi.mocked(prisma.user.findUnique).mockResolvedValue(user as any);
     const req = { userId: "u1" } as any;
@@ -233,7 +234,7 @@ describe("me", () => {
 
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: "u1" },
-      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true, emergencyContact: true },
     });
     expect(res.json).toHaveBeenCalledWith(user);
   });
