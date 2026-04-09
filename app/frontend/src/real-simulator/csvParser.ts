@@ -39,6 +39,211 @@ export interface ParseError {
 }
 
 // ---------------------------------------------------------------------------
+// Motorcycle Profiles for IRL Data Enhancement
+// ---------------------------------------------------------------------------
+
+interface MotorcycleProfile {
+  rpm_max: number;
+  rpm_idle: number;
+  temp_motor_min: number;
+  temp_motor_max: number;
+  voltagem_nominal: number;
+  voltagem_min: number;
+  voltagem_max: number;
+  transmissao: 'manual' | 'CVT';
+  gear_ratios: Record<string, number> | { type: 'CVT'; min_ratio: number; max_ratio: number };
+  wheel_diameter_m: number;
+  final_drive_ratio: number;
+  throttle_response: number;
+}
+
+const MOTORCYCLE_PROFILES: Record<string, MotorcycleProfile> = {
+  "Scooter": {
+    rpm_max: 9000,
+    rpm_idle: 1500,
+    temp_motor_min: 60,
+    temp_motor_max: 90,
+    voltagem_nominal: 14.2,
+    voltagem_min: 11.5,
+    voltagem_max: 14.5,
+    transmissao: "CVT",
+    gear_ratios: { "type": "CVT", "min_ratio": 2.0, "max_ratio": 0.5 },
+    wheel_diameter_m: 0.4,
+    final_drive_ratio: 1.0,
+    throttle_response: 0.25
+  },
+  "Naked": {
+    rpm_max: 12000,
+    rpm_idle: 1200,
+    temp_motor_min: 70,
+    temp_motor_max: 105,
+    voltagem_nominal: 14.2,
+    voltagem_min: 11.5,
+    voltagem_max: 14.5,
+    transmissao: "manual",
+    gear_ratios: { "1": 15.0, "2": 12.0, "3": 9.5, "4": 7.5, "5": 6.0, "6": 5.0 },
+    wheel_diameter_m: 0.6,
+    final_drive_ratio: 2.8,
+    throttle_response: 0.35
+  },
+  "Desportiva": {
+    rpm_max: 15000,
+    rpm_idle: 1000,
+    temp_motor_min: 80,
+    temp_motor_max: 110,
+    voltagem_nominal: 14.2,
+    voltagem_min: 11.5,
+    voltagem_max: 14.5,
+    transmissao: "manual",
+    gear_ratios: { "1": 16.0, "2": 13.0, "3": 10.0, "4": 8.0, "5": 6.5, "6": 5.5 },
+    wheel_diameter_m: 0.6,
+    final_drive_ratio: 2.5,
+    throttle_response: 0.4
+  }
+};
+
+// Default profile for IRL enhancement
+const DEFAULT_IRL_PROFILE = "Naked";
+
+// ---------------------------------------------------------------------------
+// IRL Data Enhancement Functions
+// ---------------------------------------------------------------------------
+
+function calculateRpmFromSpeed(speedKmh: number, gear: number, profile: MotorcycleProfile): number {
+  if (speedKmh <= 0) {
+    return profile.rpm_idle;
+  }
+
+  if (profile.transmissao === 'CVT') {
+    const rpmRange = profile.rpm_max - profile.rpm_idle;
+    const speedFraction = Math.min(speedKmh / 200, 1.0); // Assume max speed 200 km/h for scaling
+    return profile.rpm_idle + rpmRange * speedFraction;
+  } else {
+    const manualRatios = profile.gear_ratios as Record<string, number>;
+    const gearKey = gear.toString();
+    if (!(gearKey in manualRatios)) {
+      gear = 1;
+    }
+    const gearRatio = manualRatios[gear.toString()];
+    const wheelCircumference = Math.PI * profile.wheel_diameter_m;
+    const finalDrive = profile.final_drive_ratio;
+
+    const wheelAngularVel = (speedKmh * 1000 / 3600) / (wheelCircumference / 2);
+    const engineRpm = wheelAngularVel * gearRatio * finalDrive * 60 / (2 * Math.PI);
+
+    return Math.max(profile.rpm_idle, Math.min(profile.rpm_max, engineRpm));
+  }
+}
+
+function estimateThrottle(speed: number, prevSpeed: number, dt: number, profile: MotorcycleProfile): number {
+  if (dt <= 0 || prevSpeed === undefined) return 0.0;
+
+  const accel = (speed - prevSpeed) / (dt / 3.6); // m/s²
+  const maxAccel = 12.0; // km/h/s default
+  if (accel <= 0) return 0.0;
+
+  return Math.min(accel / maxAccel * 100, 100);
+}
+
+function simulateEngineTemp(currentTemp: number, rpm: number, dt: number, profile: MotorcycleProfile): number {
+  const ambientTemp = 20.0;
+  const idleTemp = profile.temp_motor_min + 5.0;
+
+  let targetTemp: number;
+  if (rpm <= profile.rpm_idle * 1.2) {
+    targetTemp = idleTemp;
+  } else {
+    const rpmFactor = (rpm - profile.rpm_idle) / (profile.rpm_max - profile.rpm_idle);
+    targetTemp = profile.temp_motor_min + rpmFactor * (profile.temp_motor_max - profile.temp_motor_min);
+  }
+
+  const lerpFactor = 0.03 * dt;
+  const newTemp = currentTemp + (targetTemp - currentTemp) * lerpFactor;
+
+  return Math.max(ambientTemp, Math.min(profile.temp_motor_max + 10, newTemp));
+}
+
+function simulateVoltage(rpm: number, profile: MotorcycleProfile): number {
+  const baseVoltage = profile.voltagem_nominal;
+
+  if (rpm < profile.rpm_idle * 1.2) {
+    return baseVoltage * 0.8 + Math.random() * 0.5;
+  } else {
+    return baseVoltage + (Math.random() - 0.5) * 0.4;
+  }
+}
+
+function estimateGearFromSpeed(speed: number, profile: MotorcycleProfile): number {
+  if (profile.transmissao === 'CVT') return 0;
+  
+  if (speed <= 0) return 1;
+  
+  // Escalas de mudança adaptadas à velocidade máxima de cada perfil
+  // Usa percentagens da vel_max em vez de valores absolutos hard-coded
+  // Isto garante que Scooter e Desportiva usam faixas apropriadas
+  
+  // Para motas manuais, estimar vel_max baseado em rpm_max e gear ratios
+  const gearRatios = profile.gear_ratios as Record<string, number>;
+  
+  let estimatedVelMax = 200; // default (Naked)
+  if (Object.keys(gearRatios).length === 6) {
+    // Heurística: Desportiva tem rpm_max alto (15000) e ratios baixos
+    if (profile.rpm_max >= 15000) {
+      estimatedVelMax = 280;
+    } else if (profile.rpm_max >= 12000) {
+      estimatedVelMax = 200; // Naked
+    }
+  }
+  
+  // Faixas percentuais da vel_max:
+  // Gear 1: 0-15%, Gear 2: 15-35%, Gear 3: 35-60%, etc.
+  const speedPercentage = speed / estimatedVelMax;
+  
+  if (speedPercentage <= 0.15) return 1;
+  if (speedPercentage <= 0.35) return 2;
+  if (speedPercentage <= 0.60) return 3;
+  if (speedPercentage <= 0.75) return 4;
+  if (speedPercentage <= 0.90) return 5;
+  return 6;
+}
+
+function estimateGear(speed: number, rpm: number, profile: MotorcycleProfile): number {
+  if (profile.transmissao === 'CVT') return 0;
+
+  if (speed <= 0) return 1;
+
+  const wheelCircumference = Math.PI * profile.wheel_diameter_m;
+  const finalDrive = profile.final_drive_ratio;
+
+  // Usar a mesma fórmula de calculateRpmFromSpeed, mas para encontrar a melhor gear
+  // calculateRpmFromSpeed: engineRpm = wheelAngularVel * gearRatio * finalDrive * 60 / (2 * Math.PI)
+  // onde wheelAngularVel = (speedKmh * 1000 / 3600) / (wheelCircumference / 2)
+  
+  const speedMs = speed * 1000 / 3600; // converter para m/s
+  const wheelAngularVel = speedMs / (wheelCircumference / 2);
+  const baseFactor = wheelAngularVel * finalDrive * 60 / (2 * Math.PI);
+
+  let bestGear = 1;
+  let minDiff = Infinity;
+
+  const manualRatios = profile.gear_ratios as Record<string, number>;
+  for (const [gearStr, ratio] of Object.entries(manualRatios)) {
+    const expectedRpm = baseFactor * ratio;
+    const diff = Math.abs(expectedRpm - rpm);
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestGear = parseInt(gearStr);
+    }
+  }
+
+  return bestGear;
+}
+
+// ---------------------------------------------------------------------------
+// RiderData format processing
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // RiderData format processing
 // ---------------------------------------------------------------------------
 
@@ -69,7 +274,7 @@ function isRiderDataFormat(headers: string[]): boolean {
 /**
  * Processa dados no formato RiderData
  */
-function parseRiderDataFormat(lines: string[]): ParseResult | ParseError {
+function parseRiderDataFormat(lines: string[], options: ParseOptions = {}): ParseResult | ParseError {
   // Encontrar a linha "COLLECTED DATA" ou o cabeçalho real
   let headerIndex = -1;
   for (let i = 0; i < lines.length; i++) {
@@ -158,7 +363,7 @@ function parseRiderDataFormat(lines: string[]): ParseResult | ParseError {
   }
 
   // Converter para ParsedRow
-  const parsedRows = convertRiderDataToParsedRows(sensorData);
+  const parsedRows = convertRiderDataToParsedRows(sensorData, options);
   
   if (parsedRows.length === 0) {
     return { type: 'EMPTY_FILE', message: 'Nenhum dado GPS válido encontrado.' };
@@ -224,24 +429,33 @@ function processRiderDataBySensor(rows: RiderDataRow[]): ProcessedSensorData {
 }
 
 /**
- * Converte dados RiderData processados para ParsedRow
+ * Converte dados RiderData processados para ParsedRow com aprimoramento IRL
  */
-function convertRiderDataToParsedRows(sensorData: ProcessedSensorData): ParsedRow[] {
-  const { gpsData, ahrsData } = sensorData;
-  
+function convertRiderDataToParsedRows(sensorData: ProcessedSensorData, options: ParseOptions = {}): ParsedRow[] {
+  const { gpsData, ahrsData, accelData } = sensorData;
+
   if (gpsData.length === 0) return [];
+
+  // Usar perfil especificado ou padrão
+  const profileName = options.motorcycleProfile || DEFAULT_IRL_PROFILE;
+  const profile = MOTORCYCLE_PROFILES[profileName] || MOTORCYCLE_PROFILES[DEFAULT_IRL_PROFILE];
+  const enableEnhancement = options.enableIRLEnhancement ?? true; // Default to true for IRL data
 
   // Usar dados GPS como base temporal
   const firstTimestamp = gpsData[0].timestampMs;
   const rows: ParsedRow[] = [];
 
-  for (const gps of gpsData) {
+  let prevSpeed = 0;
+  let currentTemp = profile.temp_motor_min + 5.0; // Começar em temperatura de marcha lenta
+
+  for (let i = 0; i < gpsData.length; i++) {
+    const gps = gpsData[i];
     const timestampSec = (gps.timestampMs - firstTimestamp) / 1000;
-    
+
     // Encontrar dados AHRS mais próximos no tempo
     let nearestAhrs = ahrsData.length > 0 ? ahrsData[0] : null;
     let minTimeDiff = Infinity;
-    
+
     for (const ahrs of ahrsData) {
       const timeDiff = Math.abs(ahrs.timestampMs - gps.timestampMs);
       if (timeDiff < minTimeDiff) {
@@ -250,27 +464,71 @@ function convertRiderDataToParsedRows(sensorData: ProcessedSensorData): ParsedRo
       }
     }
 
-    // Calcular g-force aproximada a partir da aceleração (se disponível)
-    let gForce = 1.0; // default
-    // Poderíamos usar dados do acelerómetro aqui se necessário
+    // Calcular dt para aceleração
+    const dt = i > 0 ? (gps.timestampMs - gpsData[i-1].timestampMs) / 1000 : 1.0;
+
+    let rpm = 0;
+    let gear = 1;
+    let throttlePct = 0;
+    let engineTemp = 80;
+    let voltage = 12.5;
+
+    if (enableEnhancement) {
+      // Estimar gear baseado em velocidade (heurística mais confiável sem RPM real)
+      gear = estimateGearFromSpeed(gps.speed, profile);
+
+      // Calcular RPM baseado na marcha estimada
+      rpm = calculateRpmFromSpeed(gps.speed, gear, profile);
+
+      // Estimar throttle
+      throttlePct = estimateThrottle(gps.speed, prevSpeed, dt, profile);
+
+      // Simular temperatura
+      currentTemp = simulateEngineTemp(currentTemp, rpm, dt, profile);
+      engineTemp = Math.round(currentTemp);
+
+      // Simular voltagem
+      voltage = Math.round(simulateVoltage(rpm, profile) * 10) / 10;
+    }
+
+    // Calcular g-force aproximada
+    let gForce = 1.0;
+    if (accelData.length > 0) {
+      // Encontrar aceleração mais próxima
+      let nearestAccel = accelData[0];
+      minTimeDiff = Infinity;
+      for (const accel of accelData) {
+        const timeDiff = Math.abs(accel.timestampMs - gps.timestampMs);
+        if (timeDiff < minTimeDiff) {
+          minTimeDiff = timeDiff;
+          nearestAccel = accel;
+        }
+      }
+      gForce = Math.sqrt(
+        nearestAccel.x ** 2 +
+        nearestAccel.y ** 2 +
+        nearestAccel.z ** 2
+      ) / 9.81;
+    }
 
     const row: ParsedRow = {
       timestampSec,
       latitude: gps.lat,
       longitude: gps.lng,
       speed_kmh: gps.speed,
-      rpm: 0, // não disponível nos dados RiderData
-      gear: 1, // default
-      throttle_pct: 0, // não disponível
-      engine_temp_c: 80, // default
-      voltage: 12.5, // default
+      rpm: Math.round(rpm),
+      gear,
+      throttle_pct: Math.round(throttlePct),
+      engine_temp_c: engineTemp,
+      voltage,
       roll_deg: nearestAhrs?.roll ?? 0,
       pitch_deg: nearestAhrs?.pitch ?? 0,
       yaw_deg: nearestAhrs?.yaw ?? 0,
-      g_force: gForce
+      g_force: Math.round(gForce * 100) / 100 // 2 casas decimais
     };
 
     rows.push(row);
+    prevSpeed = gps.speed;
   }
 
   return rows;
@@ -389,7 +647,12 @@ function splitCSVLine(line: string): string[] {
 // Main parseCSV function
 // ---------------------------------------------------------------------------
 
-export function parseCSV(text: string): ParseResult | ParseError {
+export interface ParseOptions {
+  enableIRLEnhancement?: boolean;
+  motorcycleProfile?: string;
+}
+
+export function parseCSV(text: string, options: ParseOptions = {}): ParseResult | ParseError {
   // Normalise line endings
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
@@ -408,7 +671,7 @@ export function parseCSV(text: string): ParseResult | ParseError {
   });
 
   if (hasRiderDataFormat) {
-    return parseRiderDataFormat(nonEmpty);
+    return parseRiderDataFormat(nonEmpty, options);
   }
 
   // Processar formato genérico

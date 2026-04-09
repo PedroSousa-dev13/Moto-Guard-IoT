@@ -160,15 +160,27 @@ describe('Property 2 — Timestamp round-trip', () => {
   it('ISO 8601 two-row: |rows[1].timestampSec - (D2 - D1) / 1000| < 0.001 for any D1 <= D2', () => {
     fc.assert(
       fc.property(
-        // Generate two dates where D2 >= D1
-        fc.date({ min: new Date('2000-01-01T00:00:00.000Z'), max: new Date('2030-12-31T23:59:59.999Z') }),
+        // Generate two valid dates where D2 >= D1 using integer timestamps
+        fc.integer({ min: 946684800000, max: 1893455999000 }), // 2000-2030 in ms
         fc.integer({ min: 0, max: 86400000 }), // offset in ms (0 to 24h)
         fc.float({ min: -90, max: 90, noNaN: true, noDefaultInfinity: true }),
         fc.float({ min: -180, max: 180, noNaN: true, noDefaultInfinity: true }),
-        (D1, offsetMs, lat, lon) => {
-          const D2 = new Date(D1.getTime() + offsetMs);
+        (timestampMs, offsetMs, lat, lon) => {
+          const D1 = new Date(timestampMs);
+          const D2 = new Date(timestampMs + offsetMs);
+
+          // Ensure dates are valid
+          if (isNaN(D1.getTime()) || isNaN(D2.getTime())) {
+            return true; // Skip invalid dates
+          }
+
           const iso1 = D1.toISOString();
           const iso2 = D2.toISOString();
+
+          // Skip if ISO strings are not parseable (rare edge cases)
+          if (isNaN(Date.parse(iso1)) || isNaN(Date.parse(iso2))) {
+            return true; // Skip this test case
+          }
 
           const csv = [
             'timestamp,lat,lon',

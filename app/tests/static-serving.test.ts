@@ -130,13 +130,14 @@ describe("setupStaticServing — dist EXISTE (Opção B / produção)", () => {
     expect(app.use).toHaveBeenCalledTimes(1);
   });
 
-  it("regista rota catch-all '*' via app.get()", () => {
+  it("regista rota catch-all para SPA via app.get()", () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
     const app = mockApp();
 
     setupStaticServing(app as any, "/fake/dist");
 
-    expect(app.get).toHaveBeenCalledWith("*", expect.any(Function));
+    // Implementation uses regex to exclude /api routes
+    expect(app.get).toHaveBeenCalledWith(/^(?!\/api).*$/, expect.any(Function));
   });
 
   it("o handler catch-all serve o index.html correcto", () => {
@@ -146,7 +147,10 @@ describe("setupStaticServing — dist EXISTE (Opção B / produção)", () => {
     setupStaticServing(app as any, "/fake/dist");
 
     // Extrair e invocar directamente o handler registado
-    const [, handler] = vi.mocked(app.get).mock.calls[0] as [string, Function];
+    const calls = vi.mocked(app.get).mock.calls as any[];
+    const regexCall = calls.find(c => c[0] instanceof RegExp);
+    expect(regexCall).toBeDefined();
+    const handler = regexCall[1];
     const req = {};
     const res = { sendFile: vi.fn() };
     handler(req, res);
@@ -162,7 +166,10 @@ describe("setupStaticServing — dist EXISTE (Opção B / produção)", () => {
 
     setupStaticServing(app as any, "/prod/dist");
 
-    const [, handler] = vi.mocked(app.get).mock.calls[0] as [string, Function];
+    const calls = vi.mocked(app.get).mock.calls as any[];
+    const regexCall = calls.find(c => c[0] instanceof RegExp);
+    expect(regexCall).toBeDefined();
+    const handler = regexCall[1];
 
     const paths = ["/dashboard", "/trips/123", "/settings", "/qualquer/coisa"];
     for (const fakePath of paths) {
@@ -196,7 +203,7 @@ describe("setupStaticServing — caminhos variados", () => {
   it("funciona correctamente com caminho Windows-style", () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
     const app = mockApp();
-    const winPath = "C:\\Users\\pedri\\app\\frontend\\dist";
+    const winPath = "C:\Users\pedri\app\frontend\dist";
 
     const result = setupStaticServing(app as any, winPath);
 
@@ -221,7 +228,7 @@ describe("setupStaticServing — caminhos variados", () => {
     const app = mockApp();
 
     expect(setupStaticServing(app as any, "/qualquer/caminho")).toBe(false);
-    expect(setupStaticServing(app as any, "C:\\outro\\caminho")).toBe(false);
+    expect(setupStaticServing(app as any, "C:\outro\caminho")).toBe(false);
     expect(setupStaticServing(app as any, "./relativo/dist")).toBe(false);
   });
 });

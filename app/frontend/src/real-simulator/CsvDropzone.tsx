@@ -43,7 +43,7 @@ export default function CsvDropzone({ onParsed }: CsvDropzoneProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const result = parseCSV(text);
+      const result = parseCSV(text, { enableIRLEnhancement: true });
 
       if (isParseError(result)) {
         setError(describeParseError(result));

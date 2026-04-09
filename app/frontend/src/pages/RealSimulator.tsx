@@ -49,8 +49,9 @@ const INITIAL_SESSION: SimulatorSession = {
 // ---------------------------------------------------------------------------
 
 export default function RealSimulator() {
-  const [session, setSession] = useState<SimulatorSession>(INITIAL_SESSION);
+  const [simSession, setSession] = useState<SimulatorSession>(INITIAL_SESSION);
   const [socketError, setSocketError] = useState<string | null>(null);
+  const [sourceFormat, setSourceFormat] = useState<ParseResult["format"] | null>(null);
   const [totalDurationSec, setTotalDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
 
@@ -84,13 +85,13 @@ export default function RealSimulator() {
   // GPS track derived from rows
   // ---------------------------------------------------------------------------
 
-  const gpsTrack = session.rows.map((r) => ({ lat: r.latitude, lng: r.longitude }));
+  const gpsTrack = simSession.rows.map((r) => ({ lat: r.latitude, lng: r.longitude }));
 
   const currentPosition =
-    session.rows.length > 0 && session.currentRowIndex < session.rows.length
+    simSession.rows.length > 0 && simSession.currentRowIndex < simSession.rows.length
       ? {
-          lat: session.rows[session.currentRowIndex].latitude,
-          lng: session.rows[session.currentRowIndex].longitude,
+          lat: simSession.rows[simSession.currentRowIndex].latitude,
+          lng: simSession.rows[simSession.currentRowIndex].longitude,
         }
       : null;
 
@@ -101,7 +102,9 @@ export default function RealSimulator() {
   const handleRowChange = useCallback(
     (row: ParsedRow, index: number) => {
       setSession((prev) => {
-        if (!socketRef.current) return { ...prev, currentRowIndex: index };
+        if (!socketRef.current || !socketRef.current.connected) {
+          return { ...prev, currentRowIndex: index };
+        }
 
         const payload = buildPayload(
           row,
@@ -130,9 +133,9 @@ export default function RealSimulator() {
   // ---------------------------------------------------------------------------
 
   const syncEngine = useSyncEngine({
-    rows: session.rows,
-    videoRef: session.videoFile ? videoRef : null,
-    playbackSpeed: session.playbackSpeed,
+    rows: simSession.rows,
+    videoRef: simSession.videoFile ? videoRef : null,
+    playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
   });
 
@@ -144,31 +147,30 @@ export default function RealSimulator() {
     const socket = socketRef.current;
     if (!socket || !socket.connected) {
       setSocketError(
-        "Socket não conectado. Aguarda a ligação ao servidor antes de iniciar a simulação."
+        "Socket não conectado. A simulação local vai iniciar sem emissão de telemetria."
       );
-      return;
+    } else {
+      setSocketError(null);
     }
-
-    setSocketError(null);
     simulationStartTimeRef.current = new Date();
 
     // Start video if available
-    if (session.videoFile && videoRef.current) {
-      videoRef.current.playbackRate = session.playbackSpeed;
+    if (simSession.videoFile && videoRef.current) {
+      videoRef.current.playbackRate = simSession.playbackSpeed;
       videoRef.current.play().catch(() => {});
     }
 
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [session.videoFile, session.playbackSpeed, syncEngine]);
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine]);
 
   const handlePause = useCallback(() => {
-    if (session.videoFile && videoRef.current) {
+    if (simSession.videoFile && videoRef.current) {
       videoRef.current.pause();
     }
     syncEngine.pause();
     setSession((prev) => ({ ...prev, playbackState: "paused" }));
-  }, [session.videoFile, syncEngine]);
+  }, [simSession.videoFile, syncEngine]);
 
   const handleStop = useCallback(() => {
     // Stop sync engine
@@ -182,14 +184,14 @@ export default function RealSimulator() {
 
     // Emit TRIP_ENDED payload
     const socket = socketRef.current;
-    if (socket && socket.connected && session.rows.length > 0) {
-      const lastRow = session.rows[session.currentRowIndex] ?? session.rows[0];
+    if (socket && socket.connected && simSession.rows.length > 0) {
+      const lastRow = simSession.rows[simSession.currentRowIndex] ?? simSession.rows[0];
       const payload = buildPayload(
         lastRow,
-        session.deviceId,
+        simSession.deviceId,
         simulationStartTimeRef.current,
         "TRIP_ENDED",
-        session.currentRowIndex
+        simSession.currentRowIndex
       );
       emitTelemetry(socket, payload);
     }
@@ -201,27 +203,27 @@ export default function RealSimulator() {
       currentRowIndex: 0,
       emittedCount: 0,
     }));
-  }, [syncEngine, session.rows, session.currentRowIndex, session.deviceId]);
+  }, [syncEngine, simSession.rows, simSession.currentRowIndex, simSession.deviceId]);
 
   const handleSpeedChange = useCallback(
     (speed: PlaybackSpeed) => {
-      if (session.videoFile && videoRef.current) {
+      if (simSession.videoFile && videoRef.current) {
         videoRef.current.playbackRate = speed;
       }
       setSession((prev) => ({ ...prev, playbackSpeed: speed }));
     },
-    [session.videoFile]
+    [simSession.videoFile]
   );
 
   const handleSeek = useCallback(
     (timeSec: number) => {
-      if (session.videoFile && videoRef.current) {
+      if (simSession.videoFile && videoRef.current) {
         videoRef.current.currentTime = timeSec;
       }
       syncEngine.seek(timeSec);
       setCurrentTimeSec(timeSec);
     },
-    [session.videoFile, syncEngine]
+    [simSession.videoFile, syncEngine]
   );
 
   // ---------------------------------------------------------------------------
@@ -229,6 +231,7 @@ export default function RealSimulator() {
   // ---------------------------------------------------------------------------
 
   const handleCsvParsed = useCallback((result: ParseResult) => {
+    setSourceFormat(result.format);
     setTotalDurationSec(result.durationSec);
     setCurrentTimeSec(0);
     setSession((prev) => ({
@@ -266,8 +269,35 @@ export default function RealSimulator() {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const hasRows = session.rows.length > 0;
+  const hasRows = simSession.rows.length > 0;
   const isDisabled = !hasRows;
+
+  const currentRow = hasRows
+    ? simSession.rows[Math.min(simSession.currentRowIndex, simSession.rows.length - 1)]
+    : null;
+
+  const rawDataItems = currentRow
+    ? [
+        { label: "Timestamp", value: `${currentRow.timestampSec.toFixed(2)} s` },
+        { label: "Latitude", value: currentRow.latitude.toFixed(6) },
+        { label: "Longitude", value: currentRow.longitude.toFixed(6) },
+        { label: "Velocidade", value: `${currentRow.speed_kmh.toFixed(1)} km/h` },
+        { label: "Roll", value: `${currentRow.roll_deg.toFixed(1)}°` },
+        { label: "Pitch", value: `${currentRow.pitch_deg.toFixed(1)}°` },
+        { label: "Yaw", value: `${currentRow.yaw_deg.toFixed(1)}°` },
+        { label: "G-Force", value: currentRow.g_force.toFixed(2) },
+      ]
+    : [];
+
+  const complementedDataItems = currentRow
+    ? [
+        { label: "RPM", value: Math.round(currentRow.rpm).toString() },
+        { label: "Mudança", value: Math.round(currentRow.gear).toString() },
+        { label: "Acelerador", value: `${Math.round(currentRow.throttle_pct)}%` },
+        { label: "Temp. Motor", value: `${Math.round(currentRow.engine_temp_c)}°C` },
+        { label: "Voltagem", value: `${currentRow.voltage.toFixed(1)} V` },
+      ]
+    : [];
 
   // ---------------------------------------------------------------------------
   // Render
@@ -334,6 +364,82 @@ export default function RealSimulator() {
         </div>
       )}
 
+      {hasRows && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 12,
+            padding: 12,
+            border: "1px solid #374151",
+            borderRadius: 8,
+            background: "#111827",
+          }}
+        >
+          <div
+            style={{
+              padding: "12px 14px",
+              border: "1px solid rgba(34,197,94,0.35)",
+              borderRadius: 8,
+              background: "rgba(34,197,94,0.08)",
+            }}
+          >
+            <h2 style={{ margin: "0 0 8px", fontSize: 14, color: "#86efac" }}>Dados Reais (ficheiro)</h2>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#bbf7d0" }}>
+              Valores lidos diretamente do CSV ({sourceFormat === "riderdata" ? "RiderData" : "Genérico"}).
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              {rawDataItems.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    border: "1px solid rgba(167,243,208,0.25)",
+                    background: "rgba(17,24,39,0.65)",
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#ecfdf5" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: "12px 14px",
+              border: "1px solid rgba(59,130,246,0.35)",
+              borderRadius: 8,
+              background: "rgba(59,130,246,0.08)",
+            }}
+          >
+            <h2 style={{ margin: "0 0 8px", fontSize: 14, color: "#93c5fd" }}>
+              Dados Complementados (simulador)
+            </h2>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#bfdbfe" }}>
+              Valores calculados a partir dos dados reais para completar a telemetria da moto.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              {complementedDataItems.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    border: "1px solid rgba(147,197,253,0.28)",
+                    background: "rgba(17,24,39,0.65)",
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#eff6ff" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Split layout: RouteMap (left ≥50%) + VideoPlayer (right) */}
       <div
         style={{
@@ -347,14 +453,14 @@ export default function RealSimulator() {
         <div style={{ flex: "0 0 55%", minWidth: 0 }}>
           <RouteMap
             gpsTrack={gpsTrack}
-            currentPosition={session.playbackState === "playing" ? currentPosition : null}
+            currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
           />
         </div>
 
         {/* VideoPlayer — right */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <VideoPlayer
-            videoFile={session.videoFile}
+            videoFile={simSession.videoFile}
             videoRef={videoRef}
             onFileSelect={handleVideoFileSelect}
           />
@@ -363,12 +469,12 @@ export default function RealSimulator() {
 
       {/* Playback controls */}
       <PlaybackControls
-        playbackState={session.playbackState}
-        playbackSpeed={session.playbackSpeed}
+        playbackState={simSession.playbackState}
+        playbackSpeed={simSession.playbackSpeed}
         currentTimeSec={currentTimeSec}
         totalDurationSec={totalDurationSec}
-        emittedCount={session.emittedCount}
-        deviceId={session.deviceId}
+        emittedCount={simSession.emittedCount}
+        deviceId={simSession.deviceId}
         disabled={isDisabled}
         onPlay={handlePlay}
         onPause={handlePause}

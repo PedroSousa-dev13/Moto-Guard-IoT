@@ -647,21 +647,26 @@ class HeadlessSimulator:
             s.gear = 0
             s.clutch_engaged = True
         else:
-            # Gear selection: based on speed bands (more realistic)
-            # gear 1: 0-20, 2: 20-40, 3: 40-70, 4: 70-110, 5: 110-150, 6: 150+
-            spd = s.velocidade
-            if spd < 20:
+            # Gear selection: profile-aware speed bands (% of vel_max)
+            # Escalas adaptadas a cada tipo de mota em vez de valores absolutos
+            spd_pct = s.velocidade / self.vel_max if self.vel_max > 0 else 0
+            
+            # Percentagens de vel_max para cada marcha:
+            # Gear 1: 0-15%, Gear 2: 15-35%, Gear 3: 35-60%, 
+            # Gear 4: 60-75%, Gear 5: 75-90%, Gear 6: 90%+
+            if spd_pct <= 0.15:
                 s.gear = 1
-            elif spd < 40:
+            elif spd_pct <= 0.35:
                 s.gear = 2
-            elif spd < 70:
+            elif spd_pct <= 0.60:
                 s.gear = 3
-            elif spd < 110:
+            elif spd_pct <= 0.75:
                 s.gear = 4
-            elif spd < 150:
+            elif spd_pct <= 0.90:
                 s.gear = 5
             else:
                 s.gear = 6
+            
             if s.gear != s._prev_gear and s._prev_gear != 0:
                 s._clutch_timer = 2
             if s._clutch_timer > 0:
