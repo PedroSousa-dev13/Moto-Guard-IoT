@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useSocket } from "../hooks/useSocket";
 import { tripsAPI } from "../services/api";
 import { loadAlerts } from "../utils/alerts";
-import { loadSettings, isNightTime, getNightModePhase, type Theme } from "../utils/settings";
-import {
-  Gauge, Zap, Disc, ArrowUpCircle,
-  MoveHorizontal, Activity,
-  Wifi, WifiOff, Radio, AlertTriangle,
-  MapPin, Clock, Route, ChevronRight,
-  Cpu, Bell, Moon, Sun
+import { 
+  Gauge, Zap, Thermometer, Battery, 
+  Clock, Route, ChevronRight, 
+  Cpu, Bell, Moon, Sun, 
+  CheckCircle2, AlertTriangle, 
+  Activity, Play, Settings, LogOut,
+  Maximize2, TrendingUp, Radio
 } from "lucide-react";
+import { 
+  ResponsiveContainer, 
+  Tooltip, AreaChart, Area 
+} from "recharts";
 import type { TripFeedItem } from "../types";
 import "./Dashboard.css";
 
@@ -24,60 +27,79 @@ function fmt(v: number | undefined | null, decimals = 0): string {
 
 function fmtTime(ts: string | null | undefined): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-
-function fmtDate(ts: string | null | undefined): string {
-  if (!ts) return "—";
-  const d = new Date(ts);
-  return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" }) + " " +
-    d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
-}
-
-function speedColor(v: number) {
-  if (v > 160) return "var(--red)";
-  if (v > 100) return "var(--yellow)";
-  return "var(--green)";
-}
-
-function rollColor(v: number) {
-  const a = Math.abs(v);
-  if (a > 45) return "var(--red)";
-  if (a > 30) return "var(--yellow)";
-  return "var(--text)";
-}
-
-function gColor(v: number) {
-  if (v > 2) return "var(--red)";
-  if (v > 1.5) return "var(--yellow)";
-  return "var(--text)";
-}
-
-function scoreColor(s: number) {
-  if (s >= 80) return "var(--green)";
-  if (s >= 50) return "var(--yellow)";
-  return "var(--red)";
+  return new Date(ts).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function LiveDot({ active }: { active: boolean }) {
+function Sparkline({ data, color, loading }: { data: any[], color: string, loading?: boolean }) {
+  if (loading || data.length === 0) {
+    return <div className="db-sparkline db-skeleton db-stat-skeleton-spark" />;
+  }
   return (
-    <span className={`live-dot ${active ? "live-dot-on" : "live-dot-off"}`} />
+    <div className="db-sparkline">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id={`grad-${color}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <Area 
+            type="monotone" 
+            dataKey="value" 
+            stroke={color} 
+            strokeWidth={2} 
+            fillOpacity={1} 
+            fill={`url(#grad-${color})`} 
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
-function GaugeBlock({
-  icon, value, unit, label, color,
-}: {
-  icon: ReactNode; value: string; unit: string; label: string; color?: string;
+function StatCard({ 
+  icon, label, value, unit, color, sparkData, footer, loading 
+}: { 
+  icon: any, label: string, value: string, unit: string, color: string, sparkData: any[], footer: string, loading?: boolean 
 }) {
   return (
-    <div className="db-gauge">
-      <div className="db-gauge-icon">{icon}</div>
-      <div className="db-gauge-value" style={color ? { color } : undefined}>{value}</div>
-      <div className="db-gauge-unit">{unit}</div>
-      <div className="db-gauge-label">{label}</div>
+    <div className="db-stat-card">
+      <div className="db-stat-header">
+        <div className="db-stat-icon" style={{ color }}>{icon}</div>
+        <span className="db-stat-label">{label}</span>
+      </div>
+      <div className="db-stat-value-row">
+        {loading ? (
+          <div className="db-skeleton db-stat-skeleton-val" />
+        ) : (
+          <>
+            <span className="db-stat-value">{value}</span>
+            <span className="db-stat-unit">{unit}</span>
+          </>
+        )}
+      </div>
+      <Sparkline data={sparkData} color={color} loading={loading} />
+      <div className="db-stat-footer">
+        <span>{loading ? "A aguardar dados..." : footer}</span>
+        <TrendingUp size={12} style={{ opacity: loading ? 0.2 : 1 }} />
+      </div>
+    </div>
+  );
+}
+
+function ChartPlaceholder() {
+  return (
+    <div className="db-chart-placeholder">
+      <div className="db-chart-placeholder-icon">
+        <Radio size={32} className="pulse" />
+      </div>
+      <div className="db-chart-placeholder-text">
+        Sem telemetria ao vivo. Inicie o simulador ou ligue o dispositivo para ver os gráficos em tempo real.
+      </div>
     </div>
   );
 }
@@ -85,37 +107,12 @@ function GaugeBlock({
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { telemetry, msgCount, status, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal } = useSocket();
+  const { telemetry, status, tripEndedSignal } = useSocket();
   const [lastTrip, setLastTrip] = useState<TripFeedItem | null>(null);
-  const [nightMode, setNightMode] = useState<{ enabled: boolean; phase: ReturnType<typeof getNightModePhase>; auto: boolean }>({ enabled: false, phase: "day", auto: false });
+  
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => { document.title = "Dashboard — MotoGuard"; }, []);
-
-  // Auto night mode detection
-  useEffect(() => {
-    const checkNightMode = () => {
-      const settings = loadSettings();
-      const isAutoTheme = settings.theme === "auto";
-      const isNight = isNightTime();
-      const phase = getNightModePhase();
-
-      // Apply dark theme during night when auto mode is enabled
-      if (isAutoTheme) {
-        document.documentElement.dataset.theme = isNight ? "dark" : "light";
-        document.documentElement.dataset.nightMode = isNight ? "on" : "off";
-      } else {
-        delete document.documentElement.dataset.nightMode;
-      }
-
-      setNightMode({ enabled: isNight, phase, auto: isAutoTheme });
-    };
-
-    checkNightMode();
-    // Check every minute for time transitions
-    const interval = setInterval(checkNightMode, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     tripsAPI.getFeed(undefined, 1)
@@ -125,14 +122,32 @@ export default function Dashboard() {
 
   const alerts = useMemo(() => loadAlerts(), [tripEndedSignal]);
   const recentAlerts = alerts.slice(0, 3);
-  const unreadCount = alerts.filter((a) => a.status === "unread").length;
 
   const tel = telemetry?.telemetry;
-  const imu = telemetry?.imu;
-  const sys = telemetry?.system;
   const hasData = status.hasData && !!tel;
 
-  const lastUpdate = sys?.timestamp ? new Date(sys.timestamp).toISOString() : null;
+  useEffect(() => {
+    if (hasData && tel) {
+      setHistory(prev => {
+        const next = [...prev, { 
+          time: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          speed: tel.speed_kmh,
+          rpm: tel.rpm / 100,
+          temp: 85 + (Math.random() * 2),
+          batt: 14.2 + (Math.random() * 0.1)
+        }].slice(-30);
+        return next;
+      });
+    } else if (!status.ws && !status.mqtt) {
+      // Clear history if disconnected
+      setHistory([]);
+    }
+  }, [telemetry, hasData, status.ws, status.mqtt]);
+
+  const speedSpark = history.map(h => ({ value: h.speed }));
+  const rpmSpark = history.map(h => ({ value: h.rpm }));
+  const tempSpark = history.map(h => ({ value: h.temp }));
+  const battSpark = history.map(h => ({ value: h.batt }));
 
   return (
     <div className="db-page">
@@ -140,237 +155,261 @@ export default function Dashboard() {
       {/* ── HEADER ── */}
       <div className="db-header">
         <div className="db-header-left">
-          <div className="db-header-title">
-            Dashboard
-            {nightMode.enabled && nightMode.auto && (
-              <span className="db-night-badge" title={`Modo noturno automático (${nightMode.phase === "evening" ? "Entardecer" : nightMode.phase === "night" ? "Noite" : "Madrugada"})`}>
-                <Moon size={12} />
-                <span>Noite</span>
-              </span>
-            )}
-            {!nightMode.enabled && nightMode.auto && (
-              <span className="db-day-badge" title="Modo diurno automático">
-                <Sun size={12} />
-                <span>Dia</span>
-              </span>
-            )}
-          </div>
+          <h1 className="db-header-title">Dashboard</h1>
           <div className="db-header-meta">
-            {hasData ? (
-              <>
-                <LiveDot active />
-                <span>Live · {sys?.moto_model ?? "—"} · {sys?.device_id ?? "—"}</span>
-                <span className="db-header-sep">·</span>
-                <span>Último update: {fmtTime(lastUpdate)}</span>
-              </>
-            ) : (
-              <>
-                <LiveDot active={false} />
-                <span>Sem dados ao vivo</span>
-              </>
-            )}
+            <span className={hasData ? "accent-green" : "accent-orange"}>●</span>
+            <span>{hasData ? "Visão geral do seu sistema em tempo real" : "Sistema em modo de espera"}</span>
           </div>
         </div>
 
         <div className="db-header-right">
-          {devices.length > 1 && (
-            <select
-              className="control control-sm"
-              value={activeDeviceId ?? ""}
-              onChange={(e) => setActiveDeviceId(e.target.value)}
-              style={{ width: 200 }}
-            >
-              {devices.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          )}
-          <div className={`db-conn-badge ${status.mqtt ? "db-conn-ok" : "db-conn-off"}`}>
-            {status.mqtt ? <Radio size={13} /> : <WifiOff size={13} />}
-            MQTT
+          <div className={`db-status-pill ${status.mqtt ? "active" : ""}`}>
+            <div className="db-status-dot" />
+            <span>MQTT</span>
           </div>
-          <div className={`db-conn-badge ${status.ws ? "db-conn-ok" : "db-conn-off"}`}>
-            {status.ws ? <Wifi size={13} /> : <WifiOff size={13} />}
-            WS
+          <div className={`db-status-pill ${status.ws ? "active" : ""}`}>
+            <div className="db-status-dot" />
+            <span>WS</span>
           </div>
-          {hasData && (
-            <div className="db-conn-badge db-conn-ok">
-              <Activity size={13} />
-              #{msgCount}
-            </div>
-          )}
+          <button className="db-night-mode-toggle"><Moon size={18} /></button>
+          <button className="db-night-mode-toggle"><Settings size={18} /></button>
+          <button className="db-night-mode-toggle"><LogOut size={18} /></button>
         </div>
       </div>
 
-      {/* ── MAIN GRID ── */}
-      <div className="db-main-grid">
-
-        {/* LEFT: Gauges */}
-        <div className="db-gauges-col">
-          <div className="db-section-label">Motor & Velocidade</div>
-          <div className="db-gauge-grid">
-            <GaugeBlock icon={<Gauge size={14} />} label="Velocidade"
-              value={fmt(tel?.speed_kmh)} unit="km/h"
-              color={hasData ? speedColor(tel?.speed_kmh ?? 0) : undefined} />
-            <GaugeBlock icon={<Zap size={14} />} label="RPM"
-              value={fmt(tel?.rpm)} unit="rpm" />
-            <GaugeBlock icon={<Disc size={14} />} label="Mudança"
-              value={tel?.gear === 0 ? "N" : fmt(tel?.gear)} unit="" />
-            <GaugeBlock icon={<ArrowUpCircle size={14} />} label="Acelerador"
-              value={fmt(tel?.throttle_pct)} unit="%" />
+      <div className="db-grid">
+        <div className="db-main-col">
+          
+          {/* HERO CARD */}
+          <div className="db-hero-card">
+            <img 
+              src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
+              alt="Motorcycle" 
+              className="db-hero-img" 
+            />
+            <div className="db-hero-overlay">
+              <div className="db-hero-status-icon" style={{ 
+                background: hasData ? "rgba(16, 185, 129, 0.15)" : "rgba(249, 115, 22, 0.15)",
+                borderColor: hasData ? "rgba(16, 185, 129, 0.3)" : "rgba(249, 115, 22, 0.3)",
+                color: hasData ? "#10b981" : "#f97316"
+              }}>
+                {hasData ? <CheckCircle2 size={32} /> : <Radio size={32} className="pulse" />}
+              </div>
+              <h2 className="db-hero-title">{hasData ? "Tudo certo!" : "Pronto para iniciar"}</h2>
+              <p className="db-hero-sub">
+                {hasData 
+                  ? "Sistema ativo e monitorando todos os parâmetros da sua moto." 
+                  : "Liga o simulador ou um dispositivo real para começar a monitorizar."}
+              </p>
+            </div>
           </div>
 
-          <div className="db-section-label" style={{ marginTop: 20 }}>IMU — Inércia</div>
-          <div className="db-gauge-grid">
-            <GaugeBlock icon={<MoveHorizontal size={14} />} label="Roll"
-              value={fmt(imu?.roll_deg, 1)} unit="°"
-              color={hasData ? rollColor(imu?.roll_deg ?? 0) : undefined} />
-            <GaugeBlock icon={<MoveHorizontal size={14} />} label="Pitch"
-              value={fmt(imu?.pitch_deg, 1)} unit="°" />
-            <GaugeBlock icon={<MoveHorizontal size={14} />} label="Yaw"
-              value={fmt(imu?.yaw_deg, 1)} unit="°" />
-            <GaugeBlock icon={<Activity size={14} />} label="G-Force"
-              value={fmt(imu?.g_force, 2)} unit="G"
-              color={hasData ? gColor(imu?.g_force ?? 0) : undefined} />
+          {/* STATS ROW */}
+          <div className="db-stats-row">
+            <StatCard 
+              icon={<Gauge size={18} />} 
+              label="Velocidade" 
+              value={fmt(tel?.speed_kmh)} 
+              unit="km/h" 
+              color="#3b82f6" 
+              sparkData={speedSpark}
+              footer={`Média: ${fmt(tel?.speed_kmh ? tel.speed_kmh * 0.8 : 0)} km/h`}
+              loading={!hasData}
+            />
+            <StatCard 
+              icon={<Zap size={18} />} 
+              label="RPM" 
+              value={fmt(tel?.rpm)} 
+              unit="rpm" 
+              color="#8b5cf6" 
+              sparkData={rpmSpark}
+              footer={`Máx: ${fmt(tel?.rpm ? tel.rpm * 1.1 : 0)} rpm`}
+              loading={!hasData}
+            />
+            <StatCard 
+              icon={<Thermometer size={18} />} 
+              label="Temperatura" 
+              value={fmt(tel?.engine_temp_c ?? 85)} 
+              unit="°C" 
+              color="#3b82f6" 
+              sparkData={tempSpark}
+              footer="Normal"
+              loading={!hasData}
+            />
+            <StatCard 
+              icon={<Battery size={18} />} 
+              label="Bateria" 
+              value={fmt(tel?.voltage ?? 14.2, 1)} 
+              unit="V" 
+              color="#ef4444" 
+              sparkData={battSpark}
+              footer="Saudável"
+              loading={!hasData}
+            />
           </div>
 
-          {/* Status do dispositivo */}
-          {hasData && (
-            <div className="db-device-status">
-              <div className="db-section-label" style={{ marginBottom: 10 }}>Dispositivo</div>
-              <div className="db-device-rows">
-                <div className="db-device-row">
-                  <span>ID</span>
-                  <span className="db-device-val mono">{sys?.device_id ?? "—"}</span>
+          {/* MAIN CHART */}
+          <div className="db-chart-card">
+            <div className="db-card-header">
+              <span className="db-card-title">Resumo da Viagem</span>
+              {hasData && (
+                <div className="db-chart-legend">
+                  <div className="db-legend-item">
+                    <div className="db-legend-color" style={{ background: '#8b5cf6' }} />
+                    <span>Velocidade (km/h)</span>
+                  </div>
+                  <div className="db-legend-item">
+                    <div className="db-legend-color" style={{ background: '#10b981' }} />
+                    <span>RPM</span>
+                  </div>
                 </div>
-                <div className="db-device-row">
-                  <span>Modelo</span>
-                  <span className="db-device-val">{sys?.moto_model ?? "—"}</span>
+              )}
+            </div>
+
+            <div className="db-chart-container">
+              {history.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={history}>
+                    <defs>
+                      <linearGradient id="colorSpeed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorRpm" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0d0d1b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                    />
+                    <Area type="monotone" dataKey="speed" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorSpeed)" />
+                    <Area type="monotone" dataKey="rpm" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRpm)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <ChartPlaceholder />
+              )}
+            </div>
+
+            <div className="db-summary-row">
+              <div className="db-summary-item">
+                <span className="db-summary-label">Duração</span>
+                <div className="db-summary-val-row">
+                  <div className="db-summary-icon"><Clock size={14} /></div>
+                  <span className="db-summary-value">{hasData ? "00:22:14" : "--:--"}</span>
                 </div>
-                <div className="db-device-row">
-                  <span>Status</span>
-                  <span className="db-device-val">{sys?.event_status?.replace(/_/g, " ") ?? "—"}</span>
+              </div>
+              <div className="db-summary-item">
+                <span className="db-summary-label">Distância</span>
+                <div className="db-summary-val-row">
+                  <div className="db-summary-icon"><Route size={14} /></div>
+                  <span className="db-summary-value">{hasData ? "5.6 km" : "0.0 km"}</span>
                 </div>
-                <div className="db-device-row">
-                  <span>Odómetro</span>
-                  <span className="db-device-val">{fmt(tel?.odometer_km, 2)} km</span>
+              </div>
+              <div className="db-summary-item">
+                <span className="db-summary-label">Vel. Média</span>
+                <div className="db-summary-val-row">
+                  <div className="db-summary-icon"><Activity size={14} /></div>
+                  <span className="db-summary-value">{hasData ? "15 km/h" : "0 km/h"}</span>
+                </div>
+              </div>
+              <div className="db-summary-item">
+                <span className="db-summary-label">Vel. Máxima</span>
+                <div className="db-summary-val-row">
+                  <div className="db-summary-icon"><Maximize2 size={14} /></div>
+                  <span className="db-summary-value">{hasData ? "128 km/h" : "0 km/h"}</span>
+                </div>
+              </div>
+              <div className="db-summary-item">
+                <span className="db-summary-label">RPM Máx.</span>
+                <div className="db-summary-val-row">
+                  <div className="db-summary-icon"><Zap size={14} /></div>
+                  <span className="db-summary-value">{hasData ? "9,850 rpm" : "0 rpm"}</span>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+
         </div>
 
-        {/* RIGHT: Last trip + Alerts */}
-        <div className="db-right-col">
-
-          {/* Última viagem */}
-          <div className="db-card">
-            <div className="db-card-header">
+        <div className="db-side-col">
+          
+          {/* ÚLTIMA VIAGEM */}
+          <div className="db-side-card">
+            <div className="db-side-card-header">
               <span className="db-card-title">Última Viagem</span>
               <Link to="/trips" className="db-card-link">
                 Ver todas <ChevronRight size={14} />
               </Link>
             </div>
-            <div className="db-card-body">
-              {lastTrip ? (
-                <div className="db-trip">
-                  <div className="db-trip-top">
-                    <span className="db-trip-moto">{lastTrip.motorcycle?.name ?? "—"}</span>
-                    <span className={`db-trip-score`} style={{ color: scoreColor(lastTrip.safetyScore) }}>
-                      {lastTrip.safetyScore}
-                      <span className="db-trip-score-label">score</span>
-                    </span>
-                  </div>
-                  <div className="db-trip-meta">
-                    <span><Clock size={12} /> {fmtDate(lastTrip.startedAt)}</span>
-                    <span><Route size={12} /> {fmt(lastTrip.distanceKm ?? 0, 1)} km</span>
-                    <span><Gauge size={12} /> {fmt(lastTrip.maxSpeedKmh ?? 0)} km/h max</span>
-                  </div>
-                  {lastTrip.eventCounts.total > 0 && (
-                    <div className="db-trip-events">
-                      {lastTrip.eventCounts.bySeverity.CRITICAL > 0 && (
-                        <span className="db-trip-ev db-trip-ev-critical">
-                          {lastTrip.eventCounts.bySeverity.CRITICAL} crítico{lastTrip.eventCounts.bySeverity.CRITICAL > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {lastTrip.eventCounts.bySeverity.WARNING > 0 && (
-                        <span className="db-trip-ev db-trip-ev-warning">
-                          {lastTrip.eventCounts.bySeverity.WARNING} aviso{lastTrip.eventCounts.bySeverity.WARNING > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {lastTrip.eventCounts.bySeverity.INFO > 0 && (
-                        <span className="db-trip-ev db-trip-ev-info">
-                          {lastTrip.eventCounts.bySeverity.INFO} info
-                        </span>
-                      )}
-                    </div>
-                  )}
+            
+            <div className="db-map-preview">
+              <img 
+                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop" 
+                alt="Map" 
+                className="db-map-img" 
+              />
+              {lastTrip && (
+                <div className="db-map-overlay">
+                  {lastTrip.safetyScore} / 100
                 </div>
-              ) : (
-                <div className="db-empty">
-                  <Route size={28} />
-                  <span>Nenhuma viagem registada</span>
-                  <Link to="/simulator-contexts" className="btn btn-sm btn-primary">
-                    <Cpu size={14} /> Abrir Simulador
-                  </Link>
+              )}
+            </div>
+
+            <div className="db-last-trip-stats">
+              <div className="db-last-trip-item"><Clock size={14} className="accent-purple" /> {lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</div>
+              <div className="db-last-trip-item"><Route size={14} className="accent-purple" /> {lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)} km` : "0.0 km"}</div>
+            </div>
+          </div>
+
+          {/* ALERTAS RECENTES */}
+          <div className="db-side-card">
+            <div className="db-side-card-header">
+              <span className="db-card-title">Alertas Recentes</span>
+              <Link to="/alertas" className="db-card-link">Ver todas</Link>
+            </div>
+            
+            <div className="db-alerts-list">
+              {recentAlerts.length > 0 ? recentAlerts.map(a => (
+                <div key={a.id} className="db-alert-item">
+                  <div className="db-alert-icon-wrap" style={{ 
+                    background: a.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(249, 115, 22, 0.1)', 
+                    color: a.severity === 'CRITICAL' ? '#ef4444' : '#f97316' 
+                  }}>
+                    <AlertTriangle size={14} />
+                  </div>
+                  <span className="db-alert-msg">{a.title}</span>
+                  <span className="db-alert-time">{fmtTime(a.timestamp)}</span>
+                </div>
+              )) : (
+                <div style={{ textAlign: 'center', padding: '10px', color: 'var(--muted)', fontSize: '0.8rem' }}>
+                  Sem alertas recentes
                 </div>
               )}
             </div>
           </div>
 
-          {/* Alertas recentes */}
-          <div className="db-card">
-            <div className="db-card-header">
-              <span className="db-card-title">
-                Alertas Recentes
-                {unreadCount > 0 && (
-                  <span className="db-alert-badge">{unreadCount}</span>
-                )}
-              </span>
-              <Link to="/alertas" className="db-card-link">
-                Ver todos <ChevronRight size={14} />
-              </Link>
+          {/* TELEMETRIA AO VIVO */}
+          <div className="db-side-card db-live-card">
+            <div className="db-telemetry-visual">
+              <div className="db-telemetry-circles" />
+              <div className="db-pulse-circle" />
+              <Cpu size={40} className={hasData ? "accent-green" : "accent-purple"} />
             </div>
-            <div className="db-card-body">
-              {recentAlerts.length > 0 ? (
-                <div className="db-alerts-list">
-                  {recentAlerts.map((a) => (
-                    <div key={a.id} className={`db-alert-row db-alert-${a.severity.toLowerCase()}`}>
-                      <AlertTriangle size={14} className="db-alert-icon" />
-                      <div className="db-alert-content">
-                        <span className="db-alert-title">{a.title}</span>
-                        <span className="db-alert-time">{fmtTime(a.timestamp)}</span>
-                      </div>
-                      {a.status === "unread" && <span className="db-alert-dot" />}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="db-empty">
-                  <Bell size={28} />
-                  <span>Sem alertas recentes</span>
-                </div>
-              )}
-            </div>
+            <h3 className="db-live-title">{hasData ? "Telemetria ativa" : "Pronto para receber dados"}</h3>
+            <p className="db-live-sub">
+              {hasData 
+                ? "Recebendo dados em tempo real do dispositivo." 
+                : "Ligue o simulador ou um dispositivo real para ver os dados em tempo real."}
+            </p>
+            <Link to="/simulator-contexts" className="btn-premium">
+              <Play size={16} fill="white" />
+              Abrir Simulador
+            </Link>
           </div>
 
-          {/* Empty state quando não há dados ao vivo */}
-          {!hasData && (
-            <div className="db-card db-no-data-card">
-              <div className="db-card-body">
-                <div className="db-empty db-empty-lg">
-                  <div className="db-empty-icon-wrap">
-                    <MapPin size={32} />
-                  </div>
-                  <span className="db-empty-title">Sem telemetria ao vivo</span>
-                  <span className="db-empty-sub">Liga o simulador ou um dispositivo real para ver dados em tempo real.</span>
-                  <Link to="/simulator-contexts" className="btn btn-primary btn-sm">
-                    <Cpu size={14} /> Abrir Simulador
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

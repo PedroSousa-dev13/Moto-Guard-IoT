@@ -74,12 +74,12 @@ const Sidebar: FC = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="brand-logo">
-          <div className="brand-logo-icon">
-            <Bike size={18} />
+          <div className="brand-logo-icon" style={{ background: 'var(--accent-gradient)', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)' }}>
+            <Bike size={20} strokeWidth={2.5} />
           </div>
           <div>
-            <h2>MotoGuard</h2>
-            <div className="brand-logo-tagline">IoT Platform</div>
+            <h2 style={{ letterSpacing: '-0.04em' }}>MotoGuard</h2>
+            <div className="brand-logo-tagline" style={{ color: 'var(--accent-blue)', opacity: 0.8 }}>IOT PLATFORM</div>
           </div>
         </div>
         {showUser && (

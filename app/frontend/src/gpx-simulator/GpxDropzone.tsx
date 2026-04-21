@@ -216,8 +216,6 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
               ))}
             </div>
 
-            </div>
-
             <div style={{ color: "#6b7280", fontSize: 11, marginTop: 10 }}>
               Clica ou arrasta para carregar outro ficheiro
             </div>
