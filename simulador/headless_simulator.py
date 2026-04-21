@@ -385,7 +385,7 @@ class HeadlessSimulator:
                 self._excesso_ticks = 0
                 # Repor velocidade alvo para o limite legal da estrada atual
                 if self.route_cursor:
-                    legal = self.route_cursor.legal_speed_limit_kmh() or 50.0
+                    legal = self.route_cursor.speed_limit_kmh() or 50.0
                     self.tele._target_vel = legal * random.uniform(0.90, 1.00)
                     log(f"Comando: set_speeding → OFF (velocidade reposta para {self.tele._target_vel:.1f} km/h)")
                 else:
@@ -510,7 +510,7 @@ class HeadlessSimulator:
                 s._target_vel = 5.0 + (t - 8) * 2.5   # 5 → 35 km/h ao longo de 12 ticks
             else:
                 # Entregar ao controlador normal — aponta para o limite legal da rota
-                legal_now = (self.route_cursor.legal_speed_limit_kmh()
+                legal_now = (self.route_cursor.speed_limit_kmh()
                              if self.route_cursor else None) or self.cruise_min
                 s._target_vel = clamp(legal_now * random.uniform(0.90, 1.00),
                                       self.cruise_min, self.vel_max * self.cruise_max_frac)
@@ -528,7 +528,7 @@ class HeadlessSimulator:
                 if self._tick_count % 8 == 0:
                     # Velocidade de cruzeiro baseada no limite legal da estrada atual
                     # Motociclista realista: circula perto do limite ± variação natural
-                    legal_now = (self.route_cursor.legal_speed_limit_kmh()
+                    legal_now = (self.route_cursor.speed_limit_kmh()
                                  if self.route_cursor else None) or self.cruise_min
                     # Cruzeiro entre 90% e 105% do limite (simula condução normal sem trânsito)
                     cruise_target = legal_now * random.uniform(0.90, 1.05)
@@ -571,7 +571,7 @@ class HeadlessSimulator:
         # A velocidade já devia estar perto do limite (cruzeiro normal), por isso
         # o incremento é suave mas constante enquanto o botão está pressionado.
         if self._excesso_ticks > 0 and not self._startup_phase:
-            legal = (self.route_cursor.legal_speed_limit_kmh()
+            legal = (self.route_cursor.speed_limit_kmh()
                      if self.route_cursor else 50.0) or 50.0
             # Alvo: 30-40% acima do limite (suficiente para disparar CRITICAL no heuristics)
             target_excesso = legal * 1.35
@@ -744,7 +744,7 @@ class HeadlessSimulator:
                 and s.velocidade > 30):
             roll_abs = abs(s.roll)
             # Quanto mais rápido acima do limite, menor o roll necessário para cair
-            legal = (self.route_cursor.legal_speed_limit_kmh()
+            legal = (self.route_cursor.speed_limit_kmh()
                      if self.route_cursor else 50.0) or 50.0
             speed_excess_ratio = s.velocidade / max(legal, 1.0)  # ex: 1.45 = 45% acima
             # Threshold dinâmico: a 1.45x o limite, cai com 70% do roll normal
@@ -858,7 +858,7 @@ class HeadlessSimulator:
                 "event_status":    evento,
                 "tick":            self._tick_count,
                 "timestamp":       datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "speed_limit_kmh": self.route_cursor.legal_speed_limit_kmh() if self.route_cursor else 50.0,
+                "speed_limit_kmh": self.route_cursor.speed_limit_kmh() if self.route_cursor else 50.0,
             },
         }
 
