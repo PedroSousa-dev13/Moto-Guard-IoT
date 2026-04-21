@@ -9,11 +9,10 @@
 //
 // Data coherence:
 //  - Speed is smoothed (EMA) to eliminate GPS jitter
-//  - Gear transitions are gradual (max ±1 per step)
+//  - Gear transitions are gradual (hysteresis + minimum hold time)
 //  - Engine temp ramps naturally from cold start
 //  - Throttle includes cruise component for constant-speed riding
 //  - Voltage uses smooth deterministic variation
-//  - Data is capped at MAX_DURATION_SEC (10 min) for performance
 // =============================================================================
 
 import type { ParsedRow, ParseResult, ParseError } from "../real-simulator/csvParser";
@@ -24,9 +23,6 @@ export type { ParsedRow, ParseResult, ParseError };
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-/** Maximum duration in seconds — GPX data is trimmed beyond this */
-const MAX_DURATION_SEC = 600; // 10 minutes
 
 /** Exponential moving average alpha for speed smoothing (0 = no smoothing, 1 = raw) */
 const SPEED_SMOOTH_ALPHA = 0.3;
@@ -136,22 +132,51 @@ function calculateRpmFromSpeed(speedKmh: number, gear: number, profile: Motorcyc
   return Math.max(profile.rpm_idle, Math.min(profile.rpm_max, engineRpm));
 }
 
-function estimateGearFromSpeed(speed: number, profile: MotorcycleProfile): number {
+/**
+ * Get speed thresholds for each gear based on motorcycle profile.
+ * Uses hysteresis (overlap) to prevent shifting back and forth.
+ */
+function getGearSpeedThresholds(profile: MotorcycleProfile) {
+  let vMax = 200;
+  if (profile.rpm_max >= 15000) vMax = 280;
+  else if (profile.rpm_max >= 12000) vMax = 200;
+  else vMax = 120;
+
+  return {
+    // [min_speed_for_this_gear, max_speed_for_this_gear]
+    1: [0, vMax * 0.20],
+    2: [vMax * 0.15, vMax * 0.38],
+    3: [vMax * 0.33, vMax * 0.58],
+    4: [vMax * 0.53, vMax * 0.73],
+    5: [vMax * 0.68, vMax * 0.88],
+    6: [vMax * 0.83, vMax * 1.5],
+  };
+}
+
+function estimateGearCoherent(
+  speed: number,
+  prevGear: number,
+  gearTime: number,
+  profile: MotorcycleProfile
+): number {
   if (profile.transmissao === 'CVT') return 0;
-  if (speed <= 0) return 1;
+  if (speed <= 2) return 1;
 
-  let estimatedVelMax = 200;
-  if (profile.rpm_max >= 15000) estimatedVelMax = 280;
-  else if (profile.rpm_max >= 12000) estimatedVelMax = 200;
-  else estimatedVelMax = 120;
+  const thresholds = getGearSpeedThresholds(profile) as Record<number, [number, number]>;
+  const [min, max] = thresholds[prevGear] || [0, 1000];
 
-  const speedPct = speed / estimatedVelMax;
-  if (speedPct <= 0.15) return 1;
-  if (speedPct <= 0.35) return 2;
-  if (speedPct <= 0.60) return 3;
-  if (speedPct <= 0.75) return 4;
-  if (speedPct <= 0.90) return 5;
-  return 6;
+  // Only consider shifting if we've been in the gear for at least 2 seconds
+  // or if we are way out of bounds
+  const canShift = gearTime > 2.0;
+
+  if (speed > max && prevGear < 6 && (canShift || speed > max * 1.2)) {
+    return prevGear + 1;
+  }
+  if (speed < min && prevGear > 1 && (canShift || speed < min * 0.8)) {
+    return prevGear - 1;
+  }
+
+  return prevGear;
 }
 
 /**
@@ -166,21 +191,15 @@ function estimateThrottle(speed: number, prevSpeed: number, dt: number, slopeDeg
   const slopeFactor = Math.sin((slopeDeg * Math.PI) / 180) * 9.81;
 
   // Cruise throttle: when speed is ~constant, need some throttle to maintain it
-  // Higher speed → more cruise throttle needed (air resistance)
   const cruiseThrottle = speed > 3 ? clamp(15 + (speed / 200) * 25, 10, 40) : 0;
-
-  // Uphill adds throttle, downhill subtracts
   const slopeBonus = clamp(slopeFactor * 5, -20, 30);
 
   if (accelKmhs > 0.5) {
-    // Accelerating: cruise + acceleration component + slope
     const accelComponent = clamp((accelKmhs / 15) * 60, 0, 60);
     return clamp(cruiseThrottle + accelComponent + slopeBonus, 0, 100);
   } else if (accelKmhs < -1.0) {
-    // Decelerating (braking): no throttle
     return clamp(slopeBonus, 0, 15);
   } else {
-    // Cruising (±0.5 km/h/s): just maintain
     return clamp(cruiseThrottle + slopeBonus, 0, 60);
   }
 }
@@ -196,18 +215,15 @@ function simulateEngineTemp(currentTemp: number, rpm: number, dt: number, profil
     targetTemp = profile.temp_motor_min + rpmFactor * (profile.temp_motor_max - profile.temp_motor_min);
   }
 
-  // Slow lerp for natural ramp-up (engine takes time to warm up)
   const lerpFactor = 0.02 * dt;
   return Math.max(20, Math.min(profile.temp_motor_max + 10, currentTemp + (targetTemp - currentTemp) * lerpFactor));
 }
 
 /**
  * Deterministic smooth voltage simulation.
- * Uses a sine wave based on timestamp for smooth variation instead of random noise.
  */
 function simulateVoltage(rpm: number, timestampSec: number, profile: MotorcycleProfile): number {
   const base = profile.voltagem_nominal;
-  // Smooth sine-based variation instead of random
   const wave = Math.sin(timestampSec * 0.3) * 0.15 + Math.sin(timestampSec * 0.7) * 0.05;
 
   if (rpm < profile.rpm_idle * 1.2) {
@@ -242,12 +258,6 @@ export interface GpxStats {
   avgSpeedKmh: number;
   maxSpeedKmh: number;
   trackName: string;
-  /** Total points in original GPX (before 10-min trim) */
-  originalPointCount: number;
-  /** Total duration in original GPX (before 10-min trim) */
-  originalDurationSec: number;
-  /** Whether the data was trimmed */
-  wasTrimmed: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,17 +268,14 @@ function parseGpxXml(xmlText: string): { trackpoints: GpxTrackpoint[]; trackName
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "text/xml");
 
-  // Check for parse errors
   const parseError = doc.querySelector("parsererror");
   if (parseError) {
     throw new Error("Ficheiro GPX inválido: erro ao analisar XML.");
   }
 
-  // Get track name
   const nameEl = doc.querySelector("trk > name") ?? doc.querySelector("metadata > name");
   const trackName = nameEl?.textContent?.trim() ?? "GPX Track";
 
-  // Get all trackpoints (handle namespace)
   const trkpts = doc.querySelectorAll("trkpt");
   if (trkpts.length === 0) {
     throw new Error("Ficheiro GPX sem trackpoints (<trkpt>).");
@@ -304,8 +311,6 @@ function parseGpxXml(xmlText: string): { trackpoints: GpxTrackpoint[]; trackName
 
 export interface GpxParseOptions {
   motorcycleProfile?: string;
-  /** Max duration in seconds (default: 600 = 10 min) */
-  maxDurationSec?: number;
 }
 
 export function parseGPX(
@@ -314,7 +319,6 @@ export function parseGPX(
 ): (ParseResult & { gpxStats: GpxStats }) | ParseError {
   const profileName = options.motorcycleProfile ?? "Naked";
   const profile = MOTORCYCLE_PROFILES[profileName] ?? MOTORCYCLE_PROFILES["Naked"];
-  const maxDuration = options.maxDurationSec ?? MAX_DURATION_SEC;
 
   let parsed: { trackpoints: GpxTrackpoint[]; trackName: string };
   try {
@@ -326,18 +330,16 @@ export function parseGPX(
     };
   }
 
-  const { trackpoints: allTrackpoints, trackName } = parsed;
-  const originalPointCount = allTrackpoints.length;
+  const { trackpoints, trackName } = parsed;
 
-  if (allTrackpoints.length < 2) {
+  if (trackpoints.length < 2) {
     return {
       type: "EMPTY_FILE",
-      message: `GPX com apenas ${allTrackpoints.length} ponto(s), mínimo 2 necessários.`,
+      message: `GPX com apenas ${trackpoints.length} ponto(s), mínimo 2 necessários.`,
     };
   }
 
-  // Check if we have timestamps
-  const hasTimestamps = allTrackpoints.some((pt) => pt.time !== null);
+  const hasTimestamps = trackpoints.some((pt) => pt.time !== null);
   if (!hasTimestamps) {
     return {
       type: "NO_TIMESTAMP_COLUMN",
@@ -345,29 +347,10 @@ export function parseGPX(
     };
   }
 
-  // --- 10-minute cap: trim trackpoints beyond maxDuration ---
-  const baseTime = allTrackpoints[0].time!;
-  let originalDurationSec = 0;
-  if (allTrackpoints[allTrackpoints.length - 1].time) {
-    originalDurationSec = (allTrackpoints[allTrackpoints.length - 1].time!.getTime() - baseTime.getTime()) / 1000;
-  }
-
-  const trackpoints = allTrackpoints.filter((pt) => {
-    if (!pt.time) return false;
-    return (pt.time.getTime() - baseTime.getTime()) / 1000 <= maxDuration;
-  });
-
-  const wasTrimmed = trackpoints.length < allTrackpoints.length;
-
-  if (trackpoints.length < 2) {
-    return {
-      type: "EMPTY_FILE",
-      message: `Após limitação a ${maxDuration / 60} min, restam apenas ${trackpoints.length} ponto(s).`,
-    };
-  }
+  const baseTime = trackpoints[0].time!;
 
   // ---------------------------------------------------------------
-  // Pass 1: Derive raw speeds from GPS (before smoothing)
+  // Pass 1: Derive raw points
   // ---------------------------------------------------------------
 
   interface RawPoint {
@@ -434,10 +417,10 @@ export function parseGPX(
 
   let smoothedSpeed = 0;
   let prevGear = 1;
-  let currentTemp = profile.temp_motor_min - 10; // Start cold (below idle temp)
+  let gearHoldTime = 0;
+  let currentTemp = profile.temp_motor_min - 10;
   let prevSmoothedSpeed = 0;
 
-  // Stats accumulators
   let totalDistance = 0;
   let elevationGain = 0;
   let elevationLoss = 0;
@@ -446,14 +429,12 @@ export function parseGPX(
   for (let j = 0; j < rawPoints.length; j++) {
     const rp = rawPoints[j];
 
-    // Exponential Moving Average for speed smoothing
     if (j === 0) {
       smoothedSpeed = rp.rawSpeedKmh;
     } else {
       smoothedSpeed = SPEED_SMOOTH_ALPHA * rp.rawSpeedKmh + (1 - SPEED_SMOOTH_ALPHA) * smoothedSpeed;
     }
 
-    // Clamp micro-speeds to zero (< 2 km/h is GPS drift noise)
     if (smoothedSpeed < 2) smoothedSpeed = 0;
 
     totalDistance += rp.distanceM;
@@ -461,37 +442,22 @@ export function parseGPX(
     else elevationLoss += Math.abs(rp.eleDiff);
     if (smoothedSpeed > maxSpeed) maxSpeed = smoothedSpeed;
 
-    // --- Coherent gear: max ±1 change per step ---
-    const targetGear = estimateGearFromSpeed(smoothedSpeed, profile);
-    let gear: number;
-    if (profile.transmissao === 'CVT') {
-      gear = 0;
-    } else if (targetGear > prevGear) {
-      gear = prevGear + 1;
-    } else if (targetGear < prevGear) {
-      gear = prevGear - 1;
+    const gear = estimateGearCoherent(smoothedSpeed, prevGear, gearHoldTime, profile);
+
+    if (gear !== prevGear) {
+      gearHoldTime = 0;
     } else {
-      gear = prevGear;
+      gearHoldTime += rp.dt;
     }
-    gear = clamp(gear, 1, 6);
 
-    // RPM from smoothed speed + coherent gear
     const rpm = calculateRpmFromSpeed(smoothedSpeed, gear, profile);
-
-    // Throttle from smoothed speed delta (coherent with speed changes)
     const throttlePct = estimateThrottle(smoothedSpeed, prevSmoothedSpeed, rp.dt, rp.slopeDeg);
-
-    // Engine temp: natural ramp-up from cold start
     currentTemp = simulateEngineTemp(currentTemp, rpm, rp.dt, profile);
-
-    // Voltage: smooth deterministic variation
     const voltage = simulateVoltage(rpm, rp.timestampSec, profile);
 
-    // Acceleration (from smoothed speed, not raw)
     const accelMs2 = j > 0 ? (smoothedSpeed - prevSmoothedSpeed) / 3.6 / rp.dt : 0;
     const gForce = Math.sqrt(accelMs2 ** 2 + 9.81 ** 2) / 9.81;
 
-    // Synthesized orientation
     const pitchDeg = clamp(rp.slopeDeg, -45, 45);
     let rollDeg = 0;
     if (smoothedSpeed > 5 && Math.abs(rp.bearingChange) > 0.5) {
@@ -537,9 +503,6 @@ export function parseGPX(
     avgSpeedKmh: durationSec > 0 ? (totalDistance / 1000) / (durationSec / 3600) : 0,
     maxSpeedKmh: maxSpeed,
     trackName,
-    originalPointCount,
-    originalDurationSec,
-    wasTrimmed,
   };
 
   return {
