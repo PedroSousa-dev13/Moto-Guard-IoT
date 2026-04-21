@@ -48,7 +48,7 @@ export function defaultThresholds(): Thresholds {
 
 export function defaultSettings(): AppSettings {
   return {
-    theme: "light",
+    theme: "dark",
     units: "metric",
     language: "pt",
     mapStyle: "streets",
@@ -134,10 +134,8 @@ export function isNightTime(): boolean {
  * If theme is "auto", returns "dark" during night time (18:00-06:00), "light" otherwise.
  */
 export function getEffectiveTheme(theme: Theme): "light" | "dark" {
-  if (theme === "auto") {
-    return isNightTime() ? "dark" : "light";
-  }
-  return theme;
+  // We're enforcing dark theme globally for the premium aesthetic.
+  return "dark";
 }
 
 /**

@@ -16,6 +16,7 @@ import RouteMap from "../real-simulator/RouteMap";
 import { PlaybackControls } from "../real-simulator/PlaybackControls";
 import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
+import { useAuth } from "../hooks/useAuth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -115,16 +116,27 @@ export default function GpxSimulator() {
   });
 
   // Playback controls
+  const { user } = useAuth();
+
   const handlePlay = useCallback(() => {
     if (!socketRef.current?.connected) {
       setSocketError("Socket não conectado. Simulação sem emissão de telemetria.");
     } else {
       setSocketError(null);
+      // Registar associação do device com o utilizador atual antes de começar
+      if (user?.id) {
+        socketRef.current.emit("send_command", {
+          acao: "definir_modelo",
+          modelo: "GPX Simulator",
+          device_id: simSession.deviceId,
+          userId: user.id
+        });
+      }
     }
     simulationStartTimeRef.current = new Date();
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [syncEngine]);
+  }, [syncEngine, user?.id, simSession.deviceId]);
 
   const handlePause = useCallback(() => {
     syncEngine.pause();
@@ -270,14 +282,12 @@ export default function GpxSimulator() {
       {/* Telemetry data panels */}
       {hasRows && (
         <div
+          className="glass-panel"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 12,
             padding: 12,
-            border: "1px solid #374151",
-            borderRadius: 8,
-            background: "#111827",
           }}
         >
           {/* GPS Data (from GPX file) */}

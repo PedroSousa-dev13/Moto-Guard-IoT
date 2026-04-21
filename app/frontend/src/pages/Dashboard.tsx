@@ -171,9 +171,6 @@ export default function Dashboard() {
             <div className="db-status-dot" />
             <span>WS</span>
           </div>
-          <button className="db-night-mode-toggle"><Moon size={18} /></button>
-          <button className="db-night-mode-toggle"><Settings size={18} /></button>
-          <button className="db-night-mode-toggle"><LogOut size={18} /></button>
         </div>
       </div>
 

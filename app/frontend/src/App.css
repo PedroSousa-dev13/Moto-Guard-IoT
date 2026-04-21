@@ -357,8 +357,9 @@ button { font-family: inherit; }
 }
 
 .tile {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
   padding: 18px 20px;
   box-shadow: var(--shadow-sm);
@@ -422,9 +423,18 @@ button { font-family: inherit; }
 
 /* ── Panels ────────────────────────────────────────────────────────────────── */
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-panel {
+  background: var(--glass-bg, rgba(13, 13, 27, 0.7));
+  backdrop-filter: var(--glass-blur, blur(12px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
@@ -499,8 +509,8 @@ button { font-family: inherit; }
 .auth-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(8, 10, 15, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(8, 10, 15, 0.4);
+  backdrop-filter: blur(8px);
   z-index: 1000;
 }
 
@@ -510,8 +520,9 @@ button { font-family: inherit; }
   width: 420px;
   max-width: 92vw;
   height: 100%;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: blur(24px);
+  border-left: 1px solid var(--glass-border, var(--border));
   box-shadow: -12px 0 48px rgba(0, 0, 0, 0.15);
   z-index: 1001;
   transform: translateX(100%);
@@ -647,8 +658,9 @@ button { font-family: inherit; }
 .trip-grid { display: flex; flex-direction: column; gap: 12px; }
 
 .trip-card-v2 {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
   overflow: hidden;
   transition: all var(--transition);
@@ -729,8 +741,8 @@ button { font-family: inherit; }
 
 .trip-expanded-content {
   padding: 20px;
-  background: var(--surface-2);
-  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--glass-border, var(--border));
 }
 
 .expanded-stats-grid {
@@ -762,8 +774,8 @@ button { font-family: inherit; }
 .events-list-v2 { display: flex; flex-direction: column; gap: 8px; }
 
 .event-item-v2 {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border, var(--border));
   border-left: 3px solid var(--border);
   padding: 11px 14px;
   border-radius: var(--radius);
@@ -910,8 +922,9 @@ button { font-family: inherit; }
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
@@ -972,8 +985,9 @@ button { font-family: inherit; }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border, var(--border));
   border-radius: var(--radius);
   padding: 14px 18px;
   box-shadow: var(--shadow-sm);
@@ -1428,9 +1442,10 @@ button { font-family: inherit; }
   align-items: flex-start;
   gap: 14px;
   padding: 16px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--glass-border, var(--border));
   border-radius: var(--radius);
-  background: var(--surface);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
   transition: border-color var(--transition);
 }
 
@@ -2158,8 +2173,8 @@ button { font-family: inherit; }
 }
 
 .tech-item {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius);
   padding: 12px 14px;
 }
@@ -2183,8 +2198,9 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
   padding: 24px;
   box-shadow: var(--shadow-sm);
@@ -2344,8 +2360,9 @@ button { font-family: inherit; }
 }
 
 .garage-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
+  background: var(--glass-bg, var(--surface));
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border, var(--border));
   border-radius: var(--radius-md);
   padding: 18px;
   display: flex;
@@ -2364,8 +2381,8 @@ button { font-family: inherit; }
 .garage-card-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .garage-card-detail {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius);
   padding: 12px 14px;
   display: flex;

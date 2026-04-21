@@ -254,9 +254,9 @@ function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" })
 function FieldCard({ field }: { field: DataField }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{
-      border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden",
-      background: "var(--surface)", marginBottom: 8,
+    <div className="glass-panel" style={{
+      borderRadius: 12, overflow: "hidden",
+      marginBottom: 8,
     }}>
       <button
         type="button"
@@ -333,9 +333,10 @@ export default function About() {
       </div>
 
       {/* Intro */}
-      <div style={{
+      <div className="glass-panel" style={{
         background: "linear-gradient(135deg, rgba(79,70,229,0.08), rgba(14,165,233,0.06))",
         border: "1px solid rgba(79,70,229,0.2)", borderRadius: 14, padding: "20px 24px", marginBottom: 24,
+        backdropFilter: "blur(12px)",
       }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
           <Bike size={28} style={{ color: "#4f46e5", flexShrink: 0, marginTop: 2 }} />
@@ -379,7 +380,7 @@ export default function About() {
       {/* Sections */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {SECTIONS.map((section) => (
-          <div key={section.id} style={{ border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+          <div key={section.id} className="glass-panel" style={{ borderRadius: 14, overflow: "hidden" }}>
             <button
               type="button"
               onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
@@ -410,7 +411,7 @@ export default function About() {
       </div>
 
       {/* Event types summary */}
-      <div style={{ marginTop: 28, border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+      <div className="glass-panel" style={{ marginTop: 28, borderRadius: 14, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", background: "rgba(239,68,68,0.06)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
           <AlertTriangle size={18} style={{ color: "#ef4444" }} />
           <span style={{ fontWeight: 700, fontSize: 15 }}>Tipos de Eventos Detetados</span>
@@ -431,7 +432,8 @@ export default function About() {
             ].map((ev) => (
               <div key={ev.name} style={{
                 display: "flex", gap: 10, padding: "10px 12px",
-                background: "var(--surface-2)", borderRadius: 10, alignItems: "flex-start",
+                background: "rgba(0,0,0,0.2)", borderRadius: 10, alignItems: "flex-start",
+                border: "1px solid var(--glass-border)",
               }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{ev.icon}</span>
                 <div>

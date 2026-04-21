@@ -1,6 +1,6 @@
 import type { TripFeedItem } from "../types";
 
-export type PresetRange = "24h" | "7d" | "30d" | "365d" | "custom";
+export type PresetRange = "24h" | "7d" | "30d" | "365d" | "all" | "custom";
 export type Granularity = "hour" | "day" | "week";
 
 function toStartOfDay(d: Date) {
@@ -39,6 +39,7 @@ export function rangeWindow(
   if (range === "7d") return { from: new Date(end.getTime() - 7 * 24 * 3600 * 1000), to: end };
   if (range === "30d") return { from: new Date(end.getTime() - 30 * 24 * 3600 * 1000), to: end };
   if (range === "365d") return { from: new Date(end.getTime() - 365 * 24 * 3600 * 1000), to: end };
+  if (range === "all") return { from: new Date(0), to: end };
 
   const f = parseCustomDateInput(customFrom);
   const t = parseCustomDateInput(customTo);
