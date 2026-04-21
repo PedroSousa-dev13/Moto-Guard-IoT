@@ -24,6 +24,7 @@ import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import About from './pages/About';
 import RealSimulator from './pages/RealSimulator';
+import GpxSimulator from './pages/GpxSimulator';
 import './App.css';
 import './Layout.css';
 
@@ -75,6 +76,7 @@ function App() {
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/real-simulator" element={<RealSimulator />} />
+                      <Route path="/gpx-simulator" element={<GpxSimulator />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

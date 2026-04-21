@@ -48,6 +48,7 @@ const translations = {
     'sidebar.system': 'Sistema',
     'sidebar.simulator': 'Simulador',
     'sidebar.realSimulator': 'Simulador Real',
+    'sidebar.gpxSimulator': 'Simulador GPX',
     'sidebar.howItWorks': 'Como Funciona',
     'sidebar.gpx': 'GPX',
     
@@ -306,6 +307,7 @@ const translations = {
     'sidebar.system': 'System',
     'sidebar.simulator': 'Simulator',
     'sidebar.realSimulator': 'Real Simulator',
+    'sidebar.gpxSimulator': 'GPX Simulator',
     'sidebar.howItWorks': 'How It Works',
     'sidebar.gpx': 'GPX',
     
@@ -1096,6 +1098,7 @@ const es = {
   'sidebar.system': 'Sistema',
   'sidebar.simulator': 'Simulador',
   'sidebar.realSimulator': 'Simulador Real',
+  'sidebar.gpxSimulator': 'Simulador GPX',
   'sidebar.howItWorks': 'Cómo Funciona',
   'sidebar.gpx': 'GPX',
 
