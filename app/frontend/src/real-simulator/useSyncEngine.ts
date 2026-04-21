@@ -16,6 +16,7 @@ export interface SyncEngineOptions {
   videoRef: RefObject<HTMLVideoElement> | null; // null = modo timer
   playbackSpeed: number;
   onRowChange: (row: ParsedRow, index: number) => void;
+  onEnd?: () => void;
   maxHz?: number; // default 10
 }
 
@@ -65,7 +66,7 @@ export function findNearestIndex(rows: ParsedRow[], target: number): number {
 // ---------------------------------------------------------------------------
 
 export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
-  const { rows, videoRef, playbackSpeed, onRowChange, maxHz = 10 } = options;
+  const { rows, videoRef, playbackSpeed, onRowChange, onEnd, maxHz = 10 } = options;
 
   const intervalMs = Math.round(1000 / maxHz); // 100ms at 10 Hz
 
@@ -82,11 +83,13 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
   const videoRefRef = useRef(videoRef);
   const playbackSpeedRef = useRef(playbackSpeed);
   const onRowChangeRef = useRef(onRowChange);
+  const onEndRef = useRef(onEnd);
 
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { videoRefRef.current = videoRef; }, [videoRef]);
   useEffect(() => { playbackSpeedRef.current = playbackSpeed; }, [playbackSpeed]);
   useEffect(() => { onRowChangeRef.current = onRowChange; }, [onRowChange]);
+  useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
 
   // -------------------------------------------------------------------------
   // Core tick: called every intervalMs while playing
@@ -106,6 +109,18 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
     } else {
       // Timer mode: advance by (intervalMs / 1000) * playbackSpeed
       currentTimeSecRef.current += (intervalMs / 1000) * playbackSpeedRef.current;
+
+      // Auto-stop at end
+      const lastRow = currentRows[currentRows.length - 1];
+      if (lastRow && currentTimeSecRef.current >= lastRow.timestampSec) {
+        currentTimeSecRef.current = lastRow.timestampSec;
+        isPlayingRef.current = false;
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        if (onEndRef.current) onEndRef.current();
+      }
     }
 
     // Find nearest row

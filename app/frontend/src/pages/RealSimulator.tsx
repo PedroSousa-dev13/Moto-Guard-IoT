@@ -132,48 +132,43 @@ export default function RealSimulator() {
   // ---------------------------------------------------------------------------
   // useSyncEngine
   // ---------------------------------------------------------------------------
-
   const syncEngine = useSyncEngine({
     rows: simSession.rows,
     videoRef: simSession.videoFile ? videoRef : null,
     playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
+    onEnd: () => {
+      // Natural end
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+      const socket = socketRef.current;
+      if (socket?.connected && simSession.rows.length > 0) {
+        const lastRow = simSession.rows[simSession.rows.length - 1];
+        const payload = buildPayload(
+          lastRow,
+          simSession.deviceId,
+          simulationStartTimeRef.current,
+          "TRIP_ENDED",
+          simSession.rows.length - 1
+        );
+        emitTelemetry(socket, payload);
+      }
+      setCurrentTimeSec(0);
+      setSession((prev) => ({
+        ...prev,
+        playbackState: "stopped",
+        currentRowIndex: 0,
+        emittedCount: 0,
+      }));
+    }
   });
 
   // ---------------------------------------------------------------------------
   // Playback handlers
   // ---------------------------------------------------------------------------
   const { user } = useAuth();
-
-  const handlePlay = useCallback(() => {
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
-      setSocketError(
-        "Socket não conectado. A simulação local vai iniciar sem emissão de telemetria."
-      );
-    } else {
-      setSocketError(null);
-      // Registar associação do device com o utilizador atual
-      if (user?.id) {
-        socket.emit("send_command", {
-          acao: "definir_modelo",
-          modelo: "Real Simulator",
-          device_id: simSession.deviceId,
-          userId: user.id
-        });
-      }
-    }
-    simulationStartTimeRef.current = new Date();
-
-    // Start video if available
-    if (simSession.videoFile && videoRef.current) {
-      videoRef.current.playbackRate = simSession.playbackSpeed;
-      videoRef.current.play().catch(() => {});
-    }
-
-    syncEngine.start();
-    setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId]);
 
   const handlePause = useCallback(() => {
     if (simSession.videoFile && videoRef.current) {
@@ -215,6 +210,36 @@ export default function RealSimulator() {
       emittedCount: 0,
     }));
   }, [syncEngine, simSession.rows, simSession.currentRowIndex, simSession.deviceId]);
+
+  const handlePlay = useCallback(() => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) {
+      setSocketError(
+        "Socket não conectado. A simulação local vai iniciar sem emissão de telemetria."
+      );
+    } else {
+      setSocketError(null);
+      // Registar associação do device com o utilizador atual
+      if (user?.id) {
+        socket.emit("send_command", {
+          acao: "definir_modelo",
+          modelo: "Real Simulator",
+          device_id: simSession.deviceId,
+          userId: user.id
+        });
+      }
+    }
+    simulationStartTimeRef.current = new Date();
+
+    // Start video if available
+    if (simSession.videoFile && videoRef.current) {
+      videoRef.current.playbackRate = simSession.playbackSpeed;
+      videoRef.current.play().catch(() => {});
+    }
+
+    syncEngine.start();
+    setSession((prev) => ({ ...prev, playbackState: "playing" }));
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId]);
 
   const handleSpeedChange = useCallback(
     (speed: PlaybackSpeed) => {

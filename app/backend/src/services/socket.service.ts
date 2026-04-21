@@ -99,12 +99,17 @@ class SocketService {
         const userId = command?.userId ?? null;
         if (preferredDeviceId && userId) {
           const motoModel =
+            command?.motorcycleName ??
             command?.modelo ??
+            this.lastMotoModelByDevice.get(preferredDeviceId) ??
             this.lastTelemetryByDevice.get(preferredDeviceId)?.system?.moto_model ??
             telemetryStore.latest?.system?.moto_model ??
             "Simulador";
           try {
             await this.ensureAssociationForDevice(preferredDeviceId, userId, motoModel);
+            // Guardar para uso na próxima telemetria que iniciar uma viagem
+            this.lastUserIdByDevice.set(preferredDeviceId, userId);
+            this.lastMotoModelByDevice.set(preferredDeviceId, motoModel);
           } catch (error) {
             console.error("Erro ao associar device ao utilizador:", error);
           }
@@ -432,6 +437,13 @@ class SocketService {
 
     this.tripActiveByDevice.set(deviceId, false);
     this.stationaryTicksByDevice.set(deviceId, 0);
+
+    // Quando a viagem acaba automaticamente, enviamos o comando "parar" 
+    // para o simulador, tal como se o utilizador tivesse carregado no botão.
+    mqttService.publishCommand({ 
+      acao: "parar", 
+      device_id: deviceId 
+    });
 
     if (!tripId) {
       console.warn(`Nenhuma viagem ativa para deviceId: ${deviceId}`);

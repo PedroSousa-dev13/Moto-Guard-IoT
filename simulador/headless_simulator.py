@@ -793,14 +793,23 @@ class HeadlessSimulator:
             s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
 
         # ── 15. GPS ──────────────────────────────────────────────────
-        if self.route_cursor is not None and s.velocidade > 1:
-            speed_ms = s.velocidade / 3.6
-            dist_m = speed_ms * PUBLISH_INTERVAL
-            lat, lng, bearing = self.route_cursor.step(dist_m)
-            s.lat = lat
-            s.lng = lng
-            s._target_yaw = bearing
-            s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+        if self.route_cursor is not None:
+            # Continuar a mover-se mesmo a baixa velocidade para conseguir chegar ao fim
+            if s.velocidade > 0.1:
+                speed_ms = s.velocidade / 3.6
+                dist_m = speed_ms * PUBLISH_INTERVAL
+                lat, lng, bearing = self.route_cursor.step(dist_m)
+                s.lat = lat
+                s.lng = lng
+                s._target_yaw = bearing
+                s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+            
+            # Se estivermos muito perto do fim (menos de 5m) e quase parados, forçamos o fim
+            dist_end = self.route_cursor.distance_to_end_m()
+            if dist_end is not None and dist_end < 5.0 and s.velocidade < 2.0:
+                self.route_cursor.step(dist_end) # isto vai pôr _finished = True
+                log("Snap ao destino final (dist < 5m)")
+
             if self.route_cursor.finished:
                 s._target_vel = 0.0
 
@@ -917,6 +926,18 @@ class HeadlessSimulator:
                     s._target_vel = 0.0
                     log("QUEDA CONFIRMADA — geração de dados parada. "
                         "Aguarda 'reset_eventos' ou 'arrancar' para retomar.")
+
+                # Detectar fim de rota e paragem total
+                if self.route_cursor and self.route_cursor.finished and self.tele.velocidade < 0.1:
+                    if not hasattr(self, '_stop_countdown'): self._stop_countdown = 15
+                    self._stop_countdown -= 1
+                    if self._stop_countdown <= 0:
+                        self._generation_paused = True
+                        delattr(self, '_stop_countdown')
+                        log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
+                    else:
+                        if self._stop_countdown % 5 == 0:
+                            log(f"A aguardar paragem total para fechar viagem... ({self._stop_countdown} ticks)")
 
                 # Log resumido a cada 10 ticks
                 if self._tick_count % 10 == 0:
