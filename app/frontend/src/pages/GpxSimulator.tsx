@@ -113,30 +113,35 @@ export default function GpxSimulator() {
     videoRef: null,
     playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
+    onEnd: () => {
+      // Quando termina naturalmente, fazemos o mesmo que o Stop mas sem chamar syncEngine.stop()
+      // (evitando recursão/circularidade)
+      const socket = socketRef.current;
+      if (socket?.connected && simSession.rows.length > 0) {
+        const lastRow = simSession.rows[simSession.rows.length - 1];
+        const payload = buildPayload(
+          lastRow,
+          simSession.deviceId,
+          simulationStartTimeRef.current,
+          "TRIP_ENDED",
+          simSession.rows.length - 1
+        );
+        emitTelemetry(socket, payload);
+      }
+      setCurrentTimeSec(0);
+      setSession((prev) => ({
+        ...prev,
+        playbackState: "stopped",
+        currentRowIndex: 0,
+        emittedCount: 0,
+      }));
+    }
   });
 
-  // Playback controls
+  // ---------------------------------------------------------------------------
+  // Playback handlers
+  // ---------------------------------------------------------------------------
   const { user } = useAuth();
-
-  const handlePlay = useCallback(() => {
-    if (!socketRef.current?.connected) {
-      setSocketError("Socket não conectado. Simulação sem emissão de telemetria.");
-    } else {
-      setSocketError(null);
-      // Registar associação do device com o utilizador atual antes de começar
-      if (user?.id) {
-        socketRef.current.emit("send_command", {
-          acao: "definir_modelo",
-          modelo: "GPX Simulator",
-          device_id: simSession.deviceId,
-          userId: user.id
-        });
-      }
-    }
-    simulationStartTimeRef.current = new Date();
-    syncEngine.start();
-    setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [syncEngine, user?.id, simSession.deviceId]);
 
   const handlePause = useCallback(() => {
     syncEngine.pause();
@@ -167,6 +172,25 @@ export default function GpxSimulator() {
       emittedCount: 0,
     }));
   }, [syncEngine, simSession.rows, simSession.currentRowIndex, simSession.deviceId]);
+
+  const handlePlay = useCallback(() => {
+    if (!socketRef.current?.connected) {
+      setSocketError("Socket não conectado. Simulação sem emissão de telemetria.");
+    } else {
+      setSocketError(null);
+      if (user?.id) {
+        socketRef.current.emit("send_command", {
+          acao: "definir_modelo",
+          modelo: "GPX Simulator",
+          device_id: simSession.deviceId,
+          userId: user.id
+        });
+      }
+    }
+    simulationStartTimeRef.current = new Date();
+    syncEngine.start();
+    setSession((prev) => ({ ...prev, playbackState: "playing" }));
+  }, [syncEngine, user?.id, simSession.deviceId]);
 
   const handleSpeedChange = useCallback((speed: PlaybackSpeed) => {
     setSession((prev) => ({ ...prev, playbackSpeed: speed }));

@@ -64,6 +64,7 @@ export interface TelemetryPayload {
 export interface SimulatorCommand {
   acao: string;
   modelo?: string;
+  motorcycleName?: string;
   tipo?: string;
   device_id?: string;
   userId?: string;

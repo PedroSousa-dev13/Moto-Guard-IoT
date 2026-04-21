@@ -27,9 +27,22 @@ export default function SimulatorContexts() {
   const [routeStart, setRouteStart] = useState<{ lat: number; lng: number } | null>(null);
 
   // Wrapper que deteta quando uma rota é enviada e incrementa o sinal
-  function sendCommandAndSignal(cmd: Parameters<typeof sendCommand>[0]) {
-    sendCommand(cmd);
-    if ((cmd as { acao: string }).acao === "definir_rota") {
+  function sendCommandAndSignal(cmd: any) {
+    // Inject userId into command for backend association
+    const enrichedCmd = { ...cmd, userId: user?.id };
+
+    // Se for definir_modelo, vamos traduzir o nome da mota (que o user escolheu)
+    // para a categoria (que o simulador precisa) e manter o nome para a associação.
+    if (cmd.acao === "definir_modelo" && cmd.modelo) {
+      const bike = userMotos.find(m => m.name === cmd.modelo);
+      if (bike) {
+        enrichedCmd.motorcycleName = bike.name;
+        enrichedCmd.modelo = bike.category || "Naked";
+      }
+    }
+
+    sendCommand(enrichedCmd);
+    if (cmd.acao === "definir_rota") {
       setMapRouteSignal((v) => v + 1);
     }
   }
@@ -50,7 +63,7 @@ export default function SimulatorContexts() {
     ? undefined
     : motosLoading
       ? []
-      : Array.from(new Set(userMotos.map((m) => m.category).filter(Boolean))) as string[];
+      : userMotos.map((m) => m.name).filter(Boolean) as string[];
 
   async function loadMotos() {
     setMotosLoading(true);
