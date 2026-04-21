@@ -183,6 +183,7 @@ export default function Analytics() {
     "7d": "Últimos 7 dias",
     "30d": "Últimos 30 dias",
     "365d": "Último ano",
+    all: "Todo o histórico",
     custom: "Período custom",
   };
 
@@ -227,6 +228,7 @@ export default function Analytics() {
             <option value="7d">Semana (7 dias)</option>
             <option value="30d">Mês (30 dias)</option>
             <option value="365d">Ano (365 dias)</option>
+            <option value="all">Todo o histórico</option>
             <option value="custom">Custom</option>
           </select>
           <select

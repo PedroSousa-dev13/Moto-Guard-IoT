@@ -92,13 +92,12 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {/* Profile selector */}
       <div
+        className="glass-panel"
         style={{
           display: "flex",
           alignItems: "center",
           gap: 10,
           padding: "8px 12px",
-          background: "rgba(17,24,39,0.6)",
-          border: "1px solid #374151",
           borderRadius: 8,
         }}
       >
@@ -111,10 +110,10 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
           style={{
             flex: 1,
             padding: "6px 10px",
-            background: "#1f2937",
-            border: "1px solid #4b5563",
+            background: "rgba(0,0,0,0.2)",
+            border: "1px solid var(--glass-border)",
             borderRadius: 6,
-            color: "#f9fafb",
+            color: "var(--text)",
             fontSize: 13,
           }}
         >
@@ -138,12 +137,12 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
         style={{
           padding: "28px 20px",
           borderRadius: 10,
-          border: `2px dashed ${dragging ? "#22d3ee" : error ? "#ef4444" : "#4b5563"}`,
+          border: `2px dashed ${dragging ? "var(--accent)" : error ? "var(--red)" : "var(--glass-border)"}`,
           background: dragging
             ? "rgba(34,211,238,0.06)"
             : error
               ? "rgba(239,68,68,0.04)"
-              : "rgba(17,24,39,0.5)",
+              : "rgba(0,0,0,0.2)",
           textAlign: "center",
           cursor: "pointer",
           transition: "all 0.2s",
@@ -203,9 +202,9 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
                   key={s.label}
                   style={{
                     padding: "6px 4px",
-                    background: "rgba(17,24,39,0.6)",
+                    background: "rgba(255,255,255,0.03)",
                     borderRadius: 6,
-                    border: "1px solid rgba(75,85,99,0.5)",
+                    border: "1px solid var(--glass-border)",
                   }}
                 >
                   <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>

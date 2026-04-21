@@ -16,6 +16,7 @@ import VideoPlayer from "../real-simulator/VideoPlayer";
 import { PlaybackControls } from "../real-simulator/PlaybackControls";
 import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
+import { useAuth } from "../hooks/useAuth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -142,6 +143,7 @@ export default function RealSimulator() {
   // ---------------------------------------------------------------------------
   // Playback handlers
   // ---------------------------------------------------------------------------
+  const { user } = useAuth();
 
   const handlePlay = useCallback(() => {
     const socket = socketRef.current;
@@ -151,6 +153,15 @@ export default function RealSimulator() {
       );
     } else {
       setSocketError(null);
+      // Registar associação do device com o utilizador atual
+      if (user?.id) {
+        socket.emit("send_command", {
+          acao: "definir_modelo",
+          modelo: "Real Simulator",
+          device_id: simSession.deviceId,
+          userId: user.id
+        });
+      }
     }
     simulationStartTimeRef.current = new Date();
 
@@ -162,7 +173,7 @@ export default function RealSimulator() {
 
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine]);
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId]);
 
   const handlePause = useCallback(() => {
     if (simSession.videoFile && videoRef.current) {
@@ -366,14 +377,12 @@ export default function RealSimulator() {
 
       {hasRows && (
         <div
+          className="glass-panel"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 12,
             padding: 12,
-            border: "1px solid #374151",
-            borderRadius: 8,
-            background: "#111827",
           }}
         >
           <div

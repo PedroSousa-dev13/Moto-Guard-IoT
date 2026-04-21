@@ -708,7 +708,7 @@ export default function TripDetail() {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="card" style={{ padding: 14 }}>
+    <div className="glass-panel" style={{ padding: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
         <h2 style={{ margin: 0, fontSize: 16 }}>{title}</h2>
       </div>

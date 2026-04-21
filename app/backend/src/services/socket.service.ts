@@ -121,6 +121,22 @@ class SocketService {
         }
       });
 
+      socket.on("telemetry_update", async (payload: TelemetryPayload) => {
+        // Processar telemetria vinda do frontend (Simuladores GPX/Real)
+        this.lastTelemetryByDevice.set(payload.system.device_id, payload);
+        
+        // Se o payload não trouxer userId (o que é o caso atual), tentamos ver se 
+        // já registamos um userId para este device nesta sessão.
+        // Se não, o startTrip usará o que estiver no lastUserIdByDevice.
+        
+        influxService.writeTelemetry(payload);
+        socket.broadcast.emit("telemetry_update", payload);
+        
+        this.handleAlertEvent(payload);
+        this.handleTripLifecycle(payload);
+        await this.handleHeuristicEvents(payload);
+      });
+
       socket.on("disconnect", () => {
         this._connectedClients--;
         console.log(`Cliente desconectado (${this._connectedClients} restantes)`);
@@ -154,8 +170,12 @@ class SocketService {
     };
 
     try {
+      const lastUserId = this.lastUserIdByDevice.get(deviceId);
       const motorcycle = await prisma.motorcycle.findFirst({
-        where: { deviceId },
+        where: { 
+          deviceId,
+          ...(lastUserId ? { userId: lastUserId } : {})
+        },
         include: { profile: true },
       });
 
@@ -314,7 +334,10 @@ class SocketService {
     const timestamp = payload.system.timestamp;
 
     try {
-      const association = await deviceAssociationService.getAssociation(deviceId);
+      // Priorizar o último utilizador que interagiu com este dispositivo (essencial para o simulador partilhado)
+      const lastUserId = this.lastUserIdByDevice.get(deviceId);
+      const motoModel = payload.system.moto_model;
+      const association = await deviceAssociationService.getAssociation(deviceId, lastUserId, motoModel);
 
       if (!association) {
         console.warn(`Mota não encontrada para deviceId: ${deviceId}`);
@@ -628,17 +651,17 @@ class SocketService {
     const lastPayload = this.lastTelemetryByDevice.get(deviceId);
     if (!lastPayload) return null;
 
-    let association = await deviceAssociationService.getAssociation(deviceId);
-    if (!association) {
-      const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
-      if (userId) {
-        await deviceAssociationService.registerDevice(
-          deviceId,
-          userId,
-          lastPayload.system.moto_model || `Simulador ${deviceId}`,
-        );
-        association = await deviceAssociationService.getAssociation(deviceId);
-      }
+    const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+    const motoModel = lastPayload.system.moto_model;
+    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
+    
+    if (!association && userId) {
+      await deviceAssociationService.registerDevice(
+        deviceId,
+        userId,
+        lastPayload.system.moto_model || `Simulador ${deviceId}`,
+      );
+      association = await deviceAssociationService.getAssociation(deviceId, userId);
     }
     if (!association) return null;
 
@@ -674,17 +697,17 @@ class SocketService {
     deviceId: string,
     endedAt: Date,
   ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
-    let association = await deviceAssociationService.getAssociation(deviceId);
-    if (!association) {
-      const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
-      if (userId) {
-        await deviceAssociationService.registerDevice(
-          deviceId,
-          userId,
-          this.lastMotoModelByDevice.get(deviceId) ?? `Simulador ${deviceId}`,
-        );
-        association = await deviceAssociationService.getAssociation(deviceId);
-      }
+    const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+    const motoModel = this.lastMotoModelByDevice.get(deviceId);
+    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
+    
+    if (!association && userId) {
+      await deviceAssociationService.registerDevice(
+        deviceId,
+        userId,
+        this.lastMotoModelByDevice.get(deviceId) ?? `Simulador ${deviceId}`,
+      );
+      association = await deviceAssociationService.getAssociation(deviceId, userId);
     }
     if (!association) return null;
 
@@ -713,8 +736,12 @@ class SocketService {
   private async ensureAssociationForDevice(deviceId: string, userId: string, motoModel: string): Promise<void> {
     this.lastUserIdByDevice.set(deviceId, userId);
     this.lastMotoModelByDevice.set(deviceId, motoModel);
-    const association = await deviceAssociationService.getAssociation(deviceId);
-    if (association) return;
+    // Verificar se ESTE utilizador já tem associação com este device e modelo
+    const association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
+    
+    // Se a associação encontrada pertence a outro utilizador, ou não existe, registamos/criamos uma nova para este utilizador
+    if (association && association.userId === userId) return;
+
     await deviceAssociationService.registerDevice(deviceId, userId, motoModel || `Simulador ${deviceId}`);
   }
 
