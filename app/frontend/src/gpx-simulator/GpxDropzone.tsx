@@ -216,23 +216,7 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
               ))}
             </div>
 
-            {/* Trim info */}
-            {stats.wasTrimmed && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: "6px 10px",
-                  borderRadius: 6,
-                  background: "rgba(251,191,36,0.08)",
-                  border: "1px solid rgba(251,191,36,0.3)",
-                  fontSize: 12,
-                  color: "#fbbf24",
-                }}
-              >
-                ✂️ Cortado para 10 min (original: {formatDuration(stats.originalDurationSec)},{" "}
-                {stats.originalPointCount.toLocaleString()} pontos)
-              </div>
-            )}
+            </div>
 
             <div style={{ color: "#6b7280", fontSize: 11, marginTop: 10 }}>
               Clica ou arrasta para carregar outro ficheiro
