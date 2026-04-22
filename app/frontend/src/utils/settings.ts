@@ -134,8 +134,10 @@ export function isNightTime(): boolean {
  * If theme is "auto", returns "dark" during night time (18:00-06:00), "light" otherwise.
  */
 export function getEffectiveTheme(theme: Theme): "light" | "dark" {
-  // We're enforcing dark theme globally for the premium aesthetic.
-  return "dark";
+  if (theme === "auto") {
+    return isNightTime() ? "dark" : "light";
+  }
+  return theme;
 }
 
 /**

@@ -54,98 +54,100 @@ export function PlaybackControls({
   };
 
   return (
-    <div className="playback-controls">
+    <div className="bg-surface/80 backdrop-blur-2xl border-t border-border-glass px-8 py-6 flex flex-col md:flex-row items-center gap-8 shadow-2xl animate-fade-in">
       {/* Transport buttons */}
-      <div className="playback-controls__transport">
+      <div className="flex items-center gap-3">
         {isPlaying ? (
           <button
-            className="playback-controls__btn"
+            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-panel border border-border-glass-subtle text-muted hover:text-text hover:bg-panel-hover transition-all shadow-inner active:scale-95"
             onClick={onPause}
             disabled={disabled}
             aria-label="Pause"
           >
-            <Pause size={20} />
+            <Pause size={24} fill="currentColor" />
           </button>
         ) : (
           <button
-            className="playback-controls__btn playback-controls__btn--play"
+            className="w-14 h-14 flex items-center justify-center rounded-2xl bg-accent text-white shadow-xl shadow-accent/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
             onClick={onPlay}
             disabled={disabled}
             aria-label="Play"
           >
-            <Play size={20} />
+            <Play size={28} fill="white" />
           </button>
         )}
         <button
-          className="playback-controls__btn"
+          className="w-12 h-12 flex items-center justify-center rounded-2xl bg-panel border border-border-glass-subtle text-muted hover:text-red hover:bg-red/10 transition-all shadow-inner active:scale-95 disabled:opacity-30"
           onClick={onStop}
           disabled={disabled || playbackState === 'idle'}
           aria-label="Stop"
         >
-          <Square size={20} />
+          <Square size={20} fill="currentColor" />
         </button>
       </div>
 
       {/* Progress bar */}
-      <div className="playback-controls__progress">
-        <input
-          type="range"
-          min={0}
-          max={totalDurationSec || 0}
-          step={0.1}
-          value={currentTimeSec}
-          disabled={disabled}
-          onChange={(e) => onSeek(parseFloat(e.target.value))}
-          aria-label="Seek"
-          style={{ width: '100%' }}
-        />
-        <div className="playback-controls__time">
+      <div className="flex-1 flex flex-col gap-2 w-full">
+        <div className="relative group">
+          <input
+            type="range"
+            min={0}
+            max={totalDurationSec || 0}
+            step={0.1}
+            value={currentTimeSec}
+            disabled={disabled}
+            onChange={(e) => onSeek(parseFloat(e.target.value))}
+            aria-label="Seek"
+            className="w-full h-2 bg-panel rounded-lg appearance-none cursor-pointer accent-accent"
+          />
+        </div>
+        <div className="flex justify-between items-center text-[0.65rem] font-black uppercase tracking-widest text-muted">
           <span>{formatTime(currentTimeSec)}</span>
-          <span>/</span>
-          <span>{formatTime(totalDurationSec)}</span>
+          <span className="opacity-40">{formatTime(totalDurationSec)}</span>
         </div>
       </div>
 
       {/* Speed selector */}
-      <div className="playback-controls__speed">
-        <label htmlFor="playback-speed">Velocidade</label>
-        <select
-          id="playback-speed"
-          value={playbackSpeed}
-          disabled={disabled}
-          onChange={(e) => onSpeedChange(parseFloat(e.target.value) as PlaybackSpeed)}
-        >
-          {SPEED_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}×
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col gap-2 min-w-[100px]">
+        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted opacity-60">Velocidade</label>
+        <div className="relative">
+          <select
+            className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
+            value={playbackSpeed}
+            disabled={disabled}
+            onChange={(e) => onSpeedChange(parseFloat(e.target.value) as PlaybackSpeed)}
+          >
+            {SPEED_OPTIONS.map((s) => (
+              <option key={s} value={s} className="bg-surface">
+                {s}×
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Motorcycle / Device ID */}
-      <div className="playback-controls__device">
-        <label htmlFor="device-select">
-          <Bike size={12} style={{ marginRight: 4 }} />
-          Mota da Garagem
+      <div className="flex flex-col gap-2 min-w-[200px]">
+        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted opacity-60 flex items-center gap-1.5">
+          <Bike size={14} /> Mota da Garagem
         </label>
         {motorcycles.length > 0 ? (
           <select
-            id="device-select"
+            className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
             disabled={isPlaying || disabled}
             value={motorcycles.find(m => m.deviceId === deviceId)?.id || ""}
             onChange={(e) => handleMotorcycleChange(e.target.value)}
           >
-            <option value="" disabled>— Selecionar Mota —</option>
+            <option value="" disabled className="bg-surface">— Selecionar Mota —</option>
             {motorcycles.map((m) => (
-              <option key={m.id} value={m.id}>
+              <option key={m.id} value={m.id} className="bg-surface">
                 {m.name} ({m.deviceId})
               </option>
             ))}
           </select>
         ) : (
           <input
-            id="device-id"
+            className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text outline-none focus:border-accent transition-colors placeholder:opacity-20"
             type="text"
             value={deviceId}
             placeholder="REAL-SIM-001"
@@ -156,9 +158,9 @@ export function PlaybackControls({
       </div>
 
       {/* Emitted counter */}
-      <div className="playback-controls__counter">
-        <span>Payloads emitidos:</span>
-        <strong>{emittedCount}</strong>
+      <div className="bg-panel border border-border-glass-subtle rounded-2xl px-5 py-3 flex flex-col gap-0.5 shadow-inner">
+        <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Payloads</span>
+        <strong className="text-sm font-black text-accent tabular-nums tracking-tighter">{emittedCount.toLocaleString()}</strong>
       </div>
     </div>
   );

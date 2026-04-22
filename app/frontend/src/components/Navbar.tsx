@@ -22,7 +22,7 @@ const Navbar: FC = () => {
   }, [navigate, location]);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 bg-bg/60 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/10 transition-all duration-300">
+    <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 bg-bg/60 backdrop-blur-xl border-b border-border-glass-subtle shadow-xl shadow-black/10 transition-all duration-300">
       <div className="flex items-center gap-4">
         {location.pathname === '/dashboard' ? (
           <div className="hidden" />
@@ -31,7 +31,7 @@ const Navbar: FC = () => {
             <div className="p-2 rounded-xl bg-accent/10 text-accent group-hover:scale-110 transition-transform">
               <Bike size={22} />
             </div>
-            <span className="text-lg font-black text-white tracking-tighter">MotoGuard</span>
+            <span className="text-lg font-black text-text tracking-tighter">MotoGuard</span>
           </Link>
         )}
       </div>
@@ -41,18 +41,18 @@ const Navbar: FC = () => {
           <div className="flex items-center gap-3">
             <NotificationCenter />
             
-            <div className="hidden sm:flex items-center gap-3 bg-white/5 border border-white/10 p-1.5 rounded-2xl group hover:bg-white/10 transition-all cursor-pointer">
+            <div className="hidden sm:flex items-center gap-3 bg-panel border border-border-glass-subtle p-1.5 rounded-2xl group hover:bg-panel-hover transition-all cursor-pointer">
               <div className="w-8 h-8 rounded-xl bg-accent-gradient flex items-center justify-center text-[0.65rem] font-black text-white shadow-lg shadow-accent/20">
                 {getInitials(user?.name)}
               </div>
-              <span className="text-[0.7rem] font-black text-muted tracking-wide px-2 uppercase opacity-80 group-hover:text-white transition-colors">
+              <span className="text-[0.7rem] font-black text-muted tracking-wide px-2 uppercase opacity-80 group-hover:text-text transition-colors">
                 {user?.name}
               </span>
             </div>
 
             <Link 
               to="/settings" 
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-all" 
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-panel border border-border-glass-subtle text-muted hover:text-text hover:bg-panel-hover transition-all" 
               title="Definições"
             >
               <Settings size={18} />

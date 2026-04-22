@@ -96,10 +96,10 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
   return (
     <div className="flex flex-col gap-6 h-full min-h-[500px]">
       {!data ? (
-        <div className="flex-1 flex items-center justify-center bg-black/40 rounded-[2.5rem] border border-white/5 overflow-hidden group">
+        <div className="flex-1 flex items-center justify-center bg-panel rounded-[2.5rem] border border-border-glass-subtle overflow-hidden group">
           <div className="flex gap-4 animate-pulse">
             {'SIMULADOR 3D'.split('').map((ch, i) => (
-              <span key={i} className="text-4xl md:text-6xl font-black text-white/10 group-hover:text-accent/20 transition-colors" style={{ animationDelay: `${i * 0.1}s` }}>
+              <span key={i} className="text-4xl md:text-6xl font-black text-muted opacity-10 group-hover:text-accent/20 transition-colors" style={{ animationDelay: `${i * 0.1}s` }}>
                 {ch === ' ' ? '\u00A0' : ch}
               </span>
             ))}
@@ -107,7 +107,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between px-6 py-4 bg-white/5 border border-white/10 rounded-2xl">
+          <div className="flex items-center justify-between px-6 py-4 bg-panel border border-border-glass-subtle rounded-2xl">
             <h3 className="text-xl font-black tracking-tighter m-0" style={{ color: modelColor }}>{modelName || 'MotoGuard'}</h3>
             <div className="flex items-center gap-3">
               <Shield size={18} className={engineTempStatus === 'critical' || oilPressureStatus === 'critical' ? 'text-red' : 'text-green'} />
@@ -118,7 +118,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
             </div>
           </div>
 
-          <div className="flex-1 relative bg-black/40 rounded-[2.5rem] border border-white/5 overflow-hidden min-h-[350px]">
+          <div className="flex-1 relative bg-black/40 rounded-[2.5rem] border border-border-glass-subtle overflow-hidden min-h-[350px]">
             <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-muted font-bold gap-3"><Loader2 className="animate-spin" /> Carregando 3D...</div>}>
               <Motorcycle3DView
                 roll={imu?.roll_deg ?? 0}
@@ -157,28 +157,28 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className={`flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 group hover:border-white/20 transition-all ${statusColor(oilPressureStatus)}`}>
+            <div className={`flex items-center gap-4 p-4 rounded-2xl bg-panel border border-border-glass-subtle group hover:border-accent/20 transition-all ${statusColor(oilPressureStatus)}`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${statusBg(oilPressureStatus)}`}>
                 <AlertTriangle size={18} />
               </div>
               <div className="flex flex-col">
                 <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Pressão Óleo</span>
-                <span className="text-lg font-black tracking-tight">{health?.oil_pressure_bar ?? '—'} bar</span>
+                <span className="text-lg font-black tracking-tight text-text">{health?.oil_pressure_bar ?? '—'} bar</span>
               </div>
             </div>
-            <div className={`flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 group hover:border-white/20 transition-all ${statusColor(batteryStatus)}`}>
+            <div className={`flex items-center gap-4 p-4 rounded-2xl bg-panel border border-border-glass-subtle group hover:border-accent/20 transition-all ${statusColor(batteryStatus)}`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${statusBg(batteryStatus)}`}>
                 <CheckCircle2 size={18} />
               </div>
               <div className="flex flex-col">
                 <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Bateria</span>
-                <span className="text-lg font-black tracking-tight">{telemetry?.voltage ?? '—'} V</span>
+                <span className="text-lg font-black tracking-tight text-text">{telemetry?.voltage ?? '—'} V</span>
               </div>
             </div>
           </div>
 
           {sendCommand && (
-            <div className="flex flex-wrap items-center gap-3 p-6 bg-white/5 border border-white/10 rounded-2xl">
+            <div className="flex flex-wrap items-center gap-3 p-6 bg-panel border border-border-glass-subtle rounded-2xl">
               <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted mr-3">Simulação</span>
               <div className="flex items-center gap-2">
                 {[1, 2, 5, 10].map((m) => (
@@ -186,8 +186,8 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
                     key={m}
                     className={`px-4 py-2 rounded-xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${
                       !running 
-                        ? 'opacity-30 cursor-not-allowed bg-white/5' 
-                        : 'bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95'
+                        ? 'opacity-30 cursor-not-allowed bg-surface' 
+                        : 'bg-surface border border-border-glass-subtle text-muted hover:text-accent hover:border-accent/40 hover:scale-105 active:scale-95'
                     }`}
                     onMouseDown={() => handleSpeedPress(m)}
                     onMouseUp={m === 1 ? undefined : handleSpeedRelease}
@@ -207,7 +207,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
                     ? 'opacity-30 cursor-not-allowed bg-red/10 border border-red/20 text-red/40' 
                     : speedingActive
                       ? 'bg-red text-white shadow-lg shadow-red/20 animate-pulse'
-                      : 'bg-red/10 border border-red/20 text-red hover:bg-red/20 hover:scale-105 active:scale-95'
+                      : 'bg-red/10 border border-red/20 text-red hover:bg-red hover:text-white hover:shadow-lg hover:shadow-red/20 hover:scale-105 active:scale-95'
                 }`}
                 onClick={toggleSpeeding}
                 disabled={!running}

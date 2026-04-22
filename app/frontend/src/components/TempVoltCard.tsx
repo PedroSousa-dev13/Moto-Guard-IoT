@@ -28,17 +28,17 @@ function Bar({ name, value, pct, color, icon }: BarProps) {
   const bg = color ?? barColor(clampedPct);
 
   return (
-    <div className="bar-container">
-      <div className="bar-label">
-        <span className="name">
-          {icon && <span className="bar-icon">{icon}</span>}
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between items-center text-[0.65rem] font-black uppercase tracking-widest">
+        <span className="flex items-center gap-2 text-muted">
+          {icon && <span className="opacity-50">{icon}</span>}
           {name}
         </span>
-        <span className="val">{value}</span>
+        <span className="text-text tabular-nums">{value}</span>
       </div>
-      <div className="bar-track">
+      <div className="h-1.5 w-full bg-panel rounded-full overflow-hidden border border-border-glass-subtle">
         <div
-          className="bar-fill"
+          className="h-full transition-all duration-1000 ease-out rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]"
           style={{ width: `${clampedPct}%`, background: bg }}
         />
       </div>
@@ -58,7 +58,7 @@ export default function TempVoltCard({ telemetry, health }: TempVoltCardProps) {
 
   return (
     <Card title="Saúde & Fluidos">
-      <div className="bar-list">
+      <div className="flex flex-col gap-6">
         <Bar 
           icon={<Thermometer size={14} />}
           name="Temp. Motor" 

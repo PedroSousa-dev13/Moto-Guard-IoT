@@ -4,10 +4,11 @@
 // Drag-and-drop GPX file upload with motorcycle profile selector and stats.
 // =============================================================================
 
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, ChangeEvent, DragEvent } from "react";
 import { parseGPX } from "./gpxParser";
 import type { GpxStats } from "./gpxParser";
 import type { ParseResult } from "../real-simulator/csvParser";
+import { Bike, RefreshCcw, AlertTriangle, CheckCircle2, Map as MapIcon } from "lucide-react";
 
 interface GpxDropzoneProps {
   onParsed: (result: ParseResult, stats: GpxStats) => void;
@@ -64,7 +65,7 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    (e: DragEvent) => {
       e.preventDefault();
       setDragging(false);
       const file = e.dataTransfer.files[0];
@@ -74,7 +75,7 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
   );
 
   const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) processFile(file);
     },
@@ -89,36 +90,19 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="flex flex-col gap-4">
       {/* Profile selector */}
-      <div
-        className="glass-panel"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "8px 12px",
-          borderRadius: 8,
-        }}
-      >
-        <label style={{ fontSize: 13, color: "#9ca3af", whiteSpace: "nowrap" }}>
-          Perfil de moto:
+      <div className="flex items-center gap-4 p-4 bg-panel border border-border-glass-subtle rounded-2xl shadow-inner">
+        <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60 flex items-center gap-2 shrink-0">
+          <Bike size={16} /> Perfil de Moto
         </label>
         <select
           value={profile}
           onChange={(e) => setProfile(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "6px 10px",
-            background: "rgba(0,0,0,0.2)",
-            border: "1px solid var(--glass-border)",
-            borderRadius: 6,
-            color: "var(--text)",
-            fontSize: 13,
-          }}
+          className="flex-1 bg-surface border border-border-glass-subtle rounded-xl px-4 py-2 text-sm font-black text-text uppercase tracking-widest outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
         >
           {PROFILES.map((p) => (
-            <option key={p.value} value={p.value}>
+            <option key={p.value} value={p.value} className="bg-surface">
               {p.label}
             </option>
           ))}
@@ -134,99 +118,81 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
-        style={{
-          padding: "28px 20px",
-          borderRadius: 10,
-          border: `2px dashed ${dragging ? "var(--accent)" : error ? "var(--red)" : "var(--glass-border)"}`,
-          background: dragging
-            ? "rgba(34,211,238,0.06)"
-            : error
-              ? "rgba(239,68,68,0.04)"
-              : "rgba(0,0,0,0.2)",
-          textAlign: "center",
-          cursor: "pointer",
-          transition: "all 0.2s",
-        }}
+        className={`relative flex flex-col items-center justify-center p-12 rounded-[2rem] border-2 border-dashed transition-all cursor-pointer overflow-hidden ${
+          dragging 
+            ? "bg-accent/10 border-accent shadow-lg shadow-accent/5 scale-[1.01]" 
+            : error 
+              ? "bg-red/5 border-red/40" 
+              : stats 
+                ? "bg-green/5 border-green/40" 
+                : "bg-panel border-border-glass-subtle hover:bg-panel-hover hover:border-border-glass"
+        }`}
       >
         <input
           ref={inputRef}
           type="file"
           accept=".gpx"
           onChange={handleFileInput}
-          style={{ display: "none" }}
+          className="hidden"
         />
 
         {loading ? (
-          <div style={{ color: "#22d3ee", fontSize: 14 }}>
-            ⏳ A processar GPX...
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCcw size={40} className="text-accent animate-spin" />
+            <span className="text-sm font-black text-accent uppercase tracking-widest">A processar GPX...</span>
           </div>
         ) : error ? (
-          <div>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>⚠️</div>
-            <div style={{ color: "#fca5a5", fontSize: 13 }}>{error}</div>
-            <div style={{ color: "#6b7280", fontSize: 12, marginTop: 6 }}>
-              Clica ou arrasta para tentar outro ficheiro
+          <div className="flex flex-col items-center gap-4 animate-shake">
+            <div className="w-16 h-16 rounded-2xl bg-red/10 flex items-center justify-center text-red">
+              <AlertTriangle size={32} />
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-black text-red uppercase tracking-widest text-center">{error}</span>
+              <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest">Clica ou arrasta para tentar outro ficheiro</span>
             </div>
           </div>
         ) : stats ? (
-          <div>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>✅</div>
-            <div style={{ color: "#86efac", fontSize: 14, fontWeight: 600 }}>
-              {stats.trackName}
+          <div className="flex flex-col items-center gap-6 w-full animate-fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-green/10 flex items-center justify-center text-green">
+              <CheckCircle2 size={32} />
             </div>
-            <div style={{ color: "#9ca3af", fontSize: 12, marginTop: 4 }}>
-              {fileName}
+            
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-lg font-black text-green tracking-tight text-center">{stats.trackName}</span>
+              <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest">{fileName}</span>
             </div>
 
             {/* Stats grid */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-                gap: 8,
-                marginTop: 12,
-                textAlign: "center",
-              }}
-            >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
               {[
                 { label: "Pontos", value: stats.pointCount.toLocaleString() },
                 { label: "Duração", value: formatDuration(stats.durationSec) },
                 { label: "Distância", value: `${stats.distanceKm.toFixed(1)} km` },
-                { label: "Vel. média", value: `${stats.avgSpeedKmh.toFixed(0)} km/h` },
-                { label: "Vel. máx", value: `${stats.maxSpeedKmh.toFixed(0)} km/h` },
+                { label: "Vel. Média", value: `${stats.avgSpeedKmh.toFixed(0)} km/h` },
+                { label: "Vel. Máx", value: `${stats.maxSpeedKmh.toFixed(0)} km/h` },
                 { label: "Elevação", value: `${stats.minElevation}–${stats.maxElevation} m` },
                 { label: "Subida", value: `+${stats.elevationGain} m` },
                 { label: "Descida", value: `-${stats.elevationLoss} m` },
               ].map((s) => (
-                <div
-                  key={s.label}
-                  style={{
-                    padding: "6px 4px",
-                    background: "rgba(255,255,255,0.03)",
-                    borderRadius: 6,
-                    border: "1px solid var(--glass-border)",
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#e5e7eb" }}>
-                    {s.value}
-                  </div>
+                <div key={s.label} className="bg-surface/50 border border-border-glass-subtle rounded-xl p-3 flex flex-col gap-0.5 shadow-inner">
+                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">{s.label}</span>
+                  <span className="text-xs font-black text-text tabular-nums">{s.value}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ color: "#6b7280", fontSize: 11, marginTop: 10 }}>
-              Clica ou arrasta para carregar outro ficheiro
-            </div>
+            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Clica ou arrasta para carregar outro ficheiro</span>
           </div>
         ) : (
-          <div>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🗺️</div>
-            <div style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500 }}>
-              Arrasta um ficheiro GPX ou clica para selecionar
+          <div className="flex flex-col items-center gap-4 group-hover:scale-105 transition-transform">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-muted group-hover:text-accent group-hover:bg-accent/10 transition-all">
+              <MapIcon size={32} />
             </div>
-            <div style={{ color: "#6b7280", fontSize: 12, marginTop: 6 }}>
-              Suporta rotas do Wikiloc, Strava, Komoot e outros
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-black text-text uppercase tracking-widest">Importar Rota GPX</span>
+              <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest text-center">
+                Suporta rotas do Wikiloc, Strava, Komoot e outros.<br/>Arrasta um ficheiro ou clica para selecionar.
+              </span>
             </div>
           </div>
         )}
