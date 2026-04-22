@@ -22,52 +22,61 @@ const Navbar: FC = () => {
   }, [navigate, location]);
 
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">
+    <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 bg-bg/60 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/10 transition-all duration-300">
+      <div className="flex items-center gap-4">
         {location.pathname === '/dashboard' ? (
-          <div style={{ width: 0 }} /> // Hide brand on dashboard as it has its own title
+          <div className="hidden" />
         ) : (
-          <Link to="/" className="brand-link">
-            <Bike size={22} className="brand-icon" />
-            <span className="brand-name">MotoGuard</span>
+          <Link to="/" className="flex items-center gap-3 no-underline group md:hidden">
+            <div className="p-2 rounded-xl bg-accent/10 text-accent group-hover:scale-110 transition-transform">
+              <Bike size={22} />
+            </div>
+            <span className="text-lg font-black text-white tracking-tighter">MotoGuard</span>
           </Link>
         )}
       </div>
 
-      <div className="navbar-menu">
+      <div className="flex items-center gap-4">
         {isAuthenticated ? (
-          <>
+          <div className="flex items-center gap-3">
             <NotificationCenter />
-            <div className="navbar-user">
-              <div className="user-avatar" style={{ borderRadius: '8px' }}>
+            
+            <div className="hidden sm:flex items-center gap-3 bg-white/5 border border-white/10 p-1.5 rounded-2xl group hover:bg-white/10 transition-all cursor-pointer">
+              <div className="w-8 h-8 rounded-xl bg-accent-gradient flex items-center justify-center text-[0.65rem] font-black text-white shadow-lg shadow-accent/20">
                 {getInitials(user?.name)}
               </div>
-              <span className="user-name" style={{ color: 'var(--text-2)', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '12px' }}>
+              <span className="text-[0.7rem] font-black text-muted tracking-wide px-2 uppercase opacity-80 group-hover:text-white transition-colors">
                 {user?.name}
               </span>
             </div>
-            <Link to="/settings" className="nav-icon-link" title="Definições" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+
+            <Link 
+              to="/settings" 
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-all" 
+              title="Definições"
+            >
               <Settings size={18} />
             </Link>
+
             <button
               onClick={() => {
                 logout();
                 navigate("/", { replace: true });
               }}
-              className="nav-icon-link logout-btn"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-red/10 border border-red/20 text-red hover:bg-red hover:text-white hover:border-transparent transition-all shadow-lg shadow-red/5 active:scale-95"
               title="Sair"
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
             </button>
-          </>
+          </div>
         ) : (
           <button
             type="button"
             onClick={goToLogin}
-            className="btn btn-primary login-btn"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-white font-black text-[0.75rem] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-accent/20"
             aria-label={t('auth.login')}
           >
-            <LogIn size={18} aria-hidden />
+            <LogIn size={18} />
             <span>{t('auth.login')}</span>
           </button>
         )}

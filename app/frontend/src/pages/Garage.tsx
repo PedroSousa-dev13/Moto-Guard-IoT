@@ -133,13 +133,15 @@ export default function Garage() {
 
   if (isLoading) {
     return (
-      <div className="page">
-        <div className="page-header">
-          <div className="header-main">
-            <div className="page-title"><Bike className="title-icon" size={24} />Garagem</div>
+      <div className="flex flex-col gap-6 animate-fade-in">
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
+              <Bike className="text-accent" size={28} /> Garagem
+            </h1>
           </div>
         </div>
-        <div className="tile-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} lines={4} />)}
         </div>
       </div>
@@ -148,13 +150,13 @@ export default function Garage() {
 
   if (error) {
     return (
-      <div className="page">
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Erro</div>
-          <div className="empty-state-text">{error}</div>
-          <button className="btn btn-primary" onClick={() => void load()}>Tentar novamente</button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h2 className="text-xl font-bold text-text mb-2">Erro</h2>
+        <p className="text-muted mb-6">{error}</p>
+        <button className="bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95" onClick={() => void load()}>
+          Tentar novamente
+        </button>
       </div>
     );
   }
@@ -162,70 +164,77 @@ export default function Garage() {
   const detail = detailId ? motos.find((m) => m.id === detailId) : null;
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div className="header-main">
-          <div className="page-title"><Bike className="title-icon" size={24} />Garagem</div>
-          <div className="page-subtitle">{motos.length} mota{motos.length !== 1 ? "s" : ""} registadas</div>
+    <div className="flex flex-col gap-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
+            <Bike className="text-accent" size={28} /> Garagem
+          </h1>
+          <p className="text-muted text-sm font-medium mt-1">
+            {motos.length} mota{motos.length !== 1 ? "s" : ""} registadas na sua conta premium
+          </p>
         </div>
-        <div className="page-actions">
-          <button className="btn btn-primary btn-sm" onClick={openAdd}>
-            <Plus size={16} /> Adicionar mota
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-accent text-white px-5 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95" onClick={openAdd}>
+            <Plus size={18} /> Adicionar mota
           </button>
         </div>
       </div>
 
       {/* Formulário add/edit */}
       {showAdd && (
-        <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
-          <div className="panel-header" style={{ padding: '0 0 16px 0', marginBottom: '20px', background: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <span className="panel-title" style={{ fontSize: '1rem', color: 'var(--text)' }}>
-              {editId ? "Editar mota" : "Adicionar mota"}
-            </span>
+        <div className="bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+            <h2 className="text-lg font-extrabold text-text uppercase tracking-wider">
+              {editId ? "Editar mota" : "Adicionar nova mota"}
+            </h2>
+            <button onClick={closeForm} className="text-muted hover:text-text transition-colors">
+              <X size={20} />
+            </button>
           </div>
           <form onSubmit={(e) => void handleSubmit(e)}>
-            <div className="form-grid">
-              <div className="field">
-                <label className="field-label" htmlFor="g-name">Nome *</label>
-                <input id="g-name" className="control" required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Ex: Bandit 650" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-name">Nome *</label>
+                <input id="g-name" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all" required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Ex: Bandit 650" />
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="g-brand">Marca</label>
-                <input id="g-brand" className="control" value={form.brand} onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))} placeholder="Ex: Suzuki" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-brand">Marca</label>
+                <input id="g-brand" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all" value={form.brand} onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))} placeholder="Ex: Suzuki" />
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="g-model">Modelo</label>
-                <input id="g-model" className="control" value={form.model} onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))} placeholder="Ex: GSF650" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-model">Modelo</label>
+                <input id="g-model" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all" value={form.model} onChange={(e) => setForm((p) => ({ ...p, model: e.target.value }))} placeholder="Ex: GSF650" />
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="g-year">Ano</label>
-                <input id="g-year" className="control" type="number" min={1900} max={new Date().getFullYear() + 1} value={form.year} onChange={(e) => setForm((p) => ({ ...p, year: e.target.value }))} placeholder="Ex: 2020" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-year">Ano</label>
+                <input id="g-year" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all" type="number" min={1900} max={new Date().getFullYear() + 1} value={form.year} onChange={(e) => setForm((p) => ({ ...p, year: e.target.value }))} placeholder="Ex: 2020" />
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="g-plate">Matrícula</label>
-                <input id="g-plate" className="control" value={form.plate} onChange={(e) => setForm((p) => ({ ...p, plate: e.target.value }))} placeholder="Ex: AA-00-BB" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-plate">Matrícula</label>
+                <input id="g-plate" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all" value={form.plate} onChange={(e) => setForm((p) => ({ ...p, plate: e.target.value }))} placeholder="Ex: AA-00-BB" />
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="g-category">Categoria *</label>
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.7rem] font-bold uppercase tracking-widest text-muted" htmlFor="g-category">Categoria *</label>
                 <select
                   id="g-category"
-                  className="control"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all appearance-none cursor-pointer"
                   required
                   value={form.category}
                   onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                 >
-                  <option value="">— escolher categoria —</option>
+                  <option value="" className="bg-surface">— escolher categoria —</option>
                   {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c} className="bg-surface">{c}</option>
                   ))}
                 </select>
               </div>
             </div>
-            {saveError && <div className="alert alert-danger" style={{ marginTop: 16 }}>{saveError}</div>}
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 24 }}>
-              <button type="button" className="btn btn-ghost" onClick={closeForm}><X size={14} /> Cancelar</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>
-                <Check size={14} /> {saving ? "A guardar..." : editId ? "Guardar Alterações" : "Adicionar à Garagem"}
+            {saveError && <div className="mt-4 p-3 bg-red/10 border border-red/20 text-red text-sm font-bold rounded-xl">{saveError}</div>}
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button type="button" className="px-5 py-2.5 rounded-xl font-bold text-muted hover:bg-white/5 transition-all" onClick={closeForm}>Cancelar</button>
+              <button type="submit" className="flex items-center gap-2 bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent/20 transition-all disabled:opacity-50" disabled={saving}>
+                <Check size={18} /> {saving ? "A guardar..." : editId ? "Guardar Alterações" : "Adicionar à Garagem"}
               </button>
             </div>
           </form>
@@ -233,125 +242,94 @@ export default function Garage() {
       )}
 
       {motos.length === 0 ? (
-        <div className="empty-state glass-panel">
-          <div className="empty-state-icon"><Bike size={48} /></div>
-          <div className="empty-state-title">Garagem vazia</div>
-          <div className="empty-state-text">Adiciona a tua primeira mota para começar a monitorizar.</div>
-          <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Adicionar mota</button>
+        <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-12 bg-surface/40 backdrop-blur-md border border-dashed border-white/20 rounded-3xl">
+          <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mb-6">
+            <Bike size={40} className="text-accent" />
+          </div>
+          <h2 className="text-2xl font-black text-text mb-2">Garagem vazia</h2>
+          <p className="text-muted max-w-xs mb-8">Adicione a sua primeira mota para começar a monitorizar o seu desempenho e segurança.</p>
+          <button className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95" onClick={openAdd}>
+            <Plus size={20} /> Adicionar mota
+          </button>
         </div>
       ) : (
-        <div className="tile-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {motos.map((moto) => {
             const isDetail = detailId === moto.id;
             const isConfirmDelete = confirmDeleteId === moto.id;
             return (
-              <div key={moto.id} className={`glass-panel ${isDetail ? "active" : ""}`} style={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                transition: 'all 0.3s ease',
-                border: isDetail ? '1.5px solid var(--accent)' : undefined,
-                overflow: 'hidden'
-              }}>
-                <div style={{ padding: '20px' }}>
-                  <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                    <div style={{ 
-                      width: 100, 
-                      height: 70, 
-                      borderRadius: 12, 
-                      overflow: "hidden", 
-                      background: "rgba(255,255,255,0.03)", 
-                      flexShrink: 0,
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      padding: '4px'
-                    }}>
+              <div key={moto.id} className={`group bg-surface/60 backdrop-blur-md border ${isDetail ? 'border-accent shadow-lg shadow-accent/10' : 'border-white/10 shadow-sm'} rounded-2xl flex flex-col transition-all duration-300 hover:border-white/20 overflow-hidden`}>
+                <div className="p-6">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-24 h-16 rounded-xl overflow-hidden bg-black/20 flex-shrink-0 border border-white/5 p-1 group-hover:scale-105 transition-transform">
                       <img 
                         src={imageFromCategory(moto.category)} 
                         alt={moto.category ?? "moto"} 
-                        style={{ width: "100%", height: "100%", objectFit: "contain", filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                        className="w-full h-full object-contain drop-shadow-md"
                       />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '4px' }}>{moto.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>
-                        {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-lg text-text truncate leading-tight mb-1">{moto.name}</h3>
+                      <p className="text-[0.7rem] text-muted font-bold uppercase tracking-wider">
+                        {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "Especificação base"}
+                      </p>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                    <span className="pill" style={{ background: "rgba(139, 92, 246, 0.1)", color: "var(--accent)", border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                  <div className="flex flex-wrap gap-2 mt-5">
+                    <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-accent/10 text-accent border border-accent/20">
                       {moto.category}
                     </span>
                     {moto.plate && (
-                      <span className="pill" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-2)", border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-white/5 text-text-2 border border-white/10">
                         {moto.plate}
-                      </span>
-                    )}
-                    {moto.deviceId && (
-                      <span className="pill" style={{ background: "rgba(255,255,255,0.03)", color: "var(--muted)", fontSize: '0.65rem', fontFamily: 'monospace' }}>
-                        ID: {moto.deviceId}
                       </span>
                     )}
                   </div>
 
                   {isDetail && (
-                    <div style={{ 
-                      marginTop: '20px', 
-                      paddingTop: '16px', 
-                      borderTop: '1px solid rgba(255,255,255,0.05)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Odómetro</span>
-                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.odometer?.toLocaleString("pt-PT") ?? 0} km</span>
+                    <div className="mt-6 pt-5 border-t border-white/5 flex flex-col gap-3 animate-fade-in">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted font-bold uppercase tracking-tighter">Odómetro</span>
+                        <span className="text-text font-black">{moto.odometer?.toLocaleString("pt-PT") ?? 0} km</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Visto em</span>
-                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.lastSeenAt ? new Date(moto.lastSeenAt).toLocaleString("pt-PT") : "Nunca"}</span>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted font-bold uppercase tracking-tighter">Visto em</span>
+                        <span className="text-text font-black">{moto.lastSeenAt ? new Date(moto.lastSeenAt).toLocaleString("pt-PT") : "Nunca"}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Registada em</span>
-                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.createdAt ? new Date(moto.createdAt).toLocaleDateString("pt-PT") : "—"}</span>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted font-bold uppercase tracking-tighter">ID Dispositivo</span>
+                        <span className="text-accent font-mono text-[0.6rem] font-bold">{moto.deviceId || "—"}</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div style={{ 
-                  marginTop: 'auto', 
-                  padding: '16px 20px', 
-                  background: 'rgba(0,0,0,0.15)', 
-                  borderTop: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  gap: '8px',
-                  justifyContent: 'flex-end'
-                }}>
+                <div className="mt-auto p-4 bg-black/20 border-t border-white/5 flex gap-2 justify-end">
                   {isConfirmDelete ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--red)', flex: 1 }}>Confirmar remoção?</span>
-                      <button className="btn btn-danger btn-sm" onClick={() => void handleDelete(moto.id)}>Remover</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteId(null)}>Voltar</button>
+                    <div className="flex items-center gap-3 w-full">
+                      <span className="text-xs font-bold text-red flex-1 animate-pulse">Confirmar remoção?</span>
+                      <button className="bg-red text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-all" onClick={() => void handleDelete(moto.id)}>Remover</button>
+                      <button className="text-muted hover:text-text px-3 py-2 rounded-xl text-xs font-bold transition-all" onClick={() => setConfirmDeleteId(null)}>Voltar</button>
                     </div>
                   ) : (
                     <>
-                      <button className="btn btn-primary btn-sm" disabled={!moto.deviceId}
-                        style={{ flex: 1 }}
+                      <button className="flex-1 flex items-center justify-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-accent/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed" 
+                        disabled={!moto.deviceId}
                         onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}>
                         <Activity size={14} /> Monitorizar
                       </button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips?moto=${moto.id}`)} title="Ver Viagens">
-                        <Route size={16} />
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => navigate(`/trips?moto=${moto.id}`)} title="Ver Viagens">
+                        <Route size={18} />
                       </button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setDetailId(isDetail ? null : moto.id)} title={isDetail ? "Menos info" : "Mais info"}>
-                        {isDetail ? <X size={16} /> : <Activity size={16} style={{ opacity: 0.5 }} />}
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => setDetailId(isDetail ? null : moto.id)} title={isDetail ? "Menos info" : "Mais info"}>
+                        {isDetail ? <X size={18} /> : <Activity size={18} className="opacity-50" />}
                       </button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(moto)} title="Editar">
-                        <Pencil size={16} />
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => openEdit(moto)} title="Editar">
+                        <Pencil size={18} />
                       </button>
-                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => setConfirmDeleteId(moto.id)} title="Remover">
-                        <Trash2 size={16} />
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-red/60 hover:text-red hover:bg-red/10 transition-all" onClick={() => setConfirmDeleteId(moto.id)} title="Remover">
+                        <Trash2 size={18} />
                       </button>
                     </>
                   )}

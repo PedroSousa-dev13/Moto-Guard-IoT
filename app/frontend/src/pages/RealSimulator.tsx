@@ -8,8 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { io, Socket } from "socket.io-client";
-import type { ParsedRow } from "../real-simulator/csvParser";
-import type { ParseResult } from "../real-simulator/csvParser";
+import type { ParsedRow, ParseResult } from "../real-simulator/csvParser";
 import CsvDropzone from "../real-simulator/CsvDropzone";
 import RouteMap from "../real-simulator/RouteMap";
 import VideoPlayer from "../real-simulator/VideoPlayer";
@@ -19,6 +18,7 @@ import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter"
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import type { Motorcycle } from "../types";
+import { Activity, Database, Zap, AlertTriangle } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,7 +64,6 @@ export default function RealSimulator() {
   const socketRef = useRef<Socket | null>(null);
 
   // Video element ref (passed to VideoPlayer and useSyncEngine)
-  // Cast needed: React 19 useRef returns RefObject<T | null>, but components expect RefObject<T>
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
 
   // simulationStartTime is set when Play is first clicked
@@ -310,8 +309,7 @@ export default function RealSimulator() {
         videoRef.current.pause();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [syncEngine]);
 
   // ---------------------------------------------------------------------------
   // Derived state
@@ -352,133 +350,76 @@ export default function RealSimulator() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        padding: "20px 24px",
-        height: "100%",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* Page title */}
-      <div>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: "#f9fafb" }}>
-          Simulador Real
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#9ca3af" }}>
-          Reproduz ficheiros CSV de telemetria sincronizados com vídeo .mp4
-        </p>
+    <div className="flex flex-col gap-8 animate-fade-in pb-20">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-black text-white tracking-tight m-0 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-lg">
+              <Activity size={24} />
+            </span>
+            Simulador Real
+          </h1>
+          <p className="text-muted font-medium text-sm">Reproduz telemetria CSV sincronizada com vídeo para análise profissional.</p>
+        </div>
       </div>
 
-      {/* CSV import */}
-      <CsvDropzone onParsed={handleCsvParsed} />
+      {/* CSV DROPZONE */}
+      <div className="relative group">
+        <div className="absolute inset-0 bg-accent/5 blur-2xl rounded-[2.5rem] -z-10 group-hover:bg-accent/10 transition-all" />
+        <CsvDropzone onParsed={handleCsvParsed} />
+      </div>
 
-      {/* Socket error */}
+      {/* SOCKET ERROR */}
       {socketError && (
-        <div
-          role="alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 14px",
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.4)",
-            borderRadius: 6,
-            color: "#fca5a5",
-            fontSize: 13,
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={16}
-            height={16}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            style={{ flexShrink: 0 }}
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          {socketError}
+        <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
+          <AlertTriangle size={18} />
+          <span>{socketError}</span>
         </div>
       )}
 
+      {/* DATA HUD */}
       {hasRows && (
-        <div
-          className="glass-panel"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: 12,
-            padding: 12,
-          }}
-        >
-          <div
-            style={{
-              padding: "12px 14px",
-              border: "1px solid rgba(34,197,94,0.35)",
-              borderRadius: 8,
-              background: "rgba(34,197,94,0.08)",
-            }}
-          >
-            <h2 style={{ margin: "0 0 8px", fontSize: 14, color: "#86efac" }}>Dados Reais (ficheiro)</h2>
-            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#bbf7d0" }}>
-              Valores lidos diretamente do CSV ({sourceFormat === "riderdata" ? "RiderData" : "Genérico"}).
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* REAL DATA */}
+          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green/0 via-green/40 to-green/0 opacity-50" />
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
+                  <Database className="text-green" size={20} /> Dados Reais (CSV)
+                </h2>
+                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Formato: {sourceFormat === "riderdata" ? "RiderData" : "Genérico"}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {rawDataItems.map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    border: "1px solid rgba(167,243,208,0.25)",
-                    background: "rgba(17,24,39,0.65)",
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#ecfdf5" }}>{item.value}</div>
+                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
+                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-green/60 transition-colors">{item.label}</span>
+                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-green transition-colors">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "12px 14px",
-              border: "1px solid rgba(59,130,246,0.35)",
-              borderRadius: 8,
-              background: "rgba(59,130,246,0.08)",
-            }}
-          >
-            <h2 style={{ margin: "0 0 8px", fontSize: 14, color: "#93c5fd" }}>
-              Dados Complementados (simulador)
-            </h2>
-            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#bfdbfe" }}>
-              Valores calculados a partir dos dados reais para completar a telemetria da moto.
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+          {/* COMPLEMENTED DATA */}
+          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
+                  <Zap className="text-blue" size={20} /> Telemetria Complementar
+                </h2>
+                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Física do motor e sensores auxiliares</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {complementedDataItems.map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    border: "1px solid rgba(147,197,253,0.28)",
-                    background: "rgba(17,24,39,0.65)",
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{item.label}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#eff6ff" }}>{item.value}</div>
+                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
+                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-blue/60 transition-colors">{item.label}</span>
+                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-blue transition-colors">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -486,51 +427,56 @@ export default function RealSimulator() {
         </div>
       )}
 
-      {/* Split layout: RouteMap (left ≥50%) + VideoPlayer (right) */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          flex: 1,
-          minHeight: 320,
-        }}
-      >
-        {/* RouteMap — left, ≥50% */}
-        <div style={{ flex: "0 0 55%", minWidth: 0 }}>
+      {/* SPLIT LAYOUT: MAP & VIDEO */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 flex-1 min-h-[400px]">
+        {/* MAP */}
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
           <RouteMap
             gpsTrack={gpsTrack}
             currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
           />
+          {!hasRows && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+              <div className="text-7xl grayscale opacity-20">🗺️</div>
+              <p className="text-sm font-black text-white/40 uppercase tracking-widest">Carrega um CSV para visualizar o percurso</p>
+            </div>
+          )}
         </div>
 
-        {/* VideoPlayer — right */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <VideoPlayer
-            videoFile={simSession.videoFile}
-            videoRef={videoRef}
-            onFileSelect={handleVideoFileSelect}
-          />
+        {/* VIDEO PLAYER */}
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group flex flex-col">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
+          <div className="flex-1">
+            <VideoPlayer
+              videoFile={simSession.videoFile}
+              videoRef={videoRef}
+              onFileSelect={handleVideoFileSelect}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Playback controls */}
-      <PlaybackControls
-        playbackState={simSession.playbackState}
-        playbackSpeed={simSession.playbackSpeed}
-        currentTimeSec={currentTimeSec}
-        totalDurationSec={totalDurationSec}
-        emittedCount={simSession.emittedCount}
-        deviceId={simSession.deviceId}
-        disabled={isDisabled}
-        motorcycles={motorcycles}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onStop={handleStop}
-        onSpeedChange={handleSpeedChange}
-        onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
-        onMotorcycleChange={(m) => setSelectedMotorcycle(m)}
-        onSeek={handleSeek}
-      />
+      {/* PLAYBACK CONTROLS */}
+      <div className="sticky bottom-0 z-50">
+        <PlaybackControls
+          playbackState={simSession.playbackState}
+          playbackSpeed={simSession.playbackSpeed}
+          currentTimeSec={currentTimeSec}
+          totalDurationSec={totalDurationSec}
+          emittedCount={simSession.emittedCount}
+          deviceId={simSession.deviceId}
+          disabled={isDisabled}
+          motorcycles={motorcycles}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onStop={handleStop}
+          onSpeedChange={handleSpeedChange}
+          onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
+          onMotorcycleChange={(m) => setSelectedMotorcycle(m)}
+          onSeek={handleSeek}
+        />
+      </div>
     </div>
   );
 }

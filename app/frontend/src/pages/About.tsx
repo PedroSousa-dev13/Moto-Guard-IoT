@@ -237,14 +237,14 @@ const SECTIONS: Section[] = [
 
 function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" }) {
   const classes = {
-    info: "pill-success", // Using success for info as a placeholder or defining new ones
-    warn: "pill-warning",
-    critical: "pill-danger",
+    info: "bg-blue/10 text-blue border-blue/20",
+    warn: "bg-yellow/10 text-yellow border-yellow/20",
+    critical: "bg-red/10 text-red border-red/20",
   };
   const labels = { info: "INFO", warn: "AVISO", critical: "CRÍTICO" };
   
   return (
-    <span className={`pill ${classes[severity]}`} style={{ fontSize: '10px' }}>
+    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black tracking-widest border ${classes[severity]}`}>
       {labels[severity]}
     </span>
   );
@@ -255,48 +255,48 @@ function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" })
 function FieldCard({ field }: { field: DataField }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="glass-panel" style={{ marginBottom: '10px', borderRadius: '12px', overflow: 'hidden' }}>
+    <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden mb-3 transition-all duration-200">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="btn-ghost"
-        style={{
-          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "14px 18px", border: "none", textAlign: 'left'
-        }}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-all"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text)' }}>{field.label}</span>
-          <span className="pill" style={{ background: 'var(--surface-2)', color: 'var(--muted)', fontSize: '0.7rem' }}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="font-black text-sm text-text">{field.label}</span>
+          <span className="px-2 py-0.5 rounded-lg bg-white/5 text-muted text-[0.7rem] font-bold border border-white/10">
             {field.unit}
           </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.8 }}>
+          <span className="text-[0.75rem] text-muted truncate opacity-80 font-medium">
             {field.description.split(".")[0]}
           </span>
         </div>
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <div className="text-muted">
+          {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </div>
       </button>
 
       {open && (
-        <div style={{ padding: "0 18px 18px", borderTop: "1px solid var(--border)" }}>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-2)', margin: "14px 0" }}>{field.description}</p>
+        <div className="px-5 pb-5 pt-0 border-t border-white/5 animate-fade-in">
+          <p className="text-sm text-text-2 my-4 leading-relaxed font-medium">{field.description}</p>
 
-          <div className="section-label" style={{ marginBottom: '10px' }}>Impacto no sistema</div>
-          <ul style={{ margin: "0 0 16px", paddingLeft: '1.2rem', display: "flex", flexDirection: "column", gap: '6px' }}>
+          <div className="text-[0.65rem] font-black uppercase tracking-widest text-accent mb-3">Impacto no sistema</div>
+          <ul className="space-y-2 mb-5">
             {field.impacts.map((imp, i) => (
-              <li key={i} style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{imp}</li>
+              <li key={i} className="text-xs text-text flex items-start gap-2 leading-relaxed">
+                <span className="text-accent mt-1">•</span> {imp}
+              </li>
             ))}
           </ul>
 
           {field.thresholds && field.thresholds.length > 0 && (
             <>
-              <div className="section-label" style={{ marginBottom: '10px' }}>Limiares</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: '8px' }}>
+              <div className="text-[0.65rem] font-black uppercase tracking-widest text-accent mb-3">Limiares</div>
+              <div className="flex flex-col gap-2">
                 {field.thresholds.map((t, i) => (
-                  <div key={i} className="subpanel" style={{ display: "flex", alignItems: "center", gap: 12, padding: '8px 12px' }}>
+                  <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-black/20 border border-white/5">
                     <SeverityBadge severity={t.severity} />
-                    <span style={{ color: "var(--muted)", fontSize: '0.8rem', fontWeight: 600 }}>{t.label}</span>
-                    <span style={{ marginLeft: "auto", fontWeight: 800, color: "var(--text)", fontSize: '0.85rem' }}>{t.value}</span>
+                    <span className="text-xs text-muted font-bold">{t.label}</span>
+                    <span className="ml-auto font-black text-text text-sm">{t.value}</span>
                   </div>
                 ))}
               </div>
@@ -314,36 +314,26 @@ export default function About() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div className="header-main">
-          <div className="page-title">
-            <Info className="title-icon" size={24} />
-            Como Funciona o Simulador
-          </div>
-          <div className="page-subtitle">
-            O que cada dado mede e como impacta os resultados
-          </div>
-        </div>
+    <div className="flex flex-col gap-8 animate-fade-in">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
+          <Info className="text-accent" size={28} /> Como Funciona o Simulador
+        </h1>
+        <p className="text-muted text-sm font-medium">O que cada dado mede e como impacta os seus scores de segurança e performance</p>
       </div>
 
       {/* Intro */}
-      <div className="glass-panel" style={{
-        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))",
-        border: "1px solid rgba(139, 92, 246, 0.2)",
-        padding: "24px",
-        marginBottom: "28px",
-      }}>
-        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-          <div className="tile-icon tile-icon-blue" style={{ width: 48, height: 48 }}>
+      <div className="bg-gradient-to-br from-accent/20 to-blue/10 border border-accent/20 rounded-2xl p-6 shadow-xl shadow-accent/5">
+        <div className="flex gap-5 items-start">
+          <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent flex-shrink-0 border border-accent/30 shadow-inner">
             <Bike size={24} />
           </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px', color: 'var(--text)' }}>Arquitetura de dados em tempo real</div>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg font-black text-text">Arquitetura de dados em tempo real</h2>
+            <p className="text-sm text-text-2 leading-relaxed font-medium m-0">
               O simulador Python gera um tick por segundo com ~20 campos de telemetria. O backend Node.js processa cada tick,
               aplica heurísticas de deteção de risco e emite eventos via WebSocket para o frontend.
-              No fim de cada viagem, o <strong>Safety Score</strong> e o <strong>Performance Score</strong> são calculados
+              No fim de cada viagem, o <strong className="text-text">Safety Score</strong> e o <strong className="text-text">Performance Score</strong> são calculados
               com base nos eventos detetados e nas métricas máximas registadas.
             </p>
           </div>
@@ -351,57 +341,53 @@ export default function About() {
       </div>
 
       {/* Flow */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 32, flexWrap: "wrap", gap: '10px' }}>
+      <div className="flex items-center gap-2.5 flex-wrap overflow-x-auto pb-2 no-scrollbar">
         {[
-          { icon: <Wind size={14} />, label: "Simulador Python", color: "var(--accent)" },
-          { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <Activity size={14} />, label: "MQTT Broker", color: "var(--blue)" },
-          { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <BarChart2 size={14} />, label: "Heurísticas", color: "var(--orange)" },
-          { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <Shield size={14} />, label: "Safety Score", color: "var(--green)" },
+          { icon: <Wind size={14} />, label: "Simulador Python", color: "text-accent" },
+          { icon: null, label: "→", color: "text-muted" },
+          { icon: <Activity size={14} />, label: "MQTT Broker", color: "text-blue" },
+          { icon: null, label: "→", color: "text-muted" },
+          { icon: <BarChart2 size={14} />, label: "Heurísticas", color: "text-orange" },
+          { icon: null, label: "→", color: "text-muted" },
+          { icon: <Shield size={14} />, label: "Safety Score", color: "text-green" },
         ].map((step, i) => (
           step.icon ? (
-            <div key={i} className="pill" style={{ 
-              padding: '6px 14px', 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: step.color,
-              fontWeight: 800
-            }}>
-              {step.icon} {step.label}
+            <div key={i} className={`flex items-center gap-2 px-4 py-2 bg-surface/60 border border-white/10 rounded-xl whitespace-nowrap shadow-sm`}>
+              <span className={step.color}>{step.icon}</span>
+              <span className={`text-[0.7rem] font-black uppercase tracking-widest ${step.color}`}>{step.label}</span>
             </div>
           ) : (
-            <span key={i} style={{ color: "var(--muted)", fontSize: '1.2rem', fontWeight: 300 }}>{step.label}</span>
+            <span key={i} className="text-muted font-light text-xl px-1">{step.label}</span>
           )
         ))}
       </div>
 
       {/* Sections */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="flex flex-col gap-5">
         {SECTIONS.map((section) => (
-          <div key={section.id} className="glass-panel" style={{ overflow: 'hidden' }}>
+          <div key={section.id} className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
             <button
               type="button"
               onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 14,
-                padding: "18px 24px", background: activeSection === section.id ? 'rgba(255,255,255,0.03)' : 'transparent',
-                border: "none", cursor: "pointer", transition: 'all 0.2s ease'
-              }}
+              className={`w-full flex items-center gap-4 px-6 py-5 text-left transition-all ${activeSection === section.id ? 'bg-white/5' : 'hover:bg-white/5'}`}
             >
-              <div className="tile-icon" style={{ background: `${section.color}15`, color: section.color, width: 36, height: 36 }}>
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/5 shadow-inner"
+                style={{ backgroundColor: `${section.color}20`, color: section.color }}
+              >
                 {section.icon}
               </div>
-              <span style={{ fontWeight: 800, fontSize: '1.05rem', flex: 1, textAlign: "left", color: 'var(--text)' }}>{section.title}</span>
-              <span className="pill" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{section.fields.length} campos</span>
-              {activeSection === section.id
-                ? <ChevronUp size={20} />
-                : <ChevronDown size={20} />}
+              <span className="font-black text-base text-text flex-1">{section.title}</span>
+              <span className="px-2.5 py-1 rounded-lg bg-surface-2 text-muted text-[0.65rem] font-black uppercase tracking-wider border border-white/5">
+                {section.fields.length} campos
+              </span>
+              <div className="text-muted ml-2">
+                {activeSection === section.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </div>
             </button>
 
             {activeSection === section.id && (
-              <div style={{ padding: "20px 24px", borderTop: '1px solid var(--border)' }}>
+              <div className="px-6 py-5 border-t border-white/5 animate-fade-in bg-black/10">
                 {section.fields.map((field) => (
                   <FieldCard key={field.key} field={field} />
                 ))}
@@ -412,15 +398,13 @@ export default function About() {
       </div>
 
       {/* Event types summary */}
-      <div className="glass-panel" style={{ marginTop: 32, overflow: "hidden" }}>
-        <div className="panel-header" style={{ background: "rgba(239,68,68,0.08)", borderBottom: "1px solid rgba(239,68,68,0.1)" }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <AlertTriangle size={20} style={{ color: "var(--red)" }} />
-            <span className="panel-title" style={{ color: 'var(--text)', fontSize: '1rem' }}>Tipos de Eventos Detetados</span>
-          </div>
+      <div className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-lg mt-8">
+        <div className="px-6 py-4 bg-red/10 border-b border-red/10 flex items-center gap-4">
+          <AlertTriangle size={20} className="text-red" />
+          <h2 className="text-sm font-black text-text uppercase tracking-widest">Tipos de Eventos Detetados</h2>
         </div>
-        <div style={{ padding: "24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { icon: "🛑", name: "HARD_BRAKING", label: "Travagem Brusca", desc: "Desaceleração > 0.35G com travão > 60%" },
               { icon: "🚀", name: "RAPID_ACCELERATION", label: "Aceleração Brusca", desc: "Aceleração > 0.30G com throttle > 70%" },
@@ -433,16 +417,12 @@ export default function About() {
               { icon: "💥", name: "CRASH_DETECTED", label: "Queda Detetada", desc: "Roll + G-force acima dos limiares de queda do perfil" },
               { icon: "🚨", name: "SPEEDING", label: "Excesso de Velocidade", desc: "> 10% acima do limite legal durante 3+ ticks (WARNING); > 25% → CRITICAL" },
             ].map((ev) => (
-              <div key={ev.name} className="subpanel" style={{
-                display: "flex", gap: 14, padding: "14px", alignItems: "flex-start",
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)'
-              }}>
-                <span style={{ fontSize: 24, flexShrink: 0 }}>{ev.icon}</span>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '2px' }}>{ev.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, fontFamily: 'monospace', marginBottom: '6px', opacity: 0.8 }}>{ev.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.4 }}>{ev.desc}</div>
+              <div key={ev.name} className="flex gap-4 p-4 rounded-xl bg-black/20 border border-white/5 hover:border-white/10 transition-all group">
+                <span className="text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">{ev.icon}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="font-black text-sm text-text leading-tight">{ev.label}</div>
+                  <div className="text-[0.65rem] text-accent font-black font-mono tracking-tighter opacity-80">{ev.name}</div>
+                  <div className="text-xs text-muted leading-relaxed font-medium mt-1">{ev.desc}</div>
                 </div>
               </div>
             ))}

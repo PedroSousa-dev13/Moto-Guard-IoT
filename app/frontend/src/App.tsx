@@ -26,7 +26,6 @@ import About from './pages/About';
 import RealSimulator from './pages/RealSimulator';
 import GpxSimulator from './pages/GpxSimulator';
 import './App.css';
-import './Layout.css';
 
 function HomeOrDashboard() {
   const { isAuthenticated, isLoading } = useAuth();
