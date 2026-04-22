@@ -15,6 +15,7 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { imageFromCategory } from "../utils/categoryImageMap";
 
 interface FormState {
   name: string;
@@ -241,17 +242,27 @@ export default function Garage() {
             return (
               <div key={moto.id} className={`garage-card ${isDetail ? "garage-card-active" : ""}`}>
                 <div className="garage-card-header">
-                  <div>
-                    <div className="garage-card-name">{moto.name}</div>
-                    <div className="garage-card-sub">
-                      {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", width: "100%" }}>
+                    <div className="garage-card-img" style={{ width: 80, height: 60, borderRadius: 8, overflow: "hidden", background: "var(--surface-3)", flexShrink: 0 }}>
+                      <img 
+                        src={imageFromCategory(moto.category)} 
+                        alt={moto.category ?? "moto"} 
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => console.error("Failed to load image in Garage:", (e.target as HTMLImageElement).src)}
+                      />
                     </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="garage-card-name">{moto.name}</div>
+                      <div className="garage-card-sub">
+                        {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
+                      </div>
+                    </div>
+                    {moto.category && (
+                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)", whiteSpace: "nowrap" }}>
+                        {moto.category}
+                      </span>
+                    )}
                   </div>
-                  {moto.category && (
-                    <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)", whiteSpace: "nowrap" }}>
-                      {moto.category}
-                    </span>
-                  )}
                 </div>
 
                 <div className="garage-card-badges">

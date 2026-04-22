@@ -95,21 +95,24 @@ class SocketService {
           return;
         }
 
-        const preferredDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id ?? null;
+        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id ?? null;
+        const identityDeviceId = command?.new_device_id ?? transportDeviceId;
         const userId = command?.userId ?? null;
-        if (preferredDeviceId && userId) {
+
+        if (identityDeviceId && userId && command?.acao === "definir_modelo") {
           const motoModel =
             command?.motorcycleName ??
             command?.modelo ??
-            this.lastMotoModelByDevice.get(preferredDeviceId) ??
-            this.lastTelemetryByDevice.get(preferredDeviceId)?.system?.moto_model ??
+            this.lastMotoModelByDevice.get(identityDeviceId) ??
+            this.lastTelemetryByDevice.get(identityDeviceId)?.system?.moto_model ??
             telemetryStore.latest?.system?.moto_model ??
             "Simulador";
           try {
-            await this.ensureAssociationForDevice(preferredDeviceId, userId, motoModel);
-            // Guardar para uso na próxima telemetria que iniciar uma viagem
-            this.lastUserIdByDevice.set(preferredDeviceId, userId);
-            this.lastMotoModelByDevice.set(preferredDeviceId, motoModel);
+            await this.ensureAssociationForDevice(identityDeviceId, userId, motoModel);
+            // Guardar para uso na próxima telemetria (tanto no ID físico como no virtual)
+            this.lastUserIdByDevice.set(transportDeviceId, userId);
+            this.lastUserIdByDevice.set(identityDeviceId, userId);
+            this.lastMotoModelByDevice.set(identityDeviceId, motoModel);
           } catch (error) {
             console.error("Erro ao associar device ao utilizador:", error);
           }
@@ -117,8 +120,8 @@ class SocketService {
 
         if (command?.acao === "parar") {
           try {
-            await this.forceEndTripsOnStopCommand(preferredDeviceId);
-            this.clearRuntimeStateAfterStop(preferredDeviceId);
+            await this.forceEndTripsOnStopCommand(transportDeviceId);
+            this.clearRuntimeStateAfterStop(transportDeviceId);
             this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
           } catch (error) {
             console.error("Erro ao forçar fim de viagem:", error);

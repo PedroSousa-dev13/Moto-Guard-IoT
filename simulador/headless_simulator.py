@@ -188,6 +188,8 @@ class HeadlessSimulator:
 
         # Modelo inicial
         self.modelo_inicial = modelo
+        self.moto_model_display: str | None = None
+        self.current_device_id: str = DEVICE_ID
         self._tick_interval: float = float(PUBLISH_INTERVAL)  # pode ser alterado por set_speed
         self._excesso_ticks: int = 0  # ticks restantes de excesso de velocidade forçado
 
@@ -303,16 +305,18 @@ class HeadlessSimulator:
             log(f"Comando inválido (não é JSON): {msg.payload}")
             return
 
-        device_id = dados.get("device_id")
-        if device_id and device_id != DEVICE_ID:
+        target_id = dados.get("device_id")
+        if target_id and target_id != self.current_device_id and target_id != DEVICE_ID:
             return
 
         acao_raw = dados.get("acao", "")
         acao = str(acao_raw).strip().lower()
         if acao == "definir_modelo":
             modelo = dados.get("modelo", "")
-            log(f"Comando: definir_modelo → '{modelo}'")
-            self._aplicar_modelo(modelo)
+            nome = dados.get("motorcycleName", "")
+            dev_id = dados.get("new_device_id")
+            log(f"Comando: definir_modelo → '{modelo}' (Nome: '{nome}', Novo ID: '{dev_id}')")
+            self._aplicar_modelo(modelo, nome, dev_id)
         elif acao == "evento":
             tipo = dados.get("tipo", "")
             log(f"Comando: evento → '{tipo}'")
@@ -396,10 +400,13 @@ class HeadlessSimulator:
     # ========================================================================
     #  Processar comandos
     # ========================================================================
-    def _aplicar_modelo(self, modelo: str):
+    def _aplicar_modelo(self, modelo: str, nome: str = None, device_id: str = None):
         if not self._carregar_perfil(modelo):
             return
         self._generation_paused = False
+        self.moto_model_display = nome
+        if device_id:
+            self.current_device_id = device_id
         
         # Preservar rota customizada durante reset
         rota_salva = self._route_override_waypoints
@@ -862,8 +869,8 @@ class HeadlessSimulator:
                 "longitude": round(s.lng, 6),
             },
             "system": {
-                "device_id":       DEVICE_ID,
-                "moto_model":      self.perfil_nome,
+                "device_id":       self.current_device_id,
+                "moto_model":      self.moto_model_display or self.perfil_nome,
                 "event_status":    evento,
                 "tick":            self._tick_count,
                 "timestamp":       datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

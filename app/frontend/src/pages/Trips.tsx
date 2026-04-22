@@ -90,8 +90,12 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
   return (
     <button type="button" onClick={onClick} className={`moto-filter-card ${selected ? "selected" : ""}`}>
       <div className="moto-filter-img">
-        <img src={img} alt={moto.category ?? moto.name}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        <img
+          src={img}
+          alt={moto.category ?? moto.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
+        />
       </div>
       <div className="moto-filter-body">
         <div className="moto-filter-name">{moto.name}</div>
@@ -472,7 +476,7 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
           src={motoImg}
           alt={item.motorcycle?.category ?? "moto"}
           style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -556,7 +560,7 @@ function TripListCard({
           src={motoImg}
           alt="moto"
           style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
         />
       </div>
 

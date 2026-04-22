@@ -1,5 +1,6 @@
-import { Play, Pause, Square } from 'lucide-react';
+import { Play, Pause, Square, Bike } from 'lucide-react';
 import { formatTime } from './utils';
+import type { Motorcycle } from '../types';
 
 type PlaybackState = 'idle' | 'playing' | 'paused' | 'stopped';
 type PlaybackSpeed = 0.25 | 0.5 | 1 | 2 | 4;
@@ -12,12 +13,14 @@ interface PlaybackControlsProps {
   emittedCount: number;
   deviceId: string;
   disabled: boolean;
+  motorcycles?: Motorcycle[];
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
   onSpeedChange: (speed: PlaybackSpeed) => void;
   onDeviceIdChange: (id: string) => void;
   onSeek: (timeSec: number) => void;
+  onMotorcycleChange?: (m: Motorcycle) => void;
 }
 
 const SPEED_OPTIONS: PlaybackSpeed[] = [0.25, 0.5, 1, 2, 4];
@@ -30,15 +33,25 @@ export function PlaybackControls({
   emittedCount,
   deviceId,
   disabled,
+  motorcycles = [],
   onPlay,
   onPause,
   onStop,
   onSpeedChange,
   onDeviceIdChange,
   onSeek,
+  onMotorcycleChange,
 }: PlaybackControlsProps) {
   const isPlaying = playbackState === 'playing';
   const progress = totalDurationSec > 0 ? currentTimeSec / totalDurationSec : 0;
+
+  const handleMotorcycleChange = (id: string) => {
+    const moto = motorcycles.find((m) => m.id === id);
+    if (moto) {
+      if (onMotorcycleChange) onMotorcycleChange(moto);
+      if (moto.deviceId) onDeviceIdChange(moto.deviceId);
+    }
+  };
 
   return (
     <div className="playback-controls">
@@ -110,17 +123,36 @@ export function PlaybackControls({
         </select>
       </div>
 
-      {/* Device ID */}
+      {/* Motorcycle / Device ID */}
       <div className="playback-controls__device">
-        <label htmlFor="device-id">Device ID</label>
-        <input
-          id="device-id"
-          type="text"
-          value={deviceId}
-          placeholder="REAL-SIM-001"
-          disabled={isPlaying}
-          onChange={(e) => onDeviceIdChange(e.target.value)}
-        />
+        <label htmlFor="device-select">
+          <Bike size={12} style={{ marginRight: 4 }} />
+          Mota da Garagem
+        </label>
+        {motorcycles.length > 0 ? (
+          <select
+            id="device-select"
+            disabled={isPlaying || disabled}
+            value={motorcycles.find(m => m.deviceId === deviceId)?.id || ""}
+            onChange={(e) => handleMotorcycleChange(e.target.value)}
+          >
+            <option value="" disabled>— Selecionar Mota —</option>
+            {motorcycles.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} ({m.deviceId})
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="device-id"
+            type="text"
+            value={deviceId}
+            placeholder="REAL-SIM-001"
+            disabled={isPlaying || disabled}
+            onChange={(e) => onDeviceIdChange(e.target.value)}
+          />
+        )}
       </div>
 
       {/* Emitted counter */}
