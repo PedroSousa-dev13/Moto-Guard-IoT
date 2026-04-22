@@ -96,7 +96,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 w-full max-w-[420px] h-full bg-surface/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl z-[1001] flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 w-full max-w-[420px] h-full bg-surface/95 backdrop-blur-2xl border-l border-border-glass shadow-2xl z-[1001] flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -106,18 +106,18 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
             <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20">
               <Bike size={24} strokeWidth={2.5} />
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tighter m-0">MotoGuard</h2>
+            <h2 className="text-2xl font-black text-text tracking-tighter m-0">MotoGuard</h2>
           </div>
 
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
-            <h3 className="text-xl font-black text-white tracking-tight">
+            <h3 className="text-xl font-black text-text tracking-tight">
               {showForgotPassword ? "Recuperar Senha" : isLogin ? "Bem-vindo de volta" : "Criar nova conta"}
             </h3>
             <button 
               type="button" 
               onClick={onClose} 
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-panel border border-border-glass-subtle text-muted hover:text-text hover:bg-panel-hover transition-all"
               aria-label="Fechar"
             >
               <X size={20} />
@@ -154,7 +154,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                       <div className="relative">
                         <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                         <input
-                          className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
+                          className="w-full bg-panel border border-border-glass-subtle rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                           type="email"
                           value={forgotEmail}
                           onChange={(e) => setForgotEmail(e.target.value)}
@@ -194,7 +194,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                   <div className="relative">
                     <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                     <input
-                      className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
+                      className="w-full bg-panel border border-border-glass-subtle rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -212,7 +212,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                 <div className="relative">
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                   <input
-                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
+                    className="w-full bg-panel border border-border-glass-subtle rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -229,7 +229,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                 <div className="relative">
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                   <input
-                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
+                    className="w-full bg-panel border border-border-glass-subtle rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -290,7 +290,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                     clearError();
                     closeForgotPassword();
                   }}
-                  className="text-sm font-black text-white hover:text-accent transition-colors underline decoration-accent/30 underline-offset-4"
+                  className="text-sm font-black text-text hover:text-accent transition-colors underline decoration-accent/30 underline-offset-4"
                 >
                   {isLogin ? "Criar conta agora" : "Fazer login"}
                 </button>

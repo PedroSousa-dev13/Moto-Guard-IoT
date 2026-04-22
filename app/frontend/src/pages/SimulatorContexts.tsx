@@ -123,7 +123,7 @@ export default function SimulatorContexts() {
         
         <div className="flex items-center gap-3 flex-wrap">
           {devices.length > 1 && (
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 py-2 gap-2 shadow-inner">
+            <div className="flex items-center bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 gap-2 shadow-inner">
               <Settings2 size={16} className="text-accent/60" />
               <select
                 className="bg-transparent border-none text-[0.7rem] font-black text-text uppercase tracking-widest focus:outline-none cursor-pointer"
@@ -131,13 +131,13 @@ export default function SimulatorContexts() {
                 onChange={(e) => setActiveDeviceId(e.target.value)}
               >
                 {devices.map((d) => (
-                  <option key={d} value={d} className="bg-slate-900">{d}</option>
+                  <option key={d} value={d} className="bg-surface">{d}</option>
                 ))}
               </select>
             </div>
           )}
           
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1 rounded-xl shadow-inner">
+          <div className="flex items-center gap-2 bg-panel border border-border-glass-subtle p-1 rounded-xl shadow-inner">
             <span
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.6rem] font-black uppercase tracking-widest transition-all ${status.mqtt ? "bg-green/10 text-green border border-green/20" : "bg-red/10 text-red border border-red/20 opacity-50"}`}
               title={status.mqtt ? "Broker MQTT Online" : "Broker MQTT Offline"}
@@ -164,11 +164,11 @@ export default function SimulatorContexts() {
       <div className="flex flex-col gap-6">
         {/* HERO ROW - DIGITAL TWIN & MAP */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-auto min-h-[500px]">
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-white/10 shadow-2xl p-6 group">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-border-glass shadow-2xl p-6 group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0" />
             <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommand} running={running} routeStart={routeStart} />
           </div>
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-white/10 shadow-2xl p-2 group">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-border-glass shadow-2xl p-2 group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0" />
             <MapCard
               location={telemetry?.location ?? null}
@@ -199,7 +199,7 @@ export default function SimulatorContexts() {
         </div>
 
         {/* COMMAND CENTER */}
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-white/10 shadow-2xl group">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/60 backdrop-blur-xl border border-border-glass shadow-2xl group animate-fade-in [animation-delay:400ms]">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50" />
           <div className="p-1">
             <CommandPanel
@@ -219,12 +219,12 @@ export default function SimulatorContexts() {
       </div>
 
       {/* FOOTER STATS */}
-      <div className="flex items-center justify-center gap-10 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 shadow-inner shrink-0">
+      <div className="flex items-center justify-center gap-10 px-8 py-4 rounded-2xl bg-panel border border-border-glass-subtle shadow-inner shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Pacotes Recebidos</span>
           <span className="text-sm font-black text-text tracking-tight tabular-nums">{msgCount.toLocaleString()}</span>
         </div>
-        <div className="w-px h-4 bg-white/10" />
+        <div className="w-px h-4 bg-border-glass-subtle" />
         <div className="flex items-center gap-2">
           <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Última Transmissão</span>
           <span className="text-sm font-black text-accent tracking-tight uppercase">{lastUpdate ?? "A AGUARDAR..."}</span>

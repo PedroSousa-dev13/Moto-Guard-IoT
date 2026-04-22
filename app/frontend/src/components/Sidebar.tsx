@@ -71,26 +71,26 @@ const Sidebar: FC = () => {
   ];
 
   return (
-    <aside className="w-full md:w-72 bg-surface/80 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col shrink-0 z-[100] transition-all duration-300">
+    <aside className="w-full md:w-72 bg-surface/80 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-border-glass flex flex-col shrink-0 z-[100] transition-all duration-300">
       {/* HEADER */}
-      <div className="p-6 pb-4 border-b border-white/5 hidden md:block">
+      <div className="p-6 pb-4 border-b border-border-glass-subtle hidden md:block">
         <Link to="/" className="flex items-center gap-4 group mb-6 no-underline">
           <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform duration-500">
             <Bike size={24} strokeWidth={2.5} />
           </div>
           <div className="flex flex-col">
-            <h2 className="text-xl font-black text-white tracking-tighter m-0 leading-none">MotoGuard</h2>
+            <h2 className="text-xl font-black text-text tracking-tighter m-0 leading-none">MotoGuard</h2>
             <span className="text-[0.6rem] font-black text-accent tracking-[0.2em] uppercase mt-1 opacity-80">IoT Platform</span>
           </div>
         </Link>
 
         {showUser && (
-          <div className="flex items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-[1.25rem] group hover:bg-white/10 transition-all cursor-pointer">
+          <div className="flex items-center gap-4 bg-panel border border-border-glass-subtle p-4 rounded-[1.25rem] group hover:bg-panel-hover transition-all cursor-pointer">
             <div className="w-10 h-10 rounded-xl bg-accent-gradient flex items-center justify-center text-sm font-black text-white shadow-lg shadow-accent/20 shrink-0">
               {getInitials(displayUser?.name)}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[0.8rem] font-bold text-white truncate leading-tight">{displayUser?.name}</span>
+              <span className="text-[0.8rem] font-bold text-text truncate leading-tight">{displayUser?.name}</span>
               <span className="text-[0.65rem] font-medium text-muted truncate">{displayUser?.email}</span>
             </div>
           </div>
@@ -111,14 +111,14 @@ const Sidebar: FC = () => {
                   to={item.path}
                   className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group relative shrink-0 md:shrink-1 ${
                     location.pathname === item.path
-                      ? 'bg-accent/10 text-white border border-accent/20 shadow-lg shadow-accent/5'
-                      : 'text-muted hover:text-white hover:bg-white/5 border border-transparent'
+                      ? 'bg-accent/10 text-accent border border-accent/20 shadow-lg shadow-accent/5'
+                      : 'text-muted hover:text-text hover:bg-panel border border-transparent'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                     location.pathname === item.path
                       ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                      : 'bg-white/5 text-muted group-hover:bg-white/10 group-hover:text-white'
+                      : 'bg-panel text-muted group-hover:bg-panel-hover group-hover:text-text'
                   }`}>
                     {item.icon}
                   </div>
@@ -135,7 +135,7 @@ const Sidebar: FC = () => {
 
       {/* FOOTER */}
       {showUser && (
-        <div className="p-6 border-t border-white/5 hidden md:block">
+        <div className="p-6 border-t border-border-glass-subtle hidden md:block">
           <button
             onClick={isDemoMode ? exitDemoMode : logout}
             className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-red/10 border border-red/20 text-red font-black text-sm uppercase tracking-widest hover:bg-red hover:text-white hover:border-transparent transition-all shadow-lg active:scale-[0.98]"

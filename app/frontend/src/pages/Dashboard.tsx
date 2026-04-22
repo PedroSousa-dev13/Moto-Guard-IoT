@@ -67,16 +67,16 @@ function StatCard({
   icon: any, label: string, value: string, unit: string, color: string, sparkData: any[], footer: string, loading?: boolean 
 }) {
   return (
-    <div className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col gap-3 transition-all duration-300 hover:-translate-y-1 hover:bg-white/5 group relative overflow-hidden">
+    <div className="bg-surface/60 backdrop-blur-md border border-border-glass rounded-2xl p-5 flex flex-col gap-3 transition-all duration-300 hover:-translate-y-1 hover:bg-panel group relative overflow-hidden">
       <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center transition-colors group-hover:bg-white/10" style={{ color }}>
+        <div className="w-9 h-9 rounded-xl bg-panel flex items-center justify-center transition-colors group-hover:bg-panel-hover" style={{ color }}>
           {icon}
         </div>
         <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">{label}</span>
       </div>
       <div className="flex items-baseline gap-1">
         {loading ? (
-          <div className="h-8 w-24 bg-white/5 animate-pulse rounded-lg" />
+          <div className="h-8 w-24 bg-panel animate-pulse rounded-lg" />
         ) : (
           <>
             <span className="text-3xl font-black text-text tracking-tighter leading-none">{value}</span>
@@ -96,7 +96,7 @@ function StatCard({
 function ChartPlaceholder() {
   return (
     <div className="h-full w-full flex flex-col items-center justify-center text-center gap-4 p-8">
-      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-muted border border-white/5">
+      <div className="w-16 h-16 rounded-full bg-panel flex items-center justify-center text-muted border border-border-glass-subtle">
         <Radio size={32} className="animate-pulse" />
       </div>
       <p className="text-sm text-muted font-medium max-w-xs leading-relaxed">
@@ -165,11 +165,11 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.mqtt ? "bg-green/10 text-green border-green/20" : "bg-white/5 text-muted border-white/5 opacity-50"}`}>
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.mqtt ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle opacity-50"}`}>
             <span className={`w-1.5 h-1.5 rounded-full bg-current ${status.mqtt ? 'animate-pulse' : ''}`} />
             MQTT
           </div>
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.ws ? "bg-green/10 text-green border-green/20" : "bg-white/5 text-muted border-white/5 opacity-50"}`}>
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.ws ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle opacity-50"}`}>
             <span className={`w-1.5 h-1.5 rounded-full bg-current ${status.ws ? 'animate-pulse' : ''}`} />
             WS
           </div>
@@ -180,13 +180,13 @@ export default function Dashboard() {
         <div className="flex flex-col gap-8">
           
           {/* HERO CARD */}
-          <div className="relative h-72 rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
+          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass shadow-2xl group">
             <img 
               src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
               alt="Motorcycle" 
               className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent flex flex-col justify-center p-10 z-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/80 to-transparent flex flex-col justify-center p-10 z-10">
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border shadow-2xl mb-6 transition-all duration-500 ${hasData ? "bg-green/20 text-green border-green/30 shadow-green/20 scale-110" : "bg-orange/20 text-orange border-orange/30 shadow-orange/20"}`}>
                 {hasData ? <CheckCircle2 size={36} /> : <Radio size={36} className="animate-pulse" />}
               </div>
@@ -288,7 +288,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6 border-t border-white/5">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6 border-t border-border-glass-subtle">
               {[
                 { label: "Duração", icon: <Clock size={16} />, val: hasData ? "00:22:14" : "--:--" },
                 { label: "Distância", icon: <Route size={16} />, val: hasData ? "5.6 km" : "0.0 km" },
@@ -299,7 +299,7 @@ export default function Dashboard() {
                 <div key={item.label} className="flex flex-col gap-2">
                   <span className="text-[0.6rem] font-black uppercase tracking-widest text-muted">{item.label}</span>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-muted border border-white/5 shadow-inner">
+                    <div className="w-8 h-8 rounded-lg bg-panel flex items-center justify-center text-muted border border-border-glass-subtle shadow-inner">
                       {item.icon}
                     </div>
                     <span className="text-lg font-black text-text tracking-tight">{item.val}</span>
@@ -356,7 +356,7 @@ export default function Dashboard() {
             
             <div className="flex flex-col gap-3">
               {recentAlerts.length > 0 ? recentAlerts.map(a => (
-                <div key={a.id} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                <div key={a.id} className="flex items-center gap-4 p-3 rounded-2xl bg-panel border border-border-glass-subtle hover:bg-panel-hover transition-all group">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110 ${a.severity === 'CRITICAL' ? 'bg-red/10 text-red border-red/20' : 'bg-orange/10 text-orange border-orange/20'}`}>
                     <AlertTriangle size={16} />
                   </div>

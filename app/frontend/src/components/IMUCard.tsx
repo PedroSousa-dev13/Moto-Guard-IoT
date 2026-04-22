@@ -27,35 +27,22 @@ export default function IMUCard({ data }: IMUCardProps) {
 
   return (
     <Card title="IMU — Inércia">
-      <div className="gauge-grid">
-        <div className="gauge" title="Inclinação lateral da mota (esquerda/direita). Valores altos indicam curvas agressivas. Acima de 45° é zona de risco.">
-          <div className="gauge-icon"><MoveHorizontal size={16} /></div>
-          <div className="value" style={{ color: rollColor(roll) }}>
-            {roll.toFixed(1)}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { icon: <MoveHorizontal size={16} />, val: roll.toFixed(1), unit: "°", label: "Roll", color: rollColor(roll), title: "Inclinação lateral da mota." },
+          { icon: <MoveVertical size={16} />, val: pitch.toFixed(1), unit: "°", label: "Pitch", color: "var(--text)", title: "Inclinação frontal/traseira." },
+          { icon: <Compass size={16} />, val: yaw.toFixed(1), unit: "°", label: "Yaw", color: "var(--text)", title: "Orientação da mota." },
+          { icon: <Activity size={16} />, val: gForce.toFixed(2), unit: "G", label: "G-Force", color: gForceColor(gForce), title: "Força gravitacional total." },
+        ].map((g, idx) => (
+          <div key={idx} className="bg-panel border border-border-glass-subtle rounded-2xl p-4 flex flex-col items-center text-center transition-all hover:bg-panel-hover" title={g.title}>
+            <div className="text-muted mb-2 opacity-50">{g.icon}</div>
+            <div className="text-2xl font-black tracking-tighter tabular-nums" style={{ color: g.color }}>
+              {g.val}
+            </div>
+            <div className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-60">{g.unit}</div>
+            <div className="text-[0.55rem] font-black text-muted uppercase tracking-[0.2em] mt-2 opacity-40">{g.label}</div>
           </div>
-          <div className="unit">°</div>
-          <div className="label">Roll</div>
-        </div>
-        <div className="gauge" title="Inclinação frontal/traseira (aceleração/travagem). Positivo = aceleração, negativo = travagem.">
-          <div className="gauge-icon"><MoveVertical size={16} /></div>
-          <div className="value">{pitch.toFixed(1)}</div>
-          <div className="unit">°</div>
-          <div className="label">Pitch</div>
-        </div>
-        <div className="gauge" title="Orientação da mota em graus (0°=Norte, 90°=Este, 180°=Sul, 270°=Oeste). Muda conforme a direção de marcha.">
-          <div className="gauge-icon"><Compass size={16} /></div>
-          <div className="value">{yaw.toFixed(1)}</div>
-          <div className="unit">°</div>
-          <div className="label">Yaw</div>
-        </div>
-        <div className="gauge" title="Força gravitacional total. Em repouso = 1G. Em curva ou travagem aumenta. Acima de 2G pode indicar evento de risco.">
-          <div className="gauge-icon"><Activity size={16} /></div>
-          <div className="value" style={{ color: gForceColor(gForce) }}>
-            {gForce.toFixed(2)}
-          </div>
-          <div className="unit">G</div>
-          <div className="label">G-Force</div>
-        </div>
+        ))}
       </div>
     </Card>
   );

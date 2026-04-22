@@ -382,11 +382,11 @@ export default function RealSimulator() {
       {hasRows && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* REAL DATA */}
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
+          <div className="bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group animate-fade-in">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green/0 via-green/40 to-green/0 opacity-50" />
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
+                <h2 className="text-lg font-black text-text tracking-tight m-0 flex items-center gap-2">
                   <Database className="text-green" size={20} /> Dados Reais (CSV)
                 </h2>
                 <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Formato: {sourceFormat === "riderdata" ? "RiderData" : "Genérico"}</p>
@@ -395,20 +395,20 @@ export default function RealSimulator() {
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {rawDataItems.map((item) => (
-                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
+                <div key={item.label} className="bg-panel border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-border-glass transition-all">
                   <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-green/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-green transition-colors">{item.value}</span>
+                  <span className="text-sm font-black text-text tabular-nums group-hover/item:text-green transition-colors">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* COMPLEMENTED DATA */}
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
+          <div className="bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group animate-fade-in [animation-delay:100ms]">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
+                <h2 className="text-lg font-black text-text tracking-tight m-0 flex items-center gap-2">
                   <Zap className="text-blue" size={20} /> Telemetria Complementar
                 </h2>
                 <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Física do motor e sensores auxiliares</p>
@@ -417,9 +417,9 @@ export default function RealSimulator() {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {complementedDataItems.map((item) => (
-                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
+                <div key={item.label} className="bg-panel border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-border-glass transition-all">
                   <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-blue/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-blue transition-colors">{item.value}</span>
+                  <span className="text-sm font-black text-text tabular-nums group-hover/item:text-blue transition-colors">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -430,22 +430,22 @@ export default function RealSimulator() {
       {/* SPLIT LAYOUT: MAP & VIDEO */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 flex-1 min-h-[400px]">
         {/* MAP */}
-        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group">
+        <div className="relative bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden shadow-2xl group animate-fade-in [animation-delay:200ms]">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
           <RouteMap
             gpsTrack={gpsTrack}
             currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
           />
           {!hasRows && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface/40 backdrop-blur-[2px] pointer-events-none z-10">
               <div className="text-7xl grayscale opacity-20">🗺️</div>
-              <p className="text-sm font-black text-white/40 uppercase tracking-widest">Carrega um CSV para visualizar o percurso</p>
+              <p className="text-sm font-black text-text/40 uppercase tracking-widest">Carrega um CSV para visualizar o percurso</p>
             </div>
           )}
         </div>
 
         {/* VIDEO PLAYER */}
-        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group flex flex-col">
+        <div className="relative bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden shadow-2xl group flex flex-col animate-fade-in [animation-delay:300ms]">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
           <div className="flex-1">
             <VideoPlayer
