@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
+import { CATEGORY_DEVICE_MAP } from "../utils/categoryDeviceMap";
 import type { Motorcycle } from "../types";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
@@ -31,12 +32,18 @@ export default function SimulatorContexts() {
     // Target current simulator, but pass new identity
     const enrichedCmd = { ...cmd, userId: user?.id, device_id: activeDeviceId };
     if (cmd.acao === "definir_modelo" && cmd.modelo) {
-      // Procurar por nome ou categoria (fallback para admin/testes)
-      const bike = userMotos.find(m => m.name === cmd.modelo || m.category === cmd.modelo);
+      // Procurar por nome exato primeiro, depois por categoria
+      const bike = userMotos.find(m => m.name === cmd.modelo) || 
+                   userMotos.find(m => m.category === cmd.modelo);
+                   
       if (bike) {
         enrichedCmd.motorcycleName = bike.name;
         enrichedCmd.modelo = bike.category || "Naked";
         enrichedCmd.new_device_id = bike.deviceId;
+      } else if (CATEGORY_DEVICE_MAP[cmd.modelo]) {
+        // Fallback para quando o modelo é uma categoria (admin ou sem motas)
+        enrichedCmd.new_device_id = CATEGORY_DEVICE_MAP[cmd.modelo];
+        enrichedCmd.motorcycleName = cmd.modelo;
       }
     }
 

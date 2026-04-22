@@ -68,6 +68,8 @@ export interface Trip {
   motorcycle: MotorcycleSummary;
   gpxData?: GpxData | null;
   events?: TripEvent[];
+  safetyScore?: number;
+  performanceScore?: number;
   _count?: { events: number };
 }
 

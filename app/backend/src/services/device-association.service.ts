@@ -20,8 +20,9 @@ class DeviceAssociationService {
 
   async getAssociation(deviceId: string, userId?: string, motoModel?: string): Promise<MotorcycleAssociation | null> {
     // Para simuladores, o cacheKey deve incluir o modelo se disponível
-    const isSim = deviceId.includes("-SIM-");
-    const cacheKey = [deviceId, userId, isSim ? motoModel : undefined].filter(Boolean).join(":");
+    const isSim = deviceId.toUpperCase().includes("-SIM-");
+    const cleanModel = motoModel?.trim();
+    const cacheKey = [deviceId, userId, isSim ? cleanModel : undefined].filter(Boolean).join(":");
     
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached;
@@ -30,11 +31,11 @@ class DeviceAssociationService {
       where: { 
         deviceId,
         userId: userId || undefined,
-        // Se for simulador e tivermos o modelo, filtramos por nome ou categoria
-        ...(isSim && motoModel ? { 
+        // Se for simulador e tivermos o modelo, filtramos por nome ou categoria (case-insensitive via Prisma se suportado, senão exato)
+        ...(isSim && cleanModel ? { 
           OR: [
-            { name: motoModel },
-            { category: motoModel }
+            { name: { equals: cleanModel, mode: "insensitive" } },
+            { category: { equals: cleanModel, mode: "insensitive" } }
           ]
         } : {})
       },
@@ -42,15 +43,20 @@ class DeviceAssociationService {
     });
 
     if (!motorcycle) {
-      // Fallback: se não encontramos com o modelo exato, tentamos encontrar qualquer um do user
-      if (isSim && motoModel && userId) {
-         return this.getAssociation(deviceId, userId);
+      // Fallback: se não encontramos com o modelo exato, tentamos encontrar qualquer um do user para este device
+      if (isSim && userId) {
+         const fallback = await prisma.motorcycle.findFirst({
+           where: { deviceId, userId },
+           select: { id: true, userId: true, deviceId: true },
+         });
+         if (fallback) {
+           const assoc = { motorcycleId: fallback.id, userId: fallback.userId, deviceId: fallback.deviceId! };
+           this.setCache(cacheKey, assoc);
+           return assoc;
+         }
       }
-      // Fallback para dispositivos reais
-      if (userId && !isSim) {
-        return this.getAssociation(deviceId);
-      }
-      console.warn(`Mota não encontrada para deviceId: ${deviceId} (user: ${userId}, model: ${motoModel})`);
+      
+      console.warn(`[getAssociation] Mota não encontrada para deviceId: ${deviceId} (user: ${userId}, model: ${cleanModel})`);
       return null;
     }
 
@@ -64,54 +70,66 @@ class DeviceAssociationService {
     return association;
   }
 
-  async registerDevice(
-    deviceId: string,
-    userId: string,
-    motorcycleName: string,
-    profileId?: string
-  ): Promise<MotorcycleAssociation> {
-    const isSim = deviceId.includes("-SIM-");
-    
-    // Para simuladores, verificamos se já existe uma mota com ESTE NOME para este user e device
+  /**
+   * Regista ou associa um dispositivo a um utilizador e modelo de mota.
+   * Se a mota já existir (por nome ou categoria), associa. Caso contrário, cria uma nova.
+   */
+  async registerDevice(deviceId: string, userId: string, motorcycleName: string, profileId?: string): Promise<MotorcycleAssociation> {
+    const isSim = deviceId.toUpperCase().includes("-SIM-");
+    const cleanName = motorcycleName?.trim() || "Simulador";
+
+    // 1. Verificar se já existe uma mota com este deviceId E este utilizador
+    // Para simuladores, tentamos ser específicos com o nome ou categoria
     const existing = await prisma.motorcycle.findFirst({
       where: { 
         deviceId, 
         userId,
-        ...(isSim ? { name: motorcycleName } : {})
+        ...(isSim ? { 
+          OR: [
+            { name: { equals: cleanName, mode: "insensitive" } },
+            { category: { equals: cleanName, mode: "insensitive" } }
+          ]
+        } : {})
       },
     });
 
     if (existing) {
-      // Se a mota existe mas não tem categoria/perfil, vamos atualizar (migração suave)
-      if (isSim && (!existing.category || !existing.profileId)) {
-        const profile = await prisma.motorcycleProfile.findFirst({
-          where: { name: motorcycleName }
-        });
-        if (profile) {
-          await prisma.motorcycle.update({
-            where: { id: existing.id },
-            data: { category: profile.name, profileId: profile.id }
-          });
-        }
-      }
-
+      console.log(`[registerDevice] Usando mota existente: ${existing.name} (${existing.id}) para ${deviceId}`);
       const association: MotorcycleAssociation = {
         motorcycleId: existing.id,
         userId: existing.userId,
         deviceId: existing.deviceId!,
       };
-      const cacheKey = [deviceId, userId, isSim ? motorcycleName : undefined].filter(Boolean).join(":");
+      
+      const cacheKey = [deviceId, userId, isSim ? cleanName : undefined].filter(Boolean).join(":");
       this.setCache(cacheKey, association);
       return association;
     }
 
-    // Tentar encontrar perfil por nome se for simulador
-    let effectiveProfileId = profileId;
-    let category = isSim ? motorcycleName : undefined;
+    // 2. Se for simulador e não encontramos pelo nome, tentamos encontrar QUALQUER mota do utilizador com este deviceId
+    if (isSim) {
+      const anyMotoWithId = await prisma.motorcycle.findFirst({
+        where: { deviceId, userId }
+      });
+      if (anyMotoWithId) {
+        console.log(`[registerDevice] Fallback para mota do user com mesmo deviceId: ${anyMotoWithId.name}`);
+        const association = { motorcycleId: anyMotoWithId.id, userId: anyMotoWithId.userId, deviceId: anyMotoWithId.deviceId! };
+        const cacheKey = [deviceId, userId, cleanName].join(":");
+        this.setCache(cacheKey, association);
+        return association;
+      }
+    }
 
+    // 3. Criar nova mota se não existir nenhuma compatível
+    console.log(`[registerDevice] Criando nova mota para simulator: ${cleanName} (${deviceId})`);
+    
+    let effectiveProfileId = profileId;
+    let category = isSim ? cleanName : undefined;
+
+    // Tentar encontrar perfil por nome se não fornecido
     if (isSim && !effectiveProfileId) {
       const profile = await prisma.motorcycleProfile.findFirst({
-        where: { name: motorcycleName }
+        where: { name: { equals: cleanName, mode: "insensitive" } }
       });
       if (profile) {
         effectiveProfileId = profile.id;
@@ -122,7 +140,7 @@ class DeviceAssociationService {
     const motorcycle = await prisma.motorcycle.create({
       data: {
         userId,
-        name: motorcycleName,
+        name: cleanName,
         deviceId,
         profileId: effectiveProfileId,
         category,
@@ -135,7 +153,7 @@ class DeviceAssociationService {
       deviceId: motorcycle.deviceId!,
     };
 
-    const cacheKey = [deviceId, userId, isSim ? motorcycleName : undefined].filter(Boolean).join(":");
+    const cacheKey = [deviceId, userId, isSim ? cleanName : undefined].filter(Boolean).join(":");
     this.setCache(cacheKey, association);
     console.log(`Device ${deviceId} (${motorcycleName}) registado para mota ${motorcycle.id}`);
     return association;
