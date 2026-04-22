@@ -177,7 +177,12 @@ export default function Garage() {
 
       {/* Formulário add/edit */}
       {showAdd && (
-        <Card title={editId ? "Editar mota" : "Adicionar mota"}>
+        <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div className="panel-header" style={{ padding: '0 0 16px 0', marginBottom: '20px', background: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="panel-title" style={{ fontSize: '1rem', color: 'var(--text)' }}>
+              {editId ? "Editar mota" : "Adicionar mota"}
+            </span>
+          </div>
           <form onSubmit={(e) => void handleSubmit(e)}>
             <div className="form-grid">
               <div className="field">
@@ -216,102 +221,141 @@ export default function Garage() {
                 </select>
               </div>
             </div>
-            {saveError && <div className="alert alert-danger" style={{ marginTop: 10 }}>{saveError}</div>}
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 14 }}>
+            {saveError && <div className="alert alert-danger" style={{ marginTop: 16 }}>{saveError}</div>}
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 24 }}>
               <button type="button" className="btn btn-ghost" onClick={closeForm}><X size={14} /> Cancelar</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>
-                <Check size={14} /> {saving ? "A guardar..." : editId ? "Guardar" : "Adicionar"}
+                <Check size={14} /> {saving ? "A guardar..." : editId ? "Guardar Alterações" : "Adicionar à Garagem"}
               </button>
             </div>
           </form>
-        </Card>
+        </div>
       )}
 
       {motos.length === 0 ? (
-        <div className="empty-state">
+        <div className="empty-state glass-panel">
           <div className="empty-state-icon"><Bike size={48} /></div>
           <div className="empty-state-title">Garagem vazia</div>
           <div className="empty-state-text">Adiciona a tua primeira mota para começar a monitorizar.</div>
           <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Adicionar mota</button>
         </div>
       ) : (
-        <div className="garage-grid">
+        <div className="tile-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
           {motos.map((moto) => {
             const isDetail = detailId === moto.id;
             const isConfirmDelete = confirmDeleteId === moto.id;
             return (
-              <div key={moto.id} className={`garage-card ${isDetail ? "garage-card-active" : ""}`}>
-                <div className="garage-card-header">
-                  <div style={{ display: "flex", gap: 12, alignItems: "center", width: "100%" }}>
-                    <div className="garage-card-img" style={{ width: 80, height: 60, borderRadius: 8, overflow: "hidden", background: "var(--surface-3)", flexShrink: 0 }}>
+              <div key={moto.id} className={`glass-panel ${isDetail ? "active" : ""}`} style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                transition: 'all 0.3s ease',
+                border: isDetail ? '1.5px solid var(--accent)' : undefined,
+                overflow: 'hidden'
+              }}>
+                <div style={{ padding: '20px' }}>
+                  <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                    <div style={{ 
+                      width: 100, 
+                      height: 70, 
+                      borderRadius: 12, 
+                      overflow: "hidden", 
+                      background: "rgba(255,255,255,0.03)", 
+                      flexShrink: 0,
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      padding: '4px'
+                    }}>
                       <img 
                         src={imageFromCategory(moto.category)} 
                         alt={moto.category ?? "moto"} 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => console.error("Failed to load image in Garage:", (e.target as HTMLImageElement).src)}
+                        style={{ width: "100%", height: "100%", objectFit: "contain", filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                       />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="garage-card-name">{moto.name}</div>
-                      <div className="garage-card-sub">
+                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '4px' }}>{moto.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>
                         {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}
                       </div>
                     </div>
-                    {moto.category && (
-                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)", whiteSpace: "nowrap" }}>
-                        {moto.category}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+                    <span className="pill" style={{ background: "rgba(139, 92, 246, 0.1)", color: "var(--accent)", border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                      {moto.category}
+                    </span>
+                    {moto.plate && (
+                      <span className="pill" style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-2)", border: '1px solid rgba(255,255,255,0.1)' }}>
+                        {moto.plate}
+                      </span>
+                    )}
+                    {moto.deviceId && (
+                      <span className="pill" style={{ background: "rgba(255,255,255,0.03)", color: "var(--muted)", fontSize: '0.65rem', fontFamily: 'monospace' }}>
+                        ID: {moto.deviceId}
                       </span>
                     )}
                   </div>
+
+                  {isDetail && (
+                    <div style={{ 
+                      marginTop: '20px', 
+                      paddingTop: '16px', 
+                      borderTop: '1px solid rgba(255,255,255,0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Odómetro</span>
+                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.odometer?.toLocaleString("pt-PT") ?? 0} km</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Visto em</span>
+                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.lastSeenAt ? new Date(moto.lastSeenAt).toLocaleString("pt-PT") : "Nunca"}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Registada em</span>
+                        <span style={{ color: 'var(--text)', fontWeight: 700 }}>{moto.createdAt ? new Date(moto.createdAt).toLocaleDateString("pt-PT") : "—"}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="garage-card-badges">
-                  {moto.plate && (
-                    <span className="badge-pill" style={{ background: "var(--surface-3)", color: "var(--text-2)" }}>
-                      {moto.plate}
-                    </span>
-                  )}
-                  {moto.deviceId && (
-                    <span className="badge-pill" style={{ background: "var(--surface-3)", color: "var(--muted)", fontFamily: "monospace", fontSize: "0.7rem" }}>
-                      {moto.deviceId}
-                    </span>
+                <div style={{ 
+                  marginTop: 'auto', 
+                  padding: '16px 20px', 
+                  background: 'rgba(0,0,0,0.15)', 
+                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  gap: '8px',
+                  justifyContent: 'flex-end'
+                }}>
+                  {isConfirmDelete ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--red)', flex: 1 }}>Confirmar remoção?</span>
+                      <button className="btn btn-danger btn-sm" onClick={() => void handleDelete(moto.id)}>Remover</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteId(null)}>Voltar</button>
+                    </div>
+                  ) : (
+                    <>
+                      <button className="btn btn-primary btn-sm" disabled={!moto.deviceId}
+                        style={{ flex: 1 }}
+                        onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}>
+                        <Activity size={14} /> Monitorizar
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips?moto=${moto.id}`)} title="Ver Viagens">
+                        <Route size={16} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setDetailId(isDetail ? null : moto.id)} title={isDetail ? "Menos info" : "Mais info"}>
+                        {isDetail ? <X size={16} /> : <Activity size={16} style={{ opacity: 0.5 }} />}
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(moto)} title="Editar">
+                        <Pencil size={16} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => setConfirmDeleteId(moto.id)} title="Remover">
+                        <Trash2 size={16} />
+                      </button>
+                    </>
                   )}
                 </div>
-
-                {isDetail && (
-                  <div className="garage-card-detail">
-                    {moto.profile && <div className="garage-detail-row"><span>Perfil</span><span>{moto.profile.name ?? "—"}</span></div>}
-                    {moto.odometer != null && <div className="garage-detail-row"><span>Odómetro</span><span>{moto.odometer.toLocaleString("pt-PT")} km</span></div>}
-                    {moto.lastSeenAt && <div className="garage-detail-row"><span>Última atividade</span><span>{new Date(moto.lastSeenAt).toLocaleString("pt-PT")}</span></div>}
-                    {moto.createdAt && <div className="garage-detail-row"><span>Registada em</span><span>{new Date(moto.createdAt).toLocaleDateString("pt-PT")}</span></div>}
-                  </div>
-                )}
-
-                {isConfirmDelete ? (
-                  <div className="garage-confirm-delete">
-                    <span>Confirmar remoção?</span>
-                    <button className="btn btn-danger btn-sm" onClick={() => void handleDelete(moto.id)}>Remover</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
-                  </div>
-                ) : (
-                  <div className="garage-card-actions">
-                    <button className="btn btn-primary btn-sm" disabled={!moto.deviceId}
-                      title={moto.deviceId ? "Abrir dashboard para esta mota" : "Sem device ID associado"}
-                      onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}>
-                      <Activity size={13} /> Monitorizar
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips?moto=${moto.id}`)}>
-                      <Route size={13} /> Viagens
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setDetailId(isDetail ? null : moto.id)}>
-                      {isDetail ? "Fechar" : "Detalhes"}
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(moto)}><Pencil size={13} /></button>
-                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => setConfirmDeleteId(moto.id)}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                )}
               </div>
             );
           })}

@@ -236,15 +236,16 @@ const SECTIONS: Section[] = [
 // ─── Severity badge ───────────────────────────────────────────────────────────
 
 function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" }) {
-  const styles = {
-    info:     { bg: "rgba(14,165,233,0.12)",  color: "#0ea5e9", label: "INFO" },
-    warn:     { bg: "rgba(234,179,8,0.12)",   color: "#ca8a04", label: "AVISO" },
-    critical: { bg: "rgba(239,68,68,0.12)",   color: "#ef4444", label: "CRÍTICO" },
+  const classes = {
+    info: "pill-success", // Using success for info as a placeholder or defining new ones
+    warn: "pill-warning",
+    critical: "pill-danger",
   };
-  const s = styles[severity];
+  const labels = { info: "INFO", warn: "AVISO", critical: "CRÍTICO" };
+  
   return (
-    <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
-      {s.label}
+    <span className={`pill ${classes[severity]}`} style={{ fontSize: '10px' }}>
+      {labels[severity]}
     </span>
   );
 }
@@ -254,54 +255,48 @@ function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" })
 function FieldCard({ field }: { field: DataField }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="glass-panel" style={{
-      borderRadius: 12, overflow: "hidden",
-      marginBottom: 8,
-    }}>
+    <div className="glass-panel" style={{ marginBottom: '10px', borderRadius: '12px', overflow: 'hidden' }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        className="btn-ghost"
         style={{
           width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "12px 16px", background: "none", border: "none", cursor: "pointer", gap: 12,
+          padding: "14px 18px", border: "none", textAlign: 'left'
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>{field.label}</span>
-          <span style={{ fontSize: 12, color: "var(--muted)", background: "var(--surface-2)", borderRadius: 6, padding: "1px 7px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text)' }}>{field.label}</span>
+          <span className="pill" style={{ background: 'var(--surface-2)', color: 'var(--muted)', fontSize: '0.7rem' }}>
             {field.unit}
           </span>
-          <span style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.8 }}>
             {field.description.split(".")[0]}
           </span>
         </div>
-        {open ? <ChevronUp size={16} style={{ color: "var(--muted)", flexShrink: 0 }} /> : <ChevronDown size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />}
+        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       {open && (
-        <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--border)" }}>
-          <p style={{ fontSize: 13, color: "var(--muted)", margin: "12px 0 10px" }}>{field.description}</p>
+        <div style={{ padding: "0 18px 18px", borderTop: "1px solid var(--border)" }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-2)', margin: "14px 0" }}>{field.description}</p>
 
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-            Impacto no sistema
-          </div>
-          <ul style={{ margin: "0 0 12px", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className="section-label" style={{ marginBottom: '10px' }}>Impacto no sistema</div>
+          <ul style={{ margin: "0 0 16px", paddingLeft: '1.2rem', display: "flex", flexDirection: "column", gap: '6px' }}>
             {field.impacts.map((imp, i) => (
-              <li key={i} style={{ fontSize: 13, color: "var(--text)" }}>{imp}</li>
+              <li key={i} style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{imp}</li>
             ))}
           </ul>
 
           {field.thresholds && field.thresholds.length > 0 && (
             <>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                Limiares
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="section-label" style={{ marginBottom: '10px' }}>Limiares</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: '8px' }}>
                 {field.thresholds.map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                  <div key={i} className="subpanel" style={{ display: "flex", alignItems: "center", gap: 12, padding: '8px 12px' }}>
                     <SeverityBadge severity={t.severity} />
-                    <span style={{ color: "var(--muted)" }}>{t.label}</span>
-                    <span style={{ marginLeft: "auto", fontWeight: 600, color: "var(--text)" }}>{t.value}</span>
+                    <span style={{ color: "var(--muted)", fontSize: '0.8rem', fontWeight: 600 }}>{t.label}</span>
+                    <span style={{ marginLeft: "auto", fontWeight: 800, color: "var(--text)", fontSize: '0.85rem' }}>{t.value}</span>
                   </div>
                 ))}
               </div>
@@ -334,15 +329,18 @@ export default function About() {
 
       {/* Intro */}
       <div className="glass-panel" style={{
-        background: "linear-gradient(135deg, rgba(79,70,229,0.08), rgba(14,165,233,0.06))",
-        border: "1px solid rgba(79,70,229,0.2)", borderRadius: 14, padding: "20px 24px", marginBottom: 24,
-        backdropFilter: "blur(12px)",
+        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))",
+        border: "1px solid rgba(139, 92, 246, 0.2)",
+        padding: "24px",
+        marginBottom: "28px",
       }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <Bike size={28} style={{ color: "#4f46e5", flexShrink: 0, marginTop: 2 }} />
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <div className="tile-icon tile-icon-blue" style={{ width: 48, height: 48 }}>
+            <Bike size={24} />
+          </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Arquitetura de dados em tempo real</div>
-            <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px', color: 'var(--text)' }}>Arquitetura de dados em tempo real</div>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-2)', margin: 0, lineHeight: 1.6 }}>
               O simulador Python gera um tick por segundo com ~20 campos de telemetria. O backend Node.js processa cada tick,
               aplica heurísticas de deteção de risco e emite eventos via WebSocket para o frontend.
               No fim de cada viagem, o <strong>Safety Score</strong> e o <strong>Performance Score</strong> são calculados
@@ -353,26 +351,28 @@ export default function About() {
       </div>
 
       {/* Flow */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 8 } as CSSProperties}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 32, flexWrap: "wrap", gap: '10px' }}>
         {[
-          { icon: <Wind size={14} />, label: "Simulador Python", color: "#4f46e5" },
+          { icon: <Wind size={14} />, label: "Simulador Python", color: "var(--accent)" },
           { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <Activity size={14} />, label: "MQTT Broker", color: "#0ea5e9" },
+          { icon: <Activity size={14} />, label: "MQTT Broker", color: "var(--blue)" },
           { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <BarChart2 size={14} />, label: "Heurísticas", color: "#f97316" },
+          { icon: <BarChart2 size={14} />, label: "Heurísticas", color: "var(--orange)" },
           { icon: null, label: "→", color: "var(--muted)" },
-          { icon: <Shield size={14} />, label: "Safety Score", color: "#22c55e" },
+          { icon: <Shield size={14} />, label: "Safety Score", color: "var(--green)" },
         ].map((step, i) => (
           step.icon ? (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
-              background: `${step.color}18`, border: `1px solid ${step.color}30`,
-              borderRadius: 8, fontSize: 12, fontWeight: 600, color: step.color,
+            <div key={i} className="pill" style={{ 
+              padding: '6px 14px', 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: step.color,
+              fontWeight: 800
             }}>
-              {step.icon}{step.label}
+              {step.icon} {step.label}
             </div>
           ) : (
-            <span key={i} style={{ color: "var(--muted)", fontSize: 16, fontWeight: 300 }}>{step.label}</span>
+            <span key={i} style={{ color: "var(--muted)", fontSize: '1.2rem', fontWeight: 300 }}>{step.label}</span>
           )
         ))}
       </div>
@@ -380,27 +380,28 @@ export default function About() {
       {/* Sections */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {SECTIONS.map((section) => (
-          <div key={section.id} className="glass-panel" style={{ borderRadius: 14, overflow: "hidden" }}>
+          <div key={section.id} className="glass-panel" style={{ overflow: 'hidden' }}>
             <button
               type="button"
               onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
               style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 12,
-                padding: "16px 20px", background: `${section.color}08`,
-                borderBottom: activeSection === section.id ? "1px solid var(--border)" : "none",
-                border: "none", cursor: "pointer",
+                width: "100%", display: "flex", alignItems: "center", gap: 14,
+                padding: "18px 24px", background: activeSection === section.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                border: "none", cursor: "pointer", transition: 'all 0.2s ease'
               }}
             >
-              <span style={{ color: section.color }}>{section.icon}</span>
-              <span style={{ fontWeight: 700, fontSize: 15, flex: 1, textAlign: "left" }}>{section.title}</span>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>{section.fields.length} campos</span>
+              <div className="tile-icon" style={{ background: `${section.color}15`, color: section.color, width: 36, height: 36 }}>
+                {section.icon}
+              </div>
+              <span style={{ fontWeight: 800, fontSize: '1.05rem', flex: 1, textAlign: "left", color: 'var(--text)' }}>{section.title}</span>
+              <span className="pill" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{section.fields.length} campos</span>
               {activeSection === section.id
-                ? <ChevronUp size={18} style={{ color: "var(--muted)" }} />
-                : <ChevronDown size={18} style={{ color: "var(--muted)" }} />}
+                ? <ChevronUp size={20} />
+                : <ChevronDown size={20} />}
             </button>
 
             {activeSection === section.id && (
-              <div style={{ padding: "16px 20px" }}>
+              <div style={{ padding: "20px 24px", borderTop: '1px solid var(--border)' }}>
                 {section.fields.map((field) => (
                   <FieldCard key={field.key} field={field} />
                 ))}
@@ -411,13 +412,15 @@ export default function About() {
       </div>
 
       {/* Event types summary */}
-      <div className="glass-panel" style={{ marginTop: 28, borderRadius: 14, overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", background: "rgba(239,68,68,0.06)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
-          <AlertTriangle size={18} style={{ color: "#ef4444" }} />
-          <span style={{ fontWeight: 700, fontSize: 15 }}>Tipos de Eventos Detetados</span>
+      <div className="glass-panel" style={{ marginTop: 32, overflow: "hidden" }}>
+        <div className="panel-header" style={{ background: "rgba(239,68,68,0.08)", borderBottom: "1px solid rgba(239,68,68,0.1)" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AlertTriangle size={20} style={{ color: "var(--red)" }} />
+            <span className="panel-title" style={{ color: 'var(--text)', fontSize: '1rem' }}>Tipos de Eventos Detetados</span>
+          </div>
         </div>
-        <div style={{ padding: "16px 20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
+        <div style={{ padding: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {[
               { icon: "🛑", name: "HARD_BRAKING", label: "Travagem Brusca", desc: "Desaceleração > 0.35G com travão > 60%" },
               { icon: "🚀", name: "RAPID_ACCELERATION", label: "Aceleração Brusca", desc: "Aceleração > 0.30G com throttle > 70%" },
@@ -430,16 +433,16 @@ export default function About() {
               { icon: "💥", name: "CRASH_DETECTED", label: "Queda Detetada", desc: "Roll + G-force acima dos limiares de queda do perfil" },
               { icon: "🚨", name: "SPEEDING", label: "Excesso de Velocidade", desc: "> 10% acima do limite legal durante 3+ ticks (WARNING); > 25% → CRITICAL" },
             ].map((ev) => (
-              <div key={ev.name} style={{
-                display: "flex", gap: 10, padding: "10px 12px",
-                background: "rgba(0,0,0,0.2)", borderRadius: 10, alignItems: "flex-start",
-                border: "1px solid var(--glass-border)",
+              <div key={ev.name} className="subpanel" style={{
+                display: "flex", gap: 14, padding: "14px", alignItems: "flex-start",
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.05)'
               }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{ev.icon}</span>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{ev.icon}</span>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{ev.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace", marginBottom: 2 }}>{ev.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{ev.desc}</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '2px' }}>{ev.label}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, fontFamily: 'monospace', marginBottom: '6px', opacity: 0.8 }}>{ev.name}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.4 }}>{ev.desc}</div>
                 </div>
               </div>
             ))}

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import Card from "../components/ui/Card";
 import {
   loadAlerts,
   saveAlerts,
@@ -13,14 +12,31 @@ import {
 import { loadSettings } from "../utils/settings";
 import { alertsAPI } from "../services/api";
 import { useNotifications } from "../hooks/useNotifications";
-import { RefreshCw } from "lucide-react";
+import { 
+  RefreshCw, 
+  Search, 
+  CheckCircle, 
+  Filter, 
+  X, 
+  ChevronRight, 
+  Clock, 
+  MapPin, 
+  Activity, 
+  Info, 
+  AlertTriangle, 
+  AlertCircle,
+  ExternalLink,
+  History,
+  LayoutList
+} from "lucide-react";
+import "./Alertas.css";
 
 type StatusFilter = "all" | "unread" | "ack";
 type SeverityFilter = "all" | "INFO" | "WARNING" | "CRITICAL";
 type TypeFilter = "all" | AlertType;
 type ViewMode = "list" | "timeline";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 
 function formatDateTime(date: string) {
   return new Date(date).toLocaleString("pt-PT", {
@@ -29,7 +45,6 @@ function formatDateTime(date: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
   });
 }
 
@@ -60,6 +75,14 @@ function typeIcon(type?: AlertType): string {
     case "IMPACT": return "💥";
     case "MAINTENANCE": return "🔩";
     default: return "⚠️";
+  }
+}
+
+function SeverityIcon({ severity }: { severity: AlertSeverity }) {
+  switch (severity) {
+    case "CRITICAL": return <AlertCircle size={18} color="var(--red)" />;
+    case "WARNING": return <AlertTriangle size={18} color="var(--yellow)" />;
+    default: return <Info size={18} color="var(--muted)" />;
   }
 }
 
@@ -110,7 +133,7 @@ export default function Alertas() {
       }));
       setBackendAlerts(mapped);
     } catch {
-      setBackendError("Não foi possível carregar o histórico do servidor.");
+      setBackendError("Erro ao carregar histórico.");
     } finally {
       setBackendLoading(false);
     }
@@ -124,14 +147,12 @@ export default function Alertas() {
     document.title = "Alertas & Eventos — MotoGuard";
   }, []);
 
-  // Subscrever eventos Socket.IO em tempo real
   useEffect(() => {
     const onUpdate = () => setAlerts(loadAlerts());
     window.addEventListener("motoguard:alerts", onUpdate);
     return () => window.removeEventListener("motoguard:alerts", onUpdate);
   }, []);
 
-  // Combinar alertas locais (tempo real) com histórico do backend
   const allAlerts = useMemo(() => {
     const localIds = new Set(alerts.map((a) => a.id));
     const merged = [
@@ -177,7 +198,7 @@ export default function Alertas() {
         );
       })
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [alerts, query, severity, status, type, deviceFilter, dateFrom, dateTo]);
+  }, [allAlerts, query, severity, status, type, deviceFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     setPage(1);
@@ -231,11 +252,9 @@ export default function Alertas() {
             Alertas & Eventos
           </div>
           <div className="page-subtitle">
-            {allAlerts.filter((a) => a.status === "unread").length} por ler
+            <span style={{ color: "var(--accent)" }}>{allAlerts.filter((a) => a.status === "unread").length} por ler</span>
             &nbsp;·&nbsp; {filtered.length} filtrados
             &nbsp;·&nbsp; {allAlerts.length} total
-            {backendLoading && <span style={{ color: "var(--accent)", fontSize: "0.78rem" }}>· a carregar...</span>}
-            {backendError && <span style={{ color: "var(--red)", fontSize: "0.78rem" }}>· {backendError}</span>}
           </div>
         </div>
         <div className="page-actions">
@@ -243,7 +262,6 @@ export default function Alertas() {
             className="btn btn-ghost btn-sm"
             onClick={loadBackendAlerts}
             disabled={backendLoading}
-            title="Recarregar histórico do servidor"
           >
             <RefreshCw size={14} className={backendLoading ? "spin" : ""} />
             Atualizar
@@ -253,327 +271,315 @@ export default function Alertas() {
               className="btn btn-ghost btn-sm"
               onClick={() => { markAllRead(); setAlerts(loadAlerts()); }}
             >
-              Marcar todas lidas
+              <CheckCircle size={14} />
+              Marcar lidas
             </button>
           )}
-          <button
-            className={`btn btn-sm ${viewMode === "list" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setViewMode("list")}
-            aria-pressed={viewMode === "list"}
-          >
-            Lista
-          </button>
-          <button
-            className={`btn btn-sm ${viewMode === "timeline" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setViewMode("timeline")}
-            aria-pressed={viewMode === "timeline"}
-          >
-            Timeline
-          </button>
+          <div className="status-group">
+            <button
+              className={`btn btn-sm ${viewMode === "list" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setViewMode("list")}
+            >
+              <LayoutList size={14} />
+              Lista
+            </button>
+            <button
+              className={`btn btn-sm ${viewMode === "timeline" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setViewMode("timeline")}
+            >
+              <History size={14} />
+              Timeline
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="alerts-grid">
-        <Card title="Filtros & Lista" subtitle="Recentes">
-          <div style={{ display: "grid", gap: 10 }}>
-            {/* Linha 1: pesquisa + status + severidade */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input
-                className="control"
-                placeholder="Pesquisar..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                style={{ flex: 1, minWidth: 160 }}
-                aria-label="Pesquisar alertas"
-              />
-              <select
-                className="control"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as StatusFilter)}
-                style={{ width: 140 }}
-                aria-label="Filtrar por estado"
-              >
-                <option value="all">Todos</option>
-                <option value="unread">Por ler</option>
-                <option value="ack">Reconhecidos</option>
-              </select>
-              <select
-                className="control"
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value as SeverityFilter)}
-                style={{ width: 140 }}
-                aria-label="Filtrar por severidade"
-              >
-                <option value="all">Severidade</option>
-                <option value="CRITICAL">CRITICAL</option>
-                <option value="WARNING">WARNING</option>
-                <option value="INFO">INFO</option>
-              </select>
-            </div>
+      <div className="alerts-container">
+        {/* Filter Bar */}
+        <div className="alerts-filter-bar">
+          <div className="search-input-wrapper">
+            <Search size={18} className="search-icon" />
+            <input
+              className="control"
+              placeholder="Pesquisar mensagens, dispositivos..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="filter-group">
+            <select
+              className="control control-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as StatusFilter)}
+              style={{ width: 130 }}
+            >
+              <option value="all">Estado: Todos</option>
+              <option value="unread">Por ler</option>
+              <option value="ack">Reconhecidos</option>
+            </select>
+            
+            <select
+              className="control control-sm"
+              value={severity}
+              onChange={(e) => setSeverity(e.target.value as SeverityFilter)}
+              style={{ width: 130 }}
+            >
+              <option value="all">Severidade</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="WARNING">WARNING</option>
+              <option value="INFO">INFO</option>
+            </select>
 
-            {/* Linha 2: tipo + device + período */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select
+              className="control control-sm"
+              value={type}
+              onChange={(e) => setType(e.target.value as TypeFilter)}
+              style={{ width: 140 }}
+            >
+              <option value="all">Tipo de Evento</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {ALERT_TYPE_LABELS[t]}
+                </option>
+              ))}
+            </select>
+
+            {devices.length > 1 && (
               <select
-                className="control"
-                value={type}
-                onChange={(e) => setType(e.target.value as TypeFilter)}
+                className="control control-sm"
+                value={deviceFilter}
+                onChange={(e) => setDeviceFilter(e.target.value)}
                 style={{ width: 150 }}
-                aria-label="Filtrar por tipo"
               >
-                <option value="all">Tipo</option>
-                {types.map((t) => (
-                  <option key={t} value={t}>
-                    {typeIcon(t)} {ALERT_TYPE_LABELS[t]}
-                  </option>
-                ))}
+                <option value="all">Todos Dispositivos</option>
+                {devices.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
-              {devices.length > 0 && (
-                <select
-                  className="control"
-                  value={deviceFilter}
-                  onChange={(e) => setDeviceFilter(e.target.value)}
-                  style={{ width: 150 }}
-                  aria-label="Filtrar por dispositivo"
-                >
-                  <option value="all">Todos os devices</option>
-                  {devices.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              )}
-              <input
-                className="control"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                style={{ width: 145 }}
-                aria-label="Data de início"
-                title="De"
-              />
-              <input
-                className="control"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                style={{ width: 145 }}
-                aria-label="Data de fim"
-                title="Até"
-              />
-              {hasFilters && (
-                <button className="btn btn-ghost btn-sm" onClick={clearFilters} aria-label="Limpar filtros">
-                  Limpar
-                </button>
-              )}
-            </div>
+            )}
 
+            {hasFilters && (
+              <button className="btn btn-ghost btn-sm" onClick={clearFilters}>
+                <X size={14} />
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Main Layout */}
+        <div className="alerts-main-layout">
+          {/* List Pane */}
+          <div className="alerts-list-pane custom-scrollbar">
             {filtered.length === 0 ? (
-              <div className="empty-state" style={{ padding: 22 }}>
-                <div className="empty-state-icon">📭</div>
-                <div className="empty-state-title">Sem alertas</div>
-                <div className="empty-state-text">
-                  Quando o sistema emitir alertas, vão aparecer aqui.
+              <div className="empty-pane">
+                <div className="empty-icon-v3">📭</div>
+                <div className="empty-text-v3">
+                  <h3>Sem alertas encontrados</h3>
+                  <p>Tenta ajustar os filtros para encontrar o que procuras.</p>
                 </div>
               </div>
             ) : viewMode === "list" ? (
-              <>
-                <div role="list" aria-label="Lista de alertas" aria-live="polite" className="alert-list">
-                  {paginated.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      role="listitem"
-                      aria-pressed={selectedId === a.id}
-                      aria-label={`${a.title} — ${a.severity} — ${a.status === "unread" ? "Por ler" : "Reconhecido"}`}
-                      onClick={() => setSelectedId(a.id)}
-                      className={`alert-item ${selectedId === a.id ? "selected" : ""} ${a.status === "unread" ? "unread" : ""}`}
-                    >
-                      <div className="alert-item-left">
-                        <div className="alert-item-header">
-                          <span className="alert-item-title">{typeIcon(a.type)} {a.title}</span>
-                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            {(a.meta as any)?.predictive && (
-                              <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)", border: "1px solid var(--accent)30", fontSize: "0.68rem" }}>
-                                📈 Preditivo
-                              </span>
-                            )}
-                            <span className="badge-pill" style={{ color: severityColor(a.severity), background: "transparent", border: `1px solid ${severityColor(a.severity)}40` }}>
-                              {a.severity}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="alert-item-meta">
-                          {formatDateTime(a.timestamp)}
-                          {a.deviceId ? ` · ${a.deviceId}` : ""}
-                          {a.type ? ` · ${ALERT_TYPE_LABELS[a.type]}` : ""}
-                        </div>
-                        <div className="alert-item-msg">{a.message}</div>
-                        <div className="alert-item-footer">
-                          <span className={`pill ${a.status === "unread" ? "pill-danger" : "pill-success"}`}>
-                            {a.status === "unread" ? "Por ler" : "Reconhecido"}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {totalPages > 1 && (
-                  <div role="navigation" aria-label="Paginação de alertas" className="pagination-row">
-                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} aria-label="Página anterior">
-                      ‹ Anterior
-                    </button>
-                    <span className="page-info">{page} / {totalPages} · {filtered.length} alertas</span>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label="Próxima página">
-                      Próxima ›
-                    </button>
+              paginated.map((a) => (
+                <button
+                  key={a.id}
+                  className={`alert-card-v3 ${selectedId === a.id ? "selected" : ""} ${a.status === "unread" ? "unread" : ""}`}
+                  onClick={() => setSelectedId(a.id)}
+                >
+                  <div className="alert-v3-header">
+                    <div className="alert-v3-title-row">
+                      <span className="alert-v3-icon">{typeIcon(a.type)}</span>
+                      <span className="alert-v3-title">{a.title}</span>
+                    </div>
+                    <span className="alert-v3-time">{formatDateTime(a.timestamp)}</span>
                   </div>
-                )}
-              </>
+                  <div className="alert-v3-message">{a.message}</div>
+                  <div className="alert-v3-footer">
+                    <span className="alert-v3-device">{a.motoModel || a.deviceId || "Sistema"}</span>
+                    <SeverityIcon severity={a.severity} />
+                  </div>
+                </button>
+              ))
             ) : (
-              /* Timeline view */
-              <div style={{ position: "relative", paddingLeft: 24 }}>
-                <div style={{
-                  position: "absolute",
-                  left: 8,
-                  top: 0,
-                  bottom: 0,
-                  width: 2,
-                  background: "var(--border)",
-                  borderRadius: 2,
-                }} />
+              /* Timeline View */
+              <div className="timeline-v3">
                 {paginated.map((a) => (
-                  <div
-                    key={a.id}
-                    style={{ position: "relative", marginBottom: 18, cursor: "pointer" }}
-                    onClick={() => setSelectedId(a.id)}
-                  >
-                    <div style={{
-                      position: "absolute",
-                      left: -20,
-                      top: 4,
-                      width: 12,
-                      height: 12,
-                      borderRadius: "50%",
-                      background: severityDotColor(a.severity),
-                      border: "2px solid var(--surface)",
-                      zIndex: 1,
-                    }} />
-                    <div
-                      className="subpanel"
-                      style={{
-                        border: selectedId === a.id ? "1px solid rgba(79,70,229,0.4)" : "1px solid var(--border)",
-                        background: selectedId === a.id ? "rgba(79,70,229,0.04)" : undefined,
-                        borderRadius: 10,
-                        padding: "10px 14px",
-                      }}
+                  <div key={a.id} className="timeline-item-v3">
+                    <div 
+                      className="timeline-dot-v3" 
+                      style={{ background: severityDotColor(a.severity) }}
+                    />
+                    <div 
+                      className={`timeline-card-v3 ${selectedId === a.id ? "selected" : ""}`}
+                      onClick={() => setSelectedId(a.id)}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>
-                          {typeIcon(a.type)} {a.title}
+                      <div className="alert-v3-header">
+                        <div className="alert-v3-title-row">
+                          <span className="alert-v3-title">{typeIcon(a.type)} {a.title}</span>
                         </div>
-                        <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                          {formatDateTime(a.timestamp)}
-                        </span>
+                        <span className="alert-v3-time">{formatDateTime(a.timestamp)}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                        {a.message}
-                      </div>
+                      <div className="alert-v3-message" style={{ marginTop: 4 }}>{a.message}</div>
                     </div>
                   </div>
                 ))}
-                {totalPages > 1 && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>‹</button>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{page}/{totalPages}</span>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</button>
-                  </div>
-                )}
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="pagination-v3">
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  onClick={() => setPage((p) => Math.max(1, p - 1))} 
+                  disabled={page === 1}
+                >
+                  Anterior
+                </button>
+                <span className="page-info">{page} / {totalPages}</span>
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
+                  disabled={page === totalPages}
+                >
+                  Próxima
+                </button>
               </div>
             )}
           </div>
-        </Card>
 
-        <Card title="Detalhe">
-          <div aria-live="polite" aria-atomic="true">
+          {/* Detail Pane */}
+          <div className="alerts-detail-pane">
             {!selected ? (
-              <div className="empty-state" style={{ padding: 22 }}>
-                <div className="empty-state-icon">🧾</div>
-                <div className="empty-state-title">Seleciona um alerta</div>
-                <div className="empty-state-text">Escolhe um item na lista para ver detalhes.</div>
+              <div className="empty-pane">
+                <div className="empty-icon-v3">🧾</div>
+                <div className="empty-text-v3">
+                  <h3>Seleciona um alerta</h3>
+                  <p>Escolhe um item na lista para ver todos os detalhes e métricas.</p>
+                </div>
               </div>
             ) : (
-              <div className="alert-detail">
-                <div className="alert-detail-header">
-                  <div>
-                    <div className="alert-detail-title">{typeIcon(selected.type)} {selected.title}</div>
-                    <div className="page-subtitle" style={{ margin: 0 }}>
-                      {formatDateTime(selected.timestamp)}
-                      {selected.motoModel ? ` · ${selected.motoModel}` : ""}
-                      {selected.deviceId ? ` · ${selected.deviceId}` : ""}
+              <>
+                <div className="detail-header">
+                  <div className="detail-header-top">
+                    <div className="detail-main-info">
+                      <h2>
+                        {typeIcon(selected.type)} 
+                        {selected.title}
+                      </h2>
+                      <div className="page-subtitle">
+                        <Clock size={14} /> {formatDateTime(selected.timestamp)}
+                        {selected.motoModel && <> &nbsp;·&nbsp; {selected.motoModel}</>}
+                      </div>
+                    </div>
+                    <div className="detail-actions">
+                      <button
+                        className={`btn btn-sm ${selected.status === "unread" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => setAlert({ ...selected, status: selected.status === "unread" ? "ack" : "unread" })}
+                      >
+                        {selected.status === "unread" ? <CheckCircle size={14} /> : <Search size={14} />}
+                        {selected.status === "unread" ? "Reconhecer" : "Marcar não lido"}
+                      </button>
                     </div>
                   </div>
-                  <div className="alert-detail-badges">
-                    <span className="badge-pill" style={{ color: severityColor(selected.severity), border: `1px solid ${severityColor(selected.severity)}40`, background: "transparent" }}>
+
+                  <div className="detail-badges">
+                    <span className="badge-pill" style={{ 
+                      color: severityColor(selected.severity), 
+                      border: `1px solid ${severityColor(selected.severity)}40`, 
+                      background: `${severityColor(selected.severity)}10` 
+                    }}>
+                      <SeverityIcon severity={selected.severity} />
                       {selected.severity}
                     </span>
-                    {(selected.meta as any)?.predictive && (
-                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
-                        📈 Alerta Preditivo
-                      </span>
-                    )}
                     {selected.type && (
                       <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
+                        <Activity size={14} />
                         {ALERT_TYPE_LABELS[selected.type]}
                       </span>
                     )}
-                    <button
-                      className={`btn btn-sm ${selected.status === "unread" ? "btn-primary" : "btn-ghost"}`}
-                      onClick={() => setAlert({ ...selected, status: selected.status === "unread" ? "ack" : "unread" })}
-                    >
-                      {selected.status === "unread" ? "Reconhecer" : "Marcar por ler"}
-                    </button>
+                    {selected.deviceId && (
+                      <span className="badge-pill" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>
+                        ID: {selected.deviceId}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="subpanel">
-                  <div className="alert-detail-section-title">Mensagem</div>
-                  <div style={{ color: "var(--text)" }}>{selected.message}</div>
-                </div>
-
-                {(selected.lat != null || selected.tripId) && (
-                  <div className="alert-detail-actions">
-                    {selected.lat != null && selected.lng != null && (
-                      <a href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                        Ver no Google Maps
-                      </a>
-                    )}
-                    {selected.lat != null && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/map`)}>Ver no mapa</button>
-                    )}
-                    {selected.tripId && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/trips/${selected.tripId}`)}>Ver viagem</button>
-                    )}
-                  </div>
-                )}
-
-                {selected.lat != null && selected.lng != null && (
-                  <div className="subpanel">
-                    <div className="alert-detail-section-title">Localização</div>
-                    <div className="alert-coords">
-                      <span>Lat: <strong>{selected.lat.toFixed(6)}</strong></span>
-                      <span>Lng: <strong>{selected.lng.toFixed(6)}</strong></span>
+                <div className="detail-content custom-scrollbar">
+                  <div className="detail-section">
+                    <div className="detail-section-title">Mensagem</div>
+                    <div className="detail-message-box">
+                      {selected.message}
                     </div>
                   </div>
-                )}
 
-                {selected.meta && (
-                  <div className="subpanel">
-                    <div className="alert-detail-section-title">Métricas no momento</div>
-                    <pre className="alert-meta-pre">{JSON.stringify(selected.meta, null, 2)}</pre>
-                  </div>
-                )}
-              </div>
+                  {selected.meta && Object.keys(selected.meta).length > 0 && (
+                    <div className="detail-section">
+                      <div className="detail-section-title">Métricas no Momento</div>
+                      <div className="metrics-grid-v3">
+                        {Object.entries(selected.meta).map(([key, value]) => {
+                          if (value == null) return null;
+                          return (
+                            <div key={key} className="metric-item-v3">
+                              <span className="metric-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                              <span className="metric-value">
+                                {typeof value === 'number' ? value.toFixed(key.toLowerCase().includes('temp') ? 1 : 2) : String(value)}
+                                {key.toLowerCase().includes('kmh') && " km/h"}
+                                {key.toLowerCase().includes('temp') && " °C"}
+                                {key.toLowerCase().includes('voltage') && " V"}
+                                {key.toLowerCase().includes('deg') && "°"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(selected.lat != null || selected.tripId) && (
+                    <div className="detail-section">
+                      <div className="detail-section-title">Ações Rápidas</div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        {selected.lat != null && selected.lng != null && (
+                          <a 
+                            href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn btn-sm btn-ghost"
+                          >
+                            <ExternalLink size={14} />
+                            Google Maps
+                          </a>
+                        )}
+                        {selected.lat != null && (
+                          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/map`)}>
+                            <MapPin size={14} />
+                            Ver no Mapa
+                          </button>
+                        )}
+                        {selected.tripId && (
+                          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/trips/${selected.tripId}`)}>
+                            <ChevronRight size={14} />
+                            Ver Viagem
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selected.lat != null && selected.lng != null && (
+                    <div className="detail-section">
+                      <div className="detail-section-title">Coordenadas</div>
+                      <div className="subpanel" style={{ display: "flex", gap: 20 }}>
+                        <div><span style={{ color: "var(--muted)" }}>Latitude:</span> <strong>{selected.lat.toFixed(6)}</strong></div>
+                        <div><span style={{ color: "var(--muted)" }}>Longitude:</span> <strong>{selected.lng.toFixed(6)}</strong></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
