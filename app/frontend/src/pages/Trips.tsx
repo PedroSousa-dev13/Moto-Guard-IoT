@@ -16,6 +16,8 @@ import CompareBar from "../components/trips/CompareBar";
 import ComparisonView from "../components/trips/ComparisonView";
 import { ListStateSnapshot } from "../utils/tripComparison";
 import TripCategoryBadge from "../components/trips/TripCategoryBadge";
+import "./Trips.css";
+
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -88,24 +90,26 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
 }) {
   const img = imageFromCategory(moto.category);
   return (
-    <button type="button" onClick={onClick} className={`moto-filter-card ${selected ? "selected" : ""}`}>
-      <div className="moto-filter-img">
-        <img
-          src={img}
-          alt={moto.category ?? moto.name}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
-        />
+    <div
+      onClick={onClick}
+      className={`premium-moto-card ${selected ? "selected" : ""}`}
+    >
+      <div className="moto-card-img">
+        <img src={img} alt={moto.name} />
       </div>
-      <div className="moto-filter-body">
-        <div className="moto-filter-name">{moto.name}</div>
-        {moto.category && <div className="moto-filter-cat">{moto.category}</div>}
-        <div className="moto-filter-sub">{[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "—"}</div>
-        <div className="moto-filter-count">{tripCount} viagem{tripCount !== 1 ? "s" : ""}</div>
+      <div className="moto-card-info">
+        <div className="moto-card-name">{moto.name}</div>
+        <div className="moto-card-meta">
+          {moto.brand} {moto.model}
+        </div>
       </div>
-    </button>
+      <div className="moto-card-stats">
+        <span className="moto-trip-count">{tripCount} viagens</span>
+      </div>
+    </div>
   );
 }
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -264,6 +268,11 @@ export default function Trips() {
   const pagedFeed  = feedPagination.items;
   const pagedTrips = listPagination.items;
 
+  // Summary stats for hero
+  const totalKm = (view === "FEED" ? filteredFeed : filteredTrips).reduce((acc, t) => acc + (t.distanceKm ?? 0), 0);
+  const avgSafety = (view === "FEED" ? filteredFeed : filteredTrips).reduce((acc, t) => acc + (t.safetyScore ?? 0), 0) / (activeCount || 1);
+
+
   // ── Loading ──────────────────────────────────────────────────────────────
   if (activeLoading && motosLoading) {
     return (
@@ -290,44 +299,68 @@ export default function Trips() {
   }
 
   return (
-    <div className="page">
+    <div className="page trips-container">
       <div className="page-header">
         <div className="header-main">
           <div className="page-title">
-            <History className="title-icon" size={24} />
+            <History className="title-icon" size={28} />
             Histórico de Viagens
           </div>
           <div className="page-subtitle">
             <Route size={14} style={{ marginRight: 4 }} />
-            {activeCount} viagem{activeCount !== 1 ? "s" : ""} registadas
+            Explore e analise o seu histórico de condução premium
           </div>
         </div>
         <div className="status-group">
-          <button className={`btn btn-sm ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
+          <button className={`btn ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => { setView("FEED"); setExpandedId(null); setPage(1); }}>
-            <Activity size={14} /> Feed
+            <Activity size={18} /> Feed
           </button>
-          <button className={`btn btn-sm ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
+          <button className={`btn ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => { setView("LIST"); setExpandedId(null); setPage(1); }}>
-            <History size={14} /> Lista
+            <History size={18} /> Lista
           </button>
         </div>
       </div>
 
+      <div className="trips-hero">
+        <div className="hero-stats">
+          <div className="hero-stat-item">
+            <span className="hero-stat-label">Total Viagens</span>
+            <span className="hero-stat-value">{activeCount}</span>
+          </div>
+          <div className="hero-stat-item">
+            <span className="hero-stat-label">Distância Total</span>
+            <span className="hero-stat-value">{totalKm.toFixed(1)} <small style={{ fontSize: "0.5em", color: "var(--muted)" }}>KM</small></span>
+          </div>
+          <div className="hero-stat-item">
+            <span className="hero-stat-label">Safety Score Médio</span>
+            <span className="hero-stat-value" style={{ color: scoreStyle(avgSafety).color }}>{avgSafety.toFixed(0)}</span>
+          </div>
+        </div>
+        <div className="hero-visual">
+          {/* Subtle background decoration or icon */}
+          <Activity size={64} style={{ opacity: 0.1, color: "var(--accent)" }} />
+        </div>
+      </div>
+
       {motos.length > 0 && (
-        <div className="moto-filter-section">
-          <div className="section-label" style={{ marginBottom: 10 }}>Filtrar por mota</div>
-          <div className="moto-filter-scroll">
-            <button type="button" onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
-              className={`moto-filter-card moto-filter-all ${selectedMotoId === "ALL" ? "selected" : ""}`}>
-              <div className="moto-filter-img moto-filter-img-all">
-                <Bike size={28} style={{ color: selectedMotoId === "ALL" ? "var(--accent)" : "var(--muted)" }} />
+        <div className="moto-selector-wrapper">
+          <div className="section-label">Filtrar por Mota</div>
+          <div className="moto-cards-scroll">
+            <div
+              onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
+              className={`premium-moto-card ${selectedMotoId === "ALL" ? "selected" : ""}`}
+              style={{ minWidth: 160 }}
+            >
+              <div className="moto-card-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-light)" }}>
+                <Bike size={48} style={{ color: "var(--accent)" }} />
               </div>
-              <div className="moto-filter-body">
-                <div className="moto-filter-name">Todas</div>
-                <div className="moto-filter-count">{view === "FEED" ? feed.length : trips.length} viagens</div>
+              <div className="moto-card-info">
+                <div className="moto-card-name">Todas</div>
+                <div className="moto-card-meta">Ver histórico total</div>
               </div>
-            </button>
+            </div>
             {motos.map((moto) => (
               <MotoCard key={moto.id} moto={moto} selected={selectedMotoId === moto.id}
                 tripCount={tripCountForMoto(moto.id)}
@@ -338,23 +371,27 @@ export default function Trips() {
       )}
 
       {/* Filters */}
-      <Card title="Filtros" className="filter-card">
-        <div className="filter-grid">
+      <div className="filters-premium-card">
+        <div className="filters-header">
+          <Zap size={18} style={{ color: "var(--accent)" }} />
+          Filtros de Pesquisa
+        </div>
+        <div className="filters-grid-premium">
           <div className="field">
             <label className="field-label">Origem</label>
-            <select className="control" value={sourceFilter}
+            <select className="premium-control" value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value as TripSourceFilter)}>
-              <option value="ALL">Todas</option>
-              <option value="SIMULATOR">Simulador</option>
-              <option value="GPX_IMPORTED">GPX</option>
-              <option value="DEVICE_REAL">Dispositivo</option>
+              <option value="ALL">Todas as Origens</option>
+              <option value="SIMULATOR">Simulador IoT</option>
+              <option value="GPX_IMPORTED">Ficheiros GPX</option>
+              <option value="DEVICE_REAL">Dispositivo Real</option>
             </select>
           </div>
           <div className="field">
             <label className="field-label">Estado</label>
-            <select className="control" value={statusFilter}
+            <select className="premium-control" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value as TripStatusFilter); setPage(1); setExpandedId(null); }}>
-              <option value="ALL">Todos</option>
+              <option value="ALL">Todos os Estados</option>
               <option value="ACTIVE">Ativas</option>
               <option value="COMPLETED">Concluídas</option>
               <option value="CANCELLED">Canceladas</option>
@@ -362,32 +399,32 @@ export default function Trips() {
           </div>
           <div className="field">
             <label className="field-label">De</label>
-            <input className="control" type="date" value={fromDate}
+            <input className="premium-control" type="date" value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="field">
             <label className="field-label">Até</label>
-            <input className="control" type="date" value={toDate}
+            <input className="premium-control" type="date" value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="field" style={{ justifyContent: "center" }}>
-            <label className="auth-checkbox">
-              <input type="checkbox" checked={onlyWithEvents}
-                onChange={(e) => { setOnlyWithEvents(e.target.checked); setPage(1); setExpandedId(null); }} />
-              <span>Só com eventos</span>
-            </label>
+             <label className="auth-checkbox">
+               <input type="checkbox" checked={onlyWithEvents}
+                 onChange={(e) => { setOnlyWithEvents(e.target.checked); setPage(1); setExpandedId(null); }} />
+               <span>Só com eventos</span>
+             </label>
           </div>
         </div>
-      </Card>
+      </div>
 
       {activeCount === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">🛣️</div>
-          <div className="empty-state-title">Sem viagens</div>
+          <div className="empty-state-title">Sem viagens encontradas</div>
           <div className="empty-state-text">
             {selectedMotoId !== "ALL"
-              ? "Esta mota ainda não tem viagens registadas."
-              : "As viagens são criadas automaticamente quando a simulação termina."}
+              ? "Esta mota ainda não tem viagens que correspondam aos filtros."
+              : "Inicie uma simulação ou importe um GPX para ver resultados aqui."}
           </div>
         </div>
       )}
@@ -426,23 +463,24 @@ export default function Trips() {
       )}
 
       {activeCount > 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div className="pagination-premium">
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <span className="field-label">Por página</span>
-            <select className="control control-sm" value={pageSize} style={{ width: 120 }}
+            <select className="premium-control" style={{ padding: "6px 12px", fontSize: "0.8rem", width: "80px" }}
+              value={pageSize}
               onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); setExpandedId(null); }}>
               {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button className="btn btn-ghost btn-sm" disabled={safePage <= 1}
+          <div className="page-controls">
+            <button className="page-btn" disabled={safePage <= 1}
               onClick={() => { setPage((p) => Math.max(1, p - 1)); setExpandedId(null); }}>
-              <ChevronLeft size={16} /> Anterior
+              <ChevronLeft size={20} />
             </button>
-            <span className="page-info">Página {safePage} de {totalPages}</span>
-            <button className="btn btn-ghost btn-sm" disabled={safePage >= totalPages}
+            <span className="page-number-info">Página {safePage} de {totalPages}</span>
+            <button className="page-btn" disabled={safePage >= totalPages}
               onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); setExpandedId(null); }}>
-              Seguinte <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
@@ -461,6 +499,7 @@ export default function Trips() {
 
 // ─── Feed Card ────────────────────────────────────────────────────────────────
 
+
 function TripFeedCard({ item }: { item: TripFeedItem }) {
   const badge = statusBadge(item.status);
   const src   = sourceBadge(item.source);
@@ -469,67 +508,67 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
   const motoImg = imageFromCategory(item.motorcycle?.category);
 
   return (
-    <div className="trip-card-v2" style={{ display: "flex", overflow: "hidden" }}>
-      {/* Moto image strip — lateral, imagem rodada 90° */}
-      <div style={{ width: 80, minWidth: 80, flexShrink: 0, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        <img
-          src={motoImg}
-          alt={item.motorcycle?.category ?? "moto"}
-          style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
-          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
-        />
+    <div className="trip-card-premium">
+      <div className="trip-card-image">
+        <img src={motoImg} alt="moto" />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-      <div className="trip-summary" style={{ cursor: "default" }}>
-        <div className="trip-info-main">
-          <div className="trip-mota-line">
-            <Bike size={18} className="mota-icon-v2" />
-            <span className="mota-name-v2">
-              {item.motorcycle?.name ?? "—"}
-              {item.motorcycle?.brand ? ` (${item.motorcycle.brand})` : ""}
+      <div className="trip-card-main">
+        <div className="trip-card-header">
+          <div className="trip-card-title">{item.motorcycle?.name}</div>
+          <div className="trip-card-badges">
+            <span className="trip-premium-badge" style={{ background: badge.bg, color: badge.color }}>
+              {badge.icon} {badge.label}
             </span>
-            <div className="trip-badges-v2">
-              <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
-              <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
-              <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
-            </div>
-          </div>
-          <div className="trip-meta-line">
-            <Calendar size={14} /><span>{formatDate(item.startedAt)}</span>
-            <span className="separator">•</span>
-            <Clock size={14} /><span>{formatDuration(item.startedAt, item.endedAt ?? undefined)}</span>
-            <span className="separator">•</span>
-            <AlertCircle size={14} /><span>{item.eventCounts?.total ?? 0} eventos</span>
+            <span className="trip-premium-badge" style={{ background: src.bg, color: src.color }}>
+              {src.icon} {src.label}
+            </span>
+            <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
           </div>
         </div>
-        <div className="trip-stats-quick" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <span className="badge-v2" style={{ background: safety.bg, color: safety.color }}>Safety {item.safetyScore}</span>
-          <span className="badge-v2" style={{ background: perf.bg, color: perf.color }}>Perf {item.performanceScore}</span>
+        <div className="trip-card-details">
+          <div className="detail-item"><Calendar size={14} /> {formatDate(item.startedAt)}</div>
+          <div className="detail-item"><Clock size={14} /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}</div>
+          <div className="detail-item"><AlertCircle size={14} /> {item.eventCounts?.total ?? 0} Eventos</div>
         </div>
-      </div>
-      <div style={{ padding: "0 20px 16px" }}>
         {item.labels?.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            {item.labels.map((l) => (
-              <span key={l} className="badge-v2" style={{ background: "rgba(79,70,229,0.10)", color: "var(--accent)" }}>{l}</span>
+          <div className="trip-card-labels">
+            {item.labels.map(l => (
+              <span key={l} className="trip-label-tag">{l}</span>
             ))}
           </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div className="trip-stats-quick">
-            <div className="quick-stat"><span className="stat-v">{item.distanceKm?.toFixed(1) ?? "—"}</span><span className="stat-u">km</span></div>
-            <div className="quick-stat"><span className="stat-v">{item.avgSpeedKmh?.toFixed(0) ?? "—"}</span><span className="stat-u">km/h</span></div>
-            <div className="quick-stat"><span className="stat-v">{item.maxSpeedKmh?.toFixed(0) ?? "—"}</span><span className="stat-u">max</span></div>
-          </div>
-          <Link to={`/trips/${item.id}`} className="btn btn-primary btn-sm">
-            Abrir análise <ArrowRight size={16} />
-          </Link>
-        </div>
       </div>
+      <div className="trip-card-right">
+        <div className="trip-card-scores">
+          <div className="score-badge" style={{ color: safety.color }}>
+            <div className="score-circle">{item.safetyScore}</div>
+            <span className="score-label">Safety</span>
+          </div>
+          <div className="score-badge" style={{ color: perf.color }}>
+            <div className="score-circle">{item.performanceScore}</div>
+            <span className="score-label">Perf</span>
+          </div>
+        </div>
+        <div className="trip-card-stats-row">
+          <div className="compact-stat">
+            <span className="compact-stat-value">{item.distanceKm?.toFixed(1)}</span>
+            <span className="compact-stat-unit">KM</span>
+          </div>
+          <div className="compact-stat">
+            <span className="compact-stat-value">{item.avgSpeedKmh?.toFixed(0)}</span>
+            <span className="compact-stat-unit">KM/H</span>
+          </div>
+        </div>
+        <Link to={`/trips/${item.id}`} style={{ width: "100%" }}>
+          <button className="btn-premium-action">
+            Analisar <ArrowRight size={18} />
+          </button>
+        </Link>
       </div>
     </div>
   );
 }
+
 
 // ─── List Card ────────────────────────────────────────────────────────────────
 
@@ -547,74 +586,65 @@ function TripListCard({
   const src   = sourceBadge(trip.source);
   const isOpen = expandedId === trip.id;
   const evCount = trip.events?.length ?? trip._count?.events ?? 0;
-  const isDetailLoading = detailLoadingId === trip.id;
   const motoImg = imageFromCategory((trip.motorcycle as any)?.category);
   const isSelected = selectedForComparison.includes(trip.id);
   const isDisabled = selectedForComparison.length >= 2 && !isSelected;
 
   return (
-    <div className={`trip-card-v2 ${isOpen ? "open" : ""} ${isSelected ? "compare-selected" : ""}`} style={{ display: "flex", overflow: "hidden" }}>
-      {/* Moto image strip — lateral, imagem rodada 90° */}
-      <div style={{ width: 80, minWidth: 80, flexShrink: 0, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        <img
-          src={motoImg}
-          alt="moto"
-          style={{ width: 140, height: 80, objectFit: "cover", transform: "rotate(270deg)" }}
-          onError={(e) => console.error("Failed to load image:", (e.target as HTMLImageElement).src)}
-        />
+    <div className={`trip-card-premium ${isOpen ? "open" : ""} ${isSelected ? "compare-selected" : ""}`}>
+      <div className="trip-card-image" onClick={() => onToggle(trip.id)} style={{ cursor: "pointer" }}>
+        <img src={motoImg} alt="moto" />
+      </div>
+      <div className="trip-card-main">
+        <div className="trip-card-header" onClick={() => onToggle(trip.id)} style={{ cursor: "pointer" }}>
+          <div className="trip-card-title">{trip.motorcycle?.name}</div>
+          <div className="trip-card-badges">
+            <span className="trip-premium-badge" style={{ background: badge.bg, color: badge.color }}>
+              {badge.icon} {badge.label}
+            </span>
+            <span className="trip-premium-badge" style={{ background: src.bg, color: src.color }}>
+              {src.icon} {src.label}
+            </span>
+            <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
+          </div>
+        </div>
+        <div className="trip-card-details">
+          <div className="detail-item"><Calendar size={14} /> {formatDate(trip.startedAt)}</div>
+          <div className="detail-item"><Clock size={14} /> {formatDuration(trip.startedAt, trip.endedAt)}</div>
+          {evCount > 0 && <div className="detail-item" style={{ color: "var(--red)" }}><AlertCircle size={14} /> {evCount} Eventos</div>}
+        </div>
+        <div className="compare-checkbox-wrapper" onClick={(e) => e.stopPropagation()}>
+           <label className="auth-checkbox">
+             <input
+               type="checkbox"
+               checked={isSelected}
+               disabled={isDisabled}
+               onChange={() => onCompareToggle(trip.id)}
+             />
+             <span>Comparar</span>
+           </label>
+        </div>
+      </div>
+      <div className="trip-card-right">
+        <div className="trip-card-stats-row">
+          <div className="compact-stat">
+            <span className="compact-stat-value">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
+            <span className="compact-stat-unit">KM</span>
+          </div>
+          <div className="compact-stat">
+            <span className="compact-stat-value">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
+            <span className="compact-stat-unit">KM/H</span>
+          </div>
+        </div>
+        <button className="btn-premium-action" onClick={() => onToggle(trip.id)}>
+          {isOpen ? "Fechar" : "Detalhes"} {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </button>
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <button type="button" onClick={() => onToggle(trip.id)} className="trip-summary">
-          <div className="trip-info-main">
-            <div className="trip-mota-line">
-              <Bike size={18} className="mota-icon-v2" />
-              <span className="mota-name-v2">
-                {trip.motorcycle?.name ?? "—"}
-                {trip.motorcycle?.brand ? ` (${trip.motorcycle.brand})` : ""}
-              </span>
-              <div className="trip-badges-v2">
-                <span className="badge-v2" style={{ background: badge.bg, color: badge.color }}>{badge.icon}{badge.label}</span>
-                <span className="badge-v2" style={{ background: src.bg, color: src.color }}>{src.icon}{src.label}</span>
-                <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
-              </div>
-            </div>
-            <div className="trip-meta-line">
-              <Calendar size={14} /><span>{formatDate(trip.startedAt)}</span>
-              <span className="separator">•</span>
-              <Clock size={14} /><span>{formatDuration(trip.startedAt, trip.endedAt)}</span>
-            </div>
-          </div>
-          <div className="trip-stats-quick">
-            {trip.distanceKm != null && (
-              <div className="quick-stat">
-                <span className="stat-v">{trip.distanceKm.toFixed(1)}</span>
-                <span className="stat-u">km</span>
-              </div>
-            )}
-            {evCount > 0 && (
-              <div className="quick-stat warning">
-                <AlertCircle size={14} /><span className="stat-v">{evCount}</span>
-              </div>
-            )}
-            <div className="expand-icon">{isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</div>
-          </div>
-        </button>
-
-        {/* Compare checkbox — visible only in list view (rendered by parent) */}
-        <label className="compare-checkbox" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            disabled={isDisabled}
-            onChange={() => onCompareToggle(trip.id)}
-          />
-          <span className="compare-checkbox-label">Comparar</span>
-        </label>
 
         {isOpen && (
-          <div className="trip-expanded-content">
-            {isDetailLoading ? (
+          <div className="trip-expanded-content" style={{ gridColumn: "span 3", background: "rgba(0,0,0,0.1)", borderTop: "1px solid var(--glass-border)" }}>
+            {detailLoadingId === trip.id ? (
               <div className="detail-loading"><div className="spinner-small"></div><span>A carregar detalhes...</span></div>
             ) : (
               <>
@@ -637,13 +667,15 @@ function TripListCard({
                   </div>
                 </div>
                 <div className="expanded-actions">
-                  <Link to={`/trips/${trip.id}`} className="btn btn-primary btn-sm">
-                    <Activity size={14} /> Análise Detalhada <ArrowRight size={14} />
+                  <Link to={`/trips/${trip.id}`} style={{ width: "100%" }}>
+                    <button className="btn-premium-action">
+                      <Activity size={18} /> Ver Análise Completa <ArrowRight size={18} />
+                    </button>
                   </Link>
                 </div>
                 {trip.events && trip.events.length > 0 && (
                   <div className="events-section-v2">
-                    <div className="section-title-v2">Eventos de Risco</div>
+                    <div className="section-title-v2">Eventos de Risco Detectados</div>
                     <div className="events-list-v2">
                       {trip.events.map((ev) => (
                         <div key={ev.id} className="event-item-v2" style={{ borderLeftColor: severityColor(ev.severity) }}>
@@ -666,7 +698,7 @@ function TripListCard({
             )}
           </div>
         )}
-      </div>
     </div>
   );
 }
+
