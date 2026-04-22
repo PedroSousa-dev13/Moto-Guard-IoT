@@ -17,7 +17,9 @@
     "db:trips": "npx tsx scripts/view-database.ts trips",
     "db:events": "npx tsx scripts/view-database.ts events",
     "db:motas": "npx tsx scripts/view-database.ts motorcycles",
-    "db:users": "npx tsx scripts/view-database.ts users"
+    "db:users": "npx tsx scripts/view-database.ts users",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@influxdata/influxdb-client": "^1.35.0",
@@ -47,8 +49,12 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.18.0",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "prisma": "^7.4.2",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.18"
   }
 }

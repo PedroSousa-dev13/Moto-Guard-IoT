@@ -6,18 +6,22 @@ Progresso Global: 68% (de 25% em 2026-03-13)
 
 🔴 BLOCKER CRÍTICO — URGE RESOLUÇÃO ANTES DA ENTREGA ──────────────────────
 
-[URGENTE-1] Cobertura de testes >= 80% (atualmente 48%)
+[URGENTE-1] Cobertura de testes >= 80% (atualmente ~40%)
     ⚠️ BLOCKER: Impacto direto na aprovação académica
-    - Aumentar cobertura de 48% para 80% (gap: +32 pontos percentuais)
+    - Aumentar cobertura de 40% para 80% (gap: +40 pontos percentuais)
     - Prioridade (por criticidade):
-        1️⃣ app/backend/src/services/mqtt.service.ts (subscrição MQTT core)
-        2️⃣ app/backend/src/services/influx.service.ts (escrita/query telemetria)
-        3️⃣ app/backend/src/services/socket.service.ts (WebSocket real-time)
-        4️⃣ app/backend/src/routes/* (todas as rotas desprotegidas)
-        5️⃣ app/backend/src/services/prisma.service.ts (singleton conexão)
-        6️⃣ app/backend/src/services/heuristics.service.ts (deteção eventos)
-        7️⃣ app/backend/src/services/trip-evaluation.service.ts (ML score)
-        8️⃣ app/backend/src/index.ts (entry point + lifecycle)
+        1️⃣ ✅ app/backend/src/services/mqtt.service.ts (TESTADO)
+        2️⃣ ✅ app/backend/src/services/influx.service.ts (TESTADO)
+        3️⃣ ✅ app/backend/src/services/socket.service.ts (TESTADO)
+        4️⃣ ✅ app/backend/src/routes/* (TESTADO: auth, trips, motorcycles, telemetry, gpx)
+        5️⃣ ✅ app/backend/src/services/prisma.service.ts (TESTADO)
+        6️⃣ ✅ app/backend/src/services/heuristics.service.ts (TESTADO)
+        7️⃣ ✅ app/backend/src/services/trip-evaluation.service.ts (TESTADO)
+        8️⃣ ✅ app/backend/src/services/trip-ml-pipeline.service.ts (TESTADO)
+        9️⃣ ✅ app/backend/src/services/trip-categorization.service.ts (TESTADO)
+        🔟 ✅ app/backend/src/index.ts (TESTADO)
+        11 ✅ app/backend/src/utils/validate-telemetry.ts (TESTADO)
+        12 ✅ app/backend/src/services/email.service.ts (TESTADO)
     - Meta: >= 80% statements, branches, functions, lines
     - Estimativa: 20-30 horas de trabalho
     - Comando verificação: npm run test:coverage

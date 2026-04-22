@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // MotoGuard IoT — Backend (Entry Point)
 // =============================================================================
 // Servidor Express com:
@@ -33,8 +33,8 @@ process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection] Promise rejeitada sem handler:", reason);
 });
 
-const app = express();
-const server = http.createServer(app);
+export const app = express();
+export const server = http.createServer(app);
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -72,7 +72,9 @@ async function start() {
   });
 }
 
-start();
+if (env.NODE_ENV !== "test") {
+  start();
+}
 
 process.on("SIGINT", async () => {
   await prisma.$disconnect();

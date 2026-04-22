@@ -48,6 +48,7 @@ export function useSocket() {
     ws: false,
     hasData: false,
   });
+  const [crashAlert, setCrashAlert] = useState<{ deviceId: string; countdownSec: number; timestamp: string } | null>(null);
 
   const resetSimulationView = useCallback(() => {
     setTelemetryByDevice({});
@@ -93,6 +94,14 @@ export function useSocket() {
     },
     [addLog, activeDeviceId, lastDeviceId, isDemoMode]
   );
+
+  const cancelEmergency = useCallback((deviceId: string) => {
+    if (socketRef.current) {
+      socketRef.current.emit("cancel_emergency", { deviceId });
+      setCrashAlert(null);
+      addLog(`Cancelamento de emergência enviado para ${deviceId}`, "#22c55e");
+    }
+  }, [addLog]);
 
   const devices = useMemo(() => {
     return Object.keys(telemetryByDevice).sort((a, b) => a.localeCompare(b));
@@ -234,6 +243,16 @@ export function useSocket() {
       addLog(`Erro: ${data.message}`, "#ef4444");
     });
 
+    socket.on("crash_detected", (data: { deviceId: string; countdownSec: number; timestamp: string }) => {
+      setCrashAlert(data);
+      addLog(`🚨 QUEDA DETETADA em ${data.deviceId}! SOS Countdown iniciado.`, "#ef4444");
+    });
+
+    socket.on("emergency_cancelled", (data: { deviceId: string }) => {
+      setCrashAlert(null);
+      addLog(`SOS Countdown cancelado para ${data.deviceId}`, "#22c55e");
+    });
+
     // Verificar estado do backend ao montar
     fetch("/api/health")
       .then((r) => r.json())
@@ -255,5 +274,5 @@ export function useSocket() {
     };
   }, [addLog, isDemoMode, registerEmitter]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView, crashAlert, cancelEmergency };
 }

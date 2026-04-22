@@ -23,6 +23,9 @@ import {
   type MotorcycleProfileThresholds,
 } from "./heuristics.service";
 import { EventType } from "../generated/prisma/enums";
+import { sendCrashAlert } from "./email.service";
+import { decrypt } from "../utils/crypto";
+import { env } from "../config/env";
 
 interface AlertEvent {
   status: string;
@@ -37,12 +40,13 @@ interface TripEvent {
   timestamp: string;
 }
 
-class SocketService {
+export class SocketService {
   private io: Server | null = null;
   private _connectedClients = 0;
   private tripActiveByDevice = new Map<string, boolean>();
   private stationaryTicksByDevice = new Map<string, number>();
   private lastEventStatusByDevice = new Map<string, string>();
+  private pendingEmergenciesByDevice = new Map<string, NodeJS.Timeout>();
   private lastTelemetryByDevice = new Map<string, TelemetryPayload>();
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
   private lastStopHandledAtByDevice = new Map<string, number>();
@@ -147,6 +151,10 @@ class SocketService {
         this.handleAlertEvent(payload);
         this.handleTripLifecycle(payload);
         await this.handleHeuristicEvents(payload);
+      });
+
+      socket.on("cancel_emergency", (data: { deviceId: string }) => {
+        this.handleCancelEmergency(socket, data.deviceId);
       });
 
       socket.on("disconnect", () => {
@@ -264,10 +272,6 @@ class SocketService {
     const occurredAt = Number.isNaN(occurredAtSafe.getTime()) ? new Date() : occurredAtSafe;
 
     for (const ev of evaluation.events) {
-      if (ev.type === EventType.CRASH_DETECTED) {
-        continue;
-      }
-
       try {
         await prisma.tripEvent.create({
           data: {
@@ -285,6 +289,10 @@ class SocketService {
             occurredAt,
           },
         });
+
+        if (ev.type === EventType.CRASH_DETECTED) {
+          void this.sendEmergencyEmail(tripId, payload);
+        }
       } catch (error) {
         console.error("Erro ao persistir evento heurístico:", error);
       }
@@ -824,8 +832,79 @@ class SocketService {
       });
 
       console.log(`Evento ${eventType} persistido na viagem ${tripId}`);
+
+      if (eventType === "CRASH_DETECTED") {
+        void this.sendEmergencyEmail(tripId, payload);
+      }
     } catch (error) {
       console.error("Erro ao persistir evento de risco:", error);
+    }
+  }
+
+  private async sendEmergencyEmail(tripId: string, payload: TelemetryPayload): Promise<void> {
+    const deviceId = payload.system.device_id;
+
+    // Se já houver um alerta pendente para este dispositivo, ignorar (evitar spam)
+    if (this.pendingEmergenciesByDevice.has(deviceId)) return;
+
+    console.log(`[SocketService] Queda detetada em ${deviceId}. Iniciando SOS Countdown (20s).`);
+    
+    // Notificar frontend para mostrar o contador
+    this.io?.emit("crash_detected", { 
+      deviceId, 
+      countdownSec: 20,
+      timestamp: payload.system.timestamp 
+    });
+
+    const timeout = setTimeout(async () => {
+      try {
+        const trip = await prisma.trip.findUnique({
+          where: { id: tripId },
+          include: { user: true }
+        });
+
+        if (trip?.user?.emergencyContact) {
+          console.log(`[SocketService] SOS Countdown terminado. Disparando email para ${trip.user.emergencyContact}`);
+          
+          let decryptedApiKey: string | null = null;
+          if (trip.user.resendApiKey) {
+            try {
+              decryptedApiKey = decrypt(trip.user.resendApiKey, env.JWT_SECRET);
+            } catch (err) {
+              console.error("[SocketService] Erro ao desencriptar Resend API Key:", err);
+            }
+          }
+
+          await sendCrashAlert({
+            toEmail: trip.user.emergencyContact,
+            riderName: trip.user.name,
+            timestamp: payload.system.timestamp,
+            latitude: payload.location.latitude,
+            longitude: payload.location.longitude,
+            tripId: trip.id,
+            deviceId: payload.system.device_id,
+            resendApiKey: decryptedApiKey,
+          });
+        }
+      } catch (error) {
+        console.error("[SocketService] Erro no fluxo de email de emergência:", error);
+      } finally {
+        this.pendingEmergenciesByDevice.delete(deviceId);
+      }
+    }, 20000); // 20 segundos de countdown
+
+    this.pendingEmergenciesByDevice.set(deviceId, timeout);
+  }
+
+  private handleCancelEmergency(socket: any, deviceId: string): void {
+    const timeout = this.pendingEmergenciesByDevice.get(deviceId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.pendingEmergenciesByDevice.delete(deviceId);
+      console.log(`[SocketService] Emergência CANCELADA pelo utilizador para o dispositivo ${deviceId}`);
+      
+      // Notificar todos os clientes que foi cancelado (para fechar o popup em outros ecrãs se abertos)
+      this.io?.emit("emergency_cancelled", { deviceId });
     }
   }
 
