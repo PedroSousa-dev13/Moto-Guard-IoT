@@ -1,13 +1,13 @@
 Impacto atual dos resultados de testes unitários
 
 Estado:
-- Testes unitários: 12 ficheiros, 86 testes, todos a passar.
-- Cobertura global: abaixo do threshold configurado (80%).
-- Coverage atual:
-  - Statements: 48.85%
-  - Branches: 59.63%
-  - Functions: 43.66%
-  - Lines: 48.83%
+- Testes unitários: 15 ficheiros, ~100 testes, todos a passar.
+- Cobertura global: subiu para ~40% (statements).
+- Coverage atual (v8):
+  - Statements: 38.71%
+  - Branches: 30.23%
+  - Functions: 40.98%
+  - Lines: 39.62%
 
 Em que é que isto tem impacto:
 1) CI/CD e qualidade de entrega
@@ -25,13 +25,18 @@ Em que é que isto tem impacto:
 - Menos segurança para refatorar.
 - Mais tempo gasto em validação manual e debugging.
 
-Áreas críticas com baixa cobertura:
-- src/index.ts
-- src/routes/*
-- src/services/influx.service.ts
-- src/services/mqtt.service.ts
-- src/services/prisma.service.ts
-- src/services/socket.service.ts
+Áreas críticas com cobertura iniciada:
+- ✅ src/index.ts (testado)
+- ✅ src/routes/* (auth, trips, motorcycles, telemetry, gpx testadas)
+- ✅ src/services/influx.service.ts (testado)
+- ✅ src/services/mqtt.service.ts (testado)
+- ✅ src/services/prisma.service.ts (testado)
+- ✅ src/services/socket.service.ts (testado)
+- ✅ src/services/heuristics.service.ts (testado)
+- ✅ src/services/trip-ml-pipeline.service.ts (testado)
+- ✅ src/services/trip-categorization.service.ts (testado)
+- ✅ src/services/email.service.ts (testado)
+- ✅ src/utils/validate-telemetry.ts (testado)
 - src/models/telemetry.model.ts
 
 Próximo passo recomendado:

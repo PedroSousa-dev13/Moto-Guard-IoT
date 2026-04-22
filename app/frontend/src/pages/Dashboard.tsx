@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import type { TripFeedItem } from "../types";
 import Card from "../components/ui/Card";
+import SOSCountdown from "../components/SOSCountdown";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ function ChartPlaceholder() {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { telemetry, status, tripEndedSignal } = useSocket();
+  const { telemetry, status, tripEndedSignal, crashAlert, cancelEmergency } = useSocket();
   const [lastTrip, setLastTrip] = useState<TripFeedItem | null>(null);
   
   const [history, setHistory] = useState<any[]>([]);
@@ -153,6 +154,13 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in">
+      {crashAlert && (
+        <SOSCountdown 
+          deviceId={crashAlert.deviceId} 
+          initialSeconds={crashAlert.countdownSec} 
+          onCancel={cancelEmergency} 
+        />
+      )}
 
       {/* ── HEADER ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
