@@ -67,6 +67,7 @@ export interface SimulatorCommand {
   motorcycleName?: string;
   tipo?: string;
   device_id?: string;
+  new_device_id?: string;
   userId?: string;
   route?: {
     start: { latitude: number; longitude: number };

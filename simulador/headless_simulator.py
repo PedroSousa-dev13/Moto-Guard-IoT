@@ -464,8 +464,10 @@ class HeadlessSimulator:
 
     def _clear_simulator_state(self):
         self.perfil_nome = None
+        self.moto_model_display = None
         self._generation_paused = False
         self.tele = TelemetriaState()
+        self.current_device_id = DEVICE_ID  # Resetar identidade para o ID base
         self._tick_count = 0
         self._route_override = False
         self._route_override_waypoints = None

@@ -95,11 +95,11 @@ class SocketService {
           return;
         }
 
-        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id ?? null;
+        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
         const identityDeviceId = command?.new_device_id ?? transportDeviceId;
         const userId = command?.userId ?? null;
 
-        if (identityDeviceId && userId && command?.acao === "definir_modelo") {
+        if (identityDeviceId && transportDeviceId && userId && command?.acao === "definir_modelo") {
           const motoModel =
             command?.motorcycleName ??
             command?.modelo ??
@@ -107,21 +107,25 @@ class SocketService {
             this.lastTelemetryByDevice.get(identityDeviceId)?.system?.moto_model ??
             telemetryStore.latest?.system?.moto_model ??
             "Simulador";
+          
+          console.log(`[SocketService] Associando device ${identityDeviceId} (via ${transportDeviceId}) ao user ${userId} (Mota: ${motoModel})`);
+          
           try {
             await this.ensureAssociationForDevice(identityDeviceId, userId, motoModel);
             // Guardar para uso na próxima telemetria (tanto no ID físico como no virtual)
             this.lastUserIdByDevice.set(transportDeviceId, userId);
             this.lastUserIdByDevice.set(identityDeviceId, userId);
+            this.lastMotoModelByDevice.set(transportDeviceId, motoModel);
             this.lastMotoModelByDevice.set(identityDeviceId, motoModel);
           } catch (error) {
-            console.error("Erro ao associar device ao utilizador:", error);
+            console.error("[SocketService] Erro ao associar device ao utilizador:", error);
           }
         }
 
         if (command?.acao === "parar") {
           try {
-            await this.forceEndTripsOnStopCommand(transportDeviceId);
-            this.clearRuntimeStateAfterStop(transportDeviceId);
+            await this.forceEndTripsOnStopCommand(transportDeviceId ?? null);
+            this.clearRuntimeStateAfterStop(transportDeviceId ?? null);
             this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
           } catch (error) {
             console.error("Erro ao forçar fim de viagem:", error);
@@ -345,10 +349,13 @@ class SocketService {
       // Priorizar o último utilizador que interagiu com este dispositivo (essencial para o simulador partilhado)
       const lastUserId = this.lastUserIdByDevice.get(deviceId);
       const motoModel = payload.system.moto_model;
+      
+      console.log(`[SocketService] Tentando iniciar viagem para ${deviceId} (User em cache: ${lastUserId}, Modelo: ${motoModel})`);
+      
       const association = await deviceAssociationService.getAssociation(deviceId, lastUserId, motoModel);
 
       if (!association) {
-        console.warn(`Mota não encontrada para deviceId: ${deviceId}`);
+        console.warn(`[SocketService] Mota não encontrada para deviceId: ${deviceId} (User: ${lastUserId}, Model: ${motoModel}). Viagem ignorada.`);
         return;
       }
 
@@ -666,7 +673,7 @@ class SocketService {
     const lastPayload = this.lastTelemetryByDevice.get(deviceId);
     if (!lastPayload) return null;
 
-    const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+    const userId = this.lastUserIdByDevice.get(deviceId) || undefined;
     const motoModel = lastPayload.system.moto_model;
     let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
     
@@ -712,9 +719,9 @@ class SocketService {
     deviceId: string,
     endedAt: Date,
   ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
-    const userId = this.lastUserIdByDevice.get(deviceId) ?? null;
+    const userId = this.lastUserIdByDevice.get(deviceId) || undefined;
     const motoModel = this.lastMotoModelByDevice.get(deviceId);
-    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
+    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel || undefined);
     
     if (!association && userId) {
       await deviceAssociationService.registerDevice(

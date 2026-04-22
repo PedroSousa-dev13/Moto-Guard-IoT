@@ -162,7 +162,7 @@ function estimateGearCoherent(
   if (profile.transmissao === 'CVT') return 0;
   if (speed <= 2) return 1;
 
-  const thresholds = getGearSpeedThresholds(profile) as Record<number, [number, number]>;
+  const thresholds = getGearSpeedThresholds(profile) as any as Record<number, [number, number]>;
   const [min, max] = thresholds[prevGear] || [0, 1000];
 
   // Only consider shifting if we've been in the gear for at least 2 seconds

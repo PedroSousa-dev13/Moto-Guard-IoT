@@ -165,7 +165,7 @@ export default function TripDetail() {
       }, null);
 
       const avgSpeed = typeof trip.avgSpeedKmh === "number" ? trip.avgSpeedKmh : null;
-      const distanceKm = typeof trip.distanceKm === "number" ? trip.distanceKm : (gpxSeries.at(-1)?.distanceKm ?? null);
+      const distanceKm = typeof trip.distanceKm === "number" ? trip.distanceKm : (gpxSeries.length > 0 ? gpxSeries[gpxSeries.length - 1].distanceKm : null);
 
       return {
         points: trip.gpxData?.waypoints?.length ?? 0,
