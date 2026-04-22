@@ -28,16 +28,15 @@ export default function SimulatorContexts() {
 
   // Wrapper que deteta quando uma rota é enviada e incrementa o sinal
   function sendCommandAndSignal(cmd: any) {
-    // Inject userId into command for backend association
-    const enrichedCmd = { ...cmd, userId: user?.id };
-
-    // Se for definir_modelo, vamos traduzir o nome da mota (que o user escolheu)
-    // para a categoria (que o simulador precisa) e manter o nome para a associação.
+    // Target current simulator, but pass new identity
+    const enrichedCmd = { ...cmd, userId: user?.id, device_id: activeDeviceId };
     if (cmd.acao === "definir_modelo" && cmd.modelo) {
-      const bike = userMotos.find(m => m.name === cmd.modelo);
+      // Procurar por nome ou categoria (fallback para admin/testes)
+      const bike = userMotos.find(m => m.name === cmd.modelo || m.category === cmd.modelo);
       if (bike) {
         enrichedCmd.motorcycleName = bike.name;
         enrichedCmd.modelo = bike.category || "Naked";
+        enrichedCmd.new_device_id = bike.deviceId;
       }
     }
 

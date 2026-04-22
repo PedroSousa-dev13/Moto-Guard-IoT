@@ -158,6 +158,8 @@ services:
     depends_on:
       mosquitto:
         condition: service_started
+    volumes:
+      - ./simulador:/simulador
     networks:
       - motoguard-net
 

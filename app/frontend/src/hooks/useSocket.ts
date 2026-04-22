@@ -173,7 +173,21 @@ export function useSocket() {
       const deviceId = data.system.device_id;
       setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: data }));
       setLastDeviceId(deviceId);
-      setActiveDeviceId((prev) => (prev ? prev : deviceId));
+      
+      setActiveDeviceId((prev) => {
+        // Se já temos um device ativo e não é o default simulator, mantemos
+        if (prev && prev === deviceId) return prev;
+        
+        // Auto-switch se for um novo simulador e o atual for o default ou null
+        const isNewSim = deviceId.toUpperCase().includes("-SIM-");
+        const isPrevSim = prev?.toUpperCase().includes("-SIM-") ?? true;
+        
+        if (isNewSim && isPrevSim) {
+          return deviceId;
+        }
+        return prev ?? deviceId;
+      });
+
       setMsgCount((prev) => prev + 1);
       setStatus((prev) => ({ ...prev, mqtt: true, hasData: true }));
     });

@@ -17,6 +17,8 @@ import { PlaybackControls } from "../real-simulator/PlaybackControls";
 import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
 import { useAuth } from "../hooks/useAuth";
+import { motorcyclesAPI } from "../services/api";
+import type { Motorcycle } from "../types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +38,7 @@ interface SimulatorSession {
 
 const INITIAL_SESSION: SimulatorSession = {
   rows: [],
-  deviceId: "GPX-SIM-001",
+  deviceId: "",
   playbackState: "idle",
   playbackSpeed: 1,
   currentRowIndex: 0,
@@ -53,6 +55,8 @@ export default function GpxSimulator() {
   const [gpxStats, setGpxStats] = useState<GpxStats | null>(null);
   const [totalDurationSec, setTotalDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
+  const [selectedMotorcycle, setSelectedMotorcycle] = useState<Motorcycle | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const simulationStartTimeRef = useRef<Date>(new Date());
@@ -64,8 +68,16 @@ export default function GpxSimulator() {
     document.title = "Simulador GPX — MotoGuard";
   }, []);
 
-  // Socket lifecycle
+  // Fetch motorcycles and Socket lifecycle
   useEffect(() => {
+    motorcyclesAPI.getAll().then((res) => {
+      setMotorcycles(res.data);
+      if (res.data.length > 0) {
+        setSelectedMotorcycle(res.data[0]);
+        setSession(prev => ({ ...prev, deviceId: res.data[0].deviceId || "" }));
+      }
+    });
+
     const socket = io();
     socketRef.current = socket;
     return () => {
@@ -181,7 +193,7 @@ export default function GpxSimulator() {
       if (user?.id) {
         socketRef.current.emit("send_command", {
           acao: "definir_modelo",
-          modelo: "GPX Simulator",
+          modelo: selectedMotorcycle?.name || "GPX Simulator",
           device_id: simSession.deviceId,
           userId: user.id
         });
@@ -190,7 +202,7 @@ export default function GpxSimulator() {
     simulationStartTimeRef.current = new Date();
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [syncEngine, user?.id, simSession.deviceId]);
+  }, [syncEngine, user?.id, simSession.deviceId, selectedMotorcycle?.name]);
 
   const handleSpeedChange = useCallback((speed: PlaybackSpeed) => {
     setSession((prev) => ({ ...prev, playbackSpeed: speed }));
@@ -434,11 +446,13 @@ export default function GpxSimulator() {
         emittedCount={simSession.emittedCount}
         deviceId={simSession.deviceId}
         disabled={!hasRows}
+        motorcycles={motorcycles}
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
         onSpeedChange={handleSpeedChange}
         onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
+        onMotorcycleChange={(m) => setSelectedMotorcycle(m)}
         onSeek={handleSeek}
       />
     </div>

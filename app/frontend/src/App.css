@@ -2687,16 +2687,19 @@ input[type="range"]:disabled::-moz-range-thumb {
   font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
-.playback-controls__device input {
+.playback-controls__device input,
+.playback-controls__device select {
   padding: 6px 8px;
   background: var(--surface-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 13px;
-  min-width: 120px;
+  min-width: 160px;
 }
 
 .playback-controls__counter {

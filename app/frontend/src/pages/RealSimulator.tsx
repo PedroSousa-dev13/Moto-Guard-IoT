@@ -17,6 +17,8 @@ import { PlaybackControls } from "../real-simulator/PlaybackControls";
 import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
 import { useAuth } from "../hooks/useAuth";
+import { motorcyclesAPI } from "../services/api";
+import type { Motorcycle } from "../types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,7 +39,7 @@ interface SimulatorSession {
 
 const INITIAL_SESSION: SimulatorSession = {
   rows: [],
-  deviceId: "REAL-SIM-001",
+  deviceId: "",
   videoFile: null,
   playbackState: "idle",
   playbackSpeed: 1,
@@ -55,6 +57,8 @@ export default function RealSimulator() {
   const [sourceFormat, setSourceFormat] = useState<ParseResult["format"] | null>(null);
   const [totalDurationSec, setTotalDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
+  const [selectedMotorcycle, setSelectedMotorcycle] = useState<Motorcycle | null>(null);
 
   // Socket for emitting telemetry
   const socketRef = useRef<Socket | null>(null);
@@ -71,8 +75,16 @@ export default function RealSimulator() {
     document.title = "Simulador Real — MotoGuard";
   }, []);
 
-  // Create socket on mount, clean up on unmount
+  // Fetch motorcycles and Socket lifecycle
   useEffect(() => {
+    motorcyclesAPI.getAll().then((res) => {
+      setMotorcycles(res.data);
+      if (res.data.length > 0) {
+        setSelectedMotorcycle(res.data[0]);
+        setSession(prev => ({ ...prev, deviceId: res.data[0].deviceId || "" }));
+      }
+    });
+
     const socket = io();
     socketRef.current = socket;
 
@@ -223,7 +235,7 @@ export default function RealSimulator() {
       if (user?.id) {
         socket.emit("send_command", {
           acao: "definir_modelo",
-          modelo: "Real Simulator",
+          modelo: selectedMotorcycle?.name || "Real Simulator",
           device_id: simSession.deviceId,
           userId: user.id
         });
@@ -239,7 +251,7 @@ export default function RealSimulator() {
 
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId]);
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId, selectedMotorcycle?.name]);
 
   const handleSpeedChange = useCallback(
     (speed: PlaybackSpeed) => {
@@ -510,11 +522,13 @@ export default function RealSimulator() {
         emittedCount={simSession.emittedCount}
         deviceId={simSession.deviceId}
         disabled={isDisabled}
+        motorcycles={motorcycles}
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
         onSpeedChange={handleSpeedChange}
         onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
+        onMotorcycleChange={(m) => setSelectedMotorcycle(m)}
         onSeek={handleSeek}
       />
     </div>

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import L from "leaflet";
 import { alertsAPI } from "../services/api";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Filter, Activity, ShieldAlert, Layers } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,7 +88,6 @@ function drawHeatmap(
   for (let i = 0; i < data.length; i += 4) {
     const alpha = data[i + 3] / 255;
     if (alpha > 0) {
-      // Map alpha to color: blue → yellow → red
       if (alpha < 0.33) {
         data[i] = 0; data[i + 1] = Math.round(alpha * 3 * 255); data[i + 2] = 255;
       } else if (alpha < 0.66) {
@@ -129,7 +128,6 @@ export default function EventHeatmap({ defaultEventType }: Props) {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [radius, setRadius] = useState(35);
 
-  // Fetch events
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -140,7 +138,6 @@ export default function EventHeatmap({ defaultEventType }: Props) {
       const res = await alertsAPI.getAll(params as any);
       let data: AlertEvent[] = res.data;
 
-      // Client-side date filter
       if (fromDate) {
         const from = new Date(fromDate).getTime();
         data = data.filter((e) => new Date(e.occurredAt).getTime() >= from);
@@ -162,7 +159,24 @@ export default function EventHeatmap({ defaultEventType }: Props) {
     void fetchEvents();
   }, [fetchEvents]);
 
-  // Init map
+  // Insights computation
+  const stats = useMemo(() => {
+    const geoEvents = events.filter(e => e.latitude != null && e.longitude != null);
+    const byType: Record<string, number> = {};
+    const bySev: Record<string, number> = { CRITICAL: 0, WARNING: 0, INFO: 0 };
+    
+    events.forEach(e => {
+      byType[e.type] = (byType[e.type] || 0) + 1;
+      bySev[e.severity] = (bySev[e.severity] || 0) + 1;
+    });
+
+    const sortedTypes = Object.entries(byType)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    return { total: events.length, geoTotal: geoEvents.length, byType: sortedTypes, bySev };
+  }, [events]);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -172,7 +186,6 @@ export default function EventHeatmap({ defaultEventType }: Props) {
       maxZoom: 19,
     }).addTo(map);
 
-    // Canvas overlay for heatmap
     const CanvasLayer = L.Layer.extend({
       onAdd(m: L.Map) {
         const canvas = document.createElement("canvas");
@@ -213,19 +226,13 @@ export default function EventHeatmap({ defaultEventType }: Props) {
     };
   }, []);
 
-  // Render heatmap + markers when events or options change
   useEffect(() => {
     const map = mapRef.current;
     const canvas = canvasRef.current;
-    const markersLayer = markersLayerRef.current;
-    if (!map || !canvas || !markersLayer) return;
-
-    // Clear markers
-    markersLayer.clearLayers();
+    if (!map || !canvas) return;
 
     const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
 
-    // Heatmap
     if (showHeatmap) {
       const points = geoEvents.map((e) => ({
         lat: e.latitude!,
@@ -234,7 +241,6 @@ export default function EventHeatmap({ defaultEventType }: Props) {
       }));
       drawHeatmap(canvas, map, points, radius);
 
-      // Redraw on map move
       const redraw = () => drawHeatmap(canvas, map, points, radius);
       map.on("moveend zoomend", redraw);
       return () => { map.off("moveend zoomend", redraw); };
@@ -244,11 +250,9 @@ export default function EventHeatmap({ defaultEventType }: Props) {
     }
   }, [events, showHeatmap, radius]);
 
-  // Markers layer
   useEffect(() => {
-    const map = mapRef.current;
     const markersLayer = markersLayerRef.current;
-    if (!map || !markersLayer) return;
+    if (!markersLayer) return;
 
     markersLayer.clearLayers();
     if (!showMarkers) return;
@@ -280,124 +284,144 @@ export default function EventHeatmap({ defaultEventType }: Props) {
     }
   }, [events, showMarkers]);
 
-  const geoCount = events.filter((e) => e.latitude != null && e.longitude != null).length;
-
   return (
-    <div className="event-heatmap-wrapper">
-      {/* Controls */}
-      <div className="heatmap-controls">
-        <div className="heatmap-filters">
-          <select
-            className="control control-sm"
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            aria-label="Tipo de evento"
-          >
-            <option value="ALL">Todos os tipos</option>
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-            ))}
-          </select>
+    <div className="heatmap-layout" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "20px" }}>
+      <div className="event-heatmap-wrapper" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Toolbar */}
+        <div className="glass-panel" style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <Filter size={16} color="var(--muted)" />
+            <select
+              className="control control-sm"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              style={{ width: "150px" }}
+            >
+              <option value="ALL">Todos Tipos</option>
+              {EVENT_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+            </select>
+            <select
+              className="control control-sm"
+              value={selectedSeverity}
+              onChange={(e) => setSelectedSeverity(e.target.value)}
+              style={{ width: "130px" }}
+            >
+              <option value="ALL">Severidades</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="WARNING">WARNING</option>
+              <option value="INFO">INFO</option>
+            </select>
+          </div>
 
-          <select
-            className="control control-sm"
-            value={selectedSeverity}
-            onChange={(e) => setSelectedSeverity(e.target.value)}
-            aria-label="Severidade"
-          >
-            <option value="ALL">Todas as severidades</option>
-            <option value="CRITICAL">CRITICAL</option>
-            <option value="WARNING">WARNING</option>
-            <option value="INFO">INFO</option>
-          </select>
-
-          <input
-            className="control control-sm"
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            aria-label="Data de início"
-            title="De"
-          />
-          <input
-            className="control control-sm"
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            aria-label="Data de fim"
-            title="Até"
-          />
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
+              <input type="checkbox" checked={showHeatmap} onChange={(e) => setShowHeatmap(e.target.checked)} />
+              <span>Heatmap</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
+              <input type="checkbox" checked={showMarkers} onChange={(e) => setShowMarkers(e.target.checked)} />
+              <span>Pontos</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem" }}>
+              <span style={{ color: "var(--muted)" }}>Raio:</span>
+              <input type="range" min={15} max={80} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: "60px" }} />
+            </div>
+          </div>
         </div>
 
-        <div className="heatmap-options">
-          <label className="heatmap-toggle">
-            <input
-              type="checkbox"
-              checked={showHeatmap}
-              onChange={(e) => setShowHeatmap(e.target.checked)}
-            />
-            Heatmap
-          </label>
-          <label className="heatmap-toggle">
-            <input
-              type="checkbox"
-              checked={showMarkers}
-              onChange={(e) => setShowMarkers(e.target.checked)}
-            />
-            Marcadores
-          </label>
-          <label className="heatmap-toggle" style={{ gap: 6 }}>
-            Raio:
-            <input
-              type="range"
-              min={15}
-              max={80}
-              value={radius}
-              onChange={(e) => setRadius(Number(e.target.value))}
-              style={{ width: 80 }}
-              aria-label="Raio do heatmap"
-            />
-            <span style={{ minWidth: 24 }}>{radius}</span>
-          </label>
-        </div>
+        {/* Map Container */}
+        <div style={{ position: "relative", flex: 1, minHeight: "500px", borderRadius: "16px", overflow: "hidden", border: "1px solid var(--border)" }}>
+          <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+          
+          {/* Map Overlay Stats */}
+          <div style={{ position: "absolute", bottom: "16px", left: "16px", zIndex: 1000, pointerEvents: "none" }}>
+            <div className="glass-panel" style={{ padding: "8px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "8px" }}>
+              <MapPin size={14} color="var(--accent)" />
+              <strong>{stats.geoTotal}</strong> eventos localizados
+            </div>
+          </div>
 
-        <div className="heatmap-stats">
-          {loading ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)" }}>
-              <Loader2 size={14} className="animate-spin" /> A carregar...
-            </span>
-          ) : error ? (
-            <span style={{ color: "#ef4444" }}>{error}</span>
-          ) : (
-            <span style={{ color: "var(--muted)", fontSize: 13 }}>
-              <MapPin size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-              {geoCount} eventos com localização ({events.length} total)
-            </span>
+          {/* Legend */}
+          <div style={{ position: "absolute", top: "16px", right: "16px", zIndex: 1000 }}>
+            <div className="glass-panel" style={{ padding: "10px", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ fontWeight: 700, marginBottom: "2px" }}>DENSIDADE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>Baixa</span>
+                <div style={{ width: "60px", height: "8px", borderRadius: "4px", background: "linear-gradient(to right, #0000ff, #00ff00, #ffff00, #ff0000)" }} />
+                <span>Alta</span>
+              </div>
+            </div>
+          </div>
+
+          {loading && (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(2px)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div className="glass-panel" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <Loader2 className="animate-spin" />
+                <span>A processar mapa...</span>
+              </div>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="heatmap-legend">
-        <span style={{ fontSize: 12, color: "var(--muted)" }}>Densidade:</span>
-        <div className="heatmap-legend-gradient" />
-        <span style={{ fontSize: 11, color: "var(--muted)" }}>Baixa</span>
-        <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>Alta</span>
-        <div style={{ width: 16 }} />
-        {Object.entries(SEVERITY_COLORS).map(([sev, color]) => (
-          <span key={sev} style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, display: "inline-block" }} />
-            {sev}
-          </span>
-        ))}
-      </div>
+      {/* Sidebar Insights */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="glass-panel" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+            <Activity size={18} color="var(--accent)" />
+            <h4 style={{ margin: 0, fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Top Incidentes</h4>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {stats.byType.length === 0 && <div style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Sem dados no período</div>}
+            {stats.byType.map(([type, count]) => (
+              <div key={type} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                  <span>{TYPE_LABELS[type] || type}</span>
+                  <span style={{ fontWeight: 700 }}>{count}</span>
+                </div>
+                <div style={{ width: "100%", height: "4px", background: "var(--border)", borderRadius: "2px" }}>
+                  <div style={{ width: `${(count / stats.total) * 100}%`, height: "100%", background: "var(--accent)", borderRadius: "2px" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Map */}
-      <div
-        ref={containerRef}
-        className="heatmap-map"
-        style={{ height: 480, borderRadius: 8, overflow: "hidden", position: "relative" }}
-      />
+        <div className="glass-panel" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+            <ShieldAlert size={18} color="var(--accent)" />
+            <h4 style={{ margin: 0, fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Por Severidade</h4>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {Object.entries(stats.bySev).map(([sev, count]) => (
+              <div key={sev} className="tile" style={{ padding: "10px 14px", flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: SEVERITY_COLORS[sev] }} />
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)" }}>{sev}</span>
+                </div>
+                <span style={{ fontSize: "1.1rem", fontWeight: 800 }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass-panel" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <Layers size={18} color="var(--accent)" />
+            <h4 style={{ margin: 0, fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Filtro Temporal</h4>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="field">
+              <label className="field-label">Desde</label>
+              <input type="date" className="control control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </div>
+            <div className="field">
+              <label className="field-label">Até</label>
+              <input type="date" className="control control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

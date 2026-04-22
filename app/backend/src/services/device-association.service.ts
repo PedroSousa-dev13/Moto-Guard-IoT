@@ -30,8 +30,13 @@ class DeviceAssociationService {
       where: { 
         deviceId,
         userId: userId || undefined,
-        // Se for simulador e tivermos o modelo, filtramos pelo nome da mota
-        ...(isSim && motoModel ? { name: motoModel } : {})
+        // Se for simulador e tivermos o modelo, filtramos por nome ou categoria
+        ...(isSim && motoModel ? { 
+          OR: [
+            { name: motoModel },
+            { category: motoModel }
+          ]
+        } : {})
       },
       select: { id: true, userId: true, deviceId: true },
     });
