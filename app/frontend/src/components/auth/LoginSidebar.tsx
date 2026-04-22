@@ -88,59 +88,73 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
 
   return (
     <>
-      <div className="auth-overlay" onClick={onClose} />
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] animate-fade-in" 
+        onClick={onClose} 
+      />
 
+      {/* Sidebar */}
       <div
-        className={`auth-sidebar ${isOpen ? "auth-sidebar-open" : ""}`}
+        className={`fixed top-0 right-0 w-full max-w-[420px] h-full bg-surface/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl z-[1001] flex flex-col transition-transform duration-300 ease-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
-        <div className="auth-content">
-          <div className="auth-brand">
-            <Bike size={32} className="brand-icon" />
-            <h2>MotoGuard</h2>
+        <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar">
+          {/* Brand */}
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20">
+              <Bike size={24} strokeWidth={2.5} />
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tighter m-0">MotoGuard</h2>
           </div>
 
-          <div className="auth-header">
-            <div className="auth-title">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="text-xl font-black text-white tracking-tight">
               {showForgotPassword ? "Recuperar Senha" : isLogin ? "Bem-vindo de volta" : "Criar nova conta"}
-            </div>
-            <button type="button" onClick={onClose} className="auth-close" aria-label="Fechar">
+            </h3>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-all"
+              aria-label="Fechar"
+            >
               <X size={20} />
             </button>
           </div>
 
           {/* Forgot Password */}
           {showForgotPassword ? (
-            <div className="forgot-password-container">
+            <div className="flex flex-col gap-6 animate-fade-in">
               <button
                 type="button"
                 onClick={closeForgotPassword}
-                className="auth-link-back"
+                className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted hover:text-accent transition-colors w-fit"
               >
                 <ArrowLeft size={16} />
                 <span>Voltar ao login</span>
               </button>
 
               {forgotSuccess ? (
-                <div className="alert alert-success">
-                  <strong>Email enviado!</strong>
-                  <div style={{ marginTop: 8 }}>
-                    Se o endereço existir na nossa base de dados, receberás
-                    instruções de recuperação em breve.
-                  </div>
+                <div className="p-6 rounded-2xl bg-green/10 border border-green/20 text-green flex flex-col gap-2">
+                  <strong className="text-sm font-black uppercase tracking-widest">Email enviado!</strong>
+                  <p className="text-sm font-medium m-0 leading-relaxed opacity-80">
+                    Se o endereço existir na nossa base de dados, receberás instruções de recuperação em breve.
+                  </p>
                 </div>
               ) : (
                 <>
-                  <p className="auth-subtitle">
-                    Introduz o teu email para receberes instruções de
-                    recuperação de senha.
+                  <p className="text-sm font-medium text-muted m-0 leading-relaxed">
+                    Introduz o teu email para receberes instruções de recuperação de senha.
                   </p>
-                  <form onSubmit={handleForgotPasswordSubmit} className="auth-form">
-                    <div className="field">
-                      <div className="field-label">Email</div>
-                      <div className="input-with-icon">
-                        <Mail size={18} className="input-icon" />
+                  <form onSubmit={handleForgotPasswordSubmit} className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Email</label>
+                      <div className="relative">
+                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                         <input
-                          className="control"
+                          className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                           type="email"
                           value={forgotEmail}
                           onChange={(e) => setForgotEmail(e.target.value)}
@@ -152,35 +166,35 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                       </div>
                     </div>
                     {forgotError && (
-                      <div className="alert alert-danger">
+                      <div className="p-4 rounded-xl bg-red/10 border border-red/20 text-red text-xs font-bold animate-shake">
                         {forgotError}
                       </div>
                     )}
                     <button
                       type="submit"
                       disabled={forgotLoading}
-                      className="btn btn-primary btn-block btn-large"
+                      className="w-full py-4 rounded-xl bg-accent text-white font-black text-[0.75rem] uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                     >
-                      {forgotLoading ? "A enviar..." : "Enviar Email de Recuperação"}
+                      {forgotLoading ? "A enviar..." : "Enviar Recuperação"}
                     </button>
                   </form>
                 </>
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="auth-form">
-              <p className="auth-subtitle">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6 animate-fade-in">
+              <p className="text-sm font-medium text-muted m-0 leading-relaxed">
                 {isLogin ? "Introduz os teus dados para aceder à tua conta." : "Regista-te para começar a monitorizar a tua mota."}
               </p>
 
               {/* Register Name Field */}
               {!isLogin && (
-                <div className="field">
-                  <div className="field-label">Nome</div>
-                  <div className="input-with-icon">
-                    <User size={18} className="input-icon" />
+                <div className="flex flex-col gap-2">
+                  <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Nome</label>
+                  <div className="relative">
+                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                     <input
-                      className="control"
+                      className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -193,12 +207,12 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
               )}
 
               {/* Email Field */}
-              <div className="field">
-                <div className="field-label">Email</div>
-                <div className="input-with-icon">
-                  <Mail size={18} className="input-icon" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Email</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                   <input
-                    className="control"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -210,12 +224,12 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
               </div>
 
               {/* Password Field */}
-              <div className="field">
-                <div className="field-label">Senha</div>
-                <div className="input-with-icon">
-                  <Lock size={18} className="input-icon" />
+              <div className="flex flex-col gap-2">
+                <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Senha</label>
+                <div className="relative">
+                  <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                   <input
-                    className="control"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all placeholder:text-muted/40"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -228,16 +242,17 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
 
               {/* Remember Me (Login only) */}
               {isLogin && (
-                <div className="auth-row">
-                  <label className="auth-checkbox">
+                <div className="flex items-center justify-between gap-4">
+                  <label className="flex items-center gap-3 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/10 bg-black/20 text-accent focus:ring-accent transition-all"
                     />
-                    <span>Lembrar de mim</span>
+                    <span className="text-xs font-bold text-muted group-hover:text-white transition-colors">Lembrar de mim</span>
                   </label>
-                  <button type="button" onClick={openForgotPassword} className="auth-link-forgot">
+                  <button type="button" onClick={openForgotPassword} className="text-xs font-black text-accent hover:underline uppercase tracking-widest">
                     Esqueci a senha
                   </button>
                 </div>
@@ -245,7 +260,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
 
               {/* Error Message */}
               {error && (
-                <div className="alert alert-danger">
+                <div className="p-4 rounded-xl bg-red/10 border border-red/20 text-red text-xs font-bold animate-shake">
                   {error}
                 </div>
               )}
@@ -254,7 +269,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn btn-primary btn-block btn-large"
+                className="w-full py-4 rounded-xl bg-accent text-white font-black text-[0.75rem] uppercase tracking-[0.2em] shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {isLoading
                   ? isLogin
@@ -266,8 +281,8 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
               </button>
 
               {/* Toggle Login/Register */}
-              <div className="auth-footer-toggle">
-                <span>{isLogin ? "Não tem conta?" : "Já tem conta?"}</span>{" "}
+              <div className="text-center flex flex-col gap-2 mt-4">
+                <span className="text-xs font-medium text-muted opacity-60">{isLogin ? "Não tem conta?" : "Já tem conta?"}</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -275,7 +290,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
                     clearError();
                     closeForgotPassword();
                   }}
-                  className="auth-link-switch"
+                  className="text-sm font-black text-white hover:text-accent transition-colors underline decoration-accent/30 underline-offset-4"
                 >
                   {isLogin ? "Criar conta agora" : "Fazer login"}
                 </button>

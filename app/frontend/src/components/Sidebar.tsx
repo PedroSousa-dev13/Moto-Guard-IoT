@@ -43,80 +43,104 @@ const Sidebar: FC = () => {
     {
       label: t('sidebar.monitoring'),
       items: [
-        { path: '/dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard size={16} /> },
-        { path: '/map', label: t('nav.map'), icon: <MapIcon size={16} /> },
-        { path: '/analytics', label: t('nav.analytics'), icon: <BarChart3 size={16} /> },
-        { path: '/alertas', label: t('nav.alerts'), icon: <Bell size={16} /> },
+        { path: '/dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard size={18} /> },
+        { path: '/map', label: t('nav.map'), icon: <MapIcon size={18} /> },
+        { path: '/analytics', label: t('nav.analytics'), icon: <BarChart3 size={18} /> },
+        { path: '/alertas', label: t('nav.alerts'), icon: <Bell size={18} /> },
       ],
     },
     {
       label: t('sidebar.data'),
       items: [
-        { path: '/garage', label: t('nav.garage'), icon: <Bike size={16} /> },
-        { path: '/trips', label: t('nav.trips'), icon: <Route size={16} /> },
-        { path: '/gpx', label: t('sidebar.gpx'), icon: <Compass size={16} /> },
+        { path: '/garage', label: t('nav.garage'), icon: <Bike size={18} /> },
+        { path: '/trips', label: t('nav.trips'), icon: <Route size={18} /> },
+        { path: '/gpx', label: t('sidebar.gpx'), icon: <Compass size={18} /> },
       ],
     },
     {
       label: t('sidebar.system'),
       items: [
-        { path: '/simulator-contexts', label: t('sidebar.simulator'), icon: <Cpu size={16} /> },
-        { path: '/real-simulator', label: t('sidebar.realSimulator'), icon: <PlayCircle size={16} /> },
-        { path: '/gpx-simulator', label: t('sidebar.gpxSimulator'), icon: <MapPinned size={16} /> },
-        { path: '/settings', label: t('nav.settings'), icon: <SlidersHorizontal size={16} /> },
-        { path: '/profile', label: t('nav.profile'), icon: <UserIcon size={16} /> },
-        { path: '/about', label: t('sidebar.howItWorks'), icon: <Info size={16} /> },
+        { path: '/simulator-contexts', label: t('sidebar.simulator'), icon: <Cpu size={18} /> },
+        { path: '/real-simulator', label: t('sidebar.realSimulator'), icon: <PlayCircle size={18} /> },
+        { path: '/gpx-simulator', label: t('sidebar.gpxSimulator'), icon: <MapPinned size={18} /> },
+        { path: '/settings', label: t('nav.settings'), icon: <SlidersHorizontal size={18} /> },
+        { path: '/profile', label: t('nav.profile'), icon: <UserIcon size={18} /> },
+        { path: '/about', label: t('sidebar.howItWorks'), icon: <Info size={18} /> },
       ],
     },
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <div className="brand-logo">
-          <div className="brand-logo-icon" style={{ background: 'var(--accent-gradient)', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)' }}>
-            <Bike size={20} strokeWidth={2.5} />
+    <aside className="w-full md:w-72 bg-surface/80 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/10 flex flex-col shrink-0 z-[100] transition-all duration-300">
+      {/* HEADER */}
+      <div className="p-6 pb-4 border-b border-white/5 hidden md:block">
+        <Link to="/" className="flex items-center gap-4 group mb-6 no-underline">
+          <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform duration-500">
+            <Bike size={24} strokeWidth={2.5} />
           </div>
-          <div>
-            <h2 style={{ letterSpacing: '-0.04em' }}>MotoGuard</h2>
-            <div className="brand-logo-tagline" style={{ color: 'var(--accent-blue)', opacity: 0.8 }}>IOT PLATFORM</div>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black text-white tracking-tighter m-0 leading-none">MotoGuard</h2>
+            <span className="text-[0.6rem] font-black text-accent tracking-[0.2em] uppercase mt-1 opacity-80">IoT Platform</span>
           </div>
-        </div>
+        </Link>
+
         {showUser && (
-          <div className="user-info">
-            <div className="user-avatar-sidebar">{getInitials(displayUser?.name)}</div>
-            <div className="user-info-text">
-              <span className="user-name">{displayUser?.name}</span>
-              <span className="user-email">{displayUser?.email}</span>
+          <div className="flex items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-[1.25rem] group hover:bg-white/10 transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-accent-gradient flex items-center justify-center text-sm font-black text-white shadow-lg shadow-accent/20 shrink-0">
+              {getInitials(displayUser?.name)}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[0.8rem] font-bold text-white truncate leading-tight">{displayUser?.name}</span>
+              <span className="text-[0.65rem] font-medium text-muted truncate">{displayUser?.email}</span>
             </div>
           </div>
         )}
       </div>
 
-      <nav className="sidebar-nav">
+      {/* NAV */}
+      <nav className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 flex flex-row md:flex-col gap-4 md:gap-8 overflow-x-auto no-scrollbar">
         {navGroups.map((group) => (
-          <div key={group.label} className="nav-group">
-            <div className="nav-group-label">{group.label}</div>
-            {group.items.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              >
-                <span className="nav-icon-wrap">
-                  <span className="nav-icon">{item.icon}</span>
-                </span>
-                <span className="nav-label">{item.label}</span>
-              </Link>
-            ))}
+          <div key={group.label} className="flex flex-row md:flex-col gap-2 min-w-max md:min-w-0">
+            <div className="hidden md:block text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted mb-4 opacity-40 ml-2">
+              {group.label}
+            </div>
+            <div className="flex flex-row md:flex-col gap-1.5">
+              {group.items.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group relative shrink-0 md:shrink-1 ${
+                    location.pathname === item.path
+                      ? 'bg-accent/10 text-white border border-accent/20 shadow-lg shadow-accent/5'
+                      : 'text-muted hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    location.pathname === item.path
+                      ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                      : 'bg-white/5 text-muted group-hover:bg-white/10 group-hover:text-white'
+                  }`}>
+                    {item.icon}
+                  </div>
+                  <span className="font-bold text-sm tracking-tight whitespace-nowrap">{item.label}</span>
+                  {location.pathname === item.path && (
+                    <div className="absolute left-[-1px] top-1/4 bottom-1/4 w-1 bg-accent rounded-full hidden md:block" />
+                  )}
+                </Link>
+              ))}
+            </div>
           </div>
         ))}
       </nav>
 
+      {/* FOOTER */}
       {showUser && (
-        <div className="sidebar-footer">
-          <button onClick={isDemoMode ? exitDemoMode : logout} className="sidebar-logout-btn">
-            <LogOut size={15} />
+        <div className="p-6 border-t border-white/5 hidden md:block">
+          <button
+            onClick={isDemoMode ? exitDemoMode : logout}
+            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-red/10 border border-red/20 text-red font-black text-sm uppercase tracking-widest hover:bg-red hover:text-white hover:border-transparent transition-all shadow-lg active:scale-[0.98]"
+          >
+            <LogOut size={18} />
             <span>{isDemoMode ? t('demo.exit') : t('nav.logout')}</span>
           </button>
         </div>

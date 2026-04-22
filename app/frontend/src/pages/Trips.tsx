@@ -8,7 +8,7 @@ import { imageFromCategory } from "../utils/categoryImageMap";
 import {
   Route, Calendar, Bike, ChevronDown, AlertCircle, Clock,
   Zap, ArrowRight, ChevronLeft, ChevronRight, Database,
-  Cpu, Monitor, Info, ChevronUp, History, Activity
+  Cpu, Monitor, Info, ChevronUp, History, Activity, Check, AlertTriangle
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import { SkeletonRow, SkeletonCard } from "../components/ui/Skeleton";
@@ -16,8 +16,6 @@ import CompareBar from "../components/trips/CompareBar";
 import ComparisonView from "../components/trips/ComparisonView";
 import { ListStateSnapshot } from "../utils/tripComparison";
 import TripCategoryBadge from "../components/trips/TripCategoryBadge";
-import "./Trips.css";
-
 
 type TripSourceFilter = "ALL" | TripSource;
 type TripStatusFilter = "ALL" | TripStatus;
@@ -43,27 +41,27 @@ function formatDuration(start: string, end?: string) {
 
 function statusBadge(status: string) {
   switch (status) {
-    case "ACTIVE":    return { bg: "rgba(34,197,94,0.1)",  color: "#22c55e", label: "Ativa",     icon: <Zap size={12} /> };
-    case "COMPLETED": return { bg: "rgba(59,130,246,0.1)", color: "#3b82f6", label: "Concluída", icon: <Calendar size={12} /> };
-    case "CANCELLED": return { bg: "rgba(239,68,68,0.1)",  color: "#ef4444", label: "Cancelada", icon: <AlertCircle size={12} /> };
-    default:          return { bg: "rgba(113,113,122,0.1)",color: "#71717a", label: status,      icon: <Info size={12} /> };
+    case "ACTIVE":    return { className: "bg-green/10 text-green border-green/20", label: "Ativa", icon: <Zap size={12} /> };
+    case "COMPLETED": return { className: "bg-blue/10 text-blue border-blue/20", label: "Concluída", icon: <Calendar size={12} /> };
+    case "CANCELLED": return { className: "bg-red/10 text-red border-red/20", label: "Cancelada", icon: <AlertCircle size={12} /> };
+    default:          return { className: "bg-white/10 text-muted border-white/20", label: status, icon: <Info size={12} /> };
   }
 }
 
 function sourceBadge(source: TripSource) {
   switch (source) {
-    case "SIMULATOR":    return { bg: "rgba(14,165,233,0.1)",  color: "#0ea5e9", label: "Simulador", icon: <Monitor size={12} /> };
-    case "GPX_IMPORTED": return { bg: "rgba(16,185,129,0.1)",  color: "#10b981", label: "GPX",       icon: <Database size={12} /> };
-    case "DEVICE_REAL":  return { bg: "rgba(244,114,182,0.1)", color: "#f472b6", label: "Real",      icon: <Cpu size={12} /> };
-    default:             return { bg: "rgba(113,113,122,0.1)", color: "#71717a", label: source,      icon: <Route size={12} /> };
+    case "SIMULATOR":    return { className: "bg-sky/10 text-sky border-sky/20", label: "Simulador", icon: <Monitor size={12} /> };
+    case "GPX_IMPORTED": return { className: "bg-green/10 text-green border-green/20", label: "GPX", icon: <Database size={12} /> };
+    case "DEVICE_REAL":  return { className: "bg-pink/10 text-pink border-pink/20", label: "Real", icon: <Cpu size={12} /> };
+    default:             return { className: "bg-white/10 text-muted border-white/20", label: source, icon: <Route size={12} /> };
   }
 }
 
-function severityColor(severity: string) {
+function severityColorClass(severity: string) {
   switch (severity) {
-    case "CRITICAL": return "var(--red)";
-    case "WARNING":  return "var(--yellow)";
-    default:         return "var(--muted)";
+    case "CRITICAL": return "border-l-red";
+    case "WARNING":  return "border-l-yellow";
+    default:         return "border-l-muted/30";
   }
 }
 
@@ -78,9 +76,9 @@ function eventTypeIcon(type: string) {
 }
 
 function scoreStyle(score: number) {
-  if (score >= 80) return { bg: "rgba(34,197,94,0.12)",  color: "#22c55e" };
-  if (score >= 60) return { bg: "rgba(202,138,4,0.14)",  color: "#ca8a04" };
-  return              { bg: "rgba(239,68,68,0.12)",  color: "#ef4444" };
+  if (score >= 80) return { className: "text-green", bg: "bg-green/10" };
+  if (score >= 60) return { className: "text-yellow", bg: "bg-yellow/10" };
+  return              { className: "text-red", bg: "bg-red/10" };
 }
 
 // ─── Moto Card ────────────────────────────────────────────────────────────────
@@ -92,19 +90,21 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
   return (
     <div
       onClick={onClick}
-      className={`premium-moto-card ${selected ? "selected" : ""}`}
+      className={`flex-shrink-0 w-52 p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/5 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
     >
-      <div className="moto-card-img">
-        <img src={img} alt={moto.name} />
+      <div className="w-full h-24 rounded-xl bg-black/20 p-2 flex items-center justify-center relative z-10 overflow-hidden">
+        <img src={img} alt={moto.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-xl" />
       </div>
-      <div className="moto-card-info">
-        <div className="moto-card-name">{moto.name}</div>
-        <div className="moto-card-meta">
+      <div className="flex flex-col gap-0.5 relative z-10">
+        <div className="font-black text-sm text-text truncate leading-tight">{moto.name}</div>
+        <div className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-60 truncate">
           {moto.brand} {moto.model}
         </div>
       </div>
-      <div className="moto-card-stats">
-        <span className="moto-trip-count">{tripCount} viagens</span>
+      <div className="flex justify-between items-center mt-1 relative z-10">
+        <span className="text-[0.6rem] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full uppercase tracking-widest">
+          {tripCount} viagens
+        </span>
       </div>
     </div>
   );
@@ -276,9 +276,12 @@ export default function Trips() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (activeLoading && motosLoading) {
     return (
-      <div className="page">
-        <div className="page-header"><div className="page-title">🗺️ Histórico de Viagens</div></div>
-        <div className="card" style={{ padding: 16 }}>
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center gap-3">
+          <History className="text-accent" size={32} />
+          <h1 className="text-3xl font-black text-text tracking-tight m-0">Histórico de Viagens</h1>
+        </div>
+        <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col gap-4">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       </div>
@@ -287,78 +290,91 @@ export default function Trips() {
 
   if (activeError) {
     return (
-      <div className="page">
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Erro ao carregar viagens</div>
-          <div className="empty-state-text">{activeError}</div>
-          <button className="btn btn-primary" onClick={() => void refresh()}>Tentar novamente</button>
+      <div className="flex flex-col items-center justify-center py-32 text-center gap-6">
+        <div className="w-24 h-24 rounded-full bg-red/10 flex items-center justify-center text-red border border-red/20 shadow-2xl">
+          <AlertCircle size={48} />
         </div>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-black text-text tracking-tight">Erro ao carregar viagens</h2>
+          <p className="text-muted text-sm font-medium max-w-xs">{activeError}</p>
+        </div>
+        <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-accent text-white font-black text-sm shadow-xl shadow-accent/20 hover:scale-105 transition-all" onClick={() => void refresh()}>
+          Tentar novamente
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="page trips-container">
-      <div className="page-header">
-        <div className="header-main">
-          <div className="page-title">
-            <History className="title-icon" size={28} />
-            Histórico de Viagens
-          </div>
-          <div className="page-subtitle">
-            <Route size={14} style={{ marginRight: 4 }} />
-            Explore e analise o seu histórico de condução premium
-          </div>
+    <div className="flex flex-col gap-8 animate-fade-in pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
+            <History className="text-accent" size={32} /> Histórico de Viagens
+          </h1>
+          <p className="text-muted text-sm font-medium flex items-center gap-2">
+            <Route size={16} className="text-accent/60" /> Explore e analise o seu histórico de condução premium.
+          </p>
         </div>
-        <div className="status-group">
-          <button className={`btn ${view === "FEED" ? "btn-primary" : "btn-ghost"}`}
+        <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+          <button className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${view === "FEED" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => { setView("FEED"); setExpandedId(null); setPage(1); }}>
             <Activity size={18} /> Feed
           </button>
-          <button className={`btn ${view === "LIST" ? "btn-primary" : "btn-ghost"}`}
+          <button className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${view === "LIST" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => { setView("LIST"); setExpandedId(null); setPage(1); }}>
             <History size={18} /> Lista
           </button>
         </div>
       </div>
 
-      <div className="trips-hero">
-        <div className="hero-stats">
-          <div className="hero-stat-item">
-            <span className="hero-stat-label">Total Viagens</span>
-            <span className="hero-stat-value">{activeCount}</span>
+      {/* HERO SUMMARY */}
+      <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl relative group">
+        <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
+        
+        <div className="flex gap-16 flex-wrap justify-center md:justify-start relative z-10">
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Total Viagens</span>
+            <span className="text-5xl font-black text-text tracking-tighter tabular-nums">{activeCount}</span>
           </div>
-          <div className="hero-stat-item">
-            <span className="hero-stat-label">Distância Total</span>
-            <span className="hero-stat-value">{totalKm.toFixed(1)} <small style={{ fontSize: "0.5em", color: "var(--muted)" }}>KM</small></span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Distância Total</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-black text-text tracking-tighter tabular-nums">{totalKm.toFixed(1)}</span>
+              <span className="text-xs font-black text-muted opacity-40 uppercase tracking-widest">KM</span>
+            </div>
           </div>
-          <div className="hero-stat-item">
-            <span className="hero-stat-label">Safety Score Médio</span>
-            <span className="hero-stat-value" style={{ color: scoreStyle(avgSafety).color }}>{avgSafety.toFixed(0)}</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score Médio</span>
+            <span className={`text-5xl font-black tracking-tighter tabular-nums transition-colors ${scoreStyle(avgSafety).className}`}>
+              {avgSafety.toFixed(0)}
+            </span>
           </div>
         </div>
-        <div className="hero-visual">
-          {/* Subtle background decoration or icon */}
-          <Activity size={64} style={{ opacity: 0.1, color: "var(--accent)" }} />
+
+        <div className="relative w-28 h-28 rounded-full bg-black/20 flex items-center justify-center border border-white/5 shadow-inner group-hover:border-accent/40 transition-all shrink-0">
+          <Activity size={56} className="text-accent opacity-20" />
+          <div className="absolute inset-0 rounded-full border-2 border-accent animate-ping opacity-0 group-hover:opacity-10 transition-opacity" />
         </div>
       </div>
 
+      {/* MOTO SELECTOR */}
       {motos.length > 0 && (
-        <div className="moto-selector-wrapper">
-          <div className="section-label">Filtrar por Mota</div>
-          <div className="moto-cards-scroll">
+        <div className="flex flex-col gap-5">
+          <div className="text-[0.65rem] font-black uppercase tracking-widest text-muted ml-1 flex items-center gap-2 opacity-60">
+            <Bike size={14} className="text-accent" /> Filtrar por Mota
+          </div>
+          <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-none px-1">
             <div
               onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
-              className={`premium-moto-card ${selectedMotoId === "ALL" ? "selected" : ""}`}
-              style={{ minWidth: 160 }}
+              className={`flex-shrink-0 w-52 p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden ${selectedMotoId === "ALL" ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/5 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
             >
-              <div className="moto-card-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-light)" }}>
-                <Bike size={48} style={{ color: "var(--accent)" }} />
+              <div className="w-full h-24 rounded-xl bg-accent/5 flex items-center justify-center text-accent/40 group-hover:scale-105 transition-transform">
+                <Bike size={48} />
               </div>
-              <div className="moto-card-info">
-                <div className="moto-card-name">Todas</div>
-                <div className="moto-card-meta">Ver histórico total</div>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-black text-sm text-text">Todas</span>
+                <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-40">Histórico Total</span>
               </div>
             </div>
             {motos.map((moto) => (
@@ -370,72 +386,79 @@ export default function Trips() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="filters-premium-card">
-        <div className="filters-header">
-          <Zap size={18} style={{ color: "var(--accent)" }} />
-          Filtros de Pesquisa
+      {/* FILTERS */}
+      <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 flex flex-col gap-8 shadow-xl">
+        <div className="flex items-center gap-3 text-[0.65rem] font-black uppercase tracking-widest text-text opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+          Filtros Inteligentes
         </div>
-        <div className="filters-grid-premium">
-          <div className="field">
-            <label className="field-label">Origem</label>
-            <select className="premium-control" value={sourceFilter}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Origem</label>
+            <select className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer" value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value as TripSourceFilter)}>
-              <option value="ALL">Todas as Origens</option>
-              <option value="SIMULATOR">Simulador IoT</option>
-              <option value="GPX_IMPORTED">Ficheiros GPX</option>
-              <option value="DEVICE_REAL">Dispositivo Real</option>
+              <option value="ALL" className="bg-slate-900">Todas</option>
+              <option value="SIMULATOR" className="bg-slate-900">Simulador IoT</option>
+              <option value="GPX_IMPORTED" className="bg-slate-900">Ficheiros GPX</option>
+              <option value="DEVICE_REAL" className="bg-slate-900">Dispositivo Real</option>
             </select>
           </div>
-          <div className="field">
-            <label className="field-label">Estado</label>
-            <select className="premium-control" value={statusFilter}
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Estado</label>
+            <select className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value as TripStatusFilter); setPage(1); setExpandedId(null); }}>
-              <option value="ALL">Todos os Estados</option>
-              <option value="ACTIVE">Ativas</option>
-              <option value="COMPLETED">Concluídas</option>
-              <option value="CANCELLED">Canceladas</option>
+              <option value="ALL" className="bg-slate-900">Todos</option>
+              <option value="ACTIVE" className="bg-slate-900">Ativas</option>
+              <option value="COMPLETED" className="bg-slate-900">Concluídas</option>
+              <option value="CANCELLED" className="bg-slate-900">Canceladas</option>
             </select>
           </div>
-          <div className="field">
-            <label className="field-label">De</label>
-            <input className="premium-control" type="date" value={fromDate}
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">De</label>
+            <input className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all" type="date" value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
-          <div className="field">
-            <label className="field-label">Até</label>
-            <input className="premium-control" type="date" value={toDate}
+          <div className="flex flex-col gap-2.5">
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Até</label>
+            <input className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all" type="date" value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
-          <div className="field" style={{ justifyContent: "center" }}>
-             <label className="auth-checkbox">
-               <input type="checkbox" checked={onlyWithEvents}
+          <div className="flex items-center pt-6 justify-center">
+             <label className="flex items-center gap-3 cursor-pointer group">
+               <div className={`w-12 h-7 rounded-full transition-all relative flex items-center px-1.5 shadow-inner ${onlyWithEvents ? 'bg-accent' : 'bg-white/10'}`}>
+                 <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-xl ${onlyWithEvents ? 'translate-x-5' : 'translate-x-0'}`} />
+               </div>
+               <input type="checkbox" className="hidden" checked={onlyWithEvents}
                  onChange={(e) => { setOnlyWithEvents(e.target.checked); setPage(1); setExpandedId(null); }} />
-               <span>Só com eventos</span>
+               <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted group-hover:text-text transition-colors">Apenas Eventos</span>
              </label>
           </div>
         </div>
       </div>
 
       {activeCount === 0 && (
-        <div className="empty-state">
-          <div className="empty-state-icon">🛣️</div>
-          <div className="empty-state-title">Sem viagens encontradas</div>
-          <div className="empty-state-text">
-            {selectedMotoId !== "ALL"
-              ? "Esta mota ainda não tem viagens que correspondam aos filtros."
-              : "Inicie uma simulação ou importe um GPX para ver resultados aqui."}
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-8">
+          <div className="w-28 h-28 rounded-full bg-white/5 flex items-center justify-center text-muted/10 border border-white/5 shadow-inner">
+            <Route size={64} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-2xl font-black text-text m-0 tracking-tight">Sem viagens encontradas</h3>
+            <p className="text-muted text-sm font-medium max-w-sm m-0 leading-relaxed opacity-60">
+              {selectedMotoId !== "ALL"
+                ? "Esta mota ainda não tem viagens que correspondam aos filtros aplicados."
+                : "Inicie uma simulação no simulador IoT ou importe um ficheiro GPX para ver resultados aqui."}
+            </p>
           </div>
         </div>
       )}
 
-      <div className="trip-list">
+      <div className="flex flex-col gap-6">
         {view === "FEED" ? (
-          <div className="trip-grid">
+          <div className="grid grid-cols-1 gap-8">
             {pagedFeed.map((item) => <TripFeedCard key={item.id} item={item} />)}
           </div>
         ) : (
-          <div className="trip-grid">
+          <div className="grid grid-cols-1 gap-6">
             {pagedTrips.map((trip) => (
               <TripListCard
                 key={trip.id}
@@ -463,24 +486,26 @@ export default function Trips() {
       )}
 
       {activeCount > 0 && (
-        <div className="pagination-premium">
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <span className="field-label">Por página</span>
-            <select className="premium-control" style={{ padding: "6px 12px", fontSize: "0.8rem", width: "80px" }}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-8 py-8 mt-4 border-t border-white/5 shrink-0">
+          <div className="flex items-center gap-5">
+            <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Itens por página</span>
+            <select className="bg-white/5 border border-white/5 rounded-xl px-4 py-2 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all cursor-pointer"
               value={pageSize}
               onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); setExpandedId(null); }}>
-              {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+              {[5, 10, 20, 50].map((n) => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
             </select>
           </div>
-          <div className="page-controls">
-            <button className="page-btn" disabled={safePage <= 1}
+          <div className="flex items-center gap-6">
+            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage <= 1}
               onClick={() => { setPage((p) => Math.max(1, p - 1)); setExpandedId(null); }}>
-              <ChevronLeft size={20} />
+              <ChevronLeft size={24} />
             </button>
-            <span className="page-number-info">Página {safePage} de {totalPages}</span>
-            <button className="page-btn" disabled={safePage >= totalPages}
+            <span className="text-sm font-black text-text tracking-tight uppercase tracking-widest tabular-nums px-2">
+              <span className="text-accent">{safePage}</span> / {totalPages}
+            </span>
+            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage >= totalPages}
               onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); setExpandedId(null); }}>
-              <ChevronRight size={20} />
+              <ChevronRight size={24} />
             </button>
           </div>
         </div>
@@ -499,7 +524,6 @@ export default function Trips() {
 
 // ─── Feed Card ────────────────────────────────────────────────────────────────
 
-
 function TripFeedCard({ item }: { item: TripFeedItem }) {
   const badge = statusBadge(item.status);
   const src   = sourceBadge(item.source);
@@ -508,67 +532,73 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
   const motoImg = imageFromCategory(item.motorcycle?.category);
 
   return (
-    <div className="trip-card-premium">
-      <div className="trip-card-image">
-        <img src={motoImg} alt="moto" />
+    <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5">
+      <div className="lg:w-80 bg-black/20 flex items-center justify-center p-10 relative overflow-hidden shrink-0">
+        <img src={motoImg} alt="moto" className="relative z-10 w-full h-40 object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-700" />
+        <div className="absolute inset-0 bg-radial-gradient from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
-      <div className="trip-card-main">
-        <div className="trip-card-header">
-          <div className="trip-card-title">{item.motorcycle?.name}</div>
-          <div className="trip-card-badges">
-            <span className="trip-premium-badge" style={{ background: badge.bg, color: badge.color }}>
+      <div className="flex-1 p-10 flex flex-col justify-center gap-8">
+        <div className="flex flex-col gap-4">
+          <h3 className="text-2xl font-black text-text tracking-tight m-0">{item.motorcycle?.name}</h3>
+          <div className="flex flex-wrap gap-2.5">
+            <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
               {badge.icon} {badge.label}
             </span>
-            <span className="trip-premium-badge" style={{ background: src.bg, color: src.color }}>
+            <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
               {src.icon} {src.label}
             </span>
             <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
           </div>
         </div>
-        <div className="trip-card-details">
-          <div className="detail-item"><Calendar size={14} /> {formatDate(item.startedAt)}</div>
-          <div className="detail-item"><Clock size={14} /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}</div>
-          <div className="detail-item"><AlertCircle size={14} /> {item.eventCounts?.total ?? 0} Eventos</div>
+        <div className="flex flex-wrap gap-8 items-center">
+          <div className="flex items-center gap-2.5 text-xs font-bold text-muted hover:text-text transition-colors">
+            <Calendar size={16} className="text-accent/60" /> {formatDate(item.startedAt)}
+          </div>
+          <div className="flex items-center gap-2.5 text-xs font-bold text-muted hover:text-text transition-colors">
+            <Clock size={16} className="text-accent/60" /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}
+          </div>
+          <div className={`flex items-center gap-2.5 text-xs font-black uppercase tracking-widest ${item.eventCounts?.total > 0 ? 'text-red' : 'text-green opacity-40'}`}>
+            <AlertCircle size={16} /> {item.eventCounts?.total ?? 0} Eventos
+          </div>
         </div>
         {item.labels?.length > 0 && (
-          <div className="trip-card-labels">
+          <div className="flex flex-wrap gap-2">
             {item.labels.map(l => (
-              <span key={l} className="trip-label-tag">{l}</span>
+              <span key={l} className="px-3 py-1 rounded-xl bg-accent/5 border border-accent/20 text-accent text-[0.6rem] font-black uppercase tracking-widest">{l}</span>
             ))}
           </div>
         )}
       </div>
-      <div className="trip-card-right">
-        <div className="trip-card-scores">
-          <div className="score-badge" style={{ color: safety.color }}>
-            <div className="score-circle">{item.safetyScore}</div>
-            <span className="score-label">Safety</span>
+      <div className="lg:w-80 p-10 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-end gap-10 shrink-0 relative">
+        <div className="flex gap-8">
+          <div className={`flex flex-col items-center gap-2 group/score ${safety.className}`}>
+            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-black/40 shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.safetyScore}</div>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety</span>
           </div>
-          <div className="score-badge" style={{ color: perf.color }}>
-            <div className="score-circle">{item.performanceScore}</div>
-            <span className="score-label">Perf</span>
-          </div>
-        </div>
-        <div className="trip-card-stats-row">
-          <div className="compact-stat">
-            <span className="compact-stat-value">{item.distanceKm?.toFixed(1)}</span>
-            <span className="compact-stat-unit">KM</span>
-          </div>
-          <div className="compact-stat">
-            <span className="compact-stat-value">{item.avgSpeedKmh?.toFixed(0)}</span>
-            <span className="compact-stat-unit">KM/H</span>
+          <div className={`flex flex-col items-center gap-2 group/score ${perf.className}`}>
+            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-black/40 shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.performanceScore}</div>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Perf</span>
           </div>
         </div>
-        <Link to={`/trips/${item.id}`} style={{ width: "100%" }}>
-          <button className="btn-premium-action">
-            Analisar <ArrowRight size={18} />
+        <div className="flex gap-10 justify-end w-full">
+          <div className="flex flex-col items-end group/stat">
+            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
+            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM</span>
+          </div>
+          <div className="flex flex-col items-end group/stat">
+            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
+            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM/H</span>
+          </div>
+        </div>
+        <Link to={`/trips/${item.id}`} className="w-full">
+          <button className="w-full flex items-center justify-center gap-3 bg-accent text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all group/btn">
+            Analisar <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-2" />
           </button>
         </Link>
       </div>
     </div>
   );
 }
-
 
 // ─── List Card ────────────────────────────────────────────────────────────────
 
@@ -591,113 +621,135 @@ function TripListCard({
   const isDisabled = selectedForComparison.length >= 2 && !isSelected;
 
   return (
-    <div className={`trip-card-premium ${isOpen ? "open" : ""} ${isSelected ? "compare-selected" : ""}`}>
-      <div className="trip-card-image" onClick={() => onToggle(trip.id)} style={{ cursor: "pointer" }}>
-        <img src={motoImg} alt="moto" />
-      </div>
-      <div className="trip-card-main">
-        <div className="trip-card-header" onClick={() => onToggle(trip.id)} style={{ cursor: "pointer" }}>
-          <div className="trip-card-title">{trip.motorcycle?.name}</div>
-          <div className="trip-card-badges">
-            <span className="trip-premium-badge" style={{ background: badge.bg, color: badge.color }}>
+    <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
+      <div className="flex flex-col lg:flex-row min-h-[160px]">
+        <div className="lg:w-56 bg-black/20 flex items-center justify-center p-8 shrink-0 cursor-pointer group" onClick={() => onToggle(trip.id)}>
+          <img src={motoImg} alt="moto" className="w-full h-24 object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-lg" />
+        </div>
+        <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer" onClick={() => onToggle(trip.id)}>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-xl font-black text-text tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>
+          <div className="flex flex-wrap gap-2.5">
+            <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
               {badge.icon} {badge.label}
             </span>
-            <span className="trip-premium-badge" style={{ background: src.bg, color: src.color }}>
+            <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
               {src.icon} {src.label}
             </span>
             <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
           </div>
-        </div>
-        <div className="trip-card-details">
-          <div className="detail-item"><Calendar size={14} /> {formatDate(trip.startedAt)}</div>
-          <div className="detail-item"><Clock size={14} /> {formatDuration(trip.startedAt, trip.endedAt)}</div>
-          {evCount > 0 && <div className="detail-item" style={{ color: "var(--red)" }}><AlertCircle size={14} /> {evCount} Eventos</div>}
-        </div>
-        <div className="compare-checkbox-wrapper" onClick={(e) => e.stopPropagation()}>
-           <label className="auth-checkbox">
-             <input
-               type="checkbox"
-               checked={isSelected}
-               disabled={isDisabled}
-               onChange={() => onCompareToggle(trip.id)}
-             />
-             <span>Comparar</span>
-           </label>
-        </div>
-      </div>
-      <div className="trip-card-right">
-        <div className="trip-card-stats-row">
-          <div className="compact-stat">
-            <span className="compact-stat-value">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
-            <span className="compact-stat-unit">KM</span>
           </div>
-          <div className="compact-stat">
-            <span className="compact-stat-value">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
-            <span className="compact-stat-unit">KM/H</span>
-          </div>
-        </div>
-        <button className="btn-premium-action" onClick={() => onToggle(trip.id)}>
-          {isOpen ? "Fechar" : "Detalhes"} {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-      </div>
-
-
-        {isOpen && (
-          <div className="trip-expanded-content" style={{ gridColumn: "span 3", background: "rgba(0,0,0,0.1)", borderTop: "1px solid var(--glass-border)" }}>
-            {detailLoadingId === trip.id ? (
-              <div className="detail-loading"><div className="spinner-small"></div><span>A carregar detalhes...</span></div>
-            ) : (
-              <>
-                <div className="expanded-stats-grid">
-                  <div className="stat-tile">
-                    <span className="tile-label">Vel. Máxima</span>
-                    <span className="tile-value">{trip.maxSpeedKmh?.toFixed(1) ?? "—"} <small>km/h</small></span>
-                  </div>
-                  <div className="stat-tile">
-                    <span className="tile-label">Vel. Média</span>
-                    <span className="tile-value">{trip.avgSpeedKmh?.toFixed(1) ?? "—"} <small>km/h</small></span>
-                  </div>
-                  <div className="stat-tile">
-                    <span className="tile-label">Inclinação Máx.</span>
-                    <span className="tile-value">{trip.maxRollDeg?.toFixed(1) ?? "—"} <small>°</small></span>
-                  </div>
-                  <div className="stat-tile">
-                    <span className="tile-label">Força G Máx.</span>
-                    <span className="tile-value">{trip.maxGForce?.toFixed(2) ?? "—"} <small>G</small></span>
-                  </div>
-                </div>
-                <div className="expanded-actions">
-                  <Link to={`/trips/${trip.id}`} style={{ width: "100%" }}>
-                    <button className="btn-premium-action">
-                      <Activity size={18} /> Ver Análise Completa <ArrowRight size={18} />
-                    </button>
-                  </Link>
-                </div>
-                {trip.events && trip.events.length > 0 && (
-                  <div className="events-section-v2">
-                    <div className="section-title-v2">Eventos de Risco Detectados</div>
-                    <div className="events-list-v2">
-                      {trip.events.map((ev) => (
-                        <div key={ev.id} className="event-item-v2" style={{ borderLeftColor: severityColor(ev.severity) }}>
-                          <span className="event-icon-v2">{eventTypeIcon(ev.type)}</span>
-                          <div className="event-content-v2">
-                            <div className="event-top-v2">
-                              <span className="event-msg-v2">{ev.message}</span>
-                              <span className="event-time-v2">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
-                            </div>
-                            {ev.speedKmh != null && (
-                              <div className="event-meta-v2"><Zap size={10} />{ev.speedKmh.toFixed(0)} km/h</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
+          <div className="flex flex-wrap gap-8 items-center">
+            <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-muted hover:text-text transition-colors">
+              <Calendar size={14} className="text-accent/60" /> {formatDate(trip.startedAt)}
+            </div>
+            <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-muted hover:text-text transition-colors">
+              <Clock size={14} className="text-accent/60" /> {formatDuration(trip.startedAt, trip.endedAt)}
+            </div>
+            {evCount > 0 && (
+              <div className="flex items-center gap-2.5 text-[0.7rem] font-black uppercase tracking-widest text-red">
+                <AlertCircle size={14} /> {evCount} Eventos
+              </div>
             )}
           </div>
-        )}
+          <div className="flex items-center mt-1" onClick={(e) => e.stopPropagation()}>
+             <label className={`flex items-center gap-3 cursor-pointer group transition-opacity ${isDisabled ? 'opacity-30 grayscale cursor-not-allowed' : 'opacity-100'}`}>
+               <input
+                 type="checkbox"
+                 className="hidden"
+                 checked={isSelected}
+                 disabled={isDisabled}
+                 onChange={() => onCompareToggle(trip.id)}
+               />
+               <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-accent border-accent shadow-lg shadow-accent/20' : 'border-white/10 group-hover:border-white/30 bg-black/20'}`}>
+                 {isSelected && <Check size={16} className="text-white" strokeWidth={4} />}
+               </div>
+               <span className={`text-[0.65rem] font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-accent' : 'text-muted group-hover:text-text'}`}>Comparar Viagem</span>
+             </label>
+          </div>
+        </div>
+        <div className="lg:w-72 p-8 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-end gap-8 shrink-0">
+          <div className="flex gap-8 justify-end w-full">
+            <div className="flex flex-col items-end group/stat">
+              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM</span>
+            </div>
+            <div className="flex flex-col items-end group/stat">
+              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM/H</span>
+            </div>
+          </div>
+          <button className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${isOpen ? 'bg-white/10 text-text border border-white/10' : 'bg-accent text-white shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'}`} onClick={() => onToggle(trip.id)}>
+            {isOpen ? "Ocultar" : "Detalhes"} {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="bg-black/20 border-t border-white/5 p-10 animate-slide-down">
+          {detailLoadingId === trip.id ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-5">
+              <div className="w-10 h-10 rounded-full border-4 border-accent/10 border-t-accent animate-spin" />
+              <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted animate-pulse">A extrair telemetria...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-10">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { label: "Vel. Máxima", val: `${trip.maxSpeedKmh?.toFixed(1) ?? "—"}`, unit: "km/h", icon: <Zap size={14} /> },
+                  { label: "Vel. Média", val: `${trip.avgSpeedKmh?.toFixed(1) ?? "—"}`, unit: "km/h", icon: <Activity size={14} /> },
+                  { label: "Inclinação Máx.", val: `${trip.maxRollDeg?.toFixed(1) ?? "—"}`, unit: "°", icon: <History size={14} /> },
+                  { label: "Força G Máx.", val: `${trip.maxGForce?.toFixed(2) ?? "—"}`, unit: "G", icon: <Cpu size={14} /> }
+                ].map(stat => (
+                  <div key={stat.label} className="bg-white/5 border border-white/5 rounded-3xl p-6 flex flex-col gap-2 hover:border-accent/30 transition-colors shadow-inner group/mini">
+                    <div className="flex items-center gap-2 text-[0.55rem] font-black uppercase tracking-[0.15em] text-muted opacity-60">
+                       <span className="text-accent group-hover/mini:scale-110 transition-transform">{stat.icon}</span>
+                       {stat.label}
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-text tracking-tighter tabular-nums">{stat.val}</span>
+                      <span className="text-[0.6rem] font-bold text-muted opacity-40 uppercase tracking-widest">{stat.unit}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <Link to={`/trips/${trip.id}`} className="group/btn">
+                <button className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 py-5 rounded-2xl font-black text-sm text-text transition-all group-hover/btn:border-accent/40 shadow-xl">
+                  <Activity size={20} className="text-accent group-hover/btn:scale-125 transition-transform" /> Ver Relatório Pós‑Viagem Completo <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-3" />
+                </button>
+              </Link>
+
+              {trip.events && trip.events.length > 0 && (
+                <div className="flex flex-col gap-6 pt-4">
+                  <div className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-red/80 flex items-center gap-3 px-1">
+                    <AlertTriangle size={16} /> Incidentes e Alertas de Risco
+                    <div className="flex-1 h-px bg-gradient-to-r from-red/20 to-transparent" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {trip.events.map((ev) => (
+                      <div key={ev.id} className={`flex items-center gap-5 p-5 rounded-3xl bg-black/40 border border-white/5 border-l-4 group/ev hover:bg-black/60 transition-colors ${severityColorClass(ev.severity)}`}>
+                        <span className="text-3xl group-hover/ev:scale-125 transition-transform drop-shadow-lg shrink-0">{eventTypeIcon(ev.type)}</span>
+                        <div className="flex flex-col flex-1 gap-1.5 min-w-0">
+                          <div className="flex justify-between items-start gap-4">
+                            <span className="text-[0.85rem] font-black text-text leading-tight truncate">{ev.message}</span>
+                            <span className="text-[0.6rem] font-black text-muted opacity-50 uppercase tracking-widest whitespace-nowrap">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
+                          </div>
+                          {ev.speedKmh != null && (
+                            <div className="flex items-center gap-2 text-[0.6rem] font-black uppercase tracking-widest text-accent/60">
+                              <Zap size={12} /> {ev.speedKmh.toFixed(0)} km/h • Registado via Telemetria
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

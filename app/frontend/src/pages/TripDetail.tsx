@@ -35,9 +35,9 @@ import {
   Calendar,
   Zap,
   Navigation,
-  Mountain
+  Mountain,
+  AlertTriangle
 } from "lucide-react";
-import "./TripDetail.css";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -56,14 +56,16 @@ function formatDateTime(date: string) {
   });
 }
 
-function eventColor(severity: TripEvent["severity"]) {
+function eventColor(severity: TripEvent["severity"] | "INFO") {
   switch (severity) {
     case "CRITICAL":
       return "#ef4444";
     case "WARNING":
-      return "#eab308";
+      return "#f59e0b";
+    case "INFO":
+      return "#3b82f6";
     default:
-      return "#71717a";
+      return "#64748b";
   }
 }
 
@@ -312,11 +314,11 @@ export default function TripDetail() {
 
   if (isLoading) {
     return (
-      <div className="page">
-        <div className="empty-state">
-          <div className="empty-state-icon">⏳</div>
-          <div className="empty-state-title">A carregar viagem...</div>
-          <div className="empty-state-text">A preparar análise e gráficos.</div>
+      <div className="flex flex-col items-center justify-center py-40 text-center gap-8">
+        <div className="w-24 h-24 rounded-full border-8 border-accent/10 border-t-accent animate-spin shadow-2xl" />
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-black text-text tracking-tight">A carregar viagem...</h2>
+          <p className="text-muted text-sm font-medium animate-pulse uppercase tracking-widest">Preparando análise e gráficos de telemetria</p>
         </div>
       </div>
     );
@@ -324,19 +326,17 @@ export default function TripDetail() {
 
   if (error || !trip) {
     return (
-      <div className="page">
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Não foi possível abrir a viagem</div>
-          <div className="empty-state-text" style={{ marginBottom: 14 }}>
-            {error ?? "Viagem não encontrada."}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
-            <Link to="/trips" className="btn btn-ghost">
-              Voltar ao histórico
-            </Link>
-          </div>
+      <div className="flex flex-col items-center justify-center py-40 text-center gap-8">
+        <div className="w-24 h-24 rounded-full bg-red/10 border border-red/20 flex items-center justify-center text-red shadow-2xl">
+          <AlertTriangle size={48} />
         </div>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-black text-text tracking-tight">Não foi possível carregar a viagem</h2>
+          <p className="text-muted text-sm font-medium max-w-sm">{error ?? "Viagem não encontrada no sistema."}</p>
+        </div>
+        <button onClick={() => navigate("/trips")} className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-accent text-white font-black text-sm shadow-xl shadow-accent/20 hover:scale-105 transition-all">
+          <ChevronLeft size={18} /> Voltar ao Histórico
+        </button>
       </div>
     );
   }
@@ -432,196 +432,217 @@ export default function TripDetail() {
     }
   }
 
-  function getScoreColorClass(score: number) {
-    if (score >= 80) return "high";
-    if (score >= 50) return "mid";
-    return "low";
-  }
-
   return (
-    <div className="page page-full">
-      <div className="page-header">
-        <div>
-          <button onClick={() => navigate("/trips")} className="btn btn-ghost btn-sm" style={{ marginBottom: 8 }}>
-            <ChevronLeft size={16} /> Voltar ao Histórico
+    <div className="flex flex-col gap-12 animate-fade-in pb-20">
+      {/* HEADER ACTIONS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+          <button onClick={() => navigate("/trips")} className="flex items-center gap-2 text-muted hover:text-accent font-black text-[0.65rem] uppercase tracking-widest transition-colors mb-2 group shrink-0 w-fit">
+            <ChevronLeft size={16} className="transition-transform group-hover:-translate-x-1" /> Voltar ao Histórico
           </button>
-          <div className="page-title">📈 Análise Pós‑Viagem</div>
+          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
+            <Activity className="text-accent" size={32} /> Análise Pós‑Viagem
+          </h1>
         </div>
-        <div className="page-actions">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
-            className="btn btn-ghost btn-sm"
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-white/10 transition-all disabled:opacity-30 shadow-lg"
             onClick={exportGpx}
             disabled={exportingGpx}
           >
-            <Navigation size={14} /> {exportingGpx ? "GPX..." : "Exportar GPX"}
+            <Navigation size={16} className="text-accent" /> {exportingGpx ? "A exportar..." : "GPX"}
           </button>
           <button
-            className="btn btn-ghost btn-sm"
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-white/10 transition-all disabled:opacity-30 shadow-lg"
             onClick={exportCsv}
             disabled={exportingCsv || !telemetryRes?.data?.length}
           >
-            <Download size={14} /> {exportingCsv ? "CSV..." : "Exportar CSV"}
+            <Download size={16} className="text-accent" /> {exportingCsv ? "A exportar..." : "CSV"}
           </button>
           <button
-            className="btn btn-primary btn-sm"
+            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-accent text-white text-[0.65rem] font-black uppercase tracking-widest shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30"
             onClick={exportPdf}
             disabled={exportingPdf}
           >
-            <FileText size={14} /> {exportingPdf ? "PDF..." : "Exportar PDF"}
+            <FileText size={18} /> {exportingPdf ? "Gerando..." : "Relatório PDF"}
           </button>
         </div>
       </div>
 
-      <div ref={reportRef} className="trip-detail-container">
-        {/* Hero Section */}
-        <div className="trip-hero">
-          <div className="hero-info-main">
-            <h1>{trip.motorcycle?.name ?? "Viagem Sem Nome"}</h1>
-            <div className="hero-meta">
-              <div className="hero-meta-item">
-                <Calendar size={18} /> {formatDateTime(trip.startedAt)}
+      <div ref={reportRef} className="flex flex-col gap-10">
+        {/* HERO SECTION */}
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group">
+          <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
+          
+          <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left">
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter m-0 leading-tight">
+              {trip.motorcycle?.name ?? "Viagem Sem Nome"}
+            </h2>
+            <div className="flex flex-wrap justify-center md:justify-start gap-8">
+              <div className="flex items-center gap-2.5 text-sm font-bold text-muted">
+                <Calendar size={20} className="text-accent/60" /> {formatDateTime(trip.startedAt)}
               </div>
-              <div className="hero-meta-item">
-                <Zap size={18} /> {trip.source}
+              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-80">
+                <Zap size={20} className="text-accent/60" /> {trip.source}
               </div>
-              <div className="hero-meta-item">
-                <Activity size={18} /> {trip.status}
+              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-80">
+                <Activity size={20} className="text-accent/60" /> {trip.status}
               </div>
             </div>
           </div>
           
-          <div className="hero-scores">
+          <div className="flex gap-6 relative z-10">
             {trip.safetyScore != null && (
-              <div className="score-card">
-                <span className="score-label">Safety Score</span>
-                <span className={`score-value ${getScoreColorClass(trip.safetyScore)}`}>
+              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score</span>
+                <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.safetyScore >= 80 ? 'INFO' : (trip.safetyScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.safetyScore}
                 </span>
-                <ShieldCheck size={24} className={getScoreColorClass(trip.safetyScore)} />
+                <ShieldCheck size={32} className="opacity-20 mt-1" />
               </div>
             )}
             {trip.performanceScore != null && (
-              <div className="score-card">
-                <span className="score-label">Performance</span>
-                <span className={`score-value ${getScoreColorClass(trip.performanceScore)}`}>
+              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Performance</span>
+                <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.performanceScore >= 80 ? 'INFO' : (trip.performanceScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.performanceScore}
                 </span>
-                <Gauge size={24} className={getScoreColorClass(trip.performanceScore)} />
+                <Gauge size={32} className="opacity-20 mt-1" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Journey Row: Map + Side Stats */}
-        <div className="detail-main-grid">
-          <div className="map-section-v2">
-            <div className="map-header-v2">
-              <div className="map-title-v2">
-                <MapPin size={20} /> Rota e Eventos da Viagem
+        {/* MAIN GRID: MAP + SIDE STATS */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
+          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent shadow-lg">
+                  <MapPin size={24} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-black text-text tracking-tight uppercase tracking-widest">Mapa de Rota</span>
+                  <span className="text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-60">{routePoints.length} coordenadas registadas</span>
+                </div>
               </div>
-              <div className="page-subtitle" style={{ margin: 0 }}>
-                {routePoints.length} pontos registados
+              <div className="flex flex-wrap gap-3">
+                <span className="px-4 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent text-[0.6rem] font-black uppercase tracking-widest">Trajeto Principal</span>
+                <span className="px-4 py-1.5 rounded-xl bg-red/10 border border-red/20 text-red text-[0.6rem] font-black uppercase tracking-widest">Eventos Críticos</span>
+                <span className="px-4 py-1.5 rounded-xl bg-yellow/10 border border-yellow/20 text-yellow text-[0.6rem] font-black uppercase tracking-widest">Avisos</span>
               </div>
             </div>
-            <div className="map-shell-v2">
-              <div ref={mapContainerRef} style={{ height: "100%", width: "100%" }} />
-            </div>
-            <div className="map-legend-v2">
-              <span className="badge-pill" style={{ backgroundColor: "rgba(59,130,246,0.15)", color: "#3b82f6" }}>Rota Principal</span>
-              <span className="badge-pill" style={{ backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444" }}>Critical</span>
-              <span className="badge-pill" style={{ backgroundColor: "rgba(234,179,8,0.12)", color: "#eab308" }}>Warning</span>
-              <span className="badge-pill" style={{ backgroundColor: "rgba(113,113,122,0.12)", color: "#71717a" }}>Info</span>
+            <div className="flex-1 min-h-[550px] relative">
+              <div ref={mapContainerRef} className="absolute inset-0 grayscale-[0.2] brightness-[0.8] invert-[0.1]" />
             </div>
           </div>
 
-          <div className="sidebar-stats">
-            <StatCard icon={<Milestone size={22} />} label="Distância Total" value={summary.distanceKm?.toFixed(2) ?? "—"} unit="km" />
-            <StatCard icon={<Gauge size={22} />} label="Velocidade Máx." value={summary.maxSpeed?.toFixed(1) ?? "—"} unit="km/h" />
-            <StatCard icon={<Activity size={22} />} label="Velocidade Média" value={summary.avgSpeed?.toFixed(1) ?? "—"} unit="km/h" />
+          <div className="flex flex-col gap-5">
+            <StatCard icon={<Milestone size={28} />} label="Distância Total" value={summary.distanceKm?.toFixed(2) ?? "—"} unit="km" />
+            <StatCard icon={<Gauge size={28} />} label="Velocidade Máx." value={summary.maxSpeed?.toFixed(1) ?? "—"} unit="km/h" />
+            <StatCard icon={<Activity size={28} />} label="Velocidade Média" value={summary.avgSpeed?.toFixed(1) ?? "—"} unit="km/h" />
             
             {trip.source !== "GPX_IMPORTED" ? (
               <>
-                <StatCard icon={<Zap size={22} />} label="Inclinação Máx." value={summary.maxRoll?.toFixed(1) ?? "—"} unit="°" />
-                <StatCard icon={<Thermometer size={22} />} label="Temp. Máxima" value={summary.maxTemp?.toFixed(1) ?? "—"} unit="°C" />
+                <StatCard icon={<Zap size={28} />} label="Inclinação Máx." value={summary.maxRoll?.toFixed(1) ?? "—"} unit="°" />
+                <StatCard icon={<Thermometer size={28} />} label="Temp. Máxima" value={summary.maxTemp?.toFixed(1) ?? "—"} unit="°C" />
               </>
             ) : (
-              <StatCard icon={<Mountain size={22} />} label="Altitude Máx." value={summary.maxEle?.toFixed(0) ?? "—"} unit="m" />
+              <StatCard icon={<Mountain size={28} />} label="Altitude Máx." value={summary.maxEle?.toFixed(0) ?? "—"} unit="m" />
             )}
             
-            <StatCard icon={<MapPin size={22} />} label="Pontos GPS" value={summary.gpsPoints.toString()} unit="pts" />
+            <StatCard icon={<MapPin size={28} />} label="Pontos GPS" value={summary.gpsPoints.toString()} unit="pts" />
           </div>
         </div>
 
-        {/* Telemetry Analysis Section */}
-        <div className="telemetry-section">
-          <div className="category-header">
-            <span className="category-title">Análise de Performance</span>
-            <div className="category-line" />
+        {/* TELEMETRY ANALYSIS SECTION */}
+        <div className="flex flex-col gap-10 mt-6">
+          <div className="flex items-center gap-5">
+            <span className="text-[0.7rem] font-black uppercase tracking-[0.4em] text-accent">Análise de Performance e Dinâmica</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-accent/30 to-transparent" />
           </div>
 
-          <div className="charts-grid-v2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {trip.source === "GPX_IMPORTED" ? (
               <>
-                <ChartCard title="Perfil de Velocidade" icon={<Gauge size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Perfil de Velocidade" icon={<Gauge size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={gpxSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="speedKmh" stroke="#3b82f6" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="speedKmh" stroke="#3b82f6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Variação de Altitude" icon={<Mountain size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Variação de Altitude" icon={<Mountain size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={gpxSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="ele" stroke="#10b981" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="ele" stroke="#10b981" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
               </>
             ) : (
               <>
-                <ChartCard title="Velocidade & Ritmo" icon={<Gauge size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Velocidade & Ritmo" icon={<Gauge size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="speed" stroke="#3b82f6" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="speed" stroke="#3b82f6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Eficiência (RPM vs Velocidade)" icon={<Zap size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Eficiência (RPM vs Velocidade)" icon={<Zap size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <ScatterChart>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="speed" type="number" name="Velocidade" unit=" km/h" />
-                      <YAxis dataKey="rpm" type="number" name="RPM" />
-                      <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis dataKey="speed" type="number" name="Velocidade" unit=" km/h" tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <YAxis dataKey="rpm" type="number" name="RPM" tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        cursor={{ strokeDasharray: "3 3" }} 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                      />
                       <Scatter data={rpmVsSpeed} fill="#10b981" />
                     </ScatterChart>
                   </ResponsiveContainer>
@@ -632,77 +653,97 @@ export default function TripDetail() {
 
           {trip.source !== "GPX_IMPORTED" && (
             <>
-              <div className="category-header">
-                <span className="category-title">Saúde do Motor & Dinâmica</span>
-                <div className="category-line" />
+              <div className="flex items-center gap-5 mt-12">
+                <span className="text-[0.7rem] font-black uppercase tracking-[0.4em] text-accent">Saúde do Motor e Monitorização Avançada</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-accent/30 to-transparent" />
               </div>
 
-              <div className="charts-grid-v2">
-                <ChartCard title="Temperatura do Motor" icon={<Thermometer size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <ChartCard title="Temperatura do Motor" icon={<Thermometer size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="temp" stroke="#f97316" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="temp" stroke="#f97316" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Dinâmica de Inclinação" icon={<Activity size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Dinâmica de Inclinação" icon={<Activity size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="roll" stroke="#8b5cf6" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="roll" stroke="#8b5cf6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Pressão do Óleo" icon={<Activity size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Pressão do Óleo (Bar)" icon={<Activity size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="oil" stroke="#0ea5e9" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="oil" stroke="#0ea5e9" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Monitorização de Pneus" icon={<Activity size={18} />}>
-                  <ResponsiveContainer width="100%" height={260}>
+                <ChartCard title="Sistemas de Pneus (Pressão)" icon={<Activity size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis
                         dataKey="t"
                         type="number"
                         domain={["dataMin", "dataMax"]}
                         tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
                       />
-                      <YAxis />
-                      <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} />
-                      <Line type="monotone" dataKey="tireF" name="Frente" stroke="#10b981" dot={false} strokeWidth={3} />
-                      <Line type="monotone" dataKey="tireR" name="Trás" stroke="#f59e0b" dot={false} strokeWidth={3} />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="tireF" name="Frente" stroke="#10b981" dot={false} strokeWidth={4} animationDuration={2000} />
+                      <Line type="monotone" dataKey="tireR" name="Trás" stroke="#f59e0b" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -717,13 +758,15 @@ export default function TripDetail() {
 
 function StatCard({ icon, label, value, unit }: { icon: React.ReactNode; label: string; value: string; unit: string }) {
   return (
-    <div className="stat-card-premium">
-      <div className="stat-icon-wrapper">{icon}</div>
-      <div className="stat-info">
-        <span className="stat-label">{label}</span>
-        <div className="stat-value">
-          {value}
-          <span className="stat-unit">{unit}</span>
+    <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-7 flex items-center gap-7 group hover:border-accent/40 hover:bg-white/5 transition-all shadow-xl hover:shadow-accent/5">
+      <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform shadow-inner">
+        {icon}
+      </div>
+      <div className="flex flex-col gap-1.5 min-w-0">
+        <span className="text-[0.6rem] font-black uppercase tracking-[0.25em] text-muted opacity-60 truncate">{label}</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-black text-text tracking-tighter tabular-nums">{value}</span>
+          <span className="text-xs font-black text-muted opacity-40 uppercase tracking-widest shrink-0">{unit}</span>
         </div>
       </div>
     </div>
@@ -732,15 +775,20 @@ function StatCard({ icon, label, value, unit }: { icon: React.ReactNode; label: 
 
 function ChartCard({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="chart-card-v2">
-      <div className="chart-header-v2">
-        <div className="chart-title-v2">
-          {icon} {title}
+    <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col gap-10 group hover:border-accent/40 transition-all shadow-2xl overflow-hidden relative">
+      <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-150 transition-transform">
+        {icon}
+      </div>
+      <div className="flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-4 text-xl font-black text-text tracking-tight uppercase tracking-widest leading-none">
+          <div className="text-accent bg-accent/10 p-2.5 rounded-xl shadow-lg">{icon}</div>
+          {title}
         </div>
       </div>
-      <div style={{ flex: 1, minHeight: 240 }}>
+      <div className="flex-1 min-h-[300px] relative z-10">
         {children}
       </div>
     </div>
   );
 }
+

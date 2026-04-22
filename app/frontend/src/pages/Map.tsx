@@ -222,26 +222,18 @@ const DISTRICTS: District[] = [
   },
 ];
 
-const TYPE_COLORS: Record<PresetRoute["type"], string> = {
-  urbano:      "#3b82f6",
-  nacional:    "#f97316",
-  autoestrada: "#8b5cf6",
-  serra:       "#22c55e",
-  costeira:    "#06b6d4",
+const TYPE_MAP: Record<PresetRoute["type"], { text: string; bg: string; label: string }> = {
+  urbano:      { text: "text-blue", bg: "bg-blue/15", label: "Urbano" },
+  nacional:    { text: "text-orange", bg: "bg-orange/15", label: "Nacional" },
+  autoestrada: { text: "text-purple", bg: "bg-purple/15", label: "Autoestrada" },
+  serra:       { text: "text-green", bg: "bg-green/15", label: "Serra" },
+  costeira:    { text: "text-cyan", bg: "bg-cyan/15", label: "Costeira" },
 };
 
-const TYPE_LABELS: Record<PresetRoute["type"], string> = {
-  urbano:      "Urbano",
-  nacional:    "Nacional",
-  autoestrada: "Autoestrada",
-  serra:       "Serra",
-  costeira:    "Costeira",
-};
-
-const DIFF_COLORS: Record<PresetRoute["difficulty"], string> = {
-  "fácil":   "#22c55e",
-  "médio":   "#f97316",
-  "difícil": "#ef4444",
+const DIFF_MAP: Record<PresetRoute["difficulty"], string> = {
+  "fácil":   "text-green",
+  "médio":   "text-orange",
+  "difícil": "text-red",
 };
 
 // ─── Nominatim geocoding ──────────────────────────────────────────────────────
@@ -824,69 +816,76 @@ export default function Map() {
   }
 
   return (
-    <div className="page page-full map-routes-page">
-      <div className="page-header">
+    <div className="flex flex-col gap-6 h-[calc(100vh-140px)] animate-fade-in">
+      {/* HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 shrink-0">
         <div>
-          <div className="page-title"><MapPin size={20} style={{ marginRight: 8 }} />Rotas de Simulação</div>
-          <div className="page-subtitle">Seleciona uma rota ou define o teu próprio percurso</div>
+          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+              <MapPin size={22} />
+            </span>
+            Planeador de Rotas
+          </h1>
+          <p className="text-muted font-medium text-sm mt-1">Seleciona uma rota oficial ou define o teu próprio percurso para a simulação.</p>
         </div>
-        {/* Mode toggle */}
-        <div className="map-mode-toggle">
+
+        {/* MODE TOGGLE */}
+        <div className="flex bg-white/5 border border-white/10 p-1 rounded-2xl shadow-inner shrink-0">
           <button
-            className={`map-mode-btn${mode === "preset" ? " active" : ""}`}
+            className={`px-5 py-2.5 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${mode === "preset" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => setMode("preset")}
-          >Rotas Pré-definidas</button>
+          >Rotas Oficiais</button>
           <button
-            className={`map-mode-btn${mode === "custom" ? " active" : ""}`}
+            className={`px-5 py-2.5 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${mode === "custom" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => setMode("custom")}
-          >Rota Personalizada</button>
+          >Personalizada</button>
           <button
-            className={`map-mode-btn${mode === "gpx" ? " active" : ""}`}
+            className={`px-5 py-2.5 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${mode === "gpx" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => setMode("gpx")}
           >GPX Upload</button>
         </div>
       </div>
 
-      <div className="map-routes-layout">
-
-        {/* ── Painel esquerdo ── */}
-        {mode === "preset" ? (
-          <div className="routes-panel">
-            <div className="routes-panel-inner">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 flex-1 min-h-0">
+        {/* SIDE PANELS */}
+        <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-2xl relative min-h-0">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50" />
+          
+          {mode === "preset" ? (
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
               {DISTRICTS.map(district => (
-                <div key={district.name} className="district-group">
+                <div key={district.name} className="flex flex-col gap-2">
                   <button
-                    className="district-header"
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left group"
                     onClick={() => toggleDistrict(district.name)}
                   >
-                    <span className="district-name">{district.name}</span>
-                    <span className="district-region">{district.region}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-white tracking-tight group-hover:text-accent transition-colors">{district.name}</span>
+                      <span className="text-[0.65rem] font-bold text-muted uppercase tracking-widest opacity-60">{district.region}</span>
+                    </div>
                     {expandedDistricts.has(district.name)
-                      ? <ChevronDown size={16} className="district-chevron" />
-                      : <ChevronRight size={16} className="district-chevron" />}
+                      ? <ChevronDown size={18} className="text-muted" />
+                      : <ChevronRight size={18} className="text-muted" />}
                   </button>
 
                   {expandedDistricts.has(district.name) && (
-                    <div className="district-routes">
+                    <div className="flex flex-col gap-2 pl-2">
                       {district.routes.map(route => (
                         <button
                           key={route.id}
-                          className={`route-card${selectedRoute?.id === route.id ? " selected" : ""}`}
+                          className={`w-full p-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${selectedRoute?.id === route.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-black/20 border-white/5 hover:border-white/10"}`}
                           onClick={() => selectRoute(route)}
                         >
-                          <div className="route-card-top">
-                            <span className="route-name">{route.name}</span>
-                            <span
-                              className="route-type-badge"
-                              style={{ background: TYPE_COLORS[route.type] + "22", color: TYPE_COLORS[route.type] }}
-                            >
-                              {TYPE_LABELS[route.type]}
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[0.8rem] font-black text-white leading-tight">{route.name}</span>
+                            <span className={`px-2 py-0.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest shrink-0 ${TYPE_MAP[route.type].bg} ${TYPE_MAP[route.type].text}`}>
+                              {TYPE_MAP[route.type].label}
                             </span>
                           </div>
-                          <div className="route-card-meta">
-                            <span>{route.distance}</span>
-                            <span>{route.duration}</span>
-                            <span style={{ color: DIFF_COLORS[route.difficulty] }}>● {route.difficulty}</span>
+                          <div className="flex items-center gap-4 text-[0.65rem] font-bold text-muted uppercase tracking-widest opacity-60">
+                            <span className="flex items-center gap-1"><Navigation size={10} /> {route.distance}</span>
+                            <span className="flex items-center gap-1">⏱ {route.duration}</span>
+                            <span className={`flex items-center gap-1 ${DIFF_MAP[route.difficulty]}`}>● {route.difficulty}</span>
                           </div>
                         </button>
                       ))}
@@ -895,244 +894,236 @@ export default function Map() {
                 </div>
               ))}
             </div>
-          </div>
-        ) : mode === "custom" ? (
-          /* ── Custom route panel ── */
-          <div className="routes-panel custom-route-panel">
-            <div className="custom-route-inner">
-              <div className="custom-route-title">
-                <Navigation size={16} />
-                Definir Percurso
+          ) : mode === "custom" ? (
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar">
+              <div>
+                <div className="flex items-center gap-2 text-white font-black tracking-tight mb-2">
+                  <Navigation size={18} className="text-accent" />
+                  <span>Definir Percurso</span>
+                </div>
+                <p className="text-[0.75rem] font-medium text-muted leading-relaxed">
+                  Pesquisa um endereço, usa a tua localização atual ou clica no mapa para definir os pontos.
+                </p>
               </div>
-              <p className="custom-route-hint">
-                Pesquisa um endereço, usa a tua localização atual ou clica no mapa para definir os pontos.
-              </p>
 
               {/* Origin */}
-              <div className="custom-point-group">
-                <div className="custom-point-label origin-label">
-                  <span className="point-dot green-dot" />
+              <div className="flex flex-col gap-4 p-5 rounded-3xl bg-black/20 border border-white/5">
+                <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-green">
+                  <span className="w-2 h-2 rounded-full bg-green animate-pulse" />
                   Origem
                 </div>
-                <div className="custom-point-inputs">
-                  <div className="custom-search-row">
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
                     <input
-                      className="control control-sm"
+                      className="flex-1 bg-black/20 border border-white/5 rounded-xl py-2.5 px-4 text-xs font-bold text-text focus:outline-none focus:border-accent/40 placeholder:text-muted/40 transition-all"
                       placeholder="Pesquisar endereço..."
                       value={startInput}
                       onChange={e => setStartInput(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && searchAddress(startInput, "start")}
                     />
                     <button
-                      className="btn btn-sm"
-                      title="Pesquisar"
+                      className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-muted hover:bg-white/10 hover:text-text transition-all disabled:opacity-30"
                       onClick={() => searchAddress(startInput, "start")}
                       disabled={geoLoading === "start"}
                     >
-                      {geoLoading === "start" ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                      {geoLoading === "start" ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                     </button>
                     <button
-                      className="btn btn-sm btn-primary"
-                      title="Usar localização atual"
+                      className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent hover:bg-accent/20 transition-all disabled:opacity-30"
                       onClick={() => useMyLocation("start")}
                       disabled={geoLoading === "start"}
                     >
-                      <Crosshair size={14} />
+                      <Crosshair size={16} />
                     </button>
                   </div>
                   <button
-                    className={`btn btn-sm btn-block${clickMode === "start" ? " btn-active-click" : ""}`}
+                    className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-widest transition-all ${clickMode === "start" ? "bg-accent text-white border-accent shadow-lg shadow-accent/20" : "bg-white/5 border-white/10 text-muted hover:text-text hover:bg-white/10"}`}
                     onClick={() => setClickMode(prev => prev === "start" ? null : "start")}
                   >
-                    <MapPin size={13} />
-                    {clickMode === "start" ? "A aguardar clique no mapa..." : "Clicar no mapa"}
+                    <MapPin size={14} />
+                    {clickMode === "start" ? "A aguardar clique..." : "Clicar no mapa"}
                   </button>
                   {customStart && (
-                    <div className="custom-point-result">
-                      <span className="custom-point-addr">{customStart.label.split(",").slice(0, 2).join(",")}</span>
-                      <button className="btn-icon-clear" onClick={() => { setCustomStart(null); setStartInput(""); }}>
-                        <X size={12} />
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-green/5 border border-green/10">
+                      <span className="text-[0.7rem] font-bold text-green/80 truncate pr-2">{customStart.label.split(",").slice(0, 2).join(",")}</span>
+                      <button className="text-muted hover:text-red transition-colors" onClick={() => { setCustomStart(null); setStartInput(""); }}>
+                        <X size={14} />
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="custom-route-divider" />
-
               {/* Destination */}
-              <div className="custom-point-group">
-                <div className="custom-point-label dest-label">
-                  <span className="point-dot red-dot" />
+              <div className="flex flex-col gap-4 p-5 rounded-3xl bg-black/20 border border-white/5">
+                <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-red">
+                  <span className="w-2 h-2 rounded-full bg-red animate-pulse" />
                   Destino
                 </div>
-                <div className="custom-point-inputs">
-                  <div className="custom-search-row">
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
                     <input
-                      className="control control-sm"
+                      className="flex-1 bg-black/20 border border-white/5 rounded-xl py-2.5 px-4 text-xs font-bold text-text focus:outline-none focus:border-accent/40 placeholder:text-muted/40 transition-all"
                       placeholder="Pesquisar endereço..."
                       value={endInput}
                       onChange={e => setEndInput(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && searchAddress(endInput, "end")}
                     />
                     <button
-                      className="btn btn-sm"
-                      title="Pesquisar"
+                      className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-muted hover:bg-white/10 hover:text-text transition-all disabled:opacity-30"
                       onClick={() => searchAddress(endInput, "end")}
                       disabled={geoLoading === "end"}
                     >
-                      {geoLoading === "end" ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                      {geoLoading === "end" ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                     </button>
                     <button
-                      className="btn btn-sm btn-primary"
-                      title="Usar localização atual"
+                      className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent hover:bg-accent/20 transition-all disabled:opacity-30"
                       onClick={() => useMyLocation("end")}
                       disabled={geoLoading === "end"}
                     >
-                      <Crosshair size={14} />
+                      <Crosshair size={16} />
                     </button>
                   </div>
                   <button
-                    className={`btn btn-sm btn-block${clickMode === "end" ? " btn-active-click" : ""}`}
+                    className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-widest transition-all ${clickMode === "end" ? "bg-accent text-white border-accent shadow-lg shadow-accent/20" : "bg-white/5 border-white/10 text-muted hover:text-text hover:bg-white/10"}`}
                     onClick={() => setClickMode(prev => prev === "end" ? null : "end")}
                   >
-                    <MapPin size={13} />
-                    {clickMode === "end" ? "A aguardar clique no mapa..." : "Clicar no mapa"}
+                    <MapPin size={14} />
+                    {clickMode === "end" ? "A aguardar clique..." : "Clicar no mapa"}
                   </button>
                   {customEnd && (
-                    <div className="custom-point-result">
-                      <span className="custom-point-addr">{customEnd.label.split(",").slice(0, 2).join(",")}</span>
-                      <button className="btn-icon-clear" onClick={() => { setCustomEnd(null); setEndInput(""); }}>
-                        <X size={12} />
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-red/5 border border-red/10">
+                      <span className="text-[0.7rem] font-bold text-red/80 truncate pr-2">{customEnd.label.split(",").slice(0, 2).join(",")}</span>
+                      <button className="text-muted hover:text-red transition-colors" onClick={() => { setCustomEnd(null); setEndInput(""); }}>
+                        <X size={14} />
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {geoError && <div className="alert alert-danger" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>{geoError}</div>}
+              {geoError && <div className="p-3 rounded-xl bg-red/10 border border-red/20 text-red text-[0.7rem] font-bold">{geoError}</div>}
 
               {customStart && customEnd && (
-                <div className="custom-route-actions">
-                  <button className="btn btn-sm" onClick={clearCustomRoute}>
-                    <RotateCcw size={13} /> Limpar
+                <div className="flex gap-3 pt-2">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/5 border border-white/10 text-[0.65rem] font-black uppercase tracking-widest text-muted hover:text-text transition-all" onClick={clearCustomRoute}>
+                    <RotateCcw size={14} /> Limpar
                   </button>
                   <button
-                    className={`btn btn-sm ${customSent ? "btn-success" : "btn-primary"}`}
+                    className={`flex-[2] flex items-center justify-center gap-2 py-3 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest transition-all shadow-xl ${customSent ? "bg-green text-white shadow-green/20" : "bg-accent text-white shadow-accent/20"}`}
                     onClick={useCustomRoute}
                     disabled={customLoadingPreview}
                   >
                     {customLoadingPreview
-                      ? <><Loader2 size={13} className="animate-spin" /> A calcular...</>
-                      : <><Play size={13} />{customSent ? "Rota enviada ✓" : "Usar esta rota"}</>
+                      ? <><Loader2 size={14} className="animate-spin" /> Calculando...</>
+                      : <><Play size={14} />{customSent ? "Enviada ✓" : "Usar Rota"}</>
                     }
                   </button>
                 </div>
               )}
-
-              {clickMode && (
-                <div className="click-mode-hint">
-                  Clica no mapa para definir o ponto de {clickMode === "start" ? "origem" : "destino"}
-                </div>
-              )}
             </div>
-          </div>
-        ) : (
-          /* ── GPX upload panel ── */
-          <GpxUploadTab
-            isActive={mode === "gpx"}
-            gpxRoute={gpxRoute}
-            gpxUploading={gpxUploading}
-            gpxError={gpxError}
-            gpxProcessing={gpxProcessing}
-            gpxSending={gpxSending}
-            gpxSent={gpxSent}
-            uploadProgress={gpxUploadProgress}
-            onFileSelect={handleGpxFileSelect}
-            onClearRoute={clearGpxRoute}
-            onSendToSimulator={sendGpxToSimulator}
-            onError={handleGpxError}
-            onMapRender={handleGpxMapRender}
-          />
-        )}
+          ) : (
+            <GpxUploadTab
+              isActive={mode === "gpx"}
+              gpxRoute={gpxRoute}
+              gpxUploading={gpxUploading}
+              gpxError={gpxError}
+              gpxProcessing={gpxProcessing}
+              gpxSending={gpxSending}
+              gpxSent={gpxSent}
+              uploadProgress={gpxUploadProgress}
+              onFileSelect={handleGpxFileSelect}
+              onClearRoute={clearGpxRoute}
+              onSendToSimulator={sendGpxToSimulator}
+              onError={handleGpxError}
+              onMapRender={handleGpxMapRender}
+            />
+          )}
+        </div>
 
-        {/* ── Mapa ── */}
-        <div className="map-routes-right">
-          <div className="map-shell" style={{ flex: 1, minHeight: 0 }}>
-            <div ref={containerRef} className="map-canvas" style={{ minHeight: 0, height: "100%" }} />
+        {/* MAP AREA */}
+        <div className="relative flex flex-col gap-6 overflow-hidden">
+          <div className="relative flex-1 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group">
+            <div ref={containerRef} className="w-full h-full z-0" />
+            
+            {/* MAP OVERLAYS */}
             {mode === "preset" && !selectedRoute && (
-              <div className="map-overlay">
-                <div className="map-overlay-icon">🗺️</div>
-                <div className="map-overlay-title">Seleciona uma rota</div>
-                <div className="map-overlay-text">Escolhe um percurso na lista para ver o preview aqui.</div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10 animate-fade-in">
+                <div className="text-7xl opacity-50">🗺️</div>
+                <div className="text-center flex flex-col gap-2">
+                  <h3 className="text-2xl font-black text-white tracking-tight m-0">Seleciona uma rota</h3>
+                  <p className="text-sm font-medium text-muted max-w-xs m-0">Escolhe um percurso na lista lateral para pré-visualizar aqui.</p>
+                </div>
               </div>
             )}
             {mode === "custom" && !customStart && !customEnd && (
-              <div className="map-overlay">
-                <div className="map-overlay-icon">📍</div>
-                <div className="map-overlay-title">Define o teu percurso</div>
-                <div className="map-overlay-text">Pesquisa um endereço, usa o GPS ou clica no mapa para definir origem e destino.</div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10 animate-fade-in">
+                <div className="text-7xl opacity-50">📍</div>
+                <div className="text-center flex flex-col gap-2">
+                  <h3 className="text-2xl font-black text-white tracking-tight m-0">Define o teu percurso</h3>
+                  <p className="text-sm font-medium text-muted max-w-xs m-0">Pesquisa endereços ou clica diretamente no mapa para marcar pontos.</p>
+                </div>
               </div>
             )}
             {mode === "gpx" && !gpxRoute && (
-              <div className="map-overlay">
-                <div className="map-overlay-icon">📁</div>
-                <div className="map-overlay-title">Carrega um ficheiro GPX</div>
-                <div className="map-overlay-text">Seleciona um ficheiro GPX para importar uma rota e visualizá-la no mapa.</div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10 animate-fade-in">
+                <div className="text-7xl opacity-50">📁</div>
+                <div className="text-center flex flex-col gap-2">
+                  <h3 className="text-2xl font-black text-white tracking-tight m-0">Carrega um ficheiro GPX</h3>
+                  <p className="text-sm font-medium text-muted max-w-xs m-0">Importa rotas externas para simular em trajetos reais.</p>
+                </div>
               </div>
             )}
-            {(loadingPreview ||
-              customLoadingPreview ||
-              (mode === "gpx" && (gpxUploading || gpxProcessing))) && (
-              <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.55)", borderRadius: 8, padding: "6px 12px", display: "flex", alignItems: "center", gap: 6, color: "#fff", fontSize: "0.8rem", zIndex: 1000 }}>
-                <Loader2 size={14} className="animate-spin" />
-                {mode === "gpx" && gpxUploading
-                  ? "A enviar ficheiro..."
-                  : mode === "gpx" && gpxProcessing
-                    ? "A processar GPX..."
-                    : "A calcular rota..."}
+
+            {/* LOADING OVERLAY */}
+            {(loadingPreview || customLoadingPreview || (mode === "gpx" && (gpxUploading || gpxProcessing))) && (
+              <div className="absolute top-6 right-6 flex items-center gap-3 px-5 py-3 bg-slate-900/90 border border-white/10 rounded-2xl shadow-2xl text-white text-xs font-black uppercase tracking-widest z-50 animate-bounce-subtle">
+                <Loader2 size={16} className="animate-spin text-accent" />
+                {mode === "gpx" && gpxUploading ? "A enviar..." : mode === "gpx" && gpxProcessing ? "A processar..." : "A calcular..."}
               </div>
             )}
+
+            {/* CLICK MODE HINT */}
             {clickMode && (
-              <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "rgba(91,106,240,0.92)", borderRadius: 20, padding: "8px 18px", color: "#fff", fontSize: "0.82rem", fontWeight: 600, zIndex: 1000, pointerEvents: "none" }}>
-                Clica no mapa para definir o ponto de {clickMode === "start" ? "origem 🟢" : "destino 🔴"}
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-accent text-white rounded-[2rem] shadow-2xl shadow-accent/40 text-sm font-black uppercase tracking-[0.1em] z-50 flex items-center gap-3 animate-fade-in">
+                <MapPin size={18} />
+                Clica no mapa para definir {clickMode === "start" ? "A ORIGEM 🟢" : "O DESTINO 🔴"}
               </div>
             )}
           </div>
 
-          {/* Info da rota selecionada (preset) */}
+          {/* ROUTE DETAIL BAR (PRESET) */}
           {mode === "preset" && selectedRoute && (
-            <div className="route-detail-bar">
-              <div className="route-detail-info">
-                <div className="route-detail-name">{selectedRoute.name}</div>
-                <div className="route-detail-desc">{selectedRoute.description}</div>
-                <div className="route-detail-stats">
-                  <span><Navigation size={13} /> {selectedRoute.distance}</span>
-                  <span>⏱ {selectedRoute.duration}</span>
-                  <span style={{ color: TYPE_COLORS[selectedRoute.type] }}>
-                    ● {TYPE_LABELS[selectedRoute.type]}
+            <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shrink-0 animate-slide-up">
+              <div className="flex-1 flex flex-col gap-2">
+                <div className="text-xl font-black text-white tracking-tight leading-none">{selectedRoute.name}</div>
+                <div className="text-sm font-medium text-muted leading-relaxed max-w-2xl">{selectedRoute.description}</div>
+                <div className="flex flex-wrap items-center gap-6 mt-1 text-[0.7rem] font-black uppercase tracking-widest text-muted">
+                  <span className="flex items-center gap-1.5"><Navigation size={14} className="text-accent" /> {selectedRoute.distance}</span>
+                  <span className="flex items-center gap-1.5 opacity-60">⏱ {selectedRoute.duration}</span>
+                  <span className={`flex items-center gap-1.5 ${TYPE_MAP[selectedRoute.type].text}`}>
+                    ● {TYPE_MAP[selectedRoute.type].label}
                   </span>
-                  <span style={{ color: DIFF_COLORS[selectedRoute.difficulty] }}>
+                  <span className={`flex items-center gap-1.5 ${DIFF_MAP[selectedRoute.difficulty]}`}>
                     ● {selectedRoute.difficulty}
                   </span>
                 </div>
               </div>
-              <div className="route-detail-actions">
-                <button className="btn" onClick={() => { setSelectedRoute(null); setSent(false); }}>
-                  <RotateCcw size={14} /> Limpar
+              <div className="flex gap-3 shrink-0">
+                <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-black text-muted uppercase tracking-widest hover:text-text hover:bg-white/10 transition-all" onClick={() => { setSelectedRoute(null); setSent(false); }}>
+                  <RotateCcw size={16} /> Limpar
                 </button>
                 <button
-                  className={`btn ${sent ? "btn-success" : "btn-primary"}`}
+                  className={`flex items-center gap-3 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl ${sent ? "bg-green text-white shadow-green/20" : "bg-accent text-white shadow-accent/20 hover:scale-105"}`}
                   onClick={useRoute}
                 >
-                  <Play size={14} />
+                  <Play size={16} />
                   {sent ? "Rota enviada ✓" : "Usar esta rota"}
                 </button>
               </div>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

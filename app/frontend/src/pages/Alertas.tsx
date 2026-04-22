@@ -29,7 +29,6 @@ import {
   History,
   LayoutList
 } from "lucide-react";
-import "./Alertas.css";
 
 type StatusFilter = "all" | "unread" | "ack";
 type SeverityFilter = "all" | "INFO" | "WARNING" | "CRITICAL";
@@ -48,19 +47,19 @@ function formatDateTime(date: string) {
   });
 }
 
-function severityColor(sev: AlertItem["severity"]) {
+function severityColorClass(sev: AlertItem["severity"]) {
   switch (sev) {
-    case "CRITICAL": return "var(--red)";
-    case "WARNING": return "var(--yellow)";
-    default: return "var(--muted)";
+    case "CRITICAL": return "text-red";
+    case "WARNING": return "text-yellow";
+    default: return "text-muted";
   }
 }
 
-function severityDotColor(sev: AlertItem["severity"]) {
+function severityDotColorClass(sev: AlertItem["severity"]) {
   switch (sev) {
-    case "CRITICAL": return "#ef4444";
-    case "WARNING": return "#f59e0b";
-    default: return "#3b82f6";
+    case "CRITICAL": return "bg-red";
+    case "WARNING": return "bg-yellow";
+    default: return "bg-blue";
   }
 }
 
@@ -80,9 +79,9 @@ function typeIcon(type?: AlertType): string {
 
 function SeverityIcon({ severity }: { severity: AlertSeverity }) {
   switch (severity) {
-    case "CRITICAL": return <AlertCircle size={18} color="var(--red)" />;
-    case "WARNING": return <AlertTriangle size={18} color="var(--yellow)" />;
-    default: return <Info size={18} color="var(--muted)" />;
+    case "CRITICAL": return <AlertCircle size={18} className="text-red" />;
+    case "WARNING": return <AlertTriangle size={18} className="text-yellow" />;
+    default: return <Info size={18} className="text-muted" />;
   }
 }
 
@@ -244,75 +243,77 @@ export default function Alertas() {
   const hasFilters = status !== "all" || severity !== "all" || type !== "all" || deviceFilter !== "all" || dateFrom || dateTo || query;
 
   return (
-    <div className="page page-full">
-      <div className="page-header">
-        <div className="header-main">
-          <div className="page-title">
-            <span className="title-icon">🔔</span>
+    <div className="flex flex-col gap-8 h-[calc(100vh-140px)] animate-fade-in">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+        <div>
+          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent text-xl">🔔</span>
             Alertas & Eventos
-          </div>
-          <div className="page-subtitle">
-            <span style={{ color: "var(--accent)" }}>{allAlerts.filter((a) => a.status === "unread").length} por ler</span>
-            &nbsp;·&nbsp; {filtered.length} filtrados
-            &nbsp;·&nbsp; {allAlerts.length} total
+          </h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-accent font-black text-[0.65rem] uppercase tracking-widest bg-accent/10 px-2 py-0.5 rounded-lg">
+              {allAlerts.filter((a) => a.status === "unread").length} por ler
+            </span>
+            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">•</span>
+            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">{filtered.length} filtrados</span>
+            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">•</span>
+            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">{allAlerts.length} total</span>
           </div>
         </div>
-        <div className="page-actions">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            className="btn btn-ghost btn-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-30 group"
             onClick={loadBackendAlerts}
             disabled={backendLoading}
           >
-            <RefreshCw size={14} className={backendLoading ? "spin" : ""} />
+            <RefreshCw size={14} className={`${backendLoading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`} />
             Atualizar
           </button>
           {allAlerts.filter((a) => a.status === "unread").length > 0 && (
             <button
-              className="btn btn-ghost btn-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent/10 border border-accent/20 text-[0.65rem] font-black text-accent uppercase tracking-widest hover:bg-accent/20 transition-all"
               onClick={() => { markAllRead(); setAlerts(loadAlerts()); }}
             >
               <CheckCircle size={14} />
               Marcar lidas
             </button>
           )}
-          <div className="status-group">
+          <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
             <button
-              className={`btn btn-sm ${viewMode === "list" ? "btn-primary" : "btn-ghost"}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.6rem] font-black uppercase tracking-widest transition-all ${viewMode === "list" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text"}`}
               onClick={() => setViewMode("list")}
             >
-              <LayoutList size={14} />
-              Lista
+              <LayoutList size={14} /> Lista
             </button>
             <button
-              className={`btn btn-sm ${viewMode === "timeline" ? "btn-primary" : "btn-ghost"}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.6rem] font-black uppercase tracking-widest transition-all ${viewMode === "timeline" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text"}`}
               onClick={() => setViewMode("timeline")}
             >
-              <History size={14} />
-              Timeline
+              <History size={14} /> Timeline
             </button>
           </div>
         </div>
       </div>
 
-      <div className="alerts-container">
-        {/* Filter Bar */}
-        <div className="alerts-filter-bar">
-          <div className="search-input-wrapper">
-            <Search size={18} className="search-icon" />
+      <div className="flex flex-col gap-6 flex-1 min-h-0">
+        {/* FILTER BAR */}
+        <div className="p-4 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col xl:flex-row gap-4 items-stretch xl:items-center shadow-xl shrink-0">
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
             <input
-              className="control"
+              className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-text focus:outline-none focus:border-accent/40 placeholder:text-muted/40 transition-all"
               placeholder="Pesquisar mensagens, dispositivos..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           
-          <div className="filter-group">
+          <div className="flex flex-wrap gap-3">
             <select
-              className="control control-sm"
+              className="bg-black/20 border border-white/5 rounded-xl py-2 px-4 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[140px]"
               value={status}
               onChange={(e) => setStatus(e.target.value as StatusFilter)}
-              style={{ width: 130 }}
             >
               <option value="all">Estado: Todos</option>
               <option value="unread">Por ler</option>
@@ -320,10 +321,9 @@ export default function Alertas() {
             </select>
             
             <select
-              className="control control-sm"
+              className="bg-black/20 border border-white/5 rounded-xl py-2 px-4 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[140px]"
               value={severity}
               onChange={(e) => setSeverity(e.target.value as SeverityFilter)}
-              style={{ width: 130 }}
             >
               <option value="all">Severidade</option>
               <option value="CRITICAL">CRITICAL</option>
@@ -332,25 +332,21 @@ export default function Alertas() {
             </select>
 
             <select
-              className="control control-sm"
+              className="bg-black/20 border border-white/5 rounded-xl py-2 px-4 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[160px]"
               value={type}
               onChange={(e) => setType(e.target.value as TypeFilter)}
-              style={{ width: 140 }}
             >
               <option value="all">Tipo de Evento</option>
               {types.map((t) => (
-                <option key={t} value={t}>
-                  {ALERT_TYPE_LABELS[t]}
-                </option>
+                <option key={t} value={t}>{ALERT_TYPE_LABELS[t]}</option>
               ))}
             </select>
 
             {devices.length > 1 && (
               <select
-                className="control control-sm"
+                className="bg-black/20 border border-white/5 rounded-xl py-2 px-4 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[160px]"
                 value={deviceFilter}
                 onChange={(e) => setDeviceFilter(e.target.value)}
-                style={{ width: 150 }}
               >
                 <option value="all">Todos Dispositivos</option>
                 {devices.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -358,85 +354,84 @@ export default function Alertas() {
             )}
 
             {hasFilters && (
-              <button className="btn btn-ghost btn-sm" onClick={clearFilters}>
-                <X size={14} />
-                Limpar
+              <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black text-red uppercase tracking-widest hover:bg-red/10 transition-all" onClick={clearFilters}>
+                <X size={14} /> Limpar
               </button>
             )}
           </div>
         </div>
 
-        {/* Main Layout */}
-        <div className="alerts-main-layout">
-          {/* List Pane */}
-          <div className="alerts-list-pane custom-scrollbar">
-            {filtered.length === 0 ? (
-              <div className="empty-pane">
-                <div className="empty-icon-v3">📭</div>
-                <div className="empty-text-v3">
-                  <h3>Sem alertas encontrados</h3>
-                  <p>Tenta ajustar os filtros para encontrar o que procuras.</p>
+        {/* MAIN CONTENT GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 flex-1 min-h-0">
+          {/* LIST PANE */}
+          <div className="flex flex-col gap-4 overflow-hidden">
+            <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3 custom-scrollbar">
+              {filtered.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 opacity-30 p-10 text-center">
+                  <div className="text-6xl">📭</div>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-xl font-black text-white m-0 tracking-tight">Sem alertas encontrados</h3>
+                    <p className="text-sm font-medium m-0">Ajusta os filtros para encontrar o que procuras.</p>
+                  </div>
                 </div>
-              </div>
-            ) : viewMode === "list" ? (
-              paginated.map((a) => (
-                <button
-                  key={a.id}
-                  className={`alert-card-v3 ${selectedId === a.id ? "selected" : ""} ${a.status === "unread" ? "unread" : ""}`}
-                  onClick={() => setSelectedId(a.id)}
-                >
-                  <div className="alert-v3-header">
-                    <div className="alert-v3-title-row">
-                      <span className="alert-v3-icon">{typeIcon(a.type)}</span>
-                      <span className="alert-v3-title">{a.title}</span>
-                    </div>
-                    <span className="alert-v3-time">{formatDateTime(a.timestamp)}</span>
-                  </div>
-                  <div className="alert-v3-message">{a.message}</div>
-                  <div className="alert-v3-footer">
-                    <span className="alert-v3-device">{a.motoModel || a.deviceId || "Sistema"}</span>
-                    <SeverityIcon severity={a.severity} />
-                  </div>
-                </button>
-              ))
-            ) : (
-              /* Timeline View */
-              <div className="timeline-v3">
-                {paginated.map((a) => (
-                  <div key={a.id} className="timeline-item-v3">
-                    <div 
-                      className="timeline-dot-v3" 
-                      style={{ background: severityDotColor(a.severity) }}
-                    />
-                    <div 
-                      className={`timeline-card-v3 ${selectedId === a.id ? "selected" : ""}`}
-                      onClick={() => setSelectedId(a.id)}
-                    >
-                      <div className="alert-v3-header">
-                        <div className="alert-v3-title-row">
-                          <span className="alert-v3-title">{typeIcon(a.type)} {a.title}</span>
+              ) : viewMode === "list" ? (
+                paginated.map((a) => (
+                  <button
+                    key={a.id}
+                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3 overflow-hidden group ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-surface/40 border-white/5 hover:border-white/20"}`}
+                    onClick={() => setSelectedId(a.id)}
+                  >
+                    {a.status === "unread" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">
+                          {typeIcon(a.type)}
                         </div>
-                        <span className="alert-v3-time">{formatDateTime(a.timestamp)}</span>
+                        <span className="text-sm font-black text-white tracking-tight group-hover:text-accent transition-colors">{a.title}</span>
                       </div>
-                      <div className="alert-v3-message" style={{ marginTop: 4 }}>{a.message}</div>
+                      <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest whitespace-nowrap opacity-60">{formatDateTime(a.timestamp).split(',')[1]}</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                    <p className="text-[0.75rem] font-medium text-muted m-0 line-clamp-2 leading-relaxed">{a.message}</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[0.6rem] font-black text-muted uppercase tracking-[0.1em] opacity-40">{a.motoModel || a.deviceId || "Sistema"}</span>
+                      <SeverityIcon severity={a.severity} />
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="relative pl-10 flex flex-col gap-8 py-6">
+                  <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-white/10" />
+                  {paginated.map((a) => (
+                    <div key={a.id} className="relative group">
+                      <div className={`absolute -left-[31px] top-2 w-5 h-5 rounded-full border-4 border-background z-10 transition-transform group-hover:scale-125 ${severityDotColorClass(a.severity)}`} />
+                      <button 
+                        className={`w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-2 ${selectedId === a.id ? "bg-accent/10 border-accent/40" : "bg-surface/40 border-white/5 hover:border-white/20"}`}
+                        onClick={() => setSelectedId(a.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black text-white tracking-tight">{typeIcon(a.type)} {a.title}</span>
+                          <span className="text-[0.65rem] font-black text-muted opacity-60 uppercase tracking-widest">{formatDateTime(a.timestamp).split(',')[1]}</span>
+                        </div>
+                        <p className="text-[0.75rem] font-medium text-muted m-0 line-clamp-1">{a.message}</p>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {totalPages > 1 && (
-              <div className="pagination-v3">
+              <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl shrink-0">
                 <button 
-                  className="btn btn-ghost btn-sm" 
+                  className="px-4 py-2 rounded-xl text-[0.6rem] font-black uppercase tracking-widest text-muted hover:text-white disabled:opacity-30" 
                   onClick={() => setPage((p) => Math.max(1, p - 1))} 
                   disabled={page === 1}
                 >
                   Anterior
                 </button>
-                <span className="page-info">{page} / {totalPages}</span>
+                <span className="text-[0.7rem] font-black text-accent uppercase tracking-widest">{page} / {totalPages}</span>
                 <button 
-                  className="btn btn-ghost btn-sm" 
+                  className="px-4 py-2 rounded-xl text-[0.6rem] font-black uppercase tracking-widest text-muted hover:text-white disabled:opacity-30" 
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
                   disabled={page === totalPages}
                 >
@@ -446,87 +441,82 @@ export default function Alertas() {
             )}
           </div>
 
-          {/* Detail Pane */}
-          <div className="alerts-detail-pane">
+          {/* DETAIL PANE */}
+          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col shadow-2xl relative min-h-0">
             {!selected ? (
-              <div className="empty-pane">
-                <div className="empty-icon-v3">🧾</div>
-                <div className="empty-text-v3">
-                  <h3>Seleciona um alerta</h3>
-                  <p>Escolhe um item na lista para ver todos os detalhes e métricas.</p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-8 p-10 opacity-30 text-center">
+                <div className="text-7xl">🧾</div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-2xl font-black text-white m-0 tracking-tight">Seleciona um alerta</h3>
+                  <p className="text-sm font-medium m-0 max-w-xs">Escolhe um item na lista para ver todos os detalhes e métricas de telemetria.</p>
                 </div>
               </div>
             ) : (
               <>
-                <div className="detail-header">
-                  <div className="detail-header-top">
-                    <div className="detail-main-info">
-                      <h2>
-                        {typeIcon(selected.type)} 
+                <div className="p-8 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent shrink-0">
+                  <div className="flex items-start justify-between gap-6 mb-6">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <h2 className="text-3xl font-black text-white tracking-tighter m-0 flex items-center gap-4">
+                        <span className="text-4xl">{typeIcon(selected.type)}</span>
                         {selected.title}
                       </h2>
-                      <div className="page-subtitle">
-                        <Clock size={14} /> {formatDateTime(selected.timestamp)}
-                        {selected.motoModel && <> &nbsp;·&nbsp; {selected.motoModel}</>}
+                      <div className="flex items-center gap-3 text-muted text-[0.7rem] font-bold uppercase tracking-widest opacity-60">
+                        <Clock size={14} className="text-accent/60" /> {formatDateTime(selected.timestamp)}
+                        {selected.motoModel && <><span className="text-accent/30">•</span> {selected.motoModel}</>}
                       </div>
                     </div>
-                    <div className="detail-actions">
-                      <button
-                        className={`btn btn-sm ${selected.status === "unread" ? "btn-primary" : "btn-ghost"}`}
-                        onClick={() => setAlert({ ...selected, status: selected.status === "unread" ? "ack" : "unread" })}
-                      >
-                        {selected.status === "unread" ? <CheckCircle size={14} /> : <Search size={14} />}
-                        {selected.status === "unread" ? "Reconhecer" : "Marcar não lido"}
-                      </button>
-                    </div>
+                    <button
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${selected.status === "unread" ? "bg-accent text-white shadow-xl shadow-accent/20" : "bg-white/5 border border-white/10 text-muted hover:text-text"}`}
+                      onClick={() => setAlert({ ...selected, status: selected.status === "unread" ? "ack" : "unread" })}
+                    >
+                      {selected.status === "unread" ? <CheckCircle size={14} /> : <Search size={14} />}
+                      {selected.status === "unread" ? "Reconhecer" : "Marcar não lido"}
+                    </button>
                   </div>
 
-                  <div className="detail-badges">
-                    <span className="badge-pill" style={{ 
-                      color: severityColor(selected.severity), 
-                      border: `1px solid ${severityColor(selected.severity)}40`, 
-                      background: `${severityColor(selected.severity)}10` 
-                    }}>
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[0.6rem] font-black uppercase tracking-widest ${severityColorClass(selected.severity)} border-current/20 bg-current/10`}>
                       <SeverityIcon severity={selected.severity} />
                       {selected.severity}
                     </span>
                     {selected.type && (
-                      <span className="badge-pill" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
-                        <Activity size={14} />
-                        {ALERT_TYPE_LABELS[selected.type]}
+                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent text-[0.6rem] font-black uppercase tracking-widest">
+                        <Activity size={14} /> {ALERT_TYPE_LABELS[selected.type]}
                       </span>
                     )}
                     {selected.deviceId && (
-                      <span className="badge-pill" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>
+                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-muted text-[0.6rem] font-black uppercase tracking-widest">
                         ID: {selected.deviceId}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="detail-content custom-scrollbar">
-                  <div className="detail-section">
-                    <div className="detail-section-title">Mensagem</div>
-                    <div className="detail-message-box">
+                <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-10 custom-scrollbar">
+                  <div className="flex flex-col gap-4">
+                    <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Mensagem</span>
+                    <div className="p-8 rounded-3xl bg-black/20 border border-white/5 text-lg font-bold text-text leading-relaxed shadow-inner">
                       {selected.message}
                     </div>
                   </div>
 
                   {selected.meta && Object.keys(selected.meta).length > 0 && (
-                    <div className="detail-section">
-                      <div className="detail-section-title">Métricas no Momento</div>
-                      <div className="metrics-grid-v3">
+                    <div className="flex flex-col gap-4">
+                      <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Telemetria no Momento</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {Object.entries(selected.meta).map(([key, value]) => {
                           if (value == null) return null;
                           return (
-                            <div key={key} className="metric-item-v3">
-                              <span className="metric-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                              <span className="metric-value">
+                            <div key={key} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col gap-1 group hover:border-accent/40 transition-all">
+                              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                              <span className="text-lg font-black text-white tracking-tight">
                                 {typeof value === 'number' ? value.toFixed(key.toLowerCase().includes('temp') ? 1 : 2) : String(value)}
-                                {key.toLowerCase().includes('kmh') && " km/h"}
-                                {key.toLowerCase().includes('temp') && " °C"}
-                                {key.toLowerCase().includes('voltage') && " V"}
-                                {key.toLowerCase().includes('deg') && "°"}
+                                <span className="text-[0.6rem] ml-1 text-muted">
+                                  {key.toLowerCase().includes('kmh') && "km/h"}
+                                  {key.toLowerCase().includes('temp') && "°C"}
+                                  {key.toLowerCase().includes('voltage') && "V"}
+                                  {key.toLowerCase().includes('deg') && "°"}
+                                </span>
                               </span>
                             </div>
                           );
@@ -535,43 +525,44 @@ export default function Alertas() {
                     </div>
                   )}
 
-                  {(selected.lat != null || selected.tripId) && (
-                    <div className="detail-section">
-                      <div className="detail-section-title">Ações Rápidas</div>
-                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        {selected.lat != null && selected.lng != null && (
-                          <a 
-                            href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="btn btn-sm btn-ghost"
-                          >
-                            <ExternalLink size={14} />
-                            Google Maps
-                          </a>
-                        )}
-                        {selected.lat != null && (
-                          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/map`)}>
-                            <MapPin size={14} />
-                            Ver no Mapa
-                          </button>
-                        )}
-                        {selected.tripId && (
-                          <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/trips/${selected.tripId}`)}>
-                            <ChevronRight size={14} />
-                            Ver Viagem
-                          </button>
-                        )}
-                      </div>
+                  <div className="flex flex-col gap-4">
+                    <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Ações e Localização</span>
+                    <div className="flex flex-wrap gap-3">
+                      {selected.lat != null && selected.lng != null && (
+                        <a 
+                          href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all"
+                        >
+                          <ExternalLink size={16} className="text-accent" /> Google Maps
+                        </a>
+                      )}
+                      {selected.lat != null && (
+                        <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all" onClick={() => navigate(`/map`)}>
+                          <MapPin size={16} className="text-accent" /> Ver no Mapa
+                        </button>
+                      )}
+                      {selected.tripId && (
+                        <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-accent text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-accent/20" onClick={() => navigate(`/trips/${selected.tripId}`)}>
+                          Ver Viagem <ChevronRight size={16} />
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   {selected.lat != null && selected.lng != null && (
-                    <div className="detail-section">
-                      <div className="detail-section-title">Coordenadas</div>
-                      <div className="subpanel" style={{ display: "flex", gap: 20 }}>
-                        <div><span style={{ color: "var(--muted)" }}>Latitude:</span> <strong>{selected.lat.toFixed(6)}</strong></div>
-                        <div><span style={{ color: "var(--muted)" }}>Longitude:</span> <strong>{selected.lng.toFixed(6)}</strong></div>
+                    <div className="flex flex-col gap-4 p-6 rounded-3xl bg-black/40 border border-white/5">
+                      <span className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Coordenadas Precisas</span>
+                      <div className="flex gap-10">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[0.55rem] font-black text-muted uppercase opacity-40">Latitude</span>
+                          <code className="text-sm font-black text-accent">{selected.lat.toFixed(6)}</code>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[0.55rem] font-black text-muted uppercase opacity-40">Longitude</span>
+                          <code className="text-sm font-black text-accent">{selected.lng.toFixed(6)}</code>
+                        </div>
                       </div>
                     </div>
                   )}

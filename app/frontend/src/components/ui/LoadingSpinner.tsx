@@ -7,30 +7,18 @@ interface LoadingSpinnerProps {
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'medium', 
-  color = '#667eea' 
+  color = 'var(--accent)' 
 }) => {
-  const getSize = () => {
-    switch (size) {
-      case 'small':
-        return '20px';
-      case 'large':
-        return '60px';
-      default:
-        return '40px';
-    }
+  const sizeClasses = {
+    small: 'w-5 h-5 border-2',
+    medium: 'w-10 h-10 border-4',
+    large: 'w-16 h-16 border-4'
   };
 
   return (
     <div
-      style={{
-        display: 'inline-block',
-        width: getSize(),
-        height: getSize(),
-        border: `${size === 'small' ? '2px' : '4px'} solid #e5e7eb`,
-        borderTop: `${size === 'small' ? '2px' : '4px'} solid ${color}`,
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-      }}
+      className={`inline-block ${sizeClasses[size]} border-white/10 rounded-full animate-spin`}
+      style={{ borderTopColor: color }}
     />
   );
 };
