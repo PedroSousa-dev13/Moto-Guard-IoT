@@ -47,5 +47,33 @@ class TestPhysicsConsistency(unittest.TestCase):
         self.assertAlmostEqual(v1, v10, places=1)
         print(f"[OK] Suavização após 5s: 1Hz={v1:.2f} | 10Hz={v10:.2f}")
 
+    def test_rpm_coherence(self):
+        """Garante que o RPM é coerente com o perfil e nunca explode."""
+        import moto_physics
+        from config import PERFIS_MOTO
+        
+        for name, p in PERFIS_MOTO.items():
+            rpm_max = p['rpm_max']
+            rpm_idle = p.get('rpm_idle', int(rpm_max * 0.08))
+            # Testar em várias velocidades
+            for v in [0, 50, 100, p['velocidade_max']]:
+                gear = moto_physics.estimate_gear(v, p, gear_hold_time=5.0)
+                rpm = moto_physics.calculate_rpm(v, gear, p)
+                self.assertLessEqual(rpm, rpm_max + 100, f"RPM {rpm} excede max {rpm_max} em {name}")
+                self.assertGreaterEqual(rpm, rpm_idle - 50, f"RPM {rpm} abaixo do idle em {name}")
+
+    def test_upshift_rpm_drop(self):
+        """Garante que o RPM desce ao subir de mudança na mesma velocidade."""
+        import moto_physics
+        from config import PERFIS_MOTO
+        
+        for name, p in PERFIS_MOTO.items():
+            if p.get('transmissao') == 'CVT': continue
+            
+            v = p['velocidade_max'] * 0.4 # Velocidade média
+            r1 = moto_physics.calculate_rpm(v, 2, p)
+            r2 = moto_physics.calculate_rpm(v, 3, p)
+            self.assertGreater(r1, r2, f"RPM não caiu ao subir 2->3 em {name} ({r1} vs {r2})")
+
 if __name__ == '__main__':
     unittest.main()
