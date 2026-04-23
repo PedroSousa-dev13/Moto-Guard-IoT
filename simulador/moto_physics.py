@@ -178,7 +178,7 @@ def simulate_voltage(current_volt: float, rpm: int, profile: Dict, dt: float = 1
 def calculate_roll_pitch(speed_kmh: float, accel_kmhs: float, yaw_diff: float, profile: Dict) -> tuple[float, float]:
     """Calcula Roll e Pitch baseados na dinâmica de condução."""
     # Pitch: frente afunda na travagem, sobe na aceleração
-    target_pitch = clamp(accel_kmhs * 0.8, -12, 12)
+    target_pitch = clamp(accel_kmhs * 1.5, -35, 35)
     
     # Roll: inclinação em curva baseada em velocidade e raio (simplificado por yaw_diff)
     roll_tipico = profile.get('roll_tipico_max', 40.0)

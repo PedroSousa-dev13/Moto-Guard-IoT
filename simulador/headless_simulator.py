@@ -98,8 +98,17 @@ class TelemetriaState:
         self.oil_pressure_bar: float = 4.0
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
-
         self.gear_hold_time: float = 0.0 # Segundos na mudança atual
+
+        self._forced_pitch: float | None = None
+        self._forced_throttle: float | None = None
+        self._forced_abs: bool | None = None
+        self._forced_tc: bool | None = None
+        self._forced_rpm: int | None = None
+        self._forced_ticks: int = 0
+
+        self._override_throttle: bool = False
+        self._override_brake: bool = False
 
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -338,8 +347,21 @@ class HeadlessSimulator:
             log("Comando: reset_eventos")
             self.tele.reset_eventos()
             self._excesso_ticks = 0
+            self.tele._override_throttle = False
+            self.tele._override_brake = False
             if self._generation_paused:
                 self._generation_paused = False
+        elif acao == "override":
+            tipo = dados.get("tipo", "")
+            active = bool(dados.get("active", False))
+            if tipo == "throttle":
+                self.tele._override_throttle = active
+                if active: self.tele._override_brake = False
+                log(f"Override Throttle: {active}")
+            elif tipo == "brake":
+                self.tele._override_brake = active
+                if active: self.tele._override_throttle = False
+                log(f"Override Brake: {active}")
                 log(f"Geração retomada após reset_eventos — modelo '{self.perfil_nome}'.")
         elif acao == "arrancar":
             log("Comando: arrancar")
@@ -471,7 +493,24 @@ class HeadlessSimulator:
             log("Evento: SOBREAQUECIMENTO activado")
         elif tipo in ("excesso_velocidade", "speeding"):
             self._excesso_ticks = int(20 / self.dt)  # ~20s de excesso
-            log(f"Evento: EXCESSO DE VELOCIDADE activado ({self._excesso_ticks} ticks)")
+            # Força RPM alto para teste de Overrev
+            self.tele._forced_rpm = int(self.rpm_max * 0.98)
+            self.tele._forced_ticks = self._excesso_ticks
+            log(f"Evento: EXCESSO DE VELOCIDADE / OVERREV activado ({self._excesso_ticks} ticks)")
+        elif tipo == "aceleracao_agressiva":
+            # Força estado de wheelie/aceleração por 2 segundos
+            self.tele._forced_pitch = 28.0
+            self.tele._forced_throttle = 100.0
+            self.tele._forced_tc = True
+            self.tele._forced_ticks = int(2.0 / self.dt)
+            log("Evento: ACELERAÇÃO AGRESSIVA (Teste Wheelie/TC)")
+        elif tipo == "travagem_agressiva":
+            # Força estado de stoppie/travagem por 2 segundos
+            self.tele._forced_pitch = -28.0
+            self.tele._forced_throttle = 0.0
+            self.tele._forced_abs = True
+            self.tele._forced_ticks = int(2.0 / self.dt)
+            log("Evento: TRAVAGEM AGRESSIVA (Teste Stoppie/ABS)")
         else:
             log(f"Tipo de evento desconhecido: {tipo}")
 
@@ -629,6 +668,18 @@ class HeadlessSimulator:
         s.brake_front_pct = clamp(s.brake_front_pct, 0, 100)
         s.brake_rear_pct  = clamp(s.brake_rear_pct, 0, 100)
 
+        # ── 3b. Overrides Manuais (Hold) ──────────────────────────────
+        if s._override_throttle:
+            s._target_vel = self.vel_max
+            s.throttle_pct = lerp(s.throttle_pct, 100.0, 0.4)
+            s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.8)
+            s.brake_rear_pct = lerp(s.brake_rear_pct, 0, 0.8)
+        elif s._override_brake:
+            s._target_vel = 0.0
+            s.throttle_pct = lerp(s.throttle_pct, 0, 0.8)
+            s.brake_front_pct = lerp(s.brake_front_pct, 100.0, 0.4)
+            s.brake_rear_pct = lerp(s.brake_rear_pct, 100.0, 0.4)
+
         # ── 4. Pitch e Roll ───────────────────────────────────────────
         yaw_diff = (s._target_yaw - s.yaw + 180) % 360 - 180
         speed_factor = clamp(s.velocidade / 60.0, 0.1, 2.0)
@@ -638,6 +689,20 @@ class HeadlessSimulator:
         )
         s.roll = moto_physics.lerp(s.roll, t_roll, self.lerp_roll)
         s.pitch = moto_physics.lerp(s.pitch, t_pitch, self.lerp_pitch)
+
+        # Sobrescrita para eventos de teste forçados
+        if s._forced_ticks > 0:
+            if s._forced_pitch is not None:
+                s.pitch = s._forced_pitch
+            if s._forced_throttle is not None:
+                s.throttle_pct = s._forced_throttle
+            s._forced_ticks -= 1
+        else:
+            s._forced_pitch = None
+            s._forced_throttle = None
+            s._forced_abs = None
+            s._forced_tc = None
+            s._forced_rpm = None
         
         if s.velocidade > 1:
             yaw_rate = s.roll * 0.08 * speed_factor
@@ -679,6 +744,9 @@ class HeadlessSimulator:
         )
         s.rpm = int(moto_physics.lerp(float(s.rpm), float(target_rpm), self.lerp_rpm))
 
+        if s._forced_ticks > 0 and s._forced_rpm is not None:
+            s.rpm = s._forced_rpm
+
         # ── 10. Odómetro ─────────────────────────────────────────────
         s.odometer_km += (s.velocidade / 3600.0) * self.dt
 
@@ -687,6 +755,10 @@ class HeadlessSimulator:
                        and random.random() < 0.15)
         s.tc_active = (s.throttle_pct > 70 and s.velocidade > 20
                       and random.random() < 0.10)
+
+        if s._forced_ticks > 0:
+            if s._forced_abs is not None: s.abs_active = s._forced_abs
+            if s._forced_tc is not None: s.tc_active = s._forced_tc
 
         # ── 12. Pressões ──────────────────────────────────────────────
         s.oil_pressure_bar, s.tire_pressure_front, s.tire_pressure_rear = moto_physics.simulate_pressures(

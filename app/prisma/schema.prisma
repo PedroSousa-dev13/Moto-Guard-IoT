@@ -202,6 +202,10 @@ enum EventType {
   TIRE_PRESSURE_LOW     // Pressão dos pneus baixa
   OIL_PRESSURE_LOW      // Pressão do óleo baixa
   SPEEDING              // Excesso de velocidade
+  ENGINE_OVERREV        // Rotações excessivas (Redline)
+  WHEELIE_DETECTED      // Wheelie detetado
+  STOPPIE_DETECTED      // Stoppie detetado
+  SAFETY_SYSTEM_ACTIVE  // ABS ou Controlo de Tração ativado
 }
 
 enum EventSeverity {

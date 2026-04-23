@@ -92,7 +92,23 @@ export function useNotifications() {
       const severity = rawSeverity as AlertSeverity;
 
       const id = `${data.deviceId}:${data.timestamp}:${data.status}`;
-      const title = data.status.replace(/_/g, " ");
+      const titleMapping: Record<string, string> = {
+        ENGINE_OVERREV: "Rotações Excessivas",
+        WHEELIE_DETECTED: "Wheelie Detetado",
+        STOPPIE_DETECTED: "Stoppie Detetado",
+        SAFETY_SYSTEM_ACTIVE: "Sistema de Segurança Ativo",
+        HARD_BRAKING: "Travagem Brusca",
+        EXCESSIVE_LEAN: "Inclinação Excessiva",
+        HIGH_VIBRATION: "Vibração Anómala",
+        OVERHEAT: "Sobreaquecimento",
+        LOW_VOLTAGE: "Voltagem Baixa",
+        CRASH_DETECTED: "Queda Detetada",
+        RAPID_ACCELERATION: "Aceleração Brusca",
+        TIRE_PRESSURE_LOW: "Pressão Pneus Baixa",
+        OIL_PRESSURE_LOW: "Pressão Óleo Baixa",
+        SPEEDING: "Excesso Velocidade",
+      };
+      const title = titleMapping[data.status] ?? data.status.replace(/_/g, " ");
       const message = data.message ?? `Alerta de ${data.motoModel} (${data.deviceId})`;
       const isPredictive = message.toLowerCase().includes("tendência") || message.toLowerCase().includes("possível");
 
