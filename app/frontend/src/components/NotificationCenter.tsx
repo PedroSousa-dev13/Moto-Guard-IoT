@@ -103,16 +103,16 @@ export default function NotificationCenter() {
       <div style={{ position: "relative" }}>
         <button
           ref={bellRef}
-          className="nav-icon-link nav-bell"
+          className="nav-bell"
           onClick={handleOpen}
           aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} por ler` : ""}`}
           aria-expanded={open}
           aria-haspopup="true"
         >
-          <Bell size={20} />
+          <Bell size={18} className={unreadCount > 0 ? "text-accent" : "text-muted"} />
           {unreadCount > 0 && (
             <span className="nav-badge" aria-hidden="true">
-              {unreadCount > 99 ? "99+" : unreadCount}
+              {unreadCount > 99 ? "99" : unreadCount}
             </span>
           )}
         </button>
@@ -151,7 +151,7 @@ export default function NotificationCenter() {
               </div>
             </div>
 
-            <div className="notif-list" role="list">
+            <div className="notif-list custom-scrollbar" role="list">
               {alerts.length === 0 ? (
                 <div className="notif-empty">
                   <span style={{ fontSize: "1.5rem" }}>🔔</span>
@@ -162,7 +162,7 @@ export default function NotificationCenter() {
                   <button
                     key={a.id}
                     role="listitem"
-                    className={`notif-item ${a.status === "unread" ? "notif-unread" : ""}`}
+                    className={`notif-item group ${a.status === "unread" ? "notif-unread" : ""}`}
                     onClick={() => handleItemClick(a)}
                     aria-label={`${a.title} — ${a.severity} — ${a.status === "unread" ? "Por ler" : "Lida"}`}
                   >

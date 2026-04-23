@@ -26,6 +26,8 @@ import { EventType } from "../generated/prisma/enums";
 import { sendCrashAlert } from "./email.service";
 import { decrypt } from "../utils/crypto";
 import { env } from "../config/env";
+import { realtimeAnomalyService } from "./realtime-anomaly.service";
+import { tripClusteringService } from "./trip-clustering.service";
 
 interface AlertEvent {
   status: string;
@@ -69,6 +71,11 @@ export class SocketService {
   private static readonly TRIP_START_SPEED_KMH = 5;
   private static readonly TRIP_END_SPEED_KMH = 2;
   private static readonly TRIP_END_STATIONARY_TICKS = 10;
+
+  /** Emitir evento para todos os clientes ligados */
+  emit(event: string, data: any): void {
+    this.io?.emit(event, data);
+  }
 
   /** Número de clientes WebSocket ligados */
   get connectedClients(): number {
@@ -171,6 +178,9 @@ export class SocketService {
       this.handleAlertEvent(payload);
       this.handleTripLifecycle(payload);
       await this.handleHeuristicEvents(payload);
+      
+      // Deteção de anomalias ML em tempo real
+      void realtimeAnomalyService.processTelemetry(payload);
     });
   }
 
@@ -508,6 +518,9 @@ export class SocketService {
 
       console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
       
+      // Iniciar clustering para atualizar estilo de condução
+      void tripClusteringService.clusterUserTrips(association.userId);
+
       this.io?.emit("trip_ended", {
         deviceId,
         motoModel: payload.system.moto_model,

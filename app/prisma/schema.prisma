@@ -109,6 +109,7 @@ model Trip {
   mlModelVersion      String?       @map("ml_model_version")
   category            TripCategory? @map("category")
   categoryConfidence  Float?        @map("category_confidence")
+  drivingStyle        DrivingStyle? @map("driving_style")
   createdAt           DateTime      @default(now()) @map("created_at")
 
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -133,6 +134,12 @@ enum TripCategory {
   WEEKEND_RIDE
   TRACK_DAY
   OFF_ROAD
+}
+
+enum DrivingStyle {
+  AGGRESSIVE
+  DEFENSIVE
+  ECONOMY
 }
 
 enum TripSource {

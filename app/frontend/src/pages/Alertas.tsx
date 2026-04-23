@@ -27,7 +27,10 @@ import {
   AlertCircle,
   ExternalLink,
   History,
-  LayoutList
+  LayoutList,
+  Bell,
+  Zap,
+  Settings
 } from "lucide-react";
 
 type StatusFilter = "all" | "unread" | "ack";
@@ -63,17 +66,17 @@ function severityDotColorClass(sev: AlertItem["severity"]) {
   }
 }
 
-function typeIcon(type?: AlertType): string {
+function typeIcon(type?: AlertType) {
   switch (type) {
-    case "SPEED": return "🚀";
-    case "BRAKING": return "🛑";
-    case "TILT": return "↗️";
-    case "ENGINE": return "🔧";
-    case "BATTERY": return "🔋";
-    case "GEOFENCE": return "📍";
-    case "IMPACT": return "💥";
-    case "MAINTENANCE": return "🔩";
-    default: return "⚠️";
+    case "SPEED": return <Zap size={18} className="text-blue" />;
+    case "BRAKING": return <AlertCircle size={18} className="text-red" />;
+    case "TILT": return <Activity size={18} className="text-orange" />;
+    case "ENGINE": return <Settings size={18} className="text-muted" />;
+    case "BATTERY": return <Zap size={18} className="text-green" />;
+    case "GEOFENCE": return <MapPin size={18} className="text-accent" />;
+    case "IMPACT": return <AlertTriangle size={18} className="text-red animate-pulse" />;
+    case "MAINTENANCE": return <Settings size={18} className="text-muted" />;
+    default: return <Info size={18} className="text-accent" />;
   }
 }
 
@@ -247,17 +250,22 @@ export default function Alertas() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
         <div>
-          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent text-xl">🔔</span>
-            Alertas & Eventos
+          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+              <Bell size={24} />
+            </div>
+            Alertas <span className="text-muted/40 font-light">&</span> Eventos
           </h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-accent font-black text-[0.65rem] uppercase tracking-widest bg-accent/10 px-2 py-0.5 rounded-lg">
-              {allAlerts.filter((a) => a.status === "unread").length} por ler
-            </span>
-            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">•</span>
-            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">{filtered.length} filtrados</span>
-            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">•</span>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-accent font-black text-[0.6rem] uppercase tracking-widest">
+                {allAlerts.filter((a) => a.status === "unread").length} Pendentes
+              </span>
+            </div>
+            <span className="text-muted/20 font-black text-[0.65rem] uppercase tracking-widest">•</span>
+            <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">{filtered.length} visíveis</span>
+            <span className="text-muted/20 font-black text-[0.65rem] uppercase tracking-widest">•</span>
             <span className="text-muted font-bold text-[0.65rem] uppercase tracking-widest">{allAlerts.length} total</span>
           </div>
         </div>
@@ -279,15 +287,15 @@ export default function Alertas() {
               Marcar lidas
             </button>
           )}
-          <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
+          <div className="glass-panel p-1 flex gap-1 rounded-2xl">
             <button
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.6rem] font-black uppercase tracking-widest transition-all ${viewMode === "list" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text"}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "list" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
               onClick={() => setViewMode("list")}
             >
               <LayoutList size={14} /> Lista
             </button>
             <button
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.6rem] font-black uppercase tracking-widest transition-all ${viewMode === "timeline" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text"}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "timeline" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
               onClick={() => setViewMode("timeline")}
             >
               <History size={14} /> Timeline
@@ -368,51 +376,61 @@ export default function Alertas() {
             <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3 custom-scrollbar">
               {filtered.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-6 opacity-30 p-10 text-center">
-                  <div className="text-6xl">📭</div>
+                  <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl">📭</div>
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-xl font-black text-white m-0 tracking-tight">Sem alertas encontrados</h3>
-                    <p className="text-sm font-medium m-0">Ajusta os filtros para encontrar o que procuras.</p>
+                    <h3 className="text-xl font-black text-white m-0 tracking-tight">Vazio</h3>
+                    <p className="text-sm font-medium m-0 max-w-[200px]">Sem alertas que correspondam aos teus critérios.</p>
                   </div>
                 </div>
               ) : viewMode === "list" ? (
                 paginated.map((a) => (
                   <button
                     key={a.id}
-                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3 overflow-hidden group ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-surface/40 border-white/5 hover:border-white/20"}`}
+                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-4 overflow-hidden group ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-xl" : "glass-panel border-white/5 hover:border-white/20"}`}
                     onClick={() => setSelectedId(a.id)}
                   >
-                    {a.status === "unread" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
-                    <div className="flex items-center justify-between gap-4">
+                    {a.status === "unread" && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]" />}
+                    <div className="flex items-center justify-between gap-4 relative z-10">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-xl">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
                           {typeIcon(a.type)}
                         </div>
-                        <span className="text-sm font-black text-white tracking-tight group-hover:text-accent transition-colors">{a.title}</span>
+                        <span className="text-sm font-black text-text tracking-tight group-hover:text-accent transition-colors">{a.title}</span>
                       </div>
-                      <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest whitespace-nowrap opacity-60">{formatDateTime(a.timestamp).split(',')[1]}</span>
+                      <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest whitespace-nowrap opacity-60 flex items-center gap-1.5">
+                        <Clock size={10} /> {formatDateTime(a.timestamp).split(',')[1]}
+                      </span>
                     </div>
-                    <p className="text-[0.75rem] font-medium text-muted m-0 line-clamp-2 leading-relaxed">{a.message}</p>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[0.6rem] font-black text-muted uppercase tracking-[0.1em] opacity-40">{a.motoModel || a.deviceId || "Sistema"}</span>
-                      <SeverityIcon severity={a.severity} />
+                    <p className="text-[0.75rem] font-medium text-text-2 m-0 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{a.message}</p>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-1">
+                      <span className="text-[0.6rem] font-black text-muted uppercase tracking-[0.15em] opacity-50">{a.motoModel || a.deviceId || "SISTEMA"}</span>
+                      <div className="flex items-center gap-2">
+                        {severityDotColorClass(a.severity) && (
+                          <div className={`w-1.5 h-1.5 rounded-full ${severityDotColorClass(a.severity)}`} />
+                        )}
+                        <span className={`text-[0.6rem] font-black uppercase tracking-widest ${severityColorClass(a.severity)}`}>{a.severity}</span>
+                      </div>
                     </div>
                   </button>
                 ))
               ) : (
                 <div className="relative pl-10 flex flex-col gap-8 py-6">
-                  <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-white/10" />
+                  <div className="absolute left-[19px] top-0 bottom-0 w-px bg-white/10" />
                   {paginated.map((a) => (
                     <div key={a.id} className="relative group">
-                      <div className={`absolute -left-[31px] top-2 w-5 h-5 rounded-full border-4 border-background z-10 transition-transform group-hover:scale-125 ${severityDotColorClass(a.severity)}`} />
+                      <div className={`absolute -left-[31px] top-2.5 w-6 h-6 rounded-full border-4 border-bg z-10 transition-transform group-hover:scale-125 shadow-lg ${severityDotColorClass(a.severity)}`} />
                       <button 
-                        className={`w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-2 ${selectedId === a.id ? "bg-accent/10 border-accent/40" : "bg-surface/40 border-white/5 hover:border-white/20"}`}
+                        className={`w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3 ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-xl" : "glass-panel border-white/5 hover:border-white/20"}`}
                         onClick={() => setSelectedId(a.id)}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-black text-white tracking-tight">{typeIcon(a.type)} {a.title}</span>
-                          <span className="text-[0.65rem] font-black text-muted opacity-60 uppercase tracking-widest">{formatDateTime(a.timestamp).split(',')[1]}</span>
+                          <div className="flex items-center gap-3">
+                            {typeIcon(a.type)}
+                            <span className="text-sm font-black text-text tracking-tight">{a.title}</span>
+                          </div>
+                          <span className="text-[0.6rem] font-black text-muted opacity-60 uppercase tracking-widest">{formatDateTime(a.timestamp).split(',')[1]}</span>
                         </div>
-                        <p className="text-[0.75rem] font-medium text-muted m-0 line-clamp-1">{a.message}</p>
+                        <p className="text-[0.75rem] font-medium text-text-2 m-0 line-clamp-1">{a.message}</p>
                       </button>
                     </div>
                   ))}

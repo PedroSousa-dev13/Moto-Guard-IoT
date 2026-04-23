@@ -109,7 +109,7 @@ function ChartPlaceholder() {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { telemetry, status, tripEndedSignal } = useSocket();
+  const { telemetry, status, tripEndedSignal, realtimeAnomaly } = useSocket();
   const [lastTrip, setLastTrip] = useState<TripFeedItem | null>(null);
   
   const [history, setHistory] = useState<any[]>([]);
@@ -152,7 +152,19 @@ export default function Dashboard() {
   const battSpark = history.map(h => ({ value: h.batt }));
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in">
+    <div className="flex flex-col gap-8 animate-fade-in relative">
+      {/* Floating Realtime Anomaly Alert */}
+      {realtimeAnomaly && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+          <div className="bg-red/90 backdrop-blur-xl border border-white/20 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-white">
+            <AlertTriangle size={24} className="text-white" />
+            <div className="flex flex-col">
+              <span className="text-xs font-black uppercase tracking-widest opacity-70">ML Real-time Anomaly</span>
+              <span className="text-sm font-bold">{realtimeAnomaly.reason}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* ── HEADER ── */}
@@ -325,13 +337,19 @@ export default function Dashboard() {
             
             <div className="relative h-40 rounded-2xl overflow-hidden border border-white/5 shadow-inner bg-black/40 group">
               <img 
-                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop" 
-                alt="Map" 
-                className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-700" 
+                src="/road-bg.png" 
+                alt="MotoGuard Road" 
+                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" 
               />
               {lastTrip && (
-                <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-md border border-white/10 px-3 py-1 rounded-xl text-[0.65rem] font-black text-text shadow-xl">
+                <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-md border border-white/10 px-3 py-1 rounded-xl text-[0.65rem] font-black text-text shadow-xl z-10">
                   Score: {lastTrip.safetyScore}
+                </div>
+              )}
+              {lastTrip?.motorcycle && (
+                <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-xl flex items-center gap-2 z-10">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span className="text-[0.65rem] font-black text-text uppercase tracking-widest">{lastTrip.motorcycle.name}</span>
                 </div>
               )}
             </div>
