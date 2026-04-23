@@ -109,6 +109,23 @@ export function useNotifications() {
         SPEEDING: "Excesso Velocidade",
       };
       const title = titleMapping[data.status] ?? data.status.replace(/_/g, " ");
+      
+      const typeMapping: Record<string, AlertType> = {
+        WHEELIE_DETECTED: "TILT",
+        STOPPIE_DETECTED: "TILT",
+        EXCESSIVE_LEAN: "TILT",
+        SPEEDING: "SPEED",
+        HARD_BRAKING: "BRAKING",
+        RAPID_ACCELERATION: "SPEED",
+        ENGINE_OVERREV: "ENGINE",
+        OVERHEAT: "ENGINE",
+        LOW_VOLTAGE: "BATTERY",
+        OIL_PRESSURE_LOW: "ENGINE",
+        TIRE_PRESSURE_LOW: "OTHER",
+        CRASH_DETECTED: "IMPACT",
+        SAFETY_SYSTEM_ACTIVE: "OTHER",
+      };
+      const alertType = typeMapping[data.status] ?? "OTHER";
       const message = data.message ?? `Alerta de ${data.motoModel} (${data.deviceId})`;
       const isPredictive = message.toLowerCase().includes("tendência") || message.toLowerCase().includes("possível");
 
@@ -119,6 +136,7 @@ export function useNotifications() {
         severity,
         status: "unread",
         timestamp: data.timestamp,
+        type: alertType,
         deviceId: data.deviceId,
         motoModel: data.motoModel,
         tripId: data.tripId,

@@ -14,18 +14,27 @@ describe('HeuristicsService', () => {
       crashGForce: 2.5,
       criticalTemp: 100,
       criticalVoltage: 11.5,
+      criticalRpm: 10000,
     };
     state = createInitialHeuristicState();
   });
 
-  const createPayload = (overrides: any = {}): any => ({
-    system: { device_id: 'test', moto_model: 'test', timestamp: new Date().toISOString(), event_status: 'NORMAL' },
-    telemetry: { speed_kmh: 0, rpm: 0, gear: 0, throttle_pct: 0, engine_temp_c: 80, voltage: 12.5, brake_front_pct: 0, brake_rear_pct: 0 },
-    imu: { roll_deg: 0, pitch_deg: 0, yaw_deg: 0, g_force: 1.0 },
-    location: { latitude: 0, longitude: 0 },
-    health: { oil_pressure_bar: 3.0, tire_pressure_front_bar: 2.5, tire_pressure_rear_bar: 2.5 },
-    ...overrides
-  });
+  const createPayload = (overrides: any = {}): any => {
+    const base = {
+      system: { device_id: 'test', moto_model: 'test', timestamp: new Date().toISOString(), event_status: 'NORMAL', speed_limit_kmh: 0 },
+      telemetry: { speed_kmh: 0, rpm: 0, gear: 0, throttle_pct: 0, engine_temp_c: 80, voltage: 12.5, brake_front_pct: 0, brake_rear_pct: 0 },
+      imu: { roll_deg: 0, pitch_deg: 0, yaw_deg: 0, g_force: 1.0 },
+      location: { latitude: 0, longitude: 0 },
+      health: { oil_pressure_bar: 3.0, tire_pressure_front_bar: 2.5, tire_pressure_rear_bar: 2.5 }
+    };
+    return {
+      ...base,
+      ...overrides,
+      system: { ...base.system, ...(overrides.system || {}) },
+      telemetry: { ...base.telemetry, ...(overrides.telemetry || {}) },
+      imu: { ...base.imu, ...(overrides.imu || {}) }
+    };
+  };
 
   it('should detect HARD_BRAKING', () => {
     state.prevPayload = createPayload({ telemetry: { speed_kmh: 100 } });
@@ -74,10 +83,9 @@ describe('HeuristicsService', () => {
       telemetry: { engine_temp_c: 105 } // profile.criticalTemp = 100
     });
     
-    // 3 ticks for WARNING
-    evaluateTelemetryRisk(payload, state, profile, Date.now(), 1);
-    evaluateTelemetryRisk(payload, state, profile, Date.now() + 1000, 1);
-    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 2000, 1);
+    // 30 ticks for WARNING
+    for (let i = 0; i < 29; i++) evaluateTelemetryRisk(payload, state, profile, Date.now() + i * 100, 0.1);
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 3000, 0.1);
     
     expect(result.events).toContainEqual(expect.objectContaining({
       type: EventType.OVERHEAT,
@@ -90,9 +98,8 @@ describe('HeuristicsService', () => {
       telemetry: { voltage: 11.0 } // profile.criticalVoltage = 11.5
     });
     
-    evaluateTelemetryRisk(payload, state, profile, Date.now(), 1);
-    evaluateTelemetryRisk(payload, state, profile, Date.now() + 1000, 1);
-    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 2000, 1);
+    for (let i = 0; i < 29; i++) evaluateTelemetryRisk(payload, state, profile, Date.now() + i * 100, 0.1);
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 3000, 0.1);
     
     expect(result.events).toContainEqual(expect.objectContaining({
       type: EventType.LOW_VOLTAGE,
@@ -106,14 +113,67 @@ describe('HeuristicsService', () => {
       telemetry: { speed_kmh: 80 }
     });
     
-    // 3 ticks
-    evaluateTelemetryRisk(payload, state, profile, Date.now(), 1);
-    evaluateTelemetryRisk(payload, state, profile, Date.now() + 1000, 1);
-    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 2000, 1);
+    // 30 ticks
+    for (let i = 0; i < 29; i++) evaluateTelemetryRisk(payload, state, profile, Date.now() + i * 100, 0.1);
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 3000, 0.1);
     
     expect(result.events).toContainEqual(expect.objectContaining({
       type: EventType.SPEEDING,
       severity: EventSeverity.CRITICAL
+    }));
+  });
+
+  it('should detect ENGINE_OVERREV', () => {
+    const payload = createPayload({
+      telemetry: { rpm: 11000 } // thresholds.criticalRpm = 10000
+    });
+    
+    // 15 ticks
+    for (let i = 0; i < 14; i++) evaluateTelemetryRisk(payload, state, profile, Date.now() + i * 100, 0.1);
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now() + 1500, 0.1);
+    
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: EventType.ENGINE_OVERREV
+    }));
+  });
+
+  it('should detect WHEELIE_DETECTED', () => {
+    const payload = createPayload({
+      telemetry: { speed_kmh: 40 },
+      imu: { pitch_deg: 20 } // > 15
+    });
+    
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now(), 0.1);
+    
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: EventType.WHEELIE_DETECTED,
+      severity: EventSeverity.WARNING
+    }));
+  });
+
+  it('should detect STOPPIE_DETECTED', () => {
+    const payload = createPayload({
+      telemetry: { speed_kmh: 40 },
+      imu: { pitch_deg: -20 } // < -15
+    });
+    
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now(), 0.1);
+    
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: EventType.STOPPIE_DETECTED,
+      severity: EventSeverity.WARNING
+    }));
+  });
+
+  it('should detect SAFETY_SYSTEM_ACTIVE', () => {
+    const payload = createPayload({
+      active_safety: { abs_active: true }
+    });
+    
+    const result = evaluateTelemetryRisk(payload, state, profile, Date.now(), 0.1);
+    
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: EventType.SAFETY_SYSTEM_ACTIVE
     }));
   });
 });

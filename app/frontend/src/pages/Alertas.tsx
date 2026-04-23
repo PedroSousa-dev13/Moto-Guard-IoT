@@ -112,27 +112,63 @@ export default function Alertas() {
     setBackendError(null);
     try {
       const res = await alertsAPI.getAll({ limit: 200 });
-      const mapped: AlertItem[] = res.data.map((ev: any) => ({
-        id: `backend:${ev.id}`,
-        title: ev.type.replace(/_/g, " "),
-        message: ev.message ?? ev.type,
-        severity: ev.severity as AlertSeverity,
-        status: "ack" as AlertStatus, // eventos do backend já são histórico
-        timestamp: ev.occurredAt,
-        deviceId: ev.trip?.motorcycle?.deviceId ?? undefined,
-        motoModel: ev.trip?.motorcycle?.name ?? undefined,
-        tripId: ev.tripId,
-        lat: ev.latitude ?? undefined,
-        lng: ev.longitude ?? undefined,
-        meta: {
-          speedKmh: ev.speedKmh,
-          rollDeg: ev.rollDeg,
-          gForce: ev.gForce,
-          engineTempC: ev.engineTempC,
-          voltage: ev.voltage,
-          source: ev.trip?.source,
-        },
-      }));
+      const mapped: AlertItem[] = res.data.map((ev: any) => {
+        const titleMapping: Record<string, string> = {
+          ENGINE_OVERREV: "Rotações Excessivas",
+          WHEELIE_DETECTED: "Wheelie Detetado",
+          STOPPIE_DETECTED: "Stoppie Detetado",
+          SAFETY_SYSTEM_ACTIVE: "Sistema de Segurança Ativo",
+          HARD_BRAKING: "Travagem Brusca",
+          EXCESSIVE_LEAN: "Inclinação Excessiva",
+          HIGH_VIBRATION: "Vibração Anómala",
+          OVERHEAT: "Sobreaquecimento",
+          LOW_VOLTAGE: "Voltagem Baixa",
+          CRASH_DETECTED: "Queda Detetada",
+          RAPID_ACCELERATION: "Aceleração Brusca",
+          TIRE_PRESSURE_LOW: "Pressão Pneus Baixa",
+          OIL_PRESSURE_LOW: "Pressão Óleo Baixa",
+          SPEEDING: "Excesso Velocidade",
+        };
+        
+        const typeMapping: Record<string, AlertType> = {
+          WHEELIE_DETECTED: "TILT",
+          STOPPIE_DETECTED: "TILT",
+          EXCESSIVE_LEAN: "TILT",
+          SPEEDING: "SPEED",
+          HARD_BRAKING: "BRAKING",
+          RAPID_ACCELERATION: "SPEED",
+          ENGINE_OVERREV: "ENGINE",
+          OVERHEAT: "ENGINE",
+          LOW_VOLTAGE: "BATTERY",
+          OIL_PRESSURE_LOW: "ENGINE",
+          TIRE_PRESSURE_LOW: "OTHER",
+          CRASH_DETECTED: "IMPACT",
+          SAFETY_SYSTEM_ACTIVE: "OTHER",
+        };
+
+        return {
+          id: `backend:${ev.id}`,
+          title: titleMapping[ev.type] ?? ev.type.replace(/_/g, " "),
+          message: ev.message ?? ev.type,
+          severity: ev.severity as AlertSeverity,
+          type: typeMapping[ev.type] ?? "OTHER",
+          status: "ack" as AlertStatus,
+          timestamp: ev.occurredAt,
+          deviceId: ev.trip?.motorcycle?.deviceId ?? undefined,
+          motoModel: ev.trip?.motorcycle?.name ?? undefined,
+          tripId: ev.tripId,
+          lat: ev.latitude ?? undefined,
+          lng: ev.longitude ?? undefined,
+          meta: {
+            speedKmh: ev.speedKmh,
+            rollDeg: ev.rollDeg,
+            gForce: ev.gForce,
+            engineTempC: ev.engineTempC,
+            voltage: ev.voltage,
+            source: ev.trip?.source,
+          },
+        };
+      });
       setBackendAlerts(mapped);
     } catch {
       setBackendError("Erro ao carregar histórico.");
