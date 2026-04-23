@@ -213,6 +213,7 @@ export async function listAlerts(req: AuthRequest, res: Response): Promise<void>
     "HARD_BRAKING", "EXCESSIVE_LEAN", "HIGH_VIBRATION", "OVERHEAT",
     "LOW_VOLTAGE", "CRASH_DETECTED", "RAPID_ACCELERATION",
     "TIRE_PRESSURE_LOW", "OIL_PRESSURE_LOW", "SPEEDING",
+    "WHEELIE_DETECTED", "STOPPIE_DETECTED", "ENGINE_OVERREV", "SAFETY_SYSTEM_ACTIVE",
   ];
 
   if (severity && !VALID_SEVERITIES.includes(severity)) {

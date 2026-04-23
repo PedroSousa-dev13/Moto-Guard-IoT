@@ -147,6 +147,7 @@ export default function TripDetail() {
         rpm: typeof p.rpm === "number" ? p.rpm : null,
         temp: typeof p.engine_temp_c === "number" ? p.engine_temp_c : null,
         roll: typeof p.roll_deg === "number" ? p.roll_deg : null,
+        pitch: typeof p.pitch_deg === "number" ? p.pitch_deg : null,
         oil: typeof p.oil_pressure_bar === "number" ? p.oil_pressure_bar : null,
         tireF: typeof p.tire_pressure_front_bar === "number" ? p.tire_pressure_front_bar : null,
         tireR: typeof p.tire_pressure_rear_bar === "number" ? p.tire_pressure_rear_bar : null,
@@ -243,6 +244,7 @@ export default function TripDetail() {
       maxTemp: Number.isFinite(maxTemp) ? maxTemp : null,
       maxEle: null,
       distanceKm: typeof trip?.distanceKm === "number" ? trip.distanceKm : null,
+      hasStunts: trip?.events?.some(e => e.type === "WHEELIE_DETECTED" || e.type === "STOPPIE_DETECTED") ?? false,
     };
   }, [gpxSeries, telemetryRes, trip]);
 
@@ -475,8 +477,14 @@ export default function TripDetail() {
           <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
           
           <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter m-0 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter m-0 leading-tight flex flex-wrap items-center gap-4">
               {trip.motorcycle?.name ?? "Viagem Sem Nome"}
+              {summary.hasStunts && (
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-orange/10 border border-orange/20 text-orange font-black text-[0.6rem] uppercase tracking-widest animate-pulse shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+                  <Activity size={12} />
+                  Manobras Detetadas
+                </div>
+              )}
             </h2>
             <div className="flex flex-wrap justify-center md:justify-start gap-8">
               <div className="flex items-center gap-2.5 text-sm font-bold text-muted">
@@ -681,7 +689,7 @@ export default function TripDetail() {
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Dinâmica de Inclinação" icon={<Activity size={20} />}>
+                <ChartCard title="Dinâmica de Inclinação (Roll)" icon={<Activity size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -699,6 +707,28 @@ export default function TripDetail() {
                         labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
                       />
                       <Line type="monotone" dataKey="roll" stroke="#8b5cf6" dot={false} strokeWidth={4} animationDuration={2000} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+                
+                <ChartCard title="Dinâmica Longitudinal (Pitch)" icon={<Activity size={20} />}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartSeries}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis
+                        dataKey="t"
+                        type="number"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={(v) => new Date(v).toLocaleTimeString("pt-PT")}
+                        tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}}
+                        stroke="rgba(255,255,255,0.1)"
+                      />
+                      <YAxis tick={{fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontWeight: 900}} stroke="rgba(255,255,255,0.1)" />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: 'rgba(10,10,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}
+                        labelFormatter={(v) => new Date(v as number).toLocaleTimeString("pt-PT")} 
+                      />
+                      <Line type="monotone" dataKey="pitch" stroke="#f43f5e" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
