@@ -14,6 +14,7 @@ export interface HeuristicState {
   prevPayload: TelemetryPayload | null;
   gForceWindow: number[];
   overheatTicks: number;
+  overrevTicks: number;
   lowVoltageTicks: number;
   speedingTicks: number;
   lastEventAtByType: Partial<Record<EventType, number>>;
@@ -38,6 +39,7 @@ export function createInitialHeuristicState(): HeuristicState {
     prevPayload: null,
     gForceWindow: [],
     overheatTicks: 0,
+    overrevTicks: 0,
     lowVoltageTicks: 0,
     speedingTicks: 0,
     lastEventAtByType: {},
@@ -88,6 +90,10 @@ export function evaluateTelemetryRisk(
 
   const roll = payload.imu.roll_deg ?? 0;
   const gForce = payload.imu.g_force ?? 0;
+  const pitch = payload.imu.pitch_deg ?? 0;
+
+  const absActive = payload.active_safety?.abs_active ?? false;
+  const tcActive = payload.active_safety?.tc_active ?? false;
 
   const oil = payload.health.oil_pressure_bar ?? 0;
   const tireFront = payload.health.tire_pressure_front_bar ?? 0;
@@ -259,6 +265,45 @@ export function evaluateTelemetryRisk(
       type: EventType.TIRE_PRESSURE_LOW,
       severity: EventSeverity.INFO,
       message: "Tendência de pressão: possível perda lenta",
+    });
+  }
+
+  // ── Rotações Excessivas (Overrev) ──────────────────────────────────────
+  if (rpm >= profile.criticalRpm) state.overrevTicks += 1;
+  else state.overrevTicks = 0;
+
+  if (state.overrevTicks >= 15 && shouldEmit(EventType.ENGINE_OVERREV, 10000)) {
+    events.push({
+      type: EventType.ENGINE_OVERREV,
+      severity: EventSeverity.WARNING,
+      message: `Rotações excessivas: ${rpm} RPM (Redline: ${profile.criticalRpm})`,
+    });
+  }
+
+  // ── Manobras de Pitch (Wheelie / Stoppie) ──────────────────────────────
+  if (speed > 10) {
+    if (pitch > 15 && shouldEmit(EventType.WHEELIE_DETECTED, 8000)) {
+      events.push({
+        type: EventType.WHEELIE_DETECTED,
+        severity: pitch > 25 ? EventSeverity.CRITICAL : EventSeverity.WARNING,
+        message: `Roda frontal levantada (Wheelie: ${pitch.toFixed(1)}°)`,
+      });
+    } else if (pitch < -15 && shouldEmit(EventType.STOPPIE_DETECTED, 8000)) {
+      events.push({
+        type: EventType.STOPPIE_DETECTED,
+        severity: pitch < -25 ? EventSeverity.CRITICAL : EventSeverity.WARNING,
+        message: `Roda traseira levantada (Stoppie: ${pitch.toFixed(1)}°)`,
+      });
+    }
+  }
+
+  // ── Sistemas de Segurança Ativos (ABS / TC) ────────────────────────────
+  if ((absActive || tcActive) && shouldEmit(EventType.SAFETY_SYSTEM_ACTIVE, 5000)) {
+    const system = absActive && tcActive ? "ABS & TC" : absActive ? "ABS" : "TC";
+    events.push({
+      type: EventType.SAFETY_SYSTEM_ACTIVE,
+      severity: EventSeverity.INFO,
+      message: `Sistema de segurança ativo (${system})`,
     });
   }
 

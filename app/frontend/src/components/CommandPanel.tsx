@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { SimulatorCommand, LogEntry } from "../types/telemetry";
 import Card from "./ui/Card";
-import { Play, Square, AlertTriangle, RefreshCcw, Terminal, Bike, Cpu } from 'lucide-react';
+import { Play, Square, AlertTriangle, RefreshCcw, Terminal, Bike, Cpu, Zap, ShieldAlert } from 'lucide-react';
 
 interface CommandPanelProps {
   sendCommand: (cmd: SimulatorCommand) => void;
@@ -95,11 +95,12 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
           <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">
             <Cpu size={14} /> Simular Eventos & Falhas
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { label: "Queda", icon: <AlertTriangle size={14} />, type: "queda", color: "red" },
               { label: "Alternador", icon: <AlertTriangle size={14} />, type: "alternador", color: "red" },
               { label: "Calor", icon: <AlertTriangle size={14} />, type: "sobreaquecimento", color: "red" },
+              { label: "Excesso", icon: <AlertTriangle size={14} />, type: "speeding", color: "red" },
               { label: "Reset", icon: <RefreshCcw size={14} />, type: "reset_eventos", color: "neutral" },
             ].map((ev) => (
               <button 
@@ -115,6 +116,34 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
                 {ev.icon} {ev.label}
               </button>
             ))}
+          </div>
+
+          <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60 mt-2">
+            <Zap size={14} /> Controlos Manuais (Hold)
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all bg-orange/10 border border-orange/20 text-orange hover:bg-orange hover:text-white active:scale-95 select-none disabled:opacity-30"
+              onMouseDown={() => sendCommand({ acao: "override", tipo: "throttle", active: true })}
+              onMouseUp={() => sendCommand({ acao: "override", tipo: "throttle", active: false })}
+              onMouseLeave={() => sendCommand({ acao: "override", tipo: "throttle", active: false })}
+              onTouchStart={() => sendCommand({ acao: "override", tipo: "throttle", active: true })}
+              onTouchEnd={() => sendCommand({ acao: "override", tipo: "throttle", active: false })}
+              disabled={!running}
+            >
+              <Zap size={16} /> Acelerar
+            </button>
+            <button 
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all bg-blue/10 border border-blue/20 text-blue hover:bg-blue hover:text-white active:scale-95 select-none disabled:opacity-30"
+              onMouseDown={() => sendCommand({ acao: "override", tipo: "brake", active: true })}
+              onMouseUp={() => sendCommand({ acao: "override", tipo: "brake", active: false })}
+              onMouseLeave={() => sendCommand({ acao: "override", tipo: "brake", active: false })}
+              onTouchStart={() => sendCommand({ acao: "override", tipo: "brake", active: true })}
+              onTouchEnd={() => sendCommand({ acao: "override", tipo: "brake", active: false })}
+              disabled={!running}
+            >
+              <ShieldAlert size={16} /> Travar
+            </button>
           </div>
           <button 
             className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all bg-red/10 border border-red/20 text-red hover:bg-red hover:text-white disabled:opacity-30 disabled:pointer-events-none mt-auto"

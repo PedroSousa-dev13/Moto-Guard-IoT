@@ -304,6 +304,17 @@ export class SocketService {
         if (ev.type === EventType.CRASH_DETECTED) {
           void this.sendEmergencyEmail(tripId, payload);
         }
+
+        // Emitir alerta para o frontend em tempo real
+        this.io?.emit("alert", {
+          status: ev.type,
+          severity: ev.severity,
+          message: ev.message,
+          deviceId,
+          motoModel: payload.system.moto_model,
+          timestamp: occurredAt.toISOString(),
+          tripId,
+        });
       } catch (error) {
         console.error("Erro ao persistir evento heurístico:", error);
       }
