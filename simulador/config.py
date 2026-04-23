@@ -27,7 +27,7 @@ MQTT_PASS = os.environ.get("MQTT_PASS", "motoguard123")
 #  DISPOSITIVO
 # ─────────────────────────────────────────────
 DEVICE_ID = "MOTOGUARD-SIM-01"
-PUBLISH_INTERVAL = 1          # segundos entre cada payload
+PUBLISH_INTERVAL = 0.1          # segundos entre cada payload
 
 # ─────────────────────────────────────────────
 #  LOCALIZAÇÃO SIMULADA (Vila Real, Portugal)

@@ -7,7 +7,8 @@ const ANOMALY_SCRIPT = path.resolve(process.cwd(), "..", "ml", "online_detector.
 
 class RealtimeAnomalyService {
   private buffers = new Map<string, any[]>();
-  private readonly BUFFER_SIZE = 10; // ~10 segundos se 1Hz
+  private readonly BUFFER_SIZE = 100; // ~10 segundos a 10Hz
+  private tickCounters = new Map<string, number>();
 
   /**
    * Processa nova telemetria para deteção de anomalias em tempo real.
@@ -31,8 +32,16 @@ class RealtimeAnomalyService {
     }
     this.buffers.set(deviceId, buffer);
 
-    // Só analisar se tivermos dados suficientes
-    if (buffer.length < 5) return;
+    // 2. Throttling: Só analisar a cada 10 ticks (1Hz real) para poupar CPU
+    let count = (this.tickCounters.get(deviceId) || 0) + 1;
+    if (count < 10) {
+      this.tickCounters.set(deviceId, count);
+      return;
+    }
+    this.tickCounters.set(deviceId, 0);
+
+    // Só analisar se tivermos dados suficientes no buffer
+    if (buffer.length < 20) return;
 
     // 2. Invocar ML em tempo real
     try {
