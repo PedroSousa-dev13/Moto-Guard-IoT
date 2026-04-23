@@ -17,6 +17,8 @@ import {
 } from "recharts";
 import type { TripFeedItem } from "../types";
 import Card from "../components/ui/Card";
+import AnimatedGauge from "../components/ui/AnimatedGauge";
+import LastTripMiniMap from "../components/dashboard/LastTripMiniMap";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,9 +64,9 @@ function Sparkline({ data, color, loading }: { data: any[], color: string, loadi
 }
 
 function StatCard({ 
-  icon, label, value, unit, color, sparkData, footer, loading 
+  icon, label, value, unit, color, sparkData, footer, loading, children 
 }: { 
-  icon: any, label: string, value: string, unit: string, color: string, sparkData: any[], footer: string, loading?: boolean 
+  icon: any, label: string, value?: string, unit?: string, color: string, sparkData?: any[], footer: string, loading?: boolean, children?: React.ReactNode
 }) {
   return (
     <div className="bg-surface/60 backdrop-blur-md border border-border-glass rounded-2xl p-5 flex flex-col gap-3 transition-all duration-300 hover:-translate-y-1 hover:bg-panel group relative overflow-hidden">
@@ -74,17 +76,22 @@ function StatCard({
         </div>
         <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">{label}</span>
       </div>
-      <div className="flex items-baseline gap-1">
+      
+      <div className="flex-1 flex flex-col justify-center py-2">
         {loading ? (
-          <div className="h-8 w-24 bg-panel animate-pulse rounded-lg" />
+          <div className="h-20 w-full bg-panel animate-pulse rounded-lg" />
+        ) : children ? (
+          <div className="flex justify-center">{children}</div>
         ) : (
-          <>
+          <div className="flex items-baseline gap-1">
             <span className="text-3xl font-black text-text tracking-tighter leading-none">{value}</span>
             <span className="text-xs font-bold text-muted">{unit}</span>
-          </>
+          </div>
         )}
       </div>
-      <Sparkline data={sparkData} color={color} loading={loading} />
+
+      {sparkData && !children && <Sparkline data={sparkData} color={color} loading={loading} />}
+      
       <div className="flex justify-between items-center text-[0.65rem] font-bold text-muted mt-1">
         <span>{loading ? "A aguardar dados..." : footer}</span>
         <TrendingUp size={12} className={loading ? "opacity-20" : "opacity-100"} />
@@ -217,29 +224,45 @@ export default function Dashboard() {
             <StatCard 
               icon={<Gauge size={20} />} 
               label="Velocidade" 
-              value={fmt(tel?.speed_kmh)} 
-              unit="km/h" 
               color="#3b82f6" 
-              sparkData={speedSpark}
               footer={`Média: ${fmt(tel?.speed_kmh ? tel.speed_kmh * 0.8 : 0)} km/h`}
               loading={!hasData}
-            />
+            >
+              <AnimatedGauge 
+                value={tel?.speed_kmh ?? 0} 
+                max={220} 
+                label="km/h" 
+                unit="Velocidade" 
+                color="#3b82f6" 
+                size={100}
+                strokeWidth={8}
+              />
+            </StatCard>
+            
             <StatCard 
               icon={<Zap size={20} />} 
               label="RPM" 
-              value={fmt(tel?.rpm)} 
-              unit="rpm" 
-              color="#8b5cf6" 
-              sparkData={rpmSpark}
+              color="#10b981" 
               footer={`Máx: ${fmt(tel?.rpm ? tel.rpm * 1.1 : 0)} rpm`}
               loading={!hasData}
-            />
+            >
+              <AnimatedGauge 
+                value={(tel?.rpm ?? 0) / 100} 
+                max={120} 
+                label="x100" 
+                unit="RPM" 
+                color="#10b981" 
+                size={100}
+                strokeWidth={8}
+              />
+            </StatCard>
+
             <StatCard 
               icon={<Thermometer size={20} />} 
               label="Temperatura" 
               value={fmt(tel?.engine_temp_c ?? 85)} 
               unit="°C" 
-              color="#3b82f6" 
+              color="#f97316" 
               sparkData={tempSpark}
               footer="Normal"
               loading={!hasData}
@@ -335,24 +358,7 @@ export default function Dashboard() {
               </Link>
             </div>
             
-            <div className="relative h-40 rounded-2xl overflow-hidden border border-white/5 shadow-inner bg-black/40 group">
-              <img 
-                src="/road-bg.png" 
-                alt="MotoGuard Road" 
-                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" 
-              />
-              {lastTrip && (
-                <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-md border border-white/10 px-3 py-1 rounded-xl text-[0.65rem] font-black text-text shadow-xl z-10">
-                  Score: {lastTrip.safetyScore}
-                </div>
-              )}
-              {lastTrip?.motorcycle && (
-                <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-xl flex items-center gap-2 z-10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                  <span className="text-[0.65rem] font-black text-text uppercase tracking-widest">{lastTrip.motorcycle.name}</span>
-                </div>
-              )}
-            </div>
+            <LastTripMiniMap trip={lastTrip} />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
