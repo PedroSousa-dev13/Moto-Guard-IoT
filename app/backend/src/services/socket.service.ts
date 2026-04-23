@@ -198,6 +198,7 @@ export class SocketService {
       crashGForce: 2.5,
       criticalTemp: 110,
       criticalVoltage: 11.0,
+      criticalRpm: 12000,
     };
 
     try {
@@ -231,6 +232,7 @@ export class SocketService {
         crashGForce: profile.crashGForce,
         criticalTemp: profile.criticalTemp,
         criticalVoltage: profile.criticalVoltage,
+        criticalRpm: (profile as any).criticalRpm ?? (profile as any).rpm_max * 0.9,
       };
 
       this.profileThresholdsCacheByDevice.set(deviceId, {
@@ -522,6 +524,11 @@ export class SocketService {
         ? stats.speedSum / stats.speedTicks
         : null;
 
+      const trip = await prisma.trip.findUnique({
+        where: { id: tripId },
+        select: { userId: true }
+      });
+
       await prisma.trip.update({
         where: { id: tripId },
         data: {
@@ -538,7 +545,9 @@ export class SocketService {
       console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
       
       // Iniciar clustering para atualizar estilo de condução
-      void tripClusteringService.clusterUserTrips(association.userId);
+      if (trip?.userId) {
+        void tripClusteringService.clusterUserTrips(trip.userId);
+      }
 
       this.io?.emit("trip_ended", {
         deviceId,

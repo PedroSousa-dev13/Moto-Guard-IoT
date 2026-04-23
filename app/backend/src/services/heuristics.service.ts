@@ -8,6 +8,7 @@ export interface MotorcycleProfileThresholds {
   crashGForce: number;
   criticalTemp: number;
   criticalVoltage: number;
+  criticalRpm: number;
 }
 
 export interface HeuristicState {
@@ -89,7 +90,7 @@ export function evaluateTelemetryRisk(
   const volt = payload.telemetry.voltage ?? 0;
 
   const roll = payload.imu.roll_deg ?? 0;
-  const gForce = payload.imu.g_force ?? 0;
+  const gForce = payload.imu.accel_g ?? (payload.imu.g_force ?? 0);
   const pitch = payload.imu.pitch_deg ?? 0;
 
   const absActive = payload.active_safety?.abs_active ?? false;

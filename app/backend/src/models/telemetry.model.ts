@@ -23,6 +23,7 @@ export interface IMUData {
   pitch_deg: number;
   yaw_deg: number;
   g_force: number;
+  accel_g?: number;
 }
 
 export interface ActiveSafety {

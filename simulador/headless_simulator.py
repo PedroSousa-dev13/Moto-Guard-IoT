@@ -508,6 +508,7 @@ class HeadlessSimulator:
             # Força estado de stoppie/travagem por 2 segundos
             self.tele._forced_pitch = -28.0
             self.tele._forced_throttle = 0.0
+            self.tele.brake_front_pct = 95.0
             self.tele._forced_abs = True
             self.tele._forced_ticks = int(2.0 / self.dt)
             log("Evento: TRAVAGEM AGRESSIVA (Teste Stoppie/ABS)")
@@ -765,9 +766,10 @@ class HeadlessSimulator:
             s.rpm, s.temp_motor, PERFIS_MOTO[self.perfil_nome]
         )
 
-        # ── 14. G-Force física ───────────────────────────────────────
         if not s.flag_queda:
-            s.g_force = moto_physics.calculate_g_force(s._acceleration, s.roll)
+            s.g_force, s.accel_g = moto_physics.calculate_g_forces(s._acceleration, s.roll)
+        else:
+            s.accel_g = 0.0
 
         # ── 14b. Queda automática em curva a alta velocidade ─────────
         # Se em excesso de velocidade E numa curva apertada, a física dita queda.
@@ -884,6 +886,7 @@ class HeadlessSimulator:
                 "pitch_deg": pitch_out,
                 "yaw_deg":   yaw_out,
                 "g_force":   s.g_force,
+                "accel_g":   s.accel_g,
             },
             "active_safety": {
                 "abs_active":      s.abs_active,

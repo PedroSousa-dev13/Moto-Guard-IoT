@@ -128,18 +128,18 @@ def estimate_gear(speed_kmh: float, profile: dict, prev_gear: int = 1, dt: float
     return prev_gear or 1
     
 
-def calculate_g_force(accel_kmhs: float, roll_deg: float) -> float:
-    """Calcula a força G resultante (física real)."""
+def calculate_g_forces(accel_kmhs: float, roll_deg: float) -> tuple[float, float]:
+    """Calcula a força G resultante (total) e a longitudinal (assinada)."""
     # G lateral: em equilíbrio numa curva tan(roll) = G_lateral
     g_lateral = abs(math.tan(math.radians(clamp(roll_deg, -80, 80))))
     
     # G longitudinal: derivado da aceleração/travagem (m/s² -> G)
     accel_ms2 = accel_kmhs / 3.6
-    g_longitudinal = abs(accel_ms2) / 9.81
+    g_long = accel_ms2 / 9.81  # ASSINADO: + para acel, - para travagem
     
     # Resultante vetorial (1.0 é a gravidade vertical constante)
-    g_combined = math.sqrt(1.0 + g_lateral**2 + g_longitudinal**2)
-    return round(clamp(g_combined, 0.95, 8.0), 2)
+    g_total = math.sqrt(1.0 + g_lateral**2 + g_long**2)
+    return round(clamp(g_total, 0.95, 8.0), 2), round(clamp(g_long, -2.5, 2.5), 2)
 
 def simulate_temperature(current_temp: float, speed_kmh: float, rpm: int, profile: Dict, dt: float = 1.0) -> float:
     """Simula a dinâmica térmica do motor."""
