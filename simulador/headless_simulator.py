@@ -31,6 +31,7 @@ from config import (
     PERFIS_MOTO, ROUTE_NAME,
                    )
 from routes import RouteCursor, get_route, get_route_between
+import moto_physics
 
 # ── Constantes de interpolação BASE (para 1s — serão escaladas pelo dt) ────────
 BASE_LERP_VEL   = 0.15
@@ -97,6 +98,8 @@ class TelemetriaState:
         self.oil_pressure_bar: float = 4.0
         self.tire_pressure_front: float = 2.5
         self.tire_pressure_rear: float = 2.9
+
+        self.gear_hold_time: float = 0.0 # Segundos na mudança atual
 
         self._target_vel: float = 0.0
         self._target_yaw: float = 0.0
@@ -621,27 +624,21 @@ class HeadlessSimulator:
             s.throttle_pct = lerp(s.throttle_pct, cruise, self.throttle_resp * 0.5)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.3)
             s.brake_rear_pct  = lerp(s.brake_rear_pct, 0, 0.3)
+        
         s.throttle_pct    = clamp(s.throttle_pct, 0, 100)
         s.brake_front_pct = clamp(s.brake_front_pct, 0, 100)
         s.brake_rear_pct  = clamp(s.brake_rear_pct, 0, 100)
 
-        # ── 4. Pitch ─────────────────────────────────────────────────
-        target_pitch = clamp(s._acceleration * 0.8, -12, 12)
-        s.pitch = lerp(s.pitch, target_pitch, self.lerp_pitch)
-        s.pitch += random.uniform(-0.15, 0.15) * self.dt * 10
-        s.pitch = clamp(s.pitch, -45, 45)
-
-        # ── 5. Roll e Yaw ────────────────────────────────────────────
+        # ── 4. Pitch e Roll ───────────────────────────────────────────
         yaw_diff = (s._target_yaw - s.yaw + 180) % 360 - 180
         speed_factor = clamp(s.velocidade / 60.0, 0.1, 2.0)
-        target_roll = clamp(
-            yaw_diff * speed_factor * 0.5,
-            -self.roll_tipico, self.roll_tipico
+        
+        t_roll, t_pitch = moto_physics.calculate_roll_pitch(
+            s.velocidade, s._acceleration, yaw_diff, PERFIS_MOTO[self.perfil_nome]
         )
-        s.roll = lerp(s.roll, target_roll, self.lerp_roll)
-        s.roll += random.uniform(-0.2, 0.2) * self.dt * 10
-        s.roll = clamp(s.roll, -self.roll_tipico * 1.2, self.roll_tipico * 1.2)
-
+        s.roll = moto_physics.lerp(s.roll, t_roll, self.lerp_roll)
+        s.pitch = moto_physics.lerp(s.pitch, t_pitch, self.lerp_pitch)
+        
         if s.velocidade > 1:
             yaw_rate = s.roll * 0.08 * speed_factor
             s.yaw = (s.yaw + yaw_rate * self.dt * 10) % 360
@@ -649,75 +646,38 @@ class HeadlessSimulator:
         s.yaw = s.yaw % 360
 
         # ── 7. Temperatura ───────────────────────────────────────────
-        # Em marcha lenta: temp_min + offset do perfil (motor a ar aquece mais)
-        # Em movimento: sobe até temp_max proporcional à velocidade
-        temp_idle = self.temp_min + self.temp_idle_off
-        target_temp = temp_idle + (self.temp_max - temp_idle) * (s.velocidade / self.vel_max) * 0.9
-        s.temp_motor = lerp(s.temp_motor, target_temp, self.lerp_temp)
-        s.temp_motor += random.uniform(-0.1, 0.1) * self.dt * 10
-        s.temp_motor = clamp(s.temp_motor, self.temp_min - 5, self.temp_max + 25)
+        s.temp_motor = moto_physics.simulate_temperature(
+            s.temp_motor, s.velocidade, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt
+        )
 
         # ── 8. Voltagem ──────────────────────────────────────────────
-        target_volt = VOLTAGEM_NOMINAL + random.uniform(-0.05, 0.05)
-        s.voltagem = lerp(s.voltagem, target_volt, self.lerp_volt)
-        s.voltagem += random.uniform(-0.02, 0.02) * self.dt * 10
-        s.voltagem = clamp(s.voltagem, 9.0, self.volt_max)
+        s.voltagem = moto_physics.simulate_voltage(
+            s.voltagem, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt, s.flag_alternador
+        )
 
         # ── 9. Gear e Clutch ─────────────────────────────────────────
         s._prev_gear = s.gear
-        if s.velocidade < 1:
-            s.gear = 0
-            s.clutch_engaged = True
+        s.gear = moto_physics.estimate_gear(
+            s.velocidade, PERFIS_MOTO[self.perfil_nome], s.gear, self.dt, s.gear_hold_time, s.throttle_pct
+        )
+        
+        if s.gear == s._prev_gear:
+            s.gear_hold_time += self.dt
         else:
-            # Gear selection: profile-aware speed bands (% of vel_max)
-            # Escalas adaptadas a cada tipo de mota em vez de valores absolutos
-            spd_pct = s.velocidade / self.vel_max if self.vel_max > 0 else 0
-            
-            # Percentagens de vel_max para cada marcha:
-            # Gear 1: 0-15%, Gear 2: 15-35%, Gear 3: 35-60%, 
-            # Gear 4: 60-75%, Gear 5: 75-90%, Gear 6: 90%+
-            if spd_pct <= 0.15:
-                s.gear = 1
-            elif spd_pct <= 0.35:
-                s.gear = 2
-            elif spd_pct <= 0.60:
-                s.gear = 3
-            elif spd_pct <= 0.75:
-                s.gear = 4
-            elif spd_pct <= 0.90:
-                s.gear = 5
-            else:
-                s.gear = 6
-            
-            if s.gear != s._prev_gear and s._prev_gear != 0:
-                s._clutch_timer = int(2 / self.dt)  # ~2 ticks a 1Hz = 2 segundos (ou ajuste conforme realismo)
-                # Na verdade, a embraiagem numa mota é rápida (~0.2-0.5s). 
-                # Vamos pôr 0.3s fixos.
-                s._clutch_timer = max(1, int(0.3 / self.dt))
-            if s._clutch_timer > 0:
-                s.clutch_engaged = True
-                s._clutch_timer -= 1
-            else:
-                s.clutch_engaged = False
+            s.gear_hold_time = 0.0
+            s._clutch_timer = max(1, int(0.3 / self.dt))
 
-        idle_rpm = max(900, int(self.rpm_max * 0.08))
-        if s.gear <= 0 or s.velocidade < 1:
-            # Marcha lenta: RPM base + contribuição do acelerador
-            target_rpm = idle_rpm + s.throttle_pct * 6
+        if s._clutch_timer > 0:
+            s.clutch_engaged = True
+            s._clutch_timer -= 1
         else:
-            # Velocidade máxima de cada mudança antes de mudar (% de vel_max)
-            redline_speeds = { 1: 0.20, 2: 0.34, 3: 0.52, 4: 0.70, 5: 0.86, 6: 1.00 }
-            red_speed = max(1.0, self.vel_max * redline_speeds.get(s.gear, 1.0))
-            ratio = clamp(s.velocidade / red_speed, 0.0, 1.0)
-            # Curva quadrática: RPM sobe devagar a baixas velocidades,
-            # acelera perto do redline — mais realista que linear
-            rpm_range = self.rpm_max * 0.82 - idle_rpm
-            target_rpm = idle_rpm + rpm_range * (ratio ** 1.8)
-            if s.clutch_engaged:
-                target_rpm = max(idle_rpm, target_rpm - 800)
-        s.rpm = lerp(float(s.rpm), target_rpm, self.lerp_rpm)
-        s.rpm += random.uniform(-20, 20) * self.dt * 10
-        s.rpm = clamp(s.rpm, 0, self.rpm_max)
+            s.clutch_engaged = False
+
+        # ── 9b. RPM ──────────────────────────────────────────────────
+        target_rpm = moto_physics.calculate_rpm(
+            s.velocidade, s.gear, PERFIS_MOTO[self.perfil_nome], s.clutch_engaged, s.throttle_pct
+        )
+        s.rpm = int(moto_physics.lerp(float(s.rpm), float(target_rpm), self.lerp_rpm))
 
         # ── 10. Odómetro ─────────────────────────────────────────────
         s.odometer_km += (s.velocidade / 3600.0) * self.dt
@@ -728,37 +688,14 @@ class HeadlessSimulator:
         s.tc_active = (s.throttle_pct > 70 and s.velocidade > 20
                       and random.random() < 0.10)
 
-        # ── 12. Pressão óleo (específica por perfil) ──────────────────────────
-        oil_base = self.oil_idle + (s.rpm / self.rpm_max) * (self.oil_max - self.oil_idle)
-        s.oil_pressure_bar = clamp(oil_base + random.uniform(-0.1, 0.1),
-                                   self.oil_idle * 0.5, self.oil_max * 1.1)
-
-        # ── 13. Pressão pneus (base específica por perfil + calor) ───────────
-        temp_factor = ((s.temp_motor - self.temp_min)
-                      / max(1, self.temp_max - self.temp_min))
-        target_tire_front = self.tire_front_base + temp_factor * self.tire_front_base * 0.08
-        target_tire_rear = self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
-        s.tire_pressure_front = lerp(s.tire_pressure_front, target_tire_front, 1.0 - (1.0-0.06)**self.dt)
-        s.tire_pressure_rear = lerp(s.tire_pressure_rear, target_tire_rear, 1.0 - (1.0-0.06)**self.dt)
-        s.tire_pressure_front += random.uniform(-0.003, 0.003) * self.dt * 10
-        s.tire_pressure_rear += random.uniform(-0.003, 0.003) * self.dt * 10
-        s.tire_pressure_front = clamp(s.tire_pressure_front, self.tire_front_base * 0.90, self.tire_front_base * 1.15)
-        s.tire_pressure_rear = clamp(s.tire_pressure_rear, self.tire_rear_base * 0.90, self.tire_rear_base * 1.15)
+        # ── 12. Pressões ──────────────────────────────────────────────
+        s.oil_pressure_bar, s.tire_pressure_front, s.tire_pressure_rear = moto_physics.simulate_pressures(
+            s.rpm, s.temp_motor, PERFIS_MOTO[self.perfil_nome]
+        )
 
         # ── 14. G-Force física ───────────────────────────────────────
-        # Física real de uma mota em curva:
-        #   Em equilíbrio: tan(roll) = v² / (r·g)  →  G_lateral = tan(roll)
-        # G longitudinal: derivado da aceleração/travagem (km/h/s → m/s² → G)
         if not s.flag_queda:
-            g_lateral = abs(math.tan(math.radians(clamp(s.roll, -80, 80))))
-            g_lateral = clamp(g_lateral, 0.0, 2.5)
-
-            accel_ms2 = s._acceleration / 3.6      # km/h/s → m/s²
-            g_longitudinal = clamp(abs(accel_ms2) / 9.81, 0.0, 1.5)
-
-            # Resultante vetorial com componente vertical (gravidade = 1G)
-            g_combined = math.sqrt(1.0 + g_lateral**2 + g_longitudinal**2)
-            s.g_force = round(clamp(g_combined + random.uniform(-0.03, 0.03), 0.95, 3.5), 2)
+            s.g_force = moto_physics.calculate_g_force(s._acceleration, s.roll)
 
         # ── 14b. Queda automática em curva a alta velocidade ─────────
         # Se em excesso de velocidade E numa curva apertada, a física dita queda.
@@ -811,11 +748,14 @@ class HeadlessSimulator:
                 s.tc_active = False
 
         if s.flag_alternador:
-            s.voltagem = max(9.0, s.voltagem - random.uniform(0.15, 0.25) * self.dt)
+            s.voltagem = moto_physics.simulate_voltage(
+                s.voltagem, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt, alternator_fail=True
+            )
 
         if s.flag_sobreaquecimento:
-            s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
-            s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05, 0.5, 5.5)
+            # Sobreaquecimento: temperatura sobe sem controlo
+            s.temp_motor = min(self.temp_max + 30, s.temp_motor + random.uniform(1.5, 3.0) * self.dt * 10)
+            s.oil_pressure_bar = clamp(s.oil_pressure_bar - 0.05 * self.dt * 10, 0.5, 5.5)
 
         # ── 15. GPS ──────────────────────────────────────────────────
         if self.route_cursor is not None:

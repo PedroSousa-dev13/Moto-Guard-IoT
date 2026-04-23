@@ -74,6 +74,7 @@ PERFIS_MOTO = {
         "voltagem_max": 14.5,
         "roll_tipico_max": 25,
         "peso_medio": 130,
+        "transmissao": "CVT",
         "exemplo": "Honda PCX 125, Yamaha XMAX 300",
         # --- Thresholds específicos ---
         "queda_roll_threshold": 55,

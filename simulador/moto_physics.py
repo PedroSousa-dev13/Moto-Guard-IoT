@@ -25,15 +25,23 @@ def calculate_rpm(speed_kmh: float, gear: int, profile: Dict, clutch_engaged: bo
     rpm_max = profile.get('rpm_max', 12000)
     rpm_idle = profile.get('rpm_idle', int(rpm_max * 0.08)) # Fallback 8% do max
     
-    if speed_kmh < 1 or gear <= 0:
+    if speed_kmh < 0.5 or (gear <= 0 and not profile.get('transmissao') == 'CVT'):
         # Marcha lenta ou neutro: RPM base + contribuição do acelerador
-        target_rpm = rpm_idle + throttle_pct * 6
-        return int(clamp(target_rpm, 0, rpm_max))
+        # O acelerador sobe o RPM mesmo parado
+        target_rpm = rpm_idle + (throttle_pct / 100.0) * (rpm_max * 0.2) 
+        return int(clamp(target_rpm, rpm_idle, rpm_max))
 
     if profile.get('transmissao') == 'CVT':
-        rpm_range = rpm_max - rpm_idle
-        speed_fraction = min(speed_kmh / profile.get('velocidade_max', 120), 1.0)
-        target_rpm = rpm_idle + rpm_range * speed_fraction
+        # Para CVT, o RPM escala com a velocidade de forma mais linear/suave
+        # Mas também reage ao acelerador (kickdown/rotação de força)
+        rpm_range = rpm_max * 0.85 - rpm_idle
+        speed_ratio = clamp(speed_kmh / profile.get('velocidade_max', 120), 0.0, 1.0)
+        
+        # Base do RPM pela velocidade
+        target_rpm = rpm_idle + rpm_range * (speed_ratio ** 0.7) # Curva côncava para CVT
+        
+        # Adicionar efeito do acelerador
+        target_rpm += (throttle_pct / 100.0) * (rpm_max * 0.15)
     else:
         # Transmissão manual: usa relações de mudança se disponíveis, senão usa bandas genéricas
         gear_ratios = profile.get('gear_ratios')
@@ -43,56 +51,82 @@ def calculate_rpm(speed_kmh: float, gear: int, profile: Dict, clutch_engaged: bo
             wheel_circ = math.pi * profile.get('wheel_diameter_m', 0.6)
             final_drive = profile.get('final_drive_ratio', 2.8)
             
-            wheel_angular_vel = (speed_kmh * 1000 / 3600) / (wheel_circ / 2)
+            # Velocidade angular da roda (rad/s) = v_ms / raio
+            # raio = wheel_circ / (2 * pi)
+            v_ms = (speed_kmh * 1000 / 3600)
+            radius = wheel_circ / (2 * math.pi)
+            wheel_angular_vel = v_ms / radius
             target_rpm = wheel_angular_vel * gear_ratio * final_drive * 60 / (2 * math.pi)
         else:
             # Cálculo por bandas (usado no Headless)
+            # Redline speeds ajustadas para coincidir com os thresholds de mudança
             redline_speeds = { 1: 0.20, 2: 0.34, 3: 0.52, 4: 0.70, 5: 0.86, 6: 1.00 }
             red_speed = max(1.0, profile.get('velocidade_max', 200) * redline_speeds.get(gear, 1.0))
             ratio = clamp(speed_kmh / red_speed, 0.0, 1.0)
             rpm_range = rpm_max * 0.82 - rpm_idle
-            target_rpm = rpm_idle + rpm_range * (ratio ** 1.8)
+            target_rpm = rpm_idle + rpm_range * (ratio ** 1.5)
 
-    if clutch_engaged:
-        target_rpm = max(rpm_idle, target_rpm - 800)
+    if clutch_engaged and not profile.get('transmissao') == 'CVT':
+        # Se a embraiagem está puxada, o motor "descola" da roda
+        # Se estiver a acelerar, o RPM sobe, senão desce para o idle
+        clutch_target = rpm_idle + (throttle_pct / 100.0) * (rpm_max * 0.4)
+        target_rpm = lerp(target_rpm, clutch_target, 0.7)
         
-    return int(clamp(target_rpm, 0, rpm_max))
+    return int(clamp(target_rpm, rpm_idle, rpm_max))
 
-def estimate_gear(speed_kmh: float, profile: Dict, prev_gear: int = 1, dt: float = 1.0, gear_hold_time: float = 0.0) -> int:
-    """Estima a mudança ideal com histerese para evitar oscilações."""
+def estimate_gear(speed_kmh: float, profile: dict, prev_gear: int = 1, dt: float = 0.1, gear_hold_time: float = 0.0, throttle_pct: float = 0.0) -> int:
+    """Adivinha a mudança ideal baseada na velocidade e intensidade do acelerador."""
     if profile.get('transmissao') == 'CVT':
         return 0
-    if speed_kmh < 1:
-        return 0
+    if speed_kmh < 1.0: return 1
     
     v_max = profile.get('velocidade_max', 200)
     
-    # Bandas de velocidade com sobreposição (histerese)
-    thresholds = {
-        1: [0.0, v_max * 0.20],
-        2: [v_max * 0.15, v_max * 0.38],
-        3: [v_max * 0.33, v_max * 0.58],
-        4: [v_max * 0.53, v_max * 0.73],
-        5: [v_max * 0.68, v_max * 0.88],
-        6: [v_max * 0.83, v_max * 1.5],
-    }
+    # Fator de agressividade: 
+    #   0.0 (Cruzeiro/Eco) -> Troca muito cedo para rotações baixas (Short-shifting)
+    #   1.0 (Sport) -> Leva a mudança até ao limite (Redline)
+    sport_factor = clamp(throttle_pct / 85.0, 0.0, 1.0)
     
-    # Só muda se estiver fora da banda atual e passou algum tempo na mudança anterior
-    min_v, max_v = thresholds.get(prev_gear or 1, [0.0, 1000.0])
-    can_shift = gear_hold_time > 1.5 # segundos mínimos na mesma mudança
+    # Thresholds base (frações de v_max onde a mudança "esgota")
+    # Em cruzeiro (eco), queremos meter a próxima mudança muito antes do limite.
+    eco_upshifts = { 1: 0.12, 2: 0.22, 3: 0.35, 4: 0.50, 5: 0.65, 6: 1.00 }
+    sport_upshifts = { 1: 0.22, 2: 0.40, 3: 0.60, 4: 0.78, 5: 0.92, 6: 1.00 }
     
-    if speed_kmh > max_v and prev_gear < 6 and (can_shift or speed_kmh > max_v * 1.2):
-        return prev_gear + 1
-    if speed_kmh < min_v and prev_gear > 1 and (can_shift or speed_kmh < min_v * 0.8):
-        return prev_gear - 1
-        
-    # Fallback para velocidade pura se prev_gear for inválido (0 ou None)
+    # Calcular thresholds atuais baseados no sport_factor
+    thresholds = {}
+    for g in range(1, 7):
+        eco = eco_upshifts[g]
+        sport = sport_upshifts[g]
+        # Ponto de Upshift (quando a mudança atual esgota)
+        max_v_gear = lerp(eco, sport, sport_factor) * v_max
+        # Ponto de Downshift (85% do ponto de upshift da mudança anterior para evitar histerese)
+        prev_eco = eco_upshifts.get(g-1, 0)
+        prev_sport = sport_upshifts.get(g-1, 0)
+        min_v_gear = (lerp(prev_eco, prev_sport, sport_factor) * v_max) * 0.85
+        thresholds[g] = [min_v_gear, max_v_gear]
+
+    # Histerese e Delay
+    current_limits = thresholds.get(prev_gear or 1, [0.0, 1000.0])
+    can_shift = gear_hold_time > 1.2 # segundos mínimos na mesma mudança
+    
+    # Lógica de Upshift
+    if speed_kmh > current_limits[1] and prev_gear < 6:
+        if can_shift or speed_kmh > current_limits[1] * 1.15:
+            return prev_gear + 1
+            
+    # Lógica de Downshift
+    if speed_kmh < current_limits[0] and prev_gear > 1:
+        if can_shift or speed_kmh < current_limits[0] * 0.85:
+            return prev_gear - 1
+            
+    # Fallback inicial se não houver prev_gear
     if not prev_gear:
         for g, (low, high) in thresholds.items():
             if low <= speed_kmh <= high:
                 return g
+                
+    return prev_gear or 1
     
-    return prev_gear
 
 def calculate_g_force(accel_kmhs: float, roll_deg: float) -> float:
     """Calcula a força G resultante (física real)."""

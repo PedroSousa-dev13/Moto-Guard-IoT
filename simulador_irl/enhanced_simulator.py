@@ -4,6 +4,12 @@ import math
 import random
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+import sys
+import os
+
+# Adicionar root ao path para importar moto_physics
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from simulador import moto_physics
 
 # Carregar perfis de motocicleta
 with open('simulador_irl/motorcycle_profiles.json', 'r') as f:
@@ -24,112 +30,40 @@ class EnhancedRow:
         return self.__dict__
 
 def calculate_rpm_from_speed(speed_kmh: float, gear: int, profile: Dict) -> int:
-    """Calcula RPM baseado na velocidade, marcha e perfil da moto"""
-    if speed_kmh <= 0:
-        return profile.get('rpm_idle', 1200)
-
-    if profile['transmissao'] == 'CVT':
-        # Para CVT, RPM varia continuamente
-        rpm_range = profile['rpm_max'] - profile['rpm_idle']
-        speed_fraction = min(speed_kmh / profile.get('velocidade_max', 120), 1.0)
-        rpm = profile['rpm_idle'] + rpm_range * speed_fraction
-        return int(clamp(rpm, profile['rpm_idle'], profile['rpm_max']))
-
-    else:
-        # Transmissão manual
-        gear_ratios = profile['gear_ratios']
-        if str(gear) not in gear_ratios:
-            gear = 1  # fallback
-
-        gear_ratio = gear_ratios[str(gear)]
-        wheel_circumference = math.pi * profile['wheel_diameter_m']
-        final_drive = profile['final_drive_ratio']
-
-        # Velocidade angular da roda em rad/s
-        wheel_angular_vel = (speed_kmh * 1000 / 3600) / (wheel_circumference / 2)
-
-        # RPM do motor
-        engine_rpm = wheel_angular_vel * gear_ratio * final_drive * 60 / (2 * math.pi)
-
-        return int(clamp(engine_rpm, profile['rpm_idle'], profile['rpm_max']))
+    return moto_physics.calculate_rpm(speed_kmh, gear, profile)
 
 def estimate_throttle(speed: float, prev_speed: float, dt: float, profile: Dict) -> float:
-    """Estima porcentagem do acelerador baseada na aceleração"""
-    if dt <= 0:
-        return 0.0
-
-    accel = (speed - prev_speed) / (dt / 3.6)  # m/s²
-    max_accel = profile.get('accel_max_kmhs', 12.0) * (1000 / 3600)  # m/s²
-
-    if accel <= 0:
-        return 0.0
-
-    throttle = min(accel / max_accel, 1.0) * 100
-    return throttle
+    if dt <= 0: return 0.0
+    accel_kmhs = (speed - prev_speed) / dt
+    # Lógica de estimativa de throttle simples mantida por ser específica de IRL
+    max_accel = profile.get('accel_max_kmhs', 12.0)
+    return moto_physics.clamp(accel_kmhs / max_accel * 100, 0, 100)
 
 def simulate_engine_temp(current_temp: float, rpm: int, duration: float, profile: Dict) -> float:
-    """Simula temperatura do motor baseada no RPM e duração"""
-    ambient_temp = 20.0
-    idle_temp = profile['temp_motor_min'] + profile.get('temp_idle_offset', 5.0)
-
-    if rpm <= profile.get('rpm_idle', 1200):
-        # Em marcha lenta, temperatura tende para idle_temp
-        target_temp = idle_temp
-    else:
-        # Em funcionamento, temperatura aumenta com RPM
-        rpm_factor = (rpm - profile['rpm_idle']) / (profile['rpm_max'] - profile['rpm_idle'])
-        target_temp = profile['temp_motor_min'] + rpm_factor * (profile['temp_motor_max'] - profile['temp_motor_min'])
-
-    # LERP suave
-    lerp_factor = 0.03 * duration  # Ajustar baseado na duração
-    new_temp = current_temp + (target_temp - current_temp) * lerp_factor
-
-    return clamp(new_temp, ambient_temp, profile['temp_motor_max'] + 10)
+    return moto_physics.simulate_temperature(current_temp, 0.0, rpm, profile, duration)
 
 def simulate_voltage(rpm: int, profile: Dict) -> float:
-    """Simula voltagem com variações realistas"""
-    base_voltage = profile['voltagem_nominal']
-
-    # Variação baseada no RPM (alternador)
-    if rpm < profile.get('rpm_idle', 1200) * 1.2:
-        # Baixo RPM, voltagem cai
-        voltage = base_voltage * 0.8 + random.uniform(-0.5, 0.5)
-    else:
-        voltage = base_voltage + random.uniform(-0.2, 0.2)
-
-    return clamp(voltage, profile['voltagem_min'], profile['voltagem_max'])
+    # Para IRL o voltagem é estático por tick aqui, mas vamos usar a lógica unificada
+    return moto_physics.simulate_voltage(profile.get('voltagem_nominal', 14.2), rpm, profile, 1.0)
 
 def estimate_gear(speed: float, rpm: int, profile: Dict) -> int:
-    """Estima a marcha baseada na velocidade e RPM (para dados IRL sem gear)"""
-    if profile['transmissao'] == 'CVT':
-        return 0  # CVT não tem marchas
-
-    # Para manual, estimar marcha baseada na relação RPM/velocidade
-    if speed <= 0:
-        return 1
-
-    # Calcular marcha teórica
-    wheel_circumference = math.pi * profile['wheel_diameter_m']
-    final_drive = profile['final_drive_ratio']
-
-    theoretical_rpm = (speed * 1000 / 3600) / wheel_circumference * 60 / (2 * math.pi) * final_drive
-
-    gear_ratios = profile['gear_ratios']
+    if profile.get('transmissao') == 'CVT': return 0
+    if speed <= 0: return 1
+    
+    wheel_circ = math.pi * profile.get('wheel_diameter_m', 0.6)
+    final_drive = profile.get('final_drive_ratio', 2.8)
+    theoretical_rpm_base = (speed * 1000 / 3600) / (wheel_circ / (2 * math.pi)) * 60 / (2 * math.pi) * final_drive
+    
+    gear_ratios = profile.get('gear_ratios', {})
     best_gear = 1
     min_diff = float('inf')
-
     for g, ratio in gear_ratios.items():
-        expected_rpm = theoretical_rpm * ratio
+        expected_rpm = theoretical_rpm_base * ratio
         diff = abs(expected_rpm - rpm)
         if diff < min_diff:
             min_diff = diff
             best_gear = int(g)
-
     return best_gear
-
-def clamp(value: float, min_val: float, max_val: float) -> float:
-    """Limita valor entre min e max"""
-    return max(min_val, min(max_val, value))
 
 class IRLSimulator:
     """Simulador para aprimorar dados IRL com telemetria de motocicleta"""
