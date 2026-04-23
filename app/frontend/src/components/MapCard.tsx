@@ -381,7 +381,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
             id="map" 
             style={{ 
               transform: pilotMode ? `rotate(${-yaw}deg)` : 'none',
-              transition: 'transform 0.5s ease-out'
+              transition: 'transform 0.1s linear'
             }} 
           />
           

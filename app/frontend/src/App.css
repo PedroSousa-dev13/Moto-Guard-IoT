@@ -494,4 +494,9 @@
   .notif-toast-msg {
     @apply text-xs font-medium text-muted line-clamp-1;
   }
+
+  /* Smooth Map Transitions for 10Hz */
+  .leaflet-marker-icon {
+    transition: transform 0.1s linear !important;
+  }
 }
