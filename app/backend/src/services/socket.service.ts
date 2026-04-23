@@ -62,6 +62,7 @@ export class SocketService {
     startLon: number;
     speedSum: number;   // para avgSpeedKmh
     speedTicks: number; // número de ticks acumulados
+    startOdometer: number; // odómetro inicial para cálculo de distância precisa
     ticks: number;      // contador para flush periódico
   }>();
   private heuristicStateByDevice = new Map<string, HeuristicState>();
@@ -409,6 +410,7 @@ export class SocketService {
         startLon: payload.location.longitude,
         speedSum: payload.telemetry.speed_kmh,
         speedTicks: 1,
+        startOdometer: payload.telemetry.odometer_km ?? 0,
         ticks: 1,
       });
 
@@ -493,10 +495,16 @@ export class SocketService {
 
       let distanceKm = 0;
       if (stats) {
-        distanceKm = this.haversineDistance(
-          stats.startLat, stats.startLon, 
-          payload.location.latitude, payload.location.longitude
-        );
+        const currentOdometer = payload.telemetry.odometer_km ?? 0;
+        if (currentOdometer > 0 && stats.startOdometer > 0) {
+          distanceKm = currentOdometer - stats.startOdometer;
+        } else {
+          // Fallback para Haversine se o odómetro falhar
+          distanceKm = this.haversineDistance(
+            stats.startLat, stats.startLon, 
+            payload.location.latitude, payload.location.longitude
+          );
+        }
       }
 
       const avgSpeedKmh = stats && stats.speedTicks > 0
@@ -601,12 +609,17 @@ export class SocketService {
 
     let distanceKm = 0;
     if (stats && lastPayload) {
-      distanceKm = this.haversineDistance(
-        stats.startLat,
-        stats.startLon,
-        lastPayload.location.latitude,
-        lastPayload.location.longitude,
-      );
+      const currentOdometer = lastPayload.telemetry.odometer_km ?? 0;
+      if (currentOdometer > 0 && stats.startOdometer > 0) {
+        distanceKm = currentOdometer - stats.startOdometer;
+      } else {
+        distanceKm = this.haversineDistance(
+          stats.startLat,
+          stats.startLon,
+          lastPayload.location.latitude,
+          lastPayload.location.longitude,
+        );
+      }
     }
 
     const avgSpeedKmh =
