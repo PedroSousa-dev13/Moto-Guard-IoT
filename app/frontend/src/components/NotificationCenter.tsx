@@ -221,8 +221,8 @@ export default function NotificationCenter() {
         , document.body)}
       </div>
 
-      {/* ── Toast global ── */}
-      {toast && (
+      {/* ── Toast global (Portal para o body) ── */}
+      {toast && createPortal(
         <div
           className={`notif-toast notif-toast-${toast.severity.toLowerCase()}`}
           role="alert"
@@ -231,7 +231,7 @@ export default function NotificationCenter() {
         >
           <div className="notif-toast-body">
             <div className="notif-toast-icon">
-              {toast.predictive ? "📈" : toast.severity === "CRITICAL" ? "🚨" : "⚠️"}
+              {toast.predictive ? "📈" : toast.severity === "CRITICAL" ? "🚨" : toast.severity === "WARNING" ? "⚠️" : "🔔"}
             </div>
             <div className="notif-toast-content">
               <div className="notif-toast-title">{toast.title}</div>
@@ -258,7 +258,7 @@ export default function NotificationCenter() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }

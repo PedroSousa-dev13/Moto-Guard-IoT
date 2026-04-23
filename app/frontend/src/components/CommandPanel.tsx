@@ -95,17 +95,14 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
           <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">
             <Cpu size={14} /> Simular Eventos & Falhas
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Queda", icon: <AlertTriangle size={14} />, type: "queda", color: "red" },
-              { label: "Alternador", icon: <AlertTriangle size={14} />, type: "alternador", color: "red" },
-              { label: "Calor", icon: <AlertTriangle size={14} />, type: "sobreaquecimento", color: "red" },
-              { label: "Excesso", icon: <AlertTriangle size={14} />, type: "speeding", color: "red" },
-              { label: "Reset", icon: <RefreshCcw size={14} />, type: "reset_eventos", color: "neutral" },
+              { label: "Forçar Queda", icon: <AlertTriangle size={14} />, type: "queda", color: "red" },
+              { label: "Reset Eventos", icon: <RefreshCcw size={14} />, type: "reset_eventos", color: "neutral" },
             ].map((ev) => (
               <button 
                 key={ev.type}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all border disabled:opacity-30 disabled:pointer-events-none ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all border disabled:opacity-30 disabled:pointer-events-none ${
                   ev.color === "red" 
                     ? "bg-red/10 border-red/20 text-red hover:bg-red hover:text-white"
                     : "bg-panel border-border-glass-subtle text-muted hover:text-text hover:border-border-glass"

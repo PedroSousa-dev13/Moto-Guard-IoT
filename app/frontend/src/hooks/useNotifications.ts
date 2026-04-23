@@ -25,7 +25,7 @@ let socketRefCount = 0;
 
 function getOrCreateSocket(): Socket {
   if (!sharedSocket || !sharedSocket.connected) {
-    sharedSocket = io({ autoConnect: true });
+    sharedSocket = io();
   }
   return sharedSocket;
 }
@@ -127,7 +127,7 @@ export function useNotifications() {
       };
       const alertType = typeMapping[data.status] ?? "OTHER";
       const message = data.message ?? `Alerta de ${data.motoModel} (${data.deviceId})`;
-      const isPredictive = message.toLowerCase().includes("tendência") || message.toLowerCase().includes("possível");
+      const isPredictive = title.toLowerCase().includes("tendência") || title.toLowerCase().includes("possível");
 
       const alert: AlertItem = {
         id,
@@ -146,8 +146,8 @@ export function useNotifications() {
       pushAlert(alert);
       refreshUnread();
 
-      // Toast para WARNING e CRITICAL (não para preditivos INFO)
-      if (severity === "CRITICAL" || severity === "WARNING") {
+      // Toast para WARNING, CRITICAL e INFO (não para preditivos)
+      if (severity === "CRITICAL" || severity === "WARNING" || severity === "INFO") {
         const newToast: ToastNotification = {
           id,
           title: isPredictive ? `📈 ${title}` : title,
@@ -159,7 +159,7 @@ export function useNotifications() {
         };
         setToast(newToast);
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-        const autoDismissMs = severity === "CRITICAL" ? 10000 : 6000;
+        const autoDismissMs = severity === "CRITICAL" ? 10000 : severity === "WARNING" ? 6000 : 4000;
         toastTimerRef.current = setTimeout(() => setToast(null), autoDismissMs);
       }
     };
@@ -168,17 +168,20 @@ export function useNotifications() {
       const settings = loadSettings();
       if (!settings.alerts.enabled) return;
       const id = `trip_started:${data.deviceId}:${data.timestamp}`;
-      pushAlert({
+      
+      // Mostrar popup (Toast) mas não persistir no histórico de alertas
+      const newToast: ToastNotification = {
         id,
         title: "Viagem iniciada",
         message: `${data.motoModel} (${data.deviceId})`,
         severity: "INFO",
-        status: "unread",
-        timestamp: data.timestamp,
-        deviceId: data.deviceId,
-        motoModel: data.motoModel,
         tripId: data.tripId,
-      });
+        timestamp: data.timestamp,
+      };
+      setToast(newToast);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+      
       refreshUnread();
     };
 
@@ -187,17 +190,20 @@ export function useNotifications() {
       if (!settings.alerts.enabled) return;
       const id = `trip_ended:${data.deviceId}:${data.timestamp}`;
       const dist = data.distanceKm != null ? ` · ${data.distanceKm.toFixed(1)} km` : "";
-      pushAlert({
+      
+      // Mostrar popup (Toast) mas não persistir no histórico de alertas
+      const newToast: ToastNotification = {
         id,
         title: "Viagem terminada",
         message: `${data.motoModel} (${data.deviceId})${dist}`,
         severity: "INFO",
-        status: "unread",
-        timestamp: data.timestamp,
-        deviceId: data.deviceId,
-        motoModel: data.motoModel,
         tripId: data.tripId,
-      });
+        timestamp: data.timestamp,
+      };
+      setToast(newToast);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+
       refreshUnread();
     };
 
