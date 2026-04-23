@@ -70,7 +70,7 @@ export class SocketService {
   // Thresholds simples para ciclo de viagem em tempo real.
   private static readonly TRIP_START_SPEED_KMH = 5;
   private static readonly TRIP_END_SPEED_KMH = 2;
-  private static readonly TRIP_END_STATIONARY_TICKS = 10;
+  private static readonly TRIP_END_STATIONARY_TICKS = 100;
 
   /** Emitir evento para todos os clientes ligados */
   emit(event: string, data: any): void {
@@ -266,7 +266,7 @@ export class SocketService {
       const prev = new Date(prevTimestamp).getTime();
       const cur = new Date(currentTimestamp).getTime();
       if (!Number.isNaN(prev) && !Number.isNaN(cur) && cur > prev) {
-        dtSec = Math.min(5, Math.max(0.2, (cur - prev) / 1000));
+        dtSec = Math.min(5, Math.max(0.05, (cur - prev) / 1000));
       }
     }
 
@@ -435,8 +435,8 @@ export class SocketService {
     stats.speedTicks++;
     stats.ticks++;
 
-    // Flush parcial a cada 30 ticks (~30 segundos)
-    if (stats.ticks % 30 === 0) {
+    // Flush parcial a cada 300 ticks (~30 segundos reais a 10Hz)
+    if (stats.ticks % 300 === 0) {
       this.flushTripStats(deviceId);
     }
   }

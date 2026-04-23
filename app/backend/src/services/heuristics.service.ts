@@ -97,11 +97,11 @@ export function evaluateTelemetryRisk(
   const accelMs2 = ((speed - prevSpeed) / 3.6) / Math.max(dtSec, 0.001);
   const accelG = accelMs2 / 9.81;
 
-  pushLimited(state.gForceWindow, gForce, 12);
-  pushLimited(state.temps, temp, 18);
-  pushLimited(state.volts, volt, 18);
-  pushLimited(state.tiresFront, tireFront, 30);
-  pushLimited(state.tiresRear, tireRear, 30);
+  pushLimited(state.gForceWindow, gForce, 120);
+  pushLimited(state.temps, temp, 180);
+  pushLimited(state.volts, volt, 180);
+  pushLimited(state.tiresFront, tireFront, 300);
+  pushLimited(state.tiresRear, tireRear, 300);
 
   const gAvg = mean(state.gForceWindow);
   const rollAbs = Math.abs(roll);
@@ -167,7 +167,7 @@ export function evaluateTelemetryRisk(
   if (temp >= profile.criticalTemp) state.overheatTicks += 1;
   else state.overheatTicks = 0;
 
-  if (state.overheatTicks === 3 && shouldEmit(EventType.OVERHEAT, 12000)) {
+  if (state.overheatTicks === 30 && shouldEmit(EventType.OVERHEAT, 12000)) {
     events.push({
       type: EventType.OVERHEAT,
       severity: EventSeverity.WARNING,
@@ -175,7 +175,7 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (state.overheatTicks >= 8 && shouldEmit(EventType.OVERHEAT, 12000)) {
+  if (state.overheatTicks >= 80 && shouldEmit(EventType.OVERHEAT, 12000)) {
     events.push({
       type: EventType.OVERHEAT,
       severity: EventSeverity.CRITICAL,
@@ -186,7 +186,7 @@ export function evaluateTelemetryRisk(
   if (volt <= profile.criticalVoltage) state.lowVoltageTicks += 1;
   else state.lowVoltageTicks = 0;
 
-  if (state.lowVoltageTicks === 3 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
+  if (state.lowVoltageTicks === 30 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
     events.push({
       type: EventType.LOW_VOLTAGE,
       severity: EventSeverity.WARNING,
@@ -194,7 +194,7 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (state.lowVoltageTicks >= 8 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
+  if (state.lowVoltageTicks >= 80 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
     events.push({
       type: EventType.LOW_VOLTAGE,
       severity: EventSeverity.CRITICAL,
@@ -271,7 +271,7 @@ export function evaluateTelemetryRisk(
       state.speedingTicks = 0;
     }
 
-    if (state.speedingTicks >= 3) {
+    if (state.speedingTicks >= 30) {
       const excess = speed - legalLimit;
       const isCritical = speed > legalLimit * 1.25;
       if (shouldEmit(EventType.SPEEDING, 8000)) {

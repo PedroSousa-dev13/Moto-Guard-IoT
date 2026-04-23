@@ -32,13 +32,13 @@ from config import (
                    )
 from routes import RouteCursor, get_route, get_route_between
 
-# ── Constantes de interpolação (suavidade por tick de 1s) ─────────────────────
-LERP_VEL   = 0.15
-LERP_RPM   = 0.20
-LERP_ROLL  = 0.12
-LERP_PITCH = 0.18
-LERP_TEMP  = 0.03
-LERP_VOLT  = 0.08
+# ── Constantes de interpolação BASE (para 1s — serão escaladas pelo dt) ────────
+BASE_LERP_VEL   = 0.15
+BASE_LERP_RPM   = 0.20
+BASE_LERP_ROLL  = 0.12
+BASE_LERP_PITCH = 0.18
+BASE_LERP_TEMP  = 0.03
+BASE_LERP_VOLT  = 0.08
 
 # Redução progressiva de velocidade perto do destino final (rotas não-loop).
 ARRIVAL_SLOWDOWN_START_M = 300.0   # começa a abrandar apenas nos últimos 300m
@@ -190,8 +190,18 @@ class HeadlessSimulator:
         self.modelo_inicial = modelo
         self.moto_model_display: str | None = None
         self.current_device_id: str = DEVICE_ID
-        self._tick_interval: float = float(PUBLISH_INTERVAL)  # pode ser alterado por set_speed
+        self.dt: float = float(PUBLISH_INTERVAL)
+        self._tick_interval: float = self.dt  # pode ser alterado por set_speed
         self._excesso_ticks: int = 0  # ticks restantes de excesso de velocidade forçado
+
+        # Factores LERP ajustados à frequência (dt)
+        # factor_dt = 1 - (1 - factor_base)^dt
+        self.lerp_vel   = 1.0 - (1.0 - BASE_LERP_VEL)   ** self.dt
+        self.lerp_rpm   = 1.0 - (1.0 - BASE_LERP_RPM)   ** self.dt
+        self.lerp_roll  = 1.0 - (1.0 - BASE_LERP_ROLL)  ** self.dt
+        self.lerp_pitch = 1.0 - (1.0 - BASE_LERP_PITCH) ** self.dt
+        self.lerp_temp  = 1.0 - (1.0 - BASE_LERP_TEMP)  ** self.dt
+        self.lerp_volt  = 1.0 - (1.0 - BASE_LERP_VOLT)  ** self.dt
 
         # Graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -383,7 +393,7 @@ class HeadlessSimulator:
         elif acao in ("set_speeding", "set-speeding"):
             active = bool(dados.get("active", False))
             if active:
-                self._excesso_ticks = 9999  # ativo indefinidamente até desligar
+                self._excesso_ticks = int(9999 / self.dt)  # ativo indefinidamente até desligar
                 log("Comando: set_speeding → ON (excesso de velocidade forçado)")
             else:
                 self._excesso_ticks = 0
@@ -457,8 +467,8 @@ class HeadlessSimulator:
             self.tele.flag_sobreaquecimento = True
             log("Evento: SOBREAQUECIMENTO activado")
         elif tipo in ("excesso_velocidade", "speeding"):
-            self._excesso_ticks = 20  # ~20 ticks a 1x = 20s de excesso
-            log("Evento: EXCESSO DE VELOCIDADE activado (20 ticks)")
+            self._excesso_ticks = int(20 / self.dt)  # ~20s de excesso
+            log(f"Evento: EXCESSO DE VELOCIDADE activado ({self._excesso_ticks} ticks)")
         else:
             log(f"Tipo de evento desconhecido: {tipo}")
 
@@ -507,16 +517,16 @@ class HeadlessSimulator:
         # Fase 4 (tick 21+):    entrega ao controlador normal de velocidade
         if self._startup_phase:
             self._startup_tick += 1
-            t = self._startup_tick
-            if t <= 3:
+            t_seg = self._startup_tick * self.dt
+            if t_seg <= 3:
                 # Parado — motor em marcha lenta
                 s._target_vel = 0.0
-            elif t <= 8:
+            elif t_seg <= 8:
                 # Embraiagem — arranque muito suave
-                s._target_vel = (t - 3) * 1.0   # 0 → 5 km/h ao longo de 5 ticks
-            elif t <= 20:
+                s._target_vel = (t_seg - 3) * 1.0   # 0 → 5 km/h ao longo de 5s
+            elif t_seg <= 20:
                 # Aceleração progressiva em 1ª/2ª mudança
-                s._target_vel = 5.0 + (t - 8) * 2.5   # 5 → 35 km/h ao longo de 12 ticks
+                s._target_vel = 5.0 + (t_seg - 8) * 2.5   # 5 → 35 km/h ao longo de 12s
             else:
                 # Entregar ao controlador normal — aponta para o limite legal da rota
                 legal_now = (self.route_cursor.speed_limit_kmh()
@@ -534,7 +544,9 @@ class HeadlessSimulator:
             s._target_yaw = s.yaw
         else:
             if not self._startup_phase:
-                if self._tick_count % 8 == 0:
+                # Ajuste de intenção a cada ~8 segundos (real)
+                ticks_per_8s = max(1, int(8.0 / self.dt))
+                if self._tick_count % ticks_per_8s == 0:
                     # Velocidade de cruzeiro baseada no limite legal da estrada atual
                     # Motociclista realista: circula perto do limite ± variação natural
                     legal_now = (self.route_cursor.speed_limit_kmh()
@@ -572,8 +584,9 @@ class HeadlessSimulator:
         # Durante arranque: aceleração máxima muito suave (como embraiagem real)
         accel_cap = 3.0 if self._startup_phase else self.accel_max
         brake_cap = self.brake_max
+        # s._acceleration é km/h por segundo. A cada tick somamos uma fracção.
         s._acceleration = clamp(vel_diff * 0.22, -brake_cap, accel_cap)
-        s.velocidade = clamp(s.velocidade + s._acceleration, 0, self.vel_max)
+        s.velocidade = clamp(s.velocidade + s._acceleration * self.dt, 0, self.vel_max)
 
         # ── 2b. Excesso de velocidade forçado ─────────────────────────
         # Incrementa progressivamente a partir da velocidade atual até ultrapassar o limite.
@@ -584,10 +597,10 @@ class HeadlessSimulator:
                      if self.route_cursor else 50.0) or 50.0
             # Alvo: 30-40% acima do limite (suficiente para disparar CRITICAL no heuristics)
             target_excesso = legal * 1.35
-            # Incremento por tick: ~3-5 km/h/s — sobe visivelmente mas não instantâneo
-            increment = min(self.accel_max * 1.8, 25.0)
+            # Incremento por segundo: ~3-5 km/h/s — sobe visivelmente mas não instantâneo
+            increment_per_sec = min(self.accel_max * 1.8, 25.0)
             if s.velocidade < target_excesso:
-                s.velocidade = min(s.velocidade + increment, target_excesso)
+                s.velocidade = min(s.velocidade + increment_per_sec * self.dt, target_excesso)
             s._target_vel = target_excesso
             s.throttle_pct = clamp(lerp(s.throttle_pct, 100.0, 0.4), 0, 100)
             s.brake_front_pct = lerp(s.brake_front_pct, 0, 0.5)
@@ -614,8 +627,8 @@ class HeadlessSimulator:
 
         # ── 4. Pitch ─────────────────────────────────────────────────
         target_pitch = clamp(s._acceleration * 0.8, -12, 12)
-        s.pitch = lerp(s.pitch, target_pitch, LERP_PITCH)
-        s.pitch += random.uniform(-0.15, 0.15)
+        s.pitch = lerp(s.pitch, target_pitch, self.lerp_pitch)
+        s.pitch += random.uniform(-0.15, 0.15) * self.dt * 10
         s.pitch = clamp(s.pitch, -45, 45)
 
         # ── 5. Roll e Yaw ────────────────────────────────────────────
@@ -625,14 +638,14 @@ class HeadlessSimulator:
             yaw_diff * speed_factor * 0.5,
             -self.roll_tipico, self.roll_tipico
         )
-        s.roll = lerp(s.roll, target_roll, LERP_ROLL)
-        s.roll += random.uniform(-0.2, 0.2)
+        s.roll = lerp(s.roll, target_roll, self.lerp_roll)
+        s.roll += random.uniform(-0.2, 0.2) * self.dt * 10
         s.roll = clamp(s.roll, -self.roll_tipico * 1.2, self.roll_tipico * 1.2)
 
         if s.velocidade > 1:
             yaw_rate = s.roll * 0.08 * speed_factor
-            s.yaw = (s.yaw + yaw_rate) % 360
-        s.yaw += random.uniform(-0.3, 0.3)
+            s.yaw = (s.yaw + yaw_rate * self.dt * 10) % 360
+        s.yaw += random.uniform(-0.3, 0.3) * self.dt * 10
         s.yaw = s.yaw % 360
 
         # ── 7. Temperatura ───────────────────────────────────────────
@@ -640,14 +653,14 @@ class HeadlessSimulator:
         # Em movimento: sobe até temp_max proporcional à velocidade
         temp_idle = self.temp_min + self.temp_idle_off
         target_temp = temp_idle + (self.temp_max - temp_idle) * (s.velocidade / self.vel_max) * 0.9
-        s.temp_motor = lerp(s.temp_motor, target_temp, LERP_TEMP)
-        s.temp_motor += random.uniform(-0.1, 0.1)
+        s.temp_motor = lerp(s.temp_motor, target_temp, self.lerp_temp)
+        s.temp_motor += random.uniform(-0.1, 0.1) * self.dt * 10
         s.temp_motor = clamp(s.temp_motor, self.temp_min - 5, self.temp_max + 25)
 
         # ── 8. Voltagem ──────────────────────────────────────────────
         target_volt = VOLTAGEM_NOMINAL + random.uniform(-0.05, 0.05)
-        s.voltagem = lerp(s.voltagem, target_volt, LERP_VOLT)
-        s.voltagem += random.uniform(-0.02, 0.02)
+        s.voltagem = lerp(s.voltagem, target_volt, self.lerp_volt)
+        s.voltagem += random.uniform(-0.02, 0.02) * self.dt * 10
         s.voltagem = clamp(s.voltagem, 9.0, self.volt_max)
 
         # ── 9. Gear e Clutch ─────────────────────────────────────────
@@ -677,7 +690,10 @@ class HeadlessSimulator:
                 s.gear = 6
             
             if s.gear != s._prev_gear and s._prev_gear != 0:
-                s._clutch_timer = 2
+                s._clutch_timer = int(2 / self.dt)  # ~2 ticks a 1Hz = 2 segundos (ou ajuste conforme realismo)
+                # Na verdade, a embraiagem numa mota é rápida (~0.2-0.5s). 
+                # Vamos pôr 0.3s fixos.
+                s._clutch_timer = max(1, int(0.3 / self.dt))
             if s._clutch_timer > 0:
                 s.clutch_engaged = True
                 s._clutch_timer -= 1
@@ -699,12 +715,12 @@ class HeadlessSimulator:
             target_rpm = idle_rpm + rpm_range * (ratio ** 1.8)
             if s.clutch_engaged:
                 target_rpm = max(idle_rpm, target_rpm - 800)
-        s.rpm = lerp(float(s.rpm), target_rpm, LERP_RPM)
-        s.rpm += random.uniform(-20, 20)
+        s.rpm = lerp(float(s.rpm), target_rpm, self.lerp_rpm)
+        s.rpm += random.uniform(-20, 20) * self.dt * 10
         s.rpm = clamp(s.rpm, 0, self.rpm_max)
 
         # ── 10. Odómetro ─────────────────────────────────────────────
-        s.odometer_km += s.velocidade / 3600.0
+        s.odometer_km += (s.velocidade / 3600.0) * self.dt
 
         # ── 11. Segurança ativa ──────────────────────────────────────
         s.abs_active = (s.brake_front_pct > 60 and s.velocidade > 30
@@ -722,10 +738,10 @@ class HeadlessSimulator:
                       / max(1, self.temp_max - self.temp_min))
         target_tire_front = self.tire_front_base + temp_factor * self.tire_front_base * 0.08
         target_tire_rear = self.tire_rear_base + temp_factor * self.tire_rear_base * 0.10
-        s.tire_pressure_front = lerp(s.tire_pressure_front, target_tire_front, 0.06)
-        s.tire_pressure_rear = lerp(s.tire_pressure_rear, target_tire_rear, 0.06)
-        s.tire_pressure_front += random.uniform(-0.003, 0.003)
-        s.tire_pressure_rear += random.uniform(-0.003, 0.003)
+        s.tire_pressure_front = lerp(s.tire_pressure_front, target_tire_front, 1.0 - (1.0-0.06)**self.dt)
+        s.tire_pressure_rear = lerp(s.tire_pressure_rear, target_tire_rear, 1.0 - (1.0-0.06)**self.dt)
+        s.tire_pressure_front += random.uniform(-0.003, 0.003) * self.dt * 10
+        s.tire_pressure_rear += random.uniform(-0.003, 0.003) * self.dt * 10
         s.tire_pressure_front = clamp(s.tire_pressure_front, self.tire_front_base * 0.90, self.tire_front_base * 1.15)
         s.tire_pressure_rear = clamp(s.tire_pressure_rear, self.tire_rear_base * 0.90, self.tire_rear_base * 1.15)
 
@@ -780,7 +796,7 @@ class HeadlessSimulator:
                 s.brake_front_pct = 0
                 s.brake_rear_pct = 0
                 s.tc_active = False          # sem acelerador durante queda
-                if s._queda_timer >= self.th_confirmacao:
+                if s._queda_timer * self.dt >= self.th_confirmacao:
                     s._queda_confirmed = True
             else:
                 # Mota no chão — estado congelado até reset
@@ -795,7 +811,7 @@ class HeadlessSimulator:
                 s.tc_active = False
 
         if s.flag_alternador:
-            s.voltagem = max(9.0, s.voltagem - random.uniform(0.15, 0.25))
+            s.voltagem = max(9.0, s.voltagem - random.uniform(0.15, 0.25) * self.dt)
 
         if s.flag_sobreaquecimento:
             s.temp_motor = min(self.temp_max + 25, s.temp_motor + random.uniform(1.5, 3.0))
@@ -806,12 +822,12 @@ class HeadlessSimulator:
             # Continuar a mover-se mesmo a baixa velocidade para conseguir chegar ao fim
             if s.velocidade > 0.1:
                 speed_ms = s.velocidade / 3.6
-                dist_m = speed_ms * PUBLISH_INTERVAL
+                dist_m = speed_ms * self.dt
                 lat, lng, bearing = self.route_cursor.step(dist_m)
                 s.lat = lat
                 s.lng = lng
                 s._target_yaw = bearing
-                s.yaw = lerp_angle_deg(s.yaw, bearing, 0.35)
+                s.yaw = lerp_angle_deg(s.yaw, bearing, 1.0 - (1.0-0.35)**self.dt)
             
             # Se estivermos muito perto do fim (menos de 5m) e quase parados, forçamos o fim
             dist_end = self.route_cursor.distance_to_end_m()
@@ -938,18 +954,19 @@ class HeadlessSimulator:
 
                 # Detectar fim de rota e paragem total
                 if self.route_cursor and self.route_cursor.finished and self.tele.velocidade < 0.1:
-                    if not hasattr(self, '_stop_countdown'): self._stop_countdown = 15
+                    if not hasattr(self, '_stop_countdown'): 
+                        self._stop_countdown = int(15 / self.dt) # 15 segundos
                     self._stop_countdown -= 1
                     if self._stop_countdown <= 0:
                         self._generation_paused = True
                         delattr(self, '_stop_countdown')
                         log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
                     else:
-                        if self._stop_countdown % 5 == 0:
-                            log(f"A aguardar paragem total para fechar viagem... ({self._stop_countdown} ticks)")
+                        if self._stop_countdown % int(5 / self.dt) == 0:
+                            log(f"A aguardar paragem total para fechar viagem... ({int(self._stop_countdown * self.dt)}s)")
 
-                # Log resumido a cada 10 ticks
-                if self._tick_count % 10 == 0:
+                # Log a cada tick para verificação de 10Hz
+                if self._tick_count % 1 == 0:
                     s = self.tele
                     log(f"tick #{self._tick_count:>5} | "
                         f"{round(s.velocidade)}km/h | "

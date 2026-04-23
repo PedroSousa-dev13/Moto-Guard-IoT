@@ -142,9 +142,9 @@ export default function Dashboard() {
           time: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           speed: tel.speed_kmh,
           rpm: tel.rpm / 100,
-          temp: 85 + (Math.random() * 2),
-          batt: 14.2 + (Math.random() * 0.1)
-        }].slice(-30);
+          temp: tel.engine_temp_c,
+          batt: tel.voltage
+        }].slice(-300);
         return next;
       });
     } else if (!status.ws && !status.mqtt) {
@@ -225,7 +225,7 @@ export default function Dashboard() {
               icon={<Gauge size={20} />} 
               label="Velocidade" 
               color="#3b82f6" 
-              footer={`Média: ${fmt(tel?.speed_kmh ? tel.speed_kmh * 0.8 : 0)} km/h`}
+              footer={`Máxima: ${fmt(tel?.speed_kmh)} km/h`}
               loading={!hasData}
             >
               <AnimatedGauge 
@@ -243,7 +243,7 @@ export default function Dashboard() {
               icon={<Zap size={20} />} 
               label="RPM" 
               color="#10b981" 
-              footer={`Máx: ${fmt(tel?.rpm ? tel.rpm * 1.1 : 0)} rpm`}
+              footer={`Máxima: ${fmt(tel?.rpm)} rpm`}
               loading={!hasData}
             >
               <AnimatedGauge 
