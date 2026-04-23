@@ -6,7 +6,7 @@ import Card from "../components/ui/Card";
 import {
   User, Mail, Calendar, Shield, LogOut, Bike, Plus, X,
   Edit2, Trash2, Check, Key, Cpu, ChevronDown, ChevronUp, Eye, EyeOff,
-  Gauge, Thermometer, Sliders
+  Gauge, Thermometer, Sliders, AlertTriangle, RefreshCw, Zap, Activity, Database
 } from "lucide-react";
 
 interface Msg { type: "success" | "error"; text: string }

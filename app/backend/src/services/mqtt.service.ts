@@ -97,7 +97,7 @@ class MqttService {
     }
 
     const acao = (command as any)?.acao;
-    const retain = acao === "definir_rota" || acao === "reset_rota";
+    const retain = acao === "definir_rota" || acao === "reset_rota" || acao === "definir_modelo";
     this.client.publish(
       env.MQTT_TOPIC_COMANDO,
       JSON.stringify(command),
