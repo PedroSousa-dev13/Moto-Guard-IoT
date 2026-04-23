@@ -304,6 +304,10 @@ export class SocketService {
     const status = this.normalizeEventStatus(payload.system.event_status);
     const previousStatus = this.lastEventStatusByDevice.get(deviceId) ?? "NORMAL";
 
+    if (status !== "NORMAL") {
+      console.log(`[SocketService] Status detetado em ${deviceId}: "${status}" (Anterior: "${previousStatus}")`);
+    }
+
     if (status !== "NORMAL" && status !== previousStatus) {
       const alert: AlertEvent = {
         status,
@@ -793,25 +797,47 @@ export class SocketService {
   }
 
   private normalizeEventStatus(status: string): string {
-    const trimmed = status.trim();
-    if (!trimmed) {
-      return "NORMAL";
-    }
+    const trimmed = (status || "").trim();
+    if (!trimmed) return "NORMAL";
     return trimmed.toUpperCase();
+  }
+
+  private getEventTypeFromStatus(status: string): string {
+    const s = status.toUpperCase();
+    if (s.includes("CRASH") || s.includes("QUEDA") || s.includes("FALL")) return "CRASH_DETECTED";
+    if (s.includes("OVERHEAT") || s.includes("SOBREAQUECIMENTO")) return "OVERHEAT";
+    if (s.includes("ALTERNADOR") || s.includes("LOW_VOLTAGE") || s.includes("VOLTAGEM")) return "LOW_VOLTAGE";
+    if (s.includes("BRAKING") || s.includes("TRAVAGEM")) return "HARD_BRAKING";
+    if (s.includes("LEAN") || s.includes("INCLINAÇÃO")) return "EXCESSIVE_LEAN";
+    if (s.includes("VIBRATION") || s.includes("VIBRAÇÃO")) return "HIGH_VIBRATION";
+    if (s.includes("ACCEL") || s.includes("ACELERAÇÃO")) return "RAPID_ACCELERATION";
+    if (s.includes("TIRE") || s.includes("PNEU")) return "TIRE_PRESSURE_LOW";
+    if (s.includes("OIL") || s.includes("ÓLEO")) return "OIL_PRESSURE_LOW";
+    return "HIGH_VIBRATION";
   }
 
   /** Persiste evento de risco na base de dados (etapa 1.12) */
   private async persistTripEvent(payload: TelemetryPayload, status: string): Promise<void> {
     const deviceId = payload.system.device_id;
-    const tripId = this.activeTripIdByDevice.get(deviceId);
-
-    if (!tripId) {
-      // Só persiste eventos se houver uma viagem ativa
-      return;
-    }
+    let tripId = this.activeTripIdByDevice.get(deviceId);
 
     // Mapear status para tipo e severidade
     const { eventType, severity, message } = this.mapStatusToEventType(status);
+
+    if (!tripId) {
+      if (eventType === "CRASH_DETECTED") {
+        console.log(`[SocketService] Queda detetada sem viagem ativa. Iniciando viagem de emergência para ${deviceId}...`);
+        await this.startTrip(payload);
+        tripId = this.activeTripIdByDevice.get(deviceId);
+      } else {
+        console.warn(`[SocketService] Alerta "${status}" ignorado em ${deviceId} porque não há viagem ativa.`);
+        return;
+      }
+    }
+
+    if (!tripId) return;
+
+    console.log(`[SocketService] Persistindo evento "${status}" (${eventType}) para viagem ${tripId}`);
 
     try {
       await prisma.tripEvent.create({
@@ -909,28 +935,37 @@ export class SocketService {
   }
 
   private mapStatusToEventType(status: string): { eventType: string; severity: string; message: string } {
-    const statusMap: Record<string, { type: string; severity: string; message: string }> = {
-      "CRASH": { type: "CRASH_DETECTED", severity: "CRITICAL", message: "Queda detetada" },
-      "QUEDA": { type: "CRASH_DETECTED", severity: "CRITICAL", message: "Queda detetada" },
-      "FALL": { type: "CRASH_DETECTED", severity: "CRITICAL", message: "Queda detetada" },
-      "OVERHEAT": { type: "OVERHEAT", severity: "WARNING", message: "Sobreaquecimento do motor" },
-      "SOBREAQUECIMENTO": { type: "OVERHEAT", severity: "WARNING", message: "Sobreaquecimento do motor" },
-      "ALTERNADOR": { type: "LOW_VOLTAGE", severity: "WARNING", message: "Falha no alternador" },
-      "LOW_VOLTAGE": { type: "LOW_VOLTAGE", severity: "WARNING", message: "Voltagem baixa" },
-      "HARD_BRAKING": { type: "HARD_BRAKING", severity: "INFO", message: "Travagem brusca" },
-      "EXCESSIVE_LEAN": { type: "EXCESSIVE_LEAN", severity: "WARNING", message: "Inclinação excessiva" },
-      "HIGH_VIBRATION": { type: "HIGH_VIBRATION", severity: "WARNING", message: "Vibração anómala" },
-      "RAPID_ACCEL": { type: "RAPID_ACCELERATION", severity: "INFO", message: "Aceleração brusca" },
-      "TIRE_PRESSURE": { type: "TIRE_PRESSURE_LOW", severity: "WARNING", message: "Pressão dos pneus baixa" },
-      "OIL_PRESSURE": { type: "OIL_PRESSURE_LOW", severity: "CRITICAL", message: "Pressão do óleo baixa" },
+    const eventType = this.getEventTypeFromStatus(status);
+    
+    const severityMap: Record<string, string> = {
+      "CRASH_DETECTED": "CRITICAL",
+      "OIL_PRESSURE_LOW": "CRITICAL",
+      "OVERHEAT": "WARNING",
+      "LOW_VOLTAGE": "WARNING",
+      "EXCESSIVE_LEAN": "WARNING",
+      "HIGH_VIBRATION": "WARNING",
+      "TIRE_PRESSURE_LOW": "WARNING",
+      "HARD_BRAKING": "INFO",
+      "RAPID_ACCELERATION": "INFO",
     };
 
-    const mapped = statusMap[status.toUpperCase()];
-    if (mapped) {
-      return { eventType: mapped.type, severity: mapped.severity, message: mapped.message };
-    }
+    const messageMap: Record<string, string> = {
+      "CRASH_DETECTED": "Queda detetada",
+      "OVERHEAT": "Sobreaquecimento do motor",
+      "LOW_VOLTAGE": "Voltagem baixa / Alerta de bateria",
+      "HARD_BRAKING": "Travagem brusca detetada",
+      "EXCESSIVE_LEAN": "Inclinação excessiva detetada",
+      "HIGH_VIBRATION": "Vibração anómala detetada",
+      "RAPID_ACCELERATION": "Aceleração brusca detetada",
+      "TIRE_PRESSURE_LOW": "Pressão de pneus baixa",
+      "OIL_PRESSURE_LOW": "Pressão de óleo crítica",
+    };
 
-    return { eventType: "HIGH_VIBRATION", severity: "INFO", message: `Evento: ${status}` };
+    return { 
+      eventType, 
+      severity: severityMap[eventType] || "INFO", 
+      message: messageMap[eventType] || `Evento: ${status}` 
+    };
   }
 }
 

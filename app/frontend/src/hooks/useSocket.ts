@@ -98,8 +98,10 @@ export function useSocket() {
   const cancelEmergency = useCallback((deviceId: string) => {
     if (socketRef.current) {
       socketRef.current.emit("cancel_emergency", { deviceId });
+      // Também parar o simulador
+      socketRef.current.emit("send_command", { acao: "parar", device_id: deviceId });
       setCrashAlert(null);
-      addLog(`Cancelamento de emergência enviado para ${deviceId}`, "#22c55e");
+      addLog(`Cancelamento de emergência e paragem enviados para ${deviceId}`, "#22c55e");
     }
   }, [addLog]);
 

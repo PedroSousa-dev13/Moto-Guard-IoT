@@ -30,6 +30,17 @@ const translations = {
     'common.discard': 'Descartar',
     'common.reset': 'Repor',
     
+    // SOS Countdown
+    'sos.title': 'Deteção de Queda',
+    'sos.seconds': 'Segundos',
+    'sos.question': 'Estás bem?',
+    'sos.message': 'Detetámos uma queda. Iremos enviar um alerta se não cancelares este aviso.',
+    'sos.button': 'ESTOU BEM',
+    'sos.sentTitle': 'ALERTA ENVIADO',
+    'sos.sentSubtitle': 'Socorro solicitado',
+    'sos.sentMessage': 'O tempo de cancelamento expirou. O alerta de emergência foi enviado para os teus contactos.',
+    'sos.audioActive': 'Aviso sonoro ativo',
+    
     // Navigation
     'nav.dashboard': 'Dashboard',
     'nav.trips': 'Viagens',
@@ -848,6 +859,17 @@ export const extendedTranslations = {
     'gpx.selectMotorcycle': 'Select motorcycle',
     'gpx.upload': 'Upload',
     'gpx.uploading': 'Uploading...',
+
+    // SOS Countdown
+    'sos.title': 'Fall Detection',
+    'sos.seconds': 'Seconds',
+    'sos.question': 'Are you okay?',
+    'sos.message': 'We detected a fall. We will send an alert if you don\'t cancel this warning.',
+    'sos.button': "I'M OK",
+    'sos.sentTitle': 'ALERT SENT',
+    'sos.sentSubtitle': 'Help requested',
+    'sos.sentMessage': 'The countdown has expired. The emergency alert has been sent to your contacts.',
+    'sos.audioActive': 'Audio warning active',
     'gpx.success': 'GPX imported successfully',
     'gpx.error': 'Error importing GPX',
     'gpx.noMotorcycles': 'You have no registered motorcycles.',
@@ -1079,6 +1101,17 @@ const es = {
   'common.confirm': 'Confirmar',
   'common.discard': 'Descartar',
   'common.reset': 'Restablecer',
+
+  // SOS Countdown
+  'sos.title': 'Detección de Caída',
+  'sos.seconds': 'Segundos',
+  'sos.question': '¿Estás bien?',
+  'sos.message': 'Hemos detectado una caída. Enviaremos una alerta si no cancelas este aviso.',
+  'sos.button': 'ESTOY BIEN',
+  'sos.sentTitle': 'ALERTA ENVIADO',
+  'sos.sentSubtitle': 'Socorro solicitado',
+  'sos.sentMessage': 'El tiempo de cancelación ha expirado. El alerta de emergencia ha sido enviada a tus contactos.',
+  'sos.audioActive': 'Aviso sonoro activo',
 
   // Navigation
   'nav.dashboard': 'Dashboard',

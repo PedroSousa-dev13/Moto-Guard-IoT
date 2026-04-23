@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, ShieldAlert, Volume2 } from "lucide-react";
+import { useI18n } from "../i18n";
 
 interface SOSCountdownProps {
   deviceId: string;
@@ -8,6 +9,7 @@ interface SOSCountdownProps {
 }
 
 export default function SOSCountdown({ deviceId, initialSeconds, onCancel }: SOSCountdownProps) {
+  const { t } = useI18n();
   const [seconds, setSeconds] = useState(initialSeconds);
   const [isCancelled, setIsCancelled] = useState(false);
 
@@ -46,92 +48,92 @@ export default function SOSCountdown({ deviceId, initialSeconds, onCancel }: SOS
     };
   }, [seconds, isCancelled]);
 
-  if (seconds <= 0 && !isCancelled) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fade-in">
-        <div className="bg-red/10 border-2 border-red/30 rounded-3xl p-10 max-w-md w-full text-center flex flex-col items-center gap-6 shadow-2xl shadow-red/20">
-          <div className="w-20 h-20 rounded-full bg-red text-white flex items-center justify-center animate-pulse">
-            <ShieldAlert size={48} />
+    if (seconds <= 0 && !isCancelled) {
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-fade-in">
+          <div className="bg-surface/80 border-2 border-red/50 rounded-[3rem] p-12 max-w-md w-full text-center flex flex-col items-center gap-8 shadow-[0_0_100px_rgba(239,68,68,0.2)]">
+            <div className="w-24 h-24 rounded-full bg-red text-white flex items-center justify-center animate-pulse shadow-xl shadow-red/20">
+              <ShieldAlert size={56} />
+            </div>
+            <div className="flex flex-col gap-3">
+              <h2 className="text-4xl font-black text-white m-0 tracking-tighter uppercase">{t('sos.sentTitle')}</h2>
+              <p className="text-red font-black m-0 uppercase tracking-[0.3em] text-xs">{t('sos.sentSubtitle')}</p>
+            </div>
+            <p className="text-white/90 text-lg font-medium leading-relaxed">
+              {t('sos.sentMessage')}
+            </p>
+            <button 
+              onClick={() => setIsCancelled(true)}
+              className="mt-4 w-full py-5 rounded-3xl bg-white text-black font-black text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+            >
+              {t('common.close').toUpperCase()}
+            </button>
           </div>
-          <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-black text-text m-0">ALERTA ENVIADO</h2>
-            <p className="text-muted font-bold m-0 uppercase tracking-widest text-xs">A ajuda está a caminho</p>
-          </div>
-          <p className="text-text/80 text-sm leading-relaxed">
-            O tempo de cancelamento expirou. O email de emergência foi enviado para os teus contactos.
-          </p>
-          <button 
-            onClick={() => setIsCancelled(true)}
-            className="mt-4 w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-text font-black hover:bg-white/10 transition-all"
-          >
-            FECHAR
-          </button>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-fade-in overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-3xl animate-fade-in overflow-hidden">
       {/* Background pulsating effect */}
-      <div className="absolute inset-0 bg-red/5 animate-pulse" />
+      <div className="absolute inset-0 bg-red/10 animate-pulse" />
       
-      <div className="relative bg-surface/40 border-2 border-red/40 rounded-[2.5rem] p-10 max-w-md w-full text-center flex flex-col items-center gap-8 shadow-2xl shadow-red/20 overflow-hidden">
+      <div className="relative bg-surface/60 border-2 border-red/60 rounded-[3.5rem] p-12 max-w-md w-full text-center flex flex-col items-center gap-10 shadow-[0_0_150px_rgba(239,68,68,0.3)] overflow-hidden">
         {/* Glow effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-red/20 blur-[80px] -z-10" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-40 bg-red/30 blur-[100px] -z-10" />
         
-        <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-red/10 border border-red/20 text-red text-[0.6rem] font-black uppercase tracking-[0.2em] animate-bounce">
-          <AlertTriangle size={12} /> Deteção de Queda
+        <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-red text-white text-[0.7rem] font-black uppercase tracking-[0.25em] shadow-lg shadow-red/20 animate-bounce">
+          <AlertTriangle size={16} /> {t('sos.title')}
         </div>
 
-        <div className="relative w-40 h-40 flex items-center justify-center">
+        <div className="relative w-48 h-48 flex items-center justify-center">
           <svg className="absolute inset-0 w-full h-full -rotate-90">
             <circle
-              cx="80" cy="80" r="70"
+              cx="96" cy="96" r="86"
               fill="transparent"
               stroke="currentColor"
-              strokeWidth="8"
-              className="text-white/5"
+              strokeWidth="12"
+              className="text-white/10"
             />
             <circle
-              cx="80" cy="80" r="70"
+              cx="96" cy="96" r="86"
               fill="transparent"
               stroke="currentColor"
-              strokeWidth="8"
-              strokeDasharray={440}
-              strokeDashoffset={440 - (440 * seconds) / initialSeconds}
+              strokeWidth="12"
+              strokeDasharray={540}
+              strokeDashoffset={540 - (540 * seconds) / initialSeconds}
               className="text-red transition-all duration-1000 ease-linear"
               strokeLinecap="round"
             />
           </svg>
           <div className="flex flex-col items-center justify-center">
-            <span className="text-6xl font-black text-text tabular-nums tracking-tighter">
+            <span className="text-7xl font-black text-white tabular-nums tracking-tighter">
               {seconds}
             </span>
-            <span className="text-[0.6rem] font-black text-muted uppercase tracking-[0.2em]">Segundos</span>
+            <span className="text-[0.75rem] font-black text-white/60 uppercase tracking-[0.25em] mt-1">{t('sos.seconds')}</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <h2 className="text-2xl font-black text-text m-0 tracking-tight">Estás bem?</h2>
-          <p className="text-muted text-sm font-medium leading-relaxed m-0">
-            Detetámos uma queda. Iremos enviar um alerta de emergência se não cancelares este aviso.
+        <div className="flex flex-col gap-4">
+          <h2 className="text-4xl font-black text-white m-0 tracking-tight">{t('sos.question')}</h2>
+          <p className="text-white/80 text-lg font-medium leading-relaxed m-0">
+            {t('sos.message')}
           </p>
         </div>
 
-        <div className="w-full flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-5">
           <button 
             onClick={() => {
               setIsCancelled(true);
               onCancel(deviceId);
             }}
-            className="w-full py-5 rounded-3xl bg-green text-white font-black text-lg shadow-xl shadow-green/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
+            className="w-full py-6 rounded-[2rem] bg-green text-white font-black text-xl shadow-2xl shadow-green/30 hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-4 group"
           >
-            <Check size={24} className="group-hover:scale-125 transition-transform" /> ESTOU BEM
+            <Check size={28} className="group-hover:scale-125 transition-transform" /> {t('sos.button')}
           </button>
           
-          <div className="flex items-center justify-center gap-2 text-muted text-[0.65rem] font-bold uppercase tracking-widest">
-            <Volume2 size={14} className="animate-pulse" /> Aviso sonoro ativo
+          <div className="flex items-center justify-center gap-3 text-white/40 text-[0.7rem] font-black uppercase tracking-[0.2em]">
+            <Volume2 size={18} className="animate-pulse" /> {t('sos.audioActive')}
           </div>
         </div>
       </div>

@@ -104,6 +104,7 @@ export default function SimulatorContexts() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-10">
+
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
         <div>
