@@ -48,6 +48,7 @@ export interface GpxData {
 export type TripSource = "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL";
 export type TripStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type TripCategory = "COMMUTE" | "WEEKEND_RIDE" | "TRACK_DAY" | "OFF_ROAD";
+export type DrivingStyle = "AGGRESSIVE" | "DEFENSIVE" | "ECONOMY";
 
 export interface Trip {
   id: string;
@@ -64,6 +65,7 @@ export interface Trip {
   status: TripStatus;
   category?: TripCategory | null;
   categoryConfidence?: number | null;
+  drivingStyle?: DrivingStyle | null;
   createdAt: string;
   motorcycle: MotorcycleSummary;
   gpxData?: GpxData | null;
@@ -154,6 +156,7 @@ export interface TripFeedItem {
   buckets: { safety: TripScoreBucket; performance: TripScoreBucket };
   category?: TripCategory | null;
   categoryConfidence?: number | null;
+  drivingStyle?: DrivingStyle | null;
 }
 
 export interface ComparisonReport {

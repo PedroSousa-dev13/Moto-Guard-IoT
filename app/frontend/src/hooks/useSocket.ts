@@ -49,6 +49,7 @@ export function useSocket() {
     hasData: false,
   });
   const [crashAlert, setCrashAlert] = useState<{ deviceId: string; countdownSec: number; timestamp: string } | null>(null);
+  const [realtimeAnomaly, setRealtimeAnomaly] = useState<{ deviceId: string; reason: string; score: number; timestamp: string } | null>(null);
 
   const resetSimulationView = useCallback(() => {
     setTelemetryByDevice({});
@@ -255,6 +256,13 @@ export function useSocket() {
       addLog(`SOS Countdown cancelado para ${data.deviceId}`, "#22c55e");
     });
 
+    socket.on("realtime_anomaly", (data: any) => {
+      setRealtimeAnomaly(data);
+      addLog(`🚨 ANOMALIA ML em ${data.deviceId}: ${data.reason}`, "#ef4444");
+      // Limpar após 5 segundos
+      setTimeout(() => setRealtimeAnomaly(null), 5000);
+    });
+
     // Verificar estado do backend ao montar
     fetch("/api/health")
       .then((r) => r.json())
@@ -276,5 +284,5 @@ export function useSocket() {
     };
   }, [addLog, isDemoMode, registerEmitter]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView, crashAlert, cancelEmergency };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView, crashAlert, cancelEmergency, realtimeAnomaly };
 }

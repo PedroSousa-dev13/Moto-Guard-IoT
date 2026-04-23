@@ -16,6 +16,9 @@ import {
   Legend,
   ComposedChart,
   Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { 
   BarChart2, 
@@ -28,7 +31,8 @@ import {
   AlertTriangle,
   Download,
   RefreshCw,
-  Clock
+  Clock,
+  ChevronDown
 } from "lucide-react";
 import EventHeatmap from "../components/EventHeatmap";
 import {
@@ -141,6 +145,21 @@ export default function Analytics() {
 
   const kpis = useMemo(() => computePeriodStats(series.filtered), [series.filtered]);
 
+  const styleStats = useMemo(() => {
+    const counts: Record<string, number> = {
+      AGGRESSIVE: 0,
+      DEFENSIVE: 0,
+      ECONOMY: 0,
+    };
+    series.filtered.forEach((t) => {
+      const style = t.drivingStyle;
+      if (style && counts[style] !== undefined) {
+        counts[style]++;
+      }
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [series.filtered]);
+
   function handleExportCsv() {
     exportCsv(series.filtered, `analytics-${range}.csv`);
   }
@@ -199,40 +218,48 @@ export default function Analytics() {
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in">
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
-            <BarChart2 className="text-accent" size={28} /> Analytics & Relatórios
-          </h1>
-          <div className="flex items-center gap-2 text-muted text-sm font-medium">
-            <Clock size={14} className="text-accent" />
-            {lastUpdatedAt ? `Atualizado: ${formatDateTime(lastUpdatedAt)}` : "—"}
+    <div className="flex flex-col gap-10 animate-fade-in">
+      {/* Premium Header */}
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 pb-4 border-b border-white/5">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+              <BarChart2 size={26} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-text tracking-tighter flex items-center gap-2">
+                Analytics <span className="text-muted/40 font-light">&</span> Relatórios
+              </h1>
+              <div className="flex items-center gap-2 text-muted text-xs font-bold uppercase tracking-widest mt-0.5">
+                <Clock size={12} className="text-accent" />
+                {lastUpdatedAt ? `Sincronizado: ${formatDateTime(lastUpdatedAt)}` : "—"}
+              </div>
+            </div>
           </div>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-1 flex gap-1 shadow-xl shadow-black/20">
+          <div className="glass-panel p-1 flex gap-1 rounded-2xl">
             <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
               onClick={() => setActiveTab("charts")}
             >
-              <BarChart2 size={16} /> Performance
+              <BarChart2 size={14} /> Performance
             </button>
             <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
               onClick={() => setActiveTab("heatmap")}
             >
-              <Map size={16} /> Geográfico
+              <Map size={14} /> Geográfico
             </button>
           </div>
 
           {activeTab === "charts" && (
-            <div className="flex items-center gap-3 bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-1 shadow-xl shadow-black/20">
+            <div className="flex items-center gap-3 glass-panel p-1 rounded-2xl">
               <div className="relative group">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-hover:text-accent transition-colors" size={14} />
                 <select
-                  className="bg-black/20 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-sm text-text font-black focus:border-accent outline-none appearance-none cursor-pointer min-w-[140px]"
+                  className="bg-black/40 border border-white/5 rounded-xl pl-9 pr-8 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer min-w-[160px]"
                   value={range}
                   onChange={(e) => setRange(e.target.value as PresetRange)}
                 >
@@ -240,27 +267,35 @@ export default function Analytics() {
                   <option value="7d">Semana (7d)</option>
                   <option value="30d">Mês (30d)</option>
                   <option value="365d">Ano (365d)</option>
-                  <option value="all">Todo o Histórico</option>
-                  <option value="custom">Custom</option>
+                  <option value="all">Histórico</option>
+                  <option value="custom">Customizado</option>
                 </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
+                  <ChevronDown size={14} />
+                </div>
               </div>
 
-              <select
-                className="bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-sm text-text font-black focus:border-accent outline-none appearance-none cursor-pointer w-[100px]"
-                value={granularity}
-                onChange={(e) => setGranularity(e.target.value as Granularity)}
-              >
-                <option value="hour">Hora</option>
-                <option value="day">Dia</option>
-                <option value="week">Semana</option>
-              </select>
+              <div className="relative group">
+                <select
+                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer w-[110px]"
+                  value={granularity}
+                  onChange={(e) => setGranularity(e.target.value as Granularity)}
+                >
+                  <option value="hour">Hora</option>
+                  <option value="day">Dia</option>
+                  <option value="week">Semana</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
 
-              <div className="flex items-center gap-1 px-1">
-                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all" onClick={() => void load()} title="Atualizar">
+              <div className="flex items-center gap-1 border-l border-white/10 pl-2 ml-1">
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all" onClick={() => void load()} title="Atualizar">
                   <RefreshCw size={16} />
                 </button>
                 <button
-                  className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
                   onClick={handleExportCsv}
                   disabled={series.filtered.length === 0}
                   title="Exportar CSV"
@@ -268,7 +303,7 @@ export default function Analytics() {
                   <Download size={16} />
                 </button>
                 <button
-                  className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
                   onClick={() => void handleExportPng()}
                   disabled={exporting || series.points.length === 0}
                   title="Exportar Imagem"
@@ -363,29 +398,29 @@ export default function Analytics() {
               },
             ].map(({ label, curr, prev, fmt, higher, icon, color }) => {
               const colorMap: Record<string, string> = {
-                blue: "bg-blue/10 text-blue",
-                green: "bg-green/10 text-green",
-                orange: "bg-orange/10 text-orange",
-                red: "bg-red/10 text-red"
+                blue: "bg-blue/20 text-blue border-blue/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]",
+                green: "bg-green/20 text-green border-green/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]",
+                orange: "bg-orange/20 text-orange border-orange/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]",
+                red: "bg-red/20 text-red border-red/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
               };
-              const isBetter = higher ? curr! >= prev! : curr! <= prev!;
+              const isBetter = higher ? (curr ?? 0) >= (prev ?? 0) : (curr ?? 0) <= (prev ?? 0);
               return (
-                <div key={label} className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-sm group hover:border-white/20 transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border border-white/5 shadow-inner ${colorMap[color]}`}>
+                <div key={label} className="glass-panel p-6 group hover:border-white/20 transition-all hover:scale-[1.02] cursor-default">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${colorMap[color]}`}>
                       {icon}
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <div className={`text-sm font-black flex items-center gap-1 ${ isBetter ? 'text-green' : 'text-red' }`}>
-                        <TrendingUp size={14} className={isBetter ? "" : "rotate-180"} />
+                      <div className={`text-xs font-black flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/5 ${ isBetter ? 'text-green' : 'text-red' }`}>
+                        <TrendingUp size={12} className={isBetter ? "" : "rotate-180"} />
                         {pctChange(curr, prev)}
                       </div>
-                      <div className="text-[0.65rem] text-muted font-black uppercase tracking-widest mt-0.5">vs anterior</div>
+                      <div className="text-[0.6rem] text-muted font-bold uppercase tracking-widest mt-1.5 opacity-60">vs anterior</div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <div className="text-[0.7rem] font-black uppercase tracking-widest text-muted">{label}</div>
-                    <div className="text-3xl font-black text-text tracking-tighter">{fmt(curr)}</div>
+                    <div className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">{label}</div>
+                    <div className="text-3xl font-black text-text tracking-tighter tabular-nums">{fmt(curr)}</div>
                   </div>
                 </div>
               );
@@ -412,20 +447,30 @@ export default function Analytics() {
                 >
                   <ResponsiveContainer width="100%" height={320}>
                     <ComposedChart data={series.points}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <defs>
+                        <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.4}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                       <XAxis 
                         dataKey="t" 
                         tickFormatter={(v) => formatShortDay(v as number)} 
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                         axisLine={false}
                         tickLine={false}
-                        dy={10}
+                        dy={15}
                       />
                       <YAxis 
                         yAxisId="left"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                         dx={-10}
                       />
                       <YAxis 
@@ -433,31 +478,48 @@ export default function Analytics() {
                         orientation="right"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                         dx={10}
                       />
                       <Tooltip 
                         labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
-                        itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
+                        contentStyle={{ 
+                          background: "rgba(13,13,27,0.8)", 
+                          border: "1px solid rgba(255,255,255,0.1)", 
+                          borderRadius: "16px", 
+                          backdropFilter: "blur(20px)", 
+                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                          padding: "12px"
+                        }}
+                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                        cursor={{ stroke: "var(--accent)", strokeWidth: 1, strokeDasharray: "4 4" }}
                       />
-                      <Legend verticalAlign="top" align="right" height={36} iconType="circle" wrapperStyle={{ fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }} />
+                      <Legend 
+                        verticalAlign="top" 
+                        align="right" 
+                        height={40} 
+                        iconType="circle" 
+                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                      />
                       <Area 
                         yAxisId="left"
                         type="monotone" 
                         dataKey="distanceKm" 
-                        fill="rgba(79, 70, 229, 0.1)" 
-                        stroke="#4f46e5" 
-                        strokeWidth={3}
+                        stroke="var(--accent)" 
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorDist)"
                         name="Distância (km)" 
+                        animationDuration={1500}
                       />
                       <Bar 
                         yAxisId="right"
                         dataKey="tripCount" 
-                        fill="#6366f1" 
-                        radius={[4, 4, 0, 0]}
+                        fill="url(#colorTrips)" 
+                        radius={[6, 6, 0, 0]}
                         name="Nº Viagens" 
-                        barSize={20}
+                        barSize={24}
+                        animationDuration={1500}
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -469,31 +531,42 @@ export default function Analytics() {
                   className="overflow-hidden"
                 >
                   <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={series.points}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <BarChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                       <XAxis 
                         dataKey="t" 
                         tickFormatter={(v) => formatShortDay(v as number)}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                         axisLine={false}
                         tickLine={false}
-                        dy={10}
+                        dy={15}
                       />
                       <YAxis 
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
-                        dx={-10}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                       />
                       <Tooltip 
                         labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
-                        itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
+                        contentStyle={{ 
+                          background: "rgba(13,13,27,0.8)", 
+                          border: "1px solid rgba(255,255,255,0.1)", 
+                          borderRadius: "16px", 
+                          backdropFilter: "blur(20px)", 
+                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+                        }}
+                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
                       />
-                      <Legend verticalAlign="top" align="right" height={36} iconType="circle" wrapperStyle={{ fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }} />
-                      <Bar dataKey="criticalEvents" fill="#ef4444" name="Crítico" stackId="ev" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="warningEvents" fill="#f59e0b" name="Aviso" stackId="ev" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="infoEvents" fill="#3b82f6" name="Info" stackId="ev" radius={[4, 4, 0, 0]} />
+                      <Legend 
+                        verticalAlign="top" 
+                        align="right" 
+                        height={40} 
+                        iconType="circle" 
+                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                      />
+                      <Bar dataKey="criticalEvents" fill="var(--red)" name="Crítico" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} />
+                      <Bar dataKey="warningEvents" fill="var(--yellow)" name="Aviso" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} />
+                      <Bar dataKey="infoEvents" fill="var(--accent)" name="Info" stackId="ev" radius={[6, 6, 0, 0]} animationDuration={1500} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Card>
@@ -506,47 +579,60 @@ export default function Analytics() {
                   subtitle="Evolução dos scores de segurança e performance"
                   className="overflow-hidden"
                 >
-                  <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={series.points}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                       <XAxis 
                         dataKey="t" 
                         tickFormatter={(v) => formatShortDay(v as number)}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                         axisLine={false}
                         tickLine={false}
-                        dy={10}
+                        dy={15}
                       />
                       <YAxis 
                         domain={[0, 100]} 
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
-                        dx={-10}
+                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
                       />
                       <Tooltip 
                         labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
-                        itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
+                        contentStyle={{ 
+                          background: "rgba(13,13,27,0.8)", 
+                          border: "1px solid rgba(255,255,255,0.1)", 
+                          borderRadius: "16px", 
+                          backdropFilter: "blur(20px)", 
+                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+                        }}
+                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
                       />
-                      <Legend verticalAlign="top" align="right" height={36} iconType="circle" wrapperStyle={{ fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }} />
+                      <Legend 
+                        verticalAlign="top" 
+                        align="right" 
+                        height={40} 
+                        iconType="circle" 
+                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                      />
                       <Line 
                         type="monotone" 
                         dataKey="safetyAvg" 
-                        stroke="#10b981" 
-                        strokeWidth={4}
-                        dot={{ r: 4, strokeWidth: 2, fill: "#0a0a0a" }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        stroke="var(--green)" 
+                        strokeWidth={5}
+                        dot={{ r: 5, strokeWidth: 2, fill: "var(--bg)", stroke: "var(--green)" }}
+                        activeDot={{ r: 8, strokeWidth: 0, fill: "var(--green)" }}
                         name="Safety Score" 
+                        animationDuration={1500}
                       />
                       <Line 
                         type="monotone" 
                         dataKey="performanceAvg" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={4}
-                        dot={{ r: 4, strokeWidth: 2, fill: "#0a0a0a" }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        stroke="var(--accent)" 
+                        strokeWidth={5}
+                        dot={{ r: 5, strokeWidth: 2, fill: "var(--bg)", stroke: "var(--accent)" }}
+                        activeDot={{ r: 8, strokeWidth: 0, fill: "var(--accent)" }}
                         name="Performance" 
+                        animationDuration={1500}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -561,6 +647,105 @@ export default function Analytics() {
                 </Card>
               </div>
 
+              {/* Row 3: Driving Style (Clustering) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card 
+                  title="Perfil de Condução (ML Clustering)" 
+                  subtitle="Distribuição baseada em padrões de telemetria"
+                  className="lg:col-span-1"
+                >
+                  <div className="flex flex-col items-center">
+                    <ResponsiveContainer width="100%" height={240}>
+                      <PieChart>
+                        <Pie
+                          data={styleStats}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {styleStats.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={
+                                entry.name === "AGGRESSIVE" ? "#ef4444" : 
+                                entry.name === "DEFENSIVE" ? "#10b981" : "#3b82f6"
+                              } 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red" />
+                        <span className="text-[0.65rem] font-black uppercase text-muted">Agressivo</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green" />
+                        <span className="text-[0.65rem] font-black uppercase text-muted">Defensivo</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue" />
+                        <span className="text-[0.65rem] font-black uppercase text-muted">Económico</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                <Card 
+                  title="Insights de Estilo (AI)" 
+                  subtitle="Análise comparativa de padrões de condução"
+                  className="lg:col-span-2"
+                >
+                  <div className="flex flex-col gap-6">
+                    <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-3 opacity-10">
+                        <Zap size={40} className="text-accent" />
+                      </div>
+                      <p className="text-muted text-sm leading-relaxed relative z-10">
+                        O nosso modelo de **Machine Learning (K-means)** analisa as tuas viagens em múltiplas dimensões. 
+                        Padrões de aceleração brusca e travagens frequentes categorizam o estilo como <span className="text-red font-black">Agressivo</span>, 
+                        enquanto a fluidez e consistência indicam um estilo <span className="text-green font-black">Defensivo</span>.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="glass-panel p-5 border-white/5 relative group hover:border-accent/30 transition-all">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
+                              <TrendingUp size={16} />
+                            </div>
+                            <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Tendência Atual</h4>
+                          </div>
+                          <p className="text-sm font-black text-text tracking-tight leading-tight">
+                            {styleStats.sort((a,b) => b.value - a.value)[0]?.value > 0 
+                              ? `O teu estilo predominante é ${styleStats.sort((a,b) => b.value - a.value)[0].name.toLowerCase()}.` 
+                              : "A aguardar dados suficientes para análise."}
+                          </p>
+                       </div>
+                       <div className="glass-panel p-5 border-white/5 relative group hover:border-green/30 transition-all">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-green/20 flex items-center justify-center text-green">
+                              <ShieldCheck size={16} />
+                            </div>
+                            <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Recomendação</h4>
+                          </div>
+                          <p className="text-sm font-black text-text tracking-tight leading-tight">
+                            {styleStats.find(s => s.name === "AGGRESSIVE")?.value! > 2 
+                              ? "Recomendamos suavizar as travagens para aumentar a vida útil dos componentes." 
+                              : "Mantém a suavidade nas acelerações para otimizar a eficiência de combustível."}
+                          </p>
+                       </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
             </div>
           )}
         </>
@@ -569,36 +754,40 @@ export default function Analytics() {
   );
 }
 
-// Sub-component to keep the main component cleaner
 function AreaChartWrapper({ data }: { data: any[] }) {
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <ComposedChart data={data}>
+    <ResponsiveContainer width="100%" height={280}>
+      <ComposedChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
         <defs>
           <linearGradient id="colorSpeed" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3}/>
             <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
         <XAxis 
           dataKey="t" 
           tickFormatter={(v) => formatShortDay(v as number)}
-          tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
+          tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
           axisLine={false}
           tickLine={false}
-          dy={10}
+          dy={15}
         />
         <YAxis 
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)", fontWeight: 700 }}
-          dx={-10}
+          tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
         />
         <Tooltip 
           labelFormatter={(v) => formatTs(v as number)}
-          contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
-          itemStyle={{ fontSize: "12px", fontWeight: "bold" }}
+          contentStyle={{ 
+            background: "rgba(13,13,27,0.8)", 
+            border: "1px solid rgba(255,255,255,0.1)", 
+            borderRadius: "16px", 
+            backdropFilter: "blur(20px)", 
+            boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+          }}
+          itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
         />
         <Area 
           type="monotone" 
@@ -608,6 +797,7 @@ function AreaChartWrapper({ data }: { data: any[] }) {
           fillOpacity={1}
           fill="url(#colorSpeed)"
           name="Vel. Média" 
+          animationDuration={1500}
         />
       </ComposedChart>
     </ResponsiveContainer>
