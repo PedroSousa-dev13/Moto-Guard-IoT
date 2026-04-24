@@ -36,10 +36,15 @@ export default function RouteMap({ gpsTrack, currentPosition }: RouteMapProps) {
     }).addTo(map);
 
     mapRef.current = map;
+    
+    // Invalidate size on container resize
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    resizeObserver.observe(containerRef.current);
 
-    const t = setTimeout(() => map.invalidateSize(), 300);
     return () => {
-      clearTimeout(t);
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
     };

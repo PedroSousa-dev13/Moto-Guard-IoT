@@ -16,6 +16,7 @@ import type { ParsedRow } from "./csvParser";
  * @param deviceId           - Device ID configurado pelo utilizador
  * @param simulationStartTime - Momento de início da simulação (para calcular timestamp absoluto)
  * @param eventStatus        - "TRIP_ACTIVE" durante reprodução, "TRIP_ENDED" no stop
+ * @param motoModel          - Modelo da mota (ex: "Naked", "Sport")
  * @param tick               - Índice da linha CSV atual (default: row.timestampSec arredondado)
  */
 export function buildPayload(
@@ -23,6 +24,7 @@ export function buildPayload(
   deviceId: string,
   simulationStartTime: Date,
   eventStatus: string,
+  motoModel: string = "Real Simulator",
   tick: number = 0
 ): TelemetryPayload {
   // system.timestamp = simulationStartTime + row.timestampSec * 1000ms (ISO 8601)
@@ -37,10 +39,10 @@ export function buildPayload(
       throttle_pct: row.throttle_pct,
       engine_temp_c: row.engine_temp_c,
       voltage: row.voltage,
-      brake_front_pct: 0,
-      brake_rear_pct: 0,
-      odometer_km: 0,
-      clutch_engaged: false,
+      brake_front_pct: row.brake_pct,
+      brake_rear_pct: Math.round(row.brake_pct * 0.4), // 40% of front for estimation
+      odometer_km: row.odometer_km,
+      clutch_engaged: row.clutch_engaged,
     },
     imu: {
       roll_deg: row.roll_deg,
@@ -63,7 +65,7 @@ export function buildPayload(
     },
     system: {
       device_id: deviceId,
-      moto_model: "Real Simulator",
+      moto_model: motoModel,
       event_status: eventStatus,
       tick,
       timestamp,
@@ -77,6 +79,16 @@ export function buildPayload(
  * @param socket  - Instância Socket.IO conectada
  * @param payload - Payload a emitir
  */
-export function emitTelemetry(socket: Socket, payload: TelemetryPayload): void {
-  socket.emit("telemetry_update", payload);
-}
+export const emitTelemetry = (socket: Socket | null, payload: any) => {
+  if (socket && socket.connected) {
+    const tick = payload.system?.tick;
+    const status = payload.system?.event_status;
+    const speed = payload.telemetry?.speed_kmh?.toFixed(1);
+    const roll = payload.imu?.roll_deg?.toFixed(1);
+
+    console.log(`[Telemetry] Emitting tick ${tick} (${status}) | Speed: ${speed} km/h | Roll: ${roll}°`);
+    socket.emit("telemetry_update", payload);
+  } else {
+    console.warn("[Telemetry] Socket not connected, skipping emission.");
+  }
+};

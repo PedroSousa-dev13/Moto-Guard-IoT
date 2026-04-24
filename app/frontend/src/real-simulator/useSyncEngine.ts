@@ -70,13 +70,14 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
 
   const intervalMs = Math.round(1000 / maxHz); // 100ms at 10 Hz
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  // Internal mutable state (not triggering re-renders)
+  // Internal mutable state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const isPlayingRef = useRef(false);
+  
   const currentTimeSecRef = useRef(0);
   const currentIndexRef = useRef(0);
-  const isPlayingRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loopRef = useRef<number | null>(null);
+  const lastTickTimeRef = useRef(0);
 
   // Keep latest callbacks/options in refs to avoid stale closures
   const rowsRef = useRef(rows);
@@ -90,82 +91,118 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
   useEffect(() => { playbackSpeedRef.current = playbackSpeed; }, [playbackSpeed]);
   useEffect(() => { onRowChangeRef.current = onRowChange; }, [onRowChange]);
   useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
-
-  // -------------------------------------------------------------------------
-  // Core tick: called every intervalMs while playing
-  // -------------------------------------------------------------------------
-
-  const tick = useCallback(() => {
-    if (!isPlayingRef.current) return;
-
-    const currentRows = rowsRef.current;
-    if (currentRows.length === 0) return;
-
-    // Update currentTimeSec
-    const vRef = videoRefRef.current;
-    if (vRef && vRef.current) {
-      // Video mode: read currentTime from video element
-      currentTimeSecRef.current = vRef.current.currentTime;
-    } else {
-      // Timer mode: advance by (intervalMs / 1000) * playbackSpeed
-      currentTimeSecRef.current += (intervalMs / 1000) * playbackSpeedRef.current;
-
-      // Auto-stop at end
-      const lastRow = currentRows[currentRows.length - 1];
-      if (lastRow && currentTimeSecRef.current >= lastRow.timestampSec) {
-        currentTimeSecRef.current = lastRow.timestampSec;
-        isPlayingRef.current = false;
-        if (intervalRef.current !== null) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (onEndRef.current) onEndRef.current();
-      }
-    }
-
-    // Find nearest row
-    const newIndex = findNearestIndex(currentRows, currentTimeSecRef.current);
-
-    if (newIndex !== currentIndexRef.current) {
-      currentIndexRef.current = newIndex;
-      setCurrentIndex(newIndex);
-      onRowChangeRef.current(currentRows[newIndex], newIndex);
-    }
-  }, [intervalMs]);
+  
 
   // -------------------------------------------------------------------------
   // Clear interval helper
   // -------------------------------------------------------------------------
 
   const clearTick = useCallback(() => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (loopRef.current !== null) {
+      cancelAnimationFrame(loopRef.current);
+      loopRef.current = null;
     }
   }, []);
+
+  // Efeito que controla o ciclo de vida do loop (Substituído rAF por setInterval para estabilidade absoluta)
+  useEffect(() => {
+    let intervalId: any;
+    if (isPlaying) {
+      console.log("[SyncEngine] Starting autonomous 10Hz interval loop");
+      intervalId = setInterval(() => {
+        try {
+          const currentRows = rowsRef.current;
+          if (currentRows.length === 0) return;
+
+          const vRef = videoRefRef.current;
+          if (vRef && vRef.current && !vRef.current.paused) {
+            currentTimeSecRef.current = vRef.current.currentTime;
+          } else {
+            const dt = (intervalMs / 1000) * playbackSpeedRef.current;
+            currentTimeSecRef.current = (currentTimeSecRef.current || 0) + dt;
+          }
+
+          if (isNaN(currentTimeSecRef.current)) currentTimeSecRef.current = 0;
+
+          const newIndex = findNearestIndex(currentRows, currentTimeSecRef.current);
+
+          if (newIndex !== currentIndexRef.current) {
+            currentIndexRef.current = newIndex;
+            onRowChangeRef.current(currentRows[newIndex], newIndex);
+          }
+
+          const lastRow = currentRows[currentRows.length - 1];
+          if (lastRow && currentTimeSecRef.current >= lastRow.timestampSec) {
+            console.log("[SyncEngine] Reached end of data.");
+            setIsPlaying(false);
+            isPlayingRef.current = false;
+            if (onEndRef.current) onEndRef.current();
+          }
+        } catch (err) {
+          console.error("[SyncEngine] Loop Error:", err);
+          setIsPlaying(false);
+          isPlayingRef.current = false;
+        }
+      }, intervalMs);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        console.log(`[SyncEngine] Interval stopped (isPlaying was: ${isPlaying})`);
+      }
+    };
+  }, [isPlaying, intervalMs]);
 
   // -------------------------------------------------------------------------
   // Controls
   // -------------------------------------------------------------------------
 
   const start = useCallback(() => {
+    console.log("[SyncEngine] Requesting start. isPlaying:", isPlayingRef.current);
     if (isPlayingRef.current) return;
+    
+    const currentRows = rowsRef.current;
+    if (currentRows.length === 0) {
+      console.warn("[SyncEngine] Cannot start: no rows loaded.");
+      return;
+    }
+
+    // Se estivermos no fim (ou muito perto), recomeçar do início
+    const lastRow = currentRows[currentRows.length - 1];
+    if (lastRow && currentTimeSecRef.current >= lastRow.timestampSec - 0.01) {
+      console.log("[SyncEngine] Restarting from beginning (was at end).");
+      currentTimeSecRef.current = 0;
+      currentIndexRef.current = 0;
+    }
+
+    setIsPlaying(true);
     isPlayingRef.current = true;
+    lastTickTimeRef.current = performance.now();
+    console.log("[SyncEngine] Engine started at", currentTimeSecRef.current);
+    
+    // Emitir o estado atual imediatamente
+    const initialIndex = findNearestIndex(currentRows, currentTimeSecRef.current);
+    currentIndexRef.current = initialIndex;
+    onRowChangeRef.current(currentRows[initialIndex], initialIndex);
+
     clearTick();
-    intervalRef.current = setInterval(tick, intervalMs);
-  }, [tick, clearTick, intervalMs]);
+  }, [clearTick]);
 
   const pause = useCallback(() => {
+    console.log("[SyncEngine] Pause called");
+    setIsPlaying(false);
     isPlayingRef.current = false;
     clearTick();
   }, [clearTick]);
 
   const stop = useCallback(() => {
+    console.log("[SyncEngine] Stop called");
+    setIsPlaying(false);
     isPlayingRef.current = false;
     clearTick();
     currentTimeSecRef.current = 0;
     currentIndexRef.current = 0;
-    setCurrentIndex(0);
   }, [clearTick]);
 
   const seek = useCallback((timeSec: number) => {
@@ -175,7 +212,6 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
     const newIndex = findNearestIndex(currentRows, timeSec);
     if (newIndex !== currentIndexRef.current) {
       currentIndexRef.current = newIndex;
-      setCurrentIndex(newIndex);
       onRowChangeRef.current(currentRows[newIndex], newIndex);
     }
   }, []);
@@ -186,10 +222,18 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
 
   useEffect(() => {
     return () => {
+      console.log("[SyncEngine] UNMOUNTING - Stopping loop.");
       isPlayingRef.current = false;
-      clearTick();
+      if (loopRef.current) cancelAnimationFrame(loopRef.current);
     };
-  }, [clearTick]);
+  }, []);
 
-  return { start, pause, stop, seek, currentIndex };
+  return {
+    start,
+    pause,
+    stop,
+    seek,
+    currentIndex: currentIndexRef.current,
+    isPlaying,
+  };
 }
