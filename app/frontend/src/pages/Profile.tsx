@@ -135,10 +135,13 @@ export default function Profile() {
   return (
     <div className="flex flex-col gap-8 animate-fade-in">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
-          <User className="text-accent" size={28} /> Perfil
+        <h1 className="text-3xl font-black text-text flex items-center gap-4 tracking-tight">
+          <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+            <User size={24} />
+          </div>
+          Perfil
         </h1>
-        <p className="text-muted text-sm font-medium">Gestão de conta, segurança e garagem pessoal.</p>
+        <p className="text-muted text-sm font-medium mt-1">Gestão de conta, segurança e garagem pessoal.</p>
       </div>
 
       {/* ── Hero da conta ── */}

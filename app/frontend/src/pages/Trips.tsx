@@ -90,21 +90,22 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
   return (
     <div
       onClick={onClick}
-      className={`flex-shrink-0 w-52 p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/5 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
+      className={`flex-shrink-0 w-52 h-36 rounded-2xl border transition-all cursor-pointer flex flex-col group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/20 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
     >
-      <div className="w-full h-24 rounded-xl bg-black/20 p-2 flex items-center justify-center relative z-10 overflow-hidden">
-        <img src={img} alt={moto.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-xl" />
-      </div>
-      <div className="flex flex-col gap-0.5 relative z-10">
-        <div className="font-black text-sm text-text truncate leading-tight">{moto.name}</div>
-        <div className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-60 truncate">
-          {moto.brand} {moto.model}
+      <img src={img} alt={moto.name} className="moto-card-bg" />
+      <div className="absolute inset-0 bg-gradient-to-t from-surface/80 via-surface/40 to-transparent pointer-events-none" />
+      <div className="p-4 relative z-10 flex-1 flex flex-col justify-end">
+        <div className="flex flex-col gap-0.5">
+          <div className="font-black text-sm text-text truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
+          <div className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-80 truncate">
+            {moto.brand} {moto.model}
+          </div>
         </div>
-      </div>
-      <div className="flex justify-between items-center mt-1 relative z-10">
-        <span className="text-[0.6rem] font-black text-accent bg-accent/10 px-2 py-0.5 rounded-full uppercase tracking-widest">
-          {tripCount} viagens
-        </span>
+        <div className="flex items-center mt-2">
+          <span className="text-[0.6rem] font-black text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-lg uppercase tracking-widest shadow-inner">
+            {tripCount} viagens
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -532,12 +533,12 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
   const motoImg = imageFromCategory(item.motorcycle?.category);
 
   return (
-    <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5">
-      <div className="lg:w-80 bg-black/20 flex items-center justify-center p-10 relative overflow-hidden shrink-0">
-        <img src={motoImg} alt="moto" className="relative z-10 w-full h-40 object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-700" />
-        <div className="absolute inset-0 bg-radial-gradient from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-      <div className="flex-1 p-10 flex flex-col justify-center gap-8">
+    <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5 relative min-h-[220px]">
+      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-transparent to-surface/80 pointer-events-none" />
+      <div className="absolute inset-0 bg-radial-gradient from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      
+      <div className="flex-1 p-10 flex flex-col justify-center gap-8 relative z-10">
         <div className="flex flex-col gap-4">
           <h3 className="text-2xl font-black text-text tracking-tight m-0">{item.motorcycle?.name}</h3>
           <div className="flex flex-wrap gap-2.5">
@@ -569,7 +570,7 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
           </div>
         )}
       </div>
-      <div className="lg:w-80 p-10 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-end gap-10 shrink-0 relative">
+      <div className="lg:w-80 p-10 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-center gap-10 shrink-0 relative">
         <div className="flex gap-8">
           <div className={`flex flex-col items-center gap-2 group/score ${safety.className}`}>
             <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-black/40 shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.safetyScore}</div>
@@ -580,12 +581,12 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
             <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Perf</span>
           </div>
         </div>
-        <div className="flex gap-10 justify-end w-full">
-          <div className="flex flex-col items-end group/stat">
+        <div className="flex gap-10 justify-center w-full">
+          <div className="flex flex-col items-center group/stat">
             <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
             <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM</span>
           </div>
-          <div className="flex flex-col items-end group/stat">
+          <div className="flex flex-col items-center group/stat">
             <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
             <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM/H</span>
           </div>
@@ -621,11 +622,11 @@ function TripListCard({
   const isDisabled = selectedForComparison.length >= 2 && !isSelected;
 
   return (
-    <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
-      <div className="flex flex-col lg:flex-row min-h-[160px]">
-        <div className="lg:w-56 bg-black/20 flex items-center justify-center p-8 shrink-0 cursor-pointer group" onClick={() => onToggle(trip.id)}>
-          <img src={motoImg} alt="moto" className="w-full h-24 object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-lg" />
-        </div>
+    <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 relative min-h-[160px] ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
+      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-transparent to-surface/80 pointer-events-none" />
+      
+      <div className="flex flex-col lg:flex-row min-h-[160px] relative z-10">
         <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer" onClick={() => onToggle(trip.id)}>
           <div className="flex flex-col gap-4">
             <h3 className="text-xl font-black text-text tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>

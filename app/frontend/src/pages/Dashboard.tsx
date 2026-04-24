@@ -81,7 +81,7 @@ function StatCard({
         {loading ? (
           <div className="h-20 w-full bg-panel animate-pulse rounded-lg" />
         ) : children ? (
-          <div className="flex justify-center">{children}</div>
+          <div className="flex justify-center items-center h-full">{children}</div>
         ) : (
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-black text-text tracking-tighter leading-none">{value}</span>
@@ -200,21 +200,21 @@ export default function Dashboard() {
         <div className="flex flex-col gap-8">
           
           {/* HERO CARD */}
-          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass shadow-2xl group">
+          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass shadow-2xl group bg-surface/40">
             <img 
               src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
               alt="Motorcycle" 
               className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/80 to-transparent flex flex-col justify-center p-10 z-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent flex flex-col justify-center p-10 z-10">
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border shadow-2xl mb-6 transition-all duration-500 ${hasData ? "bg-green/20 text-green border-green/30 shadow-green/20 scale-110" : "bg-orange/20 text-orange border-orange/30 shadow-orange/20"}`}>
                 {hasData ? <CheckCircle2 size={36} /> : <Radio size={36} className="animate-pulse" />}
               </div>
               <h2 className="text-3xl font-black text-text mb-2 tracking-tight">{hasData ? "Tudo certo!" : "Pronto para iniciar"}</h2>
               <p className="text-muted text-sm font-medium max-w-xs leading-relaxed">
                 {hasData 
-                  ? "Sistema ativo e monitorando todos os parâmetros da sua moto em tempo real." 
-                  : "Liga o simulador ou um dispositivo real para começar a monitorizar a tua viagem."}
+                  ? "Sistema ativo e monitorizando todos os parâmetros da sua moto em tempo real." 
+                  : "Ligue o simulador ou um dispositivo real para começar a monitorizar a sua viagem."}
               </p>
             </div>
           </div>
@@ -351,23 +351,31 @@ export default function Dashboard() {
           
           {/* ÚLTIMA VIAGEM */}
           <Card className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between px-1">
               <span className="text-[0.7rem] font-black uppercase tracking-widest text-text opacity-60">Última Viagem</span>
               <Link to="/trips" className="text-[0.65rem] font-black uppercase tracking-widest text-accent hover:underline flex items-center gap-1">
                 Histórico <ChevronRight size={14} />
               </Link>
             </div>
             
-            <LastTripMiniMap trip={lastTrip} />
+            <div className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+              <LastTripMiniMap trip={lastTrip} />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <Clock size={16} className="text-accent" />
-                <span className="text-sm font-black text-text">{lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</span>
+              <div className="flex flex-col items-center justify-center gap-2 bg-white/5 p-4 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                  <Clock size={16} />
+                </div>
+                <span className="text-sm font-black text-text tabular-nums">{lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</span>
+                <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Início</span>
               </div>
-              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <Route size={16} className="text-accent" />
-                <span className="text-sm font-black text-text">{lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)} km` : "0.0 km"}</span>
+              <div className="flex flex-col items-center justify-center gap-2 bg-white/5 p-4 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                  <Route size={16} />
+                </div>
+                <span className="text-sm font-black text-text tabular-nums">{lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)}` : "0.0"} <span className="text-[0.7rem] opacity-40">km</span></span>
+                <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Distância</span>
               </div>
             </div>
           </Card>
@@ -400,31 +408,33 @@ export default function Dashboard() {
           </Card>
 
           {/* TELEMETRIA AO VIVO STATUS */}
-          <Card className="flex flex-col items-center text-center gap-6 p-8 relative overflow-hidden group">
+          <Card className="flex flex-col items-center text-center gap-8 p-10 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 border border-accent/10 rounded-full" />
-              <div className="absolute inset-2 border border-accent/10 rounded-full" />
-              <div className="absolute inset-4 border border-accent/10 rounded-full" />
+            <div className="relative w-28 h-28 flex items-center justify-center">
+              <div className="absolute inset-0 border border-accent/5 rounded-full" />
+              <div className="absolute inset-3 border border-accent/10 rounded-full" />
+              <div className="absolute inset-6 border border-accent/20 rounded-full" />
               <div className={`absolute inset-0 border-2 border-accent rounded-full animate-ping opacity-0 ${hasData ? 'opacity-20' : ''}`} />
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
+              <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
                 <Cpu size={32} />
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-black text-text m-0 tracking-tight">{hasData ? "Telemetria Ativa" : "Sistema em Standby"}</h3>
-              <p className="text-xs text-muted font-medium leading-relaxed m-0">
+            <div className="flex flex-col gap-3 max-w-[240px] mx-auto">
+              <h3 className="text-xl font-black text-text m-0 tracking-tight">{hasData ? "Telemetria Ativa" : "Sistema em Standby"}</h3>
+              <p className="text-xs text-muted font-medium leading-relaxed m-0 opacity-60">
                 {hasData 
                   ? "Recebendo fluxo constante de dados do motor e sensores periféricos." 
                   : "Aguardando conexão com o dispositivo ou simulador para processar dados."}
               </p>
             </div>
 
-            <Link to="/simulator-contexts" className="w-full flex items-center justify-center gap-3 bg-accent text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-              <Play size={18} fill="white" />
-              Abrir Simulador
+            <Link to="/simulator-contexts" className="w-full mt-2">
+              <button className="w-full flex items-center justify-center gap-3 bg-accent text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all group/btn">
+                <Play size={18} fill="white" className="transition-transform group-hover/btn:scale-110" />
+                Abrir Simulador
+              </button>
             </Link>
           </Card>
 

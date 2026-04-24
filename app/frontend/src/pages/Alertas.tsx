@@ -409,7 +409,7 @@ export default function Alertas() {
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 flex-1 min-h-0">
           {/* LIST PANE */}
           <div className="flex flex-col gap-4 overflow-hidden">
-            <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-2.5 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-4 custom-scrollbar">
               {filtered.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-6 opacity-30 p-10 text-center">
                   <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl">📭</div>
@@ -422,7 +422,7 @@ export default function Alertas() {
                 paginated.map((a) => (
                   <button
                     key={a.id}
-                    className={`relative w-full p-4 rounded-xl border transition-all text-left flex flex-col gap-3 overflow-hidden group ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-white/[0.03] border-white/5 hover:border-white/20"}`}
+                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3.5 overflow-hidden group min-h-[110px] ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-white/[0.03] border-white/5 hover:border-white/20"}`}
                     onClick={() => setSelectedId(a.id)}
                   >
                     {a.status === "unread" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]" />}
