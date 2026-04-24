@@ -22,6 +22,9 @@ export interface ParsedRow {
   pitch_deg: number;
   yaw_deg: number;
   g_force: number;
+  odometer_km: number;
+  brake_pct: number;
+  clutch_engaged: boolean;
 }
 
 export interface ParseResult {
@@ -259,6 +262,8 @@ interface ProcessedSensorData {
   gpsData: Array<{ timestampMs: number; lat: number; lng: number; speed: number }>;
   ahrsData: Array<{ timestampMs: number; pitch: number; roll: number; yaw: number }>;
   accelData: Array<{ timestampMs: number; x: number; y: number; z: number }>;
+  minTs: number;
+  maxTs: number;
 }
 
 /**
@@ -354,19 +359,19 @@ function parseRiderDataFormat(lines: string[], options: ParseOptions = {}): Pars
   // Processar dados por sensor
   const sensorData = processRiderDataBySensor(riderRows);
   
-  // Verificar se temos dados GPS
-  if (sensorData.gpsData.length === 0) {
+  // Verificar se temos dados básicos (pelo menos algum sensor)
+  if (sensorData.gpsData.length === 0 && sensorData.accelData.length === 0) {
     return {
       type: 'NO_GPS_DATA',
-      message: 'Nenhum dado GPS encontrado. O simulador requer coordenadas GPS para funcionar.'
+      message: 'Dados insuficientes. O simulador requer pelo menos coordenadas GPS ou dados de acelerómetro.'
     };
   }
 
-  // Converter para ParsedRow
+  // Converter para ParsedRow com resampling a 10Hz
   const parsedRows = convertRiderDataToParsedRows(sensorData, options);
   
   if (parsedRows.length === 0) {
-    return { type: 'EMPTY_FILE', message: 'Nenhum dado GPS válido encontrado.' };
+    return { type: 'EMPTY_FILE', message: 'Erro ao processar a sequência temporal dos dados.' };
   }
 
   const durationSec = parsedRows[parsedRows.length - 1].timestampSec;
@@ -388,11 +393,19 @@ function processRiderDataBySensor(rows: RiderDataRow[]): ProcessedSensorData {
   const gpsData: Array<{ timestampMs: number; lat: number; lng: number; speed: number }> = [];
   const ahrsData: Array<{ timestampMs: number; pitch: number; roll: number; yaw: number }> = [];
   const accelData: Array<{ timestampMs: number; x: number; y: number; z: number }> = [];
+  
+  let minTs = Infinity;
+  let maxTs = -Infinity;
 
   for (const row of rows) {
-    switch (row.sensor.toUpperCase()) {
+    if (row.timestampMs < minTs) minTs = row.timestampMs;
+    if (row.timestampMs > maxTs) maxTs = row.timestampMs;
+
+    // Limpar o prefixo '#' se existir
+    const sensorName = row.sensor.startsWith('#') ? row.sensor.substring(1).toUpperCase() : row.sensor.toUpperCase();
+
+    switch (sensorName) {
       case 'GPS':
-        // GPS: Value_X = latitude (degrees), Value_Y = longitude (degrees), Value_Z = speed (km/h)
         gpsData.push({
           timestampMs: row.timestampMs,
           lat: row.valor_x,
@@ -402,17 +415,16 @@ function processRiderDataBySensor(rows: RiderDataRow[]): ProcessedSensorData {
         break;
       
       case 'AHRS':
-        // AHRS: Value_X = pitch, Value_Y = roll, Value_Z = yaw (all in degrees)
         ahrsData.push({
           timestampMs: row.timestampMs,
-          pitch: row.valor_x,
-          roll: row.valor_y,
-          yaw: row.valor_z
+          roll: row.valor_x,   // No RiderData, X é Roll
+          pitch: row.valor_y,  // Y é Pitch
+          yaw: row.valor_z     // Z é Yaw
         });
         break;
       
       case 'ACEL':
-        // Accelerometer: Value_X, Value_Y, Value_Z in m/s²
+      case 'ACCEL':
         accelData.push({
           timestampMs: row.timestampMs,
           x: row.valor_x,
@@ -420,115 +432,148 @@ function processRiderDataBySensor(rows: RiderDataRow[]): ProcessedSensorData {
           z: row.valor_z
         });
         break;
-      
-      // GYRO data is available but not used in current implementation
     }
   }
 
-  return { gpsData, ahrsData, accelData };
+  return { gpsData, ahrsData, accelData, minTs, maxTs };
 }
 
 /**
  * Converte dados RiderData processados para ParsedRow com aprimoramento IRL
  */
 function convertRiderDataToParsedRows(sensorData: ProcessedSensorData, options: ParseOptions = {}): ParsedRow[] {
-  const { gpsData, ahrsData, accelData } = sensorData;
+  const { gpsData, ahrsData, accelData, minTs, maxTs } = sensorData;
 
-  if (gpsData.length === 0) return [];
+  if (minTs === Infinity || maxTs === -Infinity) return [];
 
-  // Usar perfil especificado ou padrão
+  // Configuração de Re-sampling (10Hz = 100ms)
+  const TARGET_HZ = 10;
+  const STEP_MS = 1000 / TARGET_HZ;
+
   const profileName = options.motorcycleProfile || DEFAULT_IRL_PROFILE;
   const profile = MOTORCYCLE_PROFILES[profileName] || MOTORCYCLE_PROFILES[DEFAULT_IRL_PROFILE];
-  const enableEnhancement = options.enableIRLEnhancement ?? true; // Default to true for IRL data
+  const enableEnhancement = options.enableIRLEnhancement ?? true;
 
-  // Usar dados GPS como base temporal
-  const firstTimestamp = gpsData[0].timestampMs;
   const rows: ParsedRow[] = [];
-
   let prevSpeed = 0;
-  let currentTemp = profile.temp_motor_min + 5.0; // Começar em temperatura de marcha lenta
+  let currentTemp = profile.temp_motor_min + 5.0;
 
-  for (let i = 0; i < gpsData.length; i++) {
-    const gps = gpsData[i];
-    const timestampSec = (gps.timestampMs - firstTimestamp) / 1000;
+  // Índices para busca otimizada (ponteiros que avançam)
+  let gpsIdx = 0;
+  let ahrsIdx = 0;
+  let accelIdx = 0;
 
-    // Encontrar dados AHRS mais próximos no tempo
-    let nearestAhrs = ahrsData.length > 0 ? ahrsData[0] : null;
-    let minTimeDiff = Infinity;
+  for (let currentMs = minTs; currentMs <= maxTs; currentMs += STEP_MS) {
+    const timestampSec = (currentMs - minTs) / 1000;
 
-    for (const ahrs of ahrsData) {
-      const timeDiff = Math.abs(ahrs.timestampMs - gps.timestampMs);
-      if (timeDiff < minTimeDiff) {
-        minTimeDiff = timeDiff;
-        nearestAhrs = ahrs;
+    // 1. GPS Interpolation (Latitude/Longitude/Speed)
+    // Encontrar os dois pontos GPS que cercam o timestamp atual
+    while (gpsIdx < gpsData.length - 1 && gpsData[gpsIdx + 1].timestampMs < currentMs) {
+      gpsIdx++;
+    }
+
+    let lat = 0, lng = 0, speed = 0;
+    if (gpsData.length > 0) {
+      const p1 = gpsData[gpsIdx];
+      const p2 = gpsIdx < gpsData.length - 1 ? gpsData[gpsIdx + 1] : p1;
+
+      if (p1 === p2 || currentMs <= p1.timestampMs) {
+        lat = p1.lat; lng = p1.lng; speed = p1.speed;
+      } else {
+        // Interpolação linear
+        const ratio = (currentMs - p1.timestampMs) / (p2.timestampMs - p1.timestampMs);
+        lat = p1.lat + (p2.lat - p1.lat) * ratio;
+        lng = p1.lng + (p2.lng - p1.lng) * ratio;
+        speed = p1.speed + (p2.speed - p1.speed) * ratio;
       }
     }
 
-    // Calcular dt para aceleração
-    const dt = i > 0 ? (gps.timestampMs - gpsData[i-1].timestampMs) / 1000 : 1.0;
+    // 2. AHRS (Nearest)
+    while (ahrsIdx < ahrsData.length - 1 && ahrsData[ahrsIdx + 1].timestampMs < currentMs) {
+      ahrsIdx++;
+    }
+    const ahrs = ahrsData[ahrsIdx] || { pitch: 0, roll: 0, yaw: 0 };
 
-    let rpm = 0;
+    // 3. Accelerometer (Peak Detection in 100ms window)
+    // Em vez de apenas o mais próximo, vamos procurar o pico de G-Force no intervalo
+    // para não perder travagens bruscas ou impactos.
+    let maxGForce = 1.0;
+    while (accelIdx < accelData.length && accelData[accelIdx].timestampMs < currentMs) {
+      accelIdx++;
+    }
+    
+    // Olhar para a janela de dados [currentMs, currentMs + STEP_MS]
+    let windowIdx = accelIdx;
+    while (windowIdx < accelData.length && accelData[windowIdx].timestampMs < currentMs + STEP_MS) {
+      const acc = accelData[windowIdx];
+      const mag = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.81;
+      if (mag > maxGForce) maxGForce = mag;
+      windowIdx++;
+    }
+    // Se não houver dados na janela, usar o último conhecido
+    if (windowIdx === accelIdx && accelData.length > 0) {
+      const acc = accelData[Math.min(accelIdx, accelData.length - 1)];
+      maxGForce = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.81;
+    }
+
+    // 4. Enhancement Logic
+    let rpm = profile.rpm_idle;
     let gear = 1;
     let throttlePct = 0;
-    let engineTemp = 80;
+    let engineTemp = Math.round(currentTemp);
     let voltage = 12.5;
+    let brakePct = 0;
+    let clutchEngaged = false;
 
     if (enableEnhancement) {
-      // Estimar gear baseado em velocidade (heurística mais confiável sem RPM real)
-      gear = estimateGearFromSpeed(gps.speed, profile);
+      gear = estimateGearFromSpeed(speed, profile);
+      rpm = calculateRpmFromSpeed(speed, gear, profile);
+      
+      const dt = STEP_MS / 1000;
+      throttlePct = estimateThrottle(speed, prevSpeed, dt, profile);
+      
+      // Estimar travagem: se a aceleração for negativa e significativa
+      const accelMs2 = ((speed - prevSpeed) / 3.6) / dt;
+      if (accelMs2 < -1.5) { // Travagem detectada
+        brakePct = Math.min(Math.abs(accelMs2) * 5, 100);
+      }
 
-      // Calcular RPM baseado na marcha estimada
-      rpm = calculateRpmFromSpeed(gps.speed, gear, profile);
+      // Estimar embraiagem: ativa durante mudanças de mudança
+      const prevRow = rows[rows.length - 1];
+      if (prevRow && prevRow.gear !== gear) {
+        clutchEngaged = true;
+      }
 
-      // Estimar throttle
-      throttlePct = estimateThrottle(gps.speed, prevSpeed, dt, profile);
-
-      // Simular temperatura
       currentTemp = simulateEngineTemp(currentTemp, rpm, dt, profile);
       engineTemp = Math.round(currentTemp);
-
-      // Simular voltagem
       voltage = Math.round(simulateVoltage(rpm, profile) * 10) / 10;
     }
 
-    // Calcular g-force aproximada
-    let gForce = 1.0;
-    if (accelData.length > 0) {
-      // Encontrar aceleração mais próxima
-      let nearestAccel = accelData[0];
-      minTimeDiff = Infinity;
-      for (const accel of accelData) {
-        const timeDiff = Math.abs(accel.timestampMs - gps.timestampMs);
-        if (timeDiff < minTimeDiff) {
-          minTimeDiff = timeDiff;
-          nearestAccel = accel;
-        }
-      }
-      gForce = Math.sqrt(
-        nearestAccel.x ** 2 +
-        nearestAccel.y ** 2 +
-        nearestAccel.z ** 2
-      ) / 9.81;
-    }
+    // Odómetro acumulado
+    const prevOdo = rows.length > 0 ? rows[rows.length - 1].odometer_km : 0;
+    const distanceKm = (speed / 3600) * (STEP_MS / 1000);
+    const odometer_km = prevOdo + distanceKm;
 
-    const row: ParsedRow = {
+    rows.push({
       timestampSec,
-      latitude: gps.lat,
-      longitude: gps.lng,
-      speed_kmh: gps.speed,
+      latitude: lat,
+      longitude: lng,
+      speed_kmh: speed,
       rpm: Math.round(rpm),
       gear,
       throttle_pct: Math.round(throttlePct),
       engine_temp_c: engineTemp,
       voltage,
-      roll_deg: nearestAhrs?.roll ?? 0,
-      pitch_deg: nearestAhrs?.pitch ?? 0,
-      yaw_deg: nearestAhrs?.yaw ?? 0,
-      g_force: Math.round(gForce * 100) / 100 // 2 casas decimais
-    };
+      roll_deg: ahrs.roll,
+      pitch_deg: ahrs.pitch,
+      yaw_deg: ahrs.yaw,
+      g_force: Math.round(maxGForce * 100) / 100,
+      odometer_km: Math.round(odometer_km * 1000) / 1000,
+      brake_pct: Math.round(brakePct),
+      clutch_engaged: clutchEngaged
+    });
 
-    rows.push(row);
-    prevSpeed = gps.speed;
+    prevSpeed = speed;
   }
 
   return rows;

@@ -18,7 +18,10 @@ import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter"
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import type { Motorcycle } from "../types";
-import { Activity, Database, Zap, AlertTriangle } from "lucide-react";
+import { Activity, Gauge, Zap, AlertTriangle } from "lucide-react";
+import GaugeCard from "../components/GaugeCard";
+import TempVoltCard from "../components/TempVoltCard";
+import IMUCard from "../components/IMUCard";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,21 +63,14 @@ export default function RealSimulator() {
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
   const [selectedMotorcycle, setSelectedMotorcycle] = useState<Motorcycle | null>(null);
 
-  // Socket for emitting telemetry
   const socketRef = useRef<Socket | null>(null);
-
-  // Video element ref (passed to VideoPlayer and useSyncEngine)
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
-
-  // simulationStartTime is set when Play is first clicked
   const simulationStartTimeRef = useRef<Date>(new Date());
 
-  // Set document title on mount
   useEffect(() => {
     document.title = "Simulador Real — MotoGuard";
   }, []);
 
-  // Fetch motorcycles and Socket lifecycle
   useEffect(() => {
     motorcyclesAPI.getAll().then((res) => {
       setMotorcycles(res.data);
@@ -93,10 +89,6 @@ export default function RealSimulator() {
     };
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // GPS track derived from rows
-  // ---------------------------------------------------------------------------
-
   const gpsTrack = simSession.rows.map((r) => ({ lat: r.latitude, lng: r.longitude }));
 
   const currentPosition =
@@ -106,10 +98,6 @@ export default function RealSimulator() {
           lng: simSession.rows[simSession.currentRowIndex].longitude,
         }
       : null;
-
-  // ---------------------------------------------------------------------------
-  // onRowChange: called by useSyncEngine on each row advance
-  // ---------------------------------------------------------------------------
 
   const handleRowChange = useCallback(
     (row: ParsedRow, index: number) => {
@@ -123,6 +111,7 @@ export default function RealSimulator() {
           prev.deviceId,
           simulationStartTimeRef.current,
           "TRIP_ACTIVE",
+          selectedMotorcycle?.model || "Real Simulator",
           index
         );
         emitTelemetry(socketRef.current, payload);
@@ -133,23 +122,17 @@ export default function RealSimulator() {
           emittedCount: prev.emittedCount + 1,
         };
       });
-
-      // Update current time display
       setCurrentTimeSec(row.timestampSec);
     },
-    []
+    [selectedMotorcycle]
   );
 
-  // ---------------------------------------------------------------------------
-  // useSyncEngine
-  // ---------------------------------------------------------------------------
   const syncEngine = useSyncEngine({
     rows: simSession.rows,
     videoRef: simSession.videoFile ? videoRef : null,
     playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
     onEnd: () => {
-      // Natural end
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
@@ -162,6 +145,7 @@ export default function RealSimulator() {
           simSession.deviceId,
           simulationStartTimeRef.current,
           "TRIP_ENDED",
+          selectedMotorcycle?.model || "Real Simulator",
           simSession.rows.length - 1
         );
         emitTelemetry(socket, payload);
@@ -176,9 +160,6 @@ export default function RealSimulator() {
     }
   });
 
-  // ---------------------------------------------------------------------------
-  // Playback handlers
-  // ---------------------------------------------------------------------------
   const { user } = useAuth();
 
   const handlePause = useCallback(() => {
@@ -190,16 +171,11 @@ export default function RealSimulator() {
   }, [simSession.videoFile, syncEngine]);
 
   const handleStop = useCallback(() => {
-    // Stop sync engine
     syncEngine.stop();
-
-    // Stop and reset video
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-
-    // Emit TRIP_ENDED payload
     const socket = socketRef.current;
     if (socket && socket.connected && simSession.rows.length > 0) {
       const lastRow = simSession.rows[simSession.currentRowIndex] ?? simSession.rows[0];
@@ -212,7 +188,6 @@ export default function RealSimulator() {
       );
       emitTelemetry(socket, payload);
     }
-
     setCurrentTimeSec(0);
     setSession((prev) => ({
       ...prev,
@@ -225,32 +200,27 @@ export default function RealSimulator() {
   const handlePlay = useCallback(() => {
     const socket = socketRef.current;
     if (!socket || !socket.connected) {
-      setSocketError(
-        "Socket não conectado. A simulação local vai iniciar sem emissão de telemetria."
-      );
+      setSocketError("Socket não conectado. A simulação local vai iniciar sem emissão de telemetria.");
     } else {
       setSocketError(null);
-      // Registar associação do device com o utilizador atual
       if (user?.id) {
+        console.log("[RealSimulator] Defining motorcycle model:", selectedMotorcycle?.model || "Real Simulator");
         socket.emit("send_command", {
           acao: "definir_modelo",
-          modelo: selectedMotorcycle?.name || "Real Simulator",
+          modelo: selectedMotorcycle?.model || "Real Simulator",
           device_id: simSession.deviceId,
           userId: user.id
         });
       }
     }
     simulationStartTimeRef.current = new Date();
-
-    // Start video if available
     if (simSession.videoFile && videoRef.current) {
       videoRef.current.playbackRate = simSession.playbackSpeed;
       videoRef.current.play().catch(() => {});
     }
-
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId, selectedMotorcycle?.name]);
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId, selectedMotorcycle?.model]);
 
   const handleSpeedChange = useCallback(
     (speed: PlaybackSpeed) => {
@@ -273,10 +243,6 @@ export default function RealSimulator() {
     [simSession.videoFile, syncEngine]
   );
 
-  // ---------------------------------------------------------------------------
-  // CSV parsed
-  // ---------------------------------------------------------------------------
-
   const handleCsvParsed = useCallback((result: ParseResult) => {
     setSourceFormat(result.format);
     setTotalDurationSec(result.durationSec);
@@ -290,170 +256,190 @@ export default function RealSimulator() {
     }));
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Video file selected
-  // ---------------------------------------------------------------------------
-
   const handleVideoFileSelect = useCallback((file: File) => {
     setSession((prev) => ({ ...prev, videoFile: file }));
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Cleanup on unmount: stop playback
-  // ---------------------------------------------------------------------------
-
+  // Cleanup: parar motor apenas no unmount real do componente
+  // NÃO incluir syncEngine nas deps — muda a cada render e matava o loop!
   useEffect(() => {
     return () => {
+      console.log("[RealSimulator] Component unmounting — stopping engine");
       syncEngine.stop();
       if (videoRef.current) {
         videoRef.current.pause();
       }
     };
-  }, [syncEngine]);
-
-  // ---------------------------------------------------------------------------
-  // Derived state
-  // ---------------------------------------------------------------------------
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasRows = simSession.rows.length > 0;
   const isDisabled = !hasRows;
-
   const currentRow = hasRows
     ? simSession.rows[Math.min(simSession.currentRowIndex, simSession.rows.length - 1)]
     : null;
 
-  const rawDataItems = currentRow
-    ? [
-        { label: "Timestamp", value: `${currentRow.timestampSec.toFixed(2)} s` },
-        { label: "Latitude", value: currentRow.latitude.toFixed(6) },
-        { label: "Longitude", value: currentRow.longitude.toFixed(6) },
-        { label: "Velocidade", value: `${currentRow.speed_kmh.toFixed(1)} km/h` },
-        { label: "Roll", value: `${currentRow.roll_deg.toFixed(1)}°` },
-        { label: "Pitch", value: `${currentRow.pitch_deg.toFixed(1)}°` },
-        { label: "Yaw", value: `${currentRow.yaw_deg.toFixed(1)}°` },
-        { label: "G-Force", value: currentRow.g_force.toFixed(2) },
-      ]
-    : [];
+  const telemetryData = currentRow ? {
+    speed_kmh: currentRow.speed_kmh,
+    rpm: currentRow.rpm,
+    gear: currentRow.gear,
+    throttle_pct: currentRow.throttle_pct,
+    engine_temp_c: currentRow.engine_temp_c,
+    voltage: currentRow.voltage,
+    brake_front_pct: 0,
+    brake_rear_pct: 0,
+    odometer_km: 0,
+    clutch_engaged: false
+  } : null;
 
-  const complementedDataItems = currentRow
-    ? [
-        { label: "RPM", value: Math.round(currentRow.rpm).toString() },
-        { label: "Mudança", value: Math.round(currentRow.gear).toString() },
-        { label: "Acelerador", value: `${Math.round(currentRow.throttle_pct)}%` },
-        { label: "Temp. Motor", value: `${Math.round(currentRow.engine_temp_c)}°C` },
-        { label: "Voltagem", value: `${currentRow.voltage.toFixed(1)} V` },
-      ]
-    : [];
+  const imuData = currentRow ? {
+    roll_deg: currentRow.roll_deg,
+    pitch_deg: currentRow.pitch_deg,
+    yaw_deg: currentRow.yaw_deg,
+    g_force: currentRow.g_force
+  } : null;
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
+  const healthData = currentRow ? {
+    oil_pressure_bar: 3.8,
+    tire_pressure_front_bar: 2.3,
+    tire_pressure_rear_bar: 2.5
+  } : null;
+
+  const isRiderData = sourceFormat === "riderdata";
+  const telemetrySources = {
+    speed: true,
+    rpm: isRiderData,
+    gear: isRiderData,
+    throttle: isRiderData,
+    engineTemp: isRiderData,
+    voltage: isRiderData,
+    oilPressure: false,
+    brakeFront: false,
+    brakeRear: false,
+    roll: isRiderData,
+    pitch: isRiderData,
+    yaw: isRiderData,
+    gForce: isRiderData
+  };
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-20">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-black text-white tracking-tight m-0 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-lg">
-              <Activity size={24} />
-            </span>
-            Simulador Real
-          </h1>
-          <p className="text-muted font-medium text-sm">Reproduz telemetria CSV sincronizada com vídeo para análise profissional.</p>
+    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+      {/* CLEAN HEADER */}
+      <div className="flex flex-col gap-1 border-b border-white/5 pb-4">
+        <h1 className="text-2xl font-black text-white tracking-tight m-0 flex items-center gap-3">
+          <Activity size={20} className="text-accent" />
+          Simulador de Telemetria Real
+        </h1>
+        <p className="text-[0.6rem] font-black text-muted uppercase tracking-[0.25em] opacity-40">Análise de telemetria sincronizada com vídeo</p>
+      </div>
+
+      {/* TOP SOURCE BAR (Clean) */}
+      <div className="flex flex-col md:flex-row gap-4 items-stretch">
+        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex-1 flex items-center justify-between group">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent/60 group-hover:text-accent group-hover:bg-accent/10 transition-all">
+              <Activity size={18} />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Ficheiro de Telemetria</span>
+              <span className="text-xs font-bold text-white/80">{hasRows ? "Telemetria Ativa" : "Aguardando CSV..."}</span>
+            </div>
+          </div>
+          <CsvDropzone onParsed={handleCsvParsed} compact />
+        </div>
+        
+        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex items-center gap-6 group hover:border-border-glass transition-all">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Duração Total</span>
+            <span className="text-xs font-black text-white/80 tabular-nums">{totalDurationSec.toFixed(1)}s</span>
+          </div>
+          <div className="w-px h-6 bg-white/5" />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Estado</span>
+            <span className="text-xs font-black text-green/80 uppercase tracking-tight">{simSession.playbackState === "playing" ? "Reproduzindo" : "Parado"}</span>
+          </div>
         </div>
       </div>
 
-      {/* CSV DROPZONE */}
-      <div className="relative group">
-        <div className="absolute inset-0 bg-accent/5 blur-2xl rounded-[2.5rem] -z-10 group-hover:bg-accent/10 transition-all" />
-        <CsvDropzone onParsed={handleCsvParsed} />
-      </div>
-
-      {/* SOCKET ERROR */}
-      {socketError && (
-        <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
-          <AlertTriangle size={18} />
-          <span>{socketError}</span>
+      {/* 3-COLUMN PREMIUM DASHBOARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_340px_1fr] gap-6 items-stretch min-h-[600px]">
+        {/* COL 1: MOTOR & VELOCIDADE */}
+        <div className="flex flex-col gap-6">
+          <GaugeCard data={telemetryData} sources={telemetrySources} />
+          <IMUCard data={imuData} sources={telemetrySources} />
         </div>
-      )}
 
-      {/* DATA HUD */}
-      {hasRows && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* REAL DATA */}
-          <div className="bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group animate-fade-in">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green/0 via-green/40 to-green/0 opacity-50" />
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-text tracking-tight m-0 flex items-center gap-2">
-                  <Database className="text-green" size={20} /> Dados Reais (CSV)
-                </h2>
-                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Formato: {sourceFormat === "riderdata" ? "RiderData" : "Genérico"}</p>
+        {/* COL 2: SAÚDE & METADADOS */}
+        <div className="flex flex-col gap-6">
+          <TempVoltCard telemetry={telemetryData} health={healthData} sources={telemetrySources} />
+          
+          {/* Metadata Card (Premium) */}
+          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
+            <div className="flex flex-col gap-1">
+              <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest opacity-40">Metadados do Percurso</span>
+              <div className="mt-4 grid grid-cols-1 gap-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Origem</span>
+                  <span className="font-black text-white/80">{sourceFormat === "riderdata" ? "RiderData" : "CSV Genérico"}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Frequência</span>
+                  <span className="font-black text-white/80">10 Hz</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Progresso</span>
+                  <span className="font-black text-white/80 tabular-nums">{(currentTimeSec / totalDurationSec * 100 || 0).toFixed(0)}%</span>
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {rawDataItems.map((item) => (
-                <div key={item.label} className="bg-panel border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-border-glass transition-all">
-                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-green/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-text tabular-nums group-hover/item:text-green transition-colors">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* COMPLEMENTED DATA */}
-          <div className="bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group animate-fade-in [animation-delay:100ms]">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-text tracking-tight m-0 flex items-center gap-2">
-                  <Zap className="text-blue" size={20} /> Telemetria Complementar
-                </h2>
-                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Física do motor e sensores auxiliares</p>
+            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-green" />
+                <span className="text-[0.5rem] font-black text-muted uppercase">Original</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue" />
+                <span className="text-[0.5rem] font-black text-muted uppercase">Simulado</span>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {complementedDataItems.map((item) => (
-                <div key={item.label} className="bg-panel border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-border-glass transition-all">
-                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-blue/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-text tabular-nums group-hover/item:text-blue transition-colors">{item.value}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
-      )}
 
-      {/* SPLIT LAYOUT: MAP & VIDEO */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 flex-1 min-h-[400px]">
-        {/* MAP */}
-        <div className="relative bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden shadow-2xl group animate-fade-in [animation-delay:200ms]">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
-          <RouteMap
-            gpsTrack={gpsTrack}
-            currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
-          />
-          {!hasRows && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface/40 backdrop-blur-[2px] pointer-events-none z-10">
-              <div className="text-7xl grayscale opacity-20">🗺️</div>
-              <p className="text-sm font-black text-text/40 uppercase tracking-widest">Carrega um CSV para visualizar o percurso</p>
+        {/* COL 3: MAPA & VÍDEO */}
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1">
+            <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[400px]">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
+              <RouteMap
+                gpsTrack={gpsTrack}
+                currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
+              />
+              {!hasRows && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+                  <div className="text-5xl grayscale opacity-20">🗺️</div>
+                  <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega telemetria para ver o percurso</p>
+                </div>
+              )}
+            </div>
+
+            <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[400px]">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
+              <VideoPlayer
+                videoFile={simSession.videoFile}
+                videoRef={videoRef}
+                onFileSelect={handleVideoFileSelect}
+              />
+            </div>
+          </div>
+
+          {socketError && (
+            <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
+              <AlertTriangle size={18} />
+              <span>{socketError}</span>
             </div>
           )}
-        </div>
-
-        {/* VIDEO PLAYER */}
-        <div className="relative bg-surface/60 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden shadow-2xl group flex flex-col animate-fade-in [animation-delay:300ms]">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
-          <div className="flex-1">
-            <VideoPlayer
-              videoFile={simSession.videoFile}
-              videoRef={videoRef}
-              onFileSelect={handleVideoFileSelect}
-            />
-          </div>
         </div>
       </div>
 
@@ -473,7 +459,10 @@ export default function RealSimulator() {
           onStop={handleStop}
           onSpeedChange={handleSpeedChange}
           onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
-          onMotorcycleChange={(m) => setSelectedMotorcycle(m)}
+          onMotorcycleChange={(m) => {
+            setSelectedMotorcycle(m);
+            setSession(prev => ({ ...prev, deviceId: m?.deviceId || "" }));
+          }}
           onSeek={handleSeek}
         />
       </div>

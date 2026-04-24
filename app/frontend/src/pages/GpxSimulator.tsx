@@ -19,7 +19,10 @@ import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter"
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import type { Motorcycle } from "../types";
-import { Navigation, AlertTriangle, Activity, Zap, Mountain } from "lucide-react";
+import { Navigation, AlertTriangle, Mountain, Activity, MoveHorizontal, MoveVertical, Compass, Gauge, Zap, Disc, ArrowUpCircle, Thermometer, Droplets, CircleDot } from "lucide-react";
+import GaugeCard from "../components/GaugeCard";
+import TempVoltCard from "../components/TempVoltCard";
+import IMUCard from "../components/IMUCard";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -245,140 +248,148 @@ export default function GpxSimulator() {
     ? simSession.rows[Math.min(simSession.currentRowIndex, simSession.rows.length - 1)]
     : null;
 
-  const gpsDataItems = currentRow
-    ? [
-        { label: "Latitude", value: currentRow.latitude.toFixed(6) },
-        { label: "Longitude", value: currentRow.longitude.toFixed(6) },
-        { label: "Velocidade", value: `${currentRow.speed_kmh.toFixed(1)} km/h` },
-        { label: "Timestamp", value: `${currentRow.timestampSec.toFixed(1)} s` },
-        { label: "Pitch (inclinação)", value: `${currentRow.pitch_deg.toFixed(1)}°` },
-        { label: "Roll (curva)", value: `${currentRow.roll_deg.toFixed(1)}°` },
-        { label: "G-Force", value: currentRow.g_force.toFixed(2) },
-        { label: "Yaw (direção)", value: `${currentRow.yaw_deg.toFixed(0)}°` },
-      ]
-    : [];
+  const telemetryData = currentRow ? {
+    speed_kmh: currentRow.speed_kmh,
+    rpm: currentRow.rpm,
+    gear: currentRow.gear,
+    throttle_pct: currentRow.throttle_pct,
+    engine_temp_c: currentRow.engine_temp_c,
+    voltage: currentRow.voltage,
+    brake_front_pct: currentRow.brake_front_pct,
+    brake_rear_pct: currentRow.brake_rear_pct,
+    odometer_km: 0,
+    clutch_engaged: false
+  } : null;
 
-  const enrichedDataItems = currentRow
-    ? [
-        { label: "RPM", value: Math.round(currentRow.rpm).toString() },
-        { label: "Mudança", value: currentRow.gear === 0 ? "CVT" : currentRow.gear.toString() },
-        { label: "Acelerador", value: `${Math.round(currentRow.throttle_pct)}%` },
-        { label: "Temp. Motor", value: `${Math.round(currentRow.engine_temp_c)}°C` },
-        { label: "Voltagem", value: `${currentRow.voltage.toFixed(1)} V` },
-      ]
-    : [];
+  const imuData = currentRow ? {
+    roll_deg: currentRow.roll_deg,
+    pitch_deg: currentRow.pitch_deg,
+    yaw_deg: currentRow.yaw_deg,
+    g_force: currentRow.g_force
+  } : null;
+
+  const healthData = currentRow ? {
+    oil_pressure_bar: 3.5, // Default for simulation
+    tire_pressure_front_bar: 2.3,
+    tire_pressure_rear_bar: 2.5
+  } : null;
+
+  const gpxSources = {
+    speed: true,
+    rpm: false,
+    gear: false,
+    throttle: false,
+    engineTemp: false,
+    voltage: false,
+    oilPressure: false,
+    brakeFront: false,
+    brakeRear: false,
+    roll: false,
+    pitch: false,
+    yaw: false,
+    gForce: false
+  };
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-20">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-black text-text tracking-tight m-0 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-lg">
-              <Navigation size={24} />
-            </span>
-            Simulador GPX
-          </h1>
-          <p className="text-muted font-medium text-sm">Reproduz rotas GPX com telemetria enriquecida e emissão em tempo real.</p>
-        </div>
+    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+      {/* CLEAN HEADER */}
+      <div className="flex flex-col gap-1 border-b border-white/5 pb-4">
+        <h1 className="text-2xl font-black text-white tracking-tight m-0 flex items-center gap-3">
+          <Navigation size={20} className="text-accent" />
+          Simulador de Rotas GPX
+        </h1>
+        <p className="text-[0.6rem] font-black text-muted uppercase tracking-[0.25em] opacity-40">Reprodução de telemetria enriquecida via GPS</p>
       </div>
 
-      {/* GPX DROPZONE */}
-      <div className="relative group">
-        <div className="absolute inset-0 bg-accent/5 blur-2xl rounded-[2.5rem] -z-10 group-hover:bg-accent/10 transition-all" />
-        <GpxDropzone onParsed={handleGpxParsed} />
-      </div>
-
-      {/* SOCKET ERROR */}
-      {socketError && (
-        <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
-          <AlertTriangle size={18} />
-          <span>{socketError}</span>
-        </div>
-      )}
-
-      {/* DATA PANELS */}
-      {hasRows && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* GPS DATA */}
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green/0 via-green/40 to-green/0 opacity-50" />
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
-                  <Activity className="text-green" size={20} /> Dados GPS (Ficheiro)
-                </h2>
-                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Valores originais do percurso GPX</p>
-              </div>
+      {/* TOP SOURCE BAR (Clean) */}
+      <div className="flex flex-col md:flex-row gap-4 items-stretch">
+        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex-1 flex items-center justify-between group">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent/60 group-hover:text-accent group-hover:bg-accent/10 transition-all">
+              <Navigation size={18} />
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {gpsDataItems.map((item) => (
-                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
-                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-green/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-green transition-colors">{item.value}</span>
-                </div>
-              ))}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Fonte de Dados</span>
+              <span className="text-xs font-bold text-white/80">{hasRows ? "Ficheiro GPX Carregado" : "Nenhum ficheiro selecionado"}</span>
             </div>
           </div>
-
-          {/* ENRICHED DATA */}
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-black text-white tracking-tight m-0 flex items-center gap-2">
-                  <Zap className="text-blue" size={20} /> Telemetria Simulada
-                </h2>
-                <p className="text-[0.65rem] font-medium text-muted uppercase tracking-widest opacity-60">Física enriquecida e saúde do motor</p>
+          <GpxDropzone onParsed={handleGpxParsed} compact />
+        </div>
+        
+        {gpxStats && (
+          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex items-center gap-6 group hover:border-border-glass transition-all">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Altitude</span>
+              <span className="text-xs font-black text-blue/80 tabular-nums">{gpxStats.minElevation}m – {gpxStats.maxElevation}m</span>
+            </div>
+            <div className="w-px h-6 bg-white/5" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Ganho Acumulado</span>
+              <div className="flex items-center gap-2 text-xs font-black text-blue/80 tabular-nums">
+                <span>↗ {gpxStats.elevationGain}m</span>
+                <span className="opacity-20">|</span>
+                <span>↘ {gpxStats.elevationLoss}m</span>
               </div>
             </div>
+          </div>
+        )}
+      </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {enrichedDataItems.map((item) => (
-                <div key={item.label} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-1 shadow-inner group/item hover:border-white/10 transition-all">
-                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover/item:text-blue/60 transition-colors">{item.label}</span>
-                  <span className="text-sm font-black text-white tabular-nums group-hover/item:text-blue transition-colors">{item.value}</span>
-                </div>
-              ))}
-            </div>
+      {/* 3-COLUMN PREMIUM DASHBOARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_340px_1fr] gap-6 items-stretch min-h-[600px]">
+        {/* COL 1: MOTOR & VELOCIDADE */}
+        <div className="flex flex-col gap-6">
+          <GaugeCard data={telemetryData} sources={gpxSources} />
+          
+          {/* Legend Card */}
+          <div className="bg-panel/20 border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-3">
+             <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest opacity-40">Legenda de Origem</span>
+             <div className="flex items-center gap-4">
+               <div className="flex items-center gap-1.5">
+                 <div className="w-1.5 h-1.5 rounded-full bg-green" />
+                 <span className="text-[0.55rem] font-bold text-muted uppercase tracking-widest">Ficheiro</span>
+               </div>
+               <div className="flex items-center gap-1.5">
+                 <div className="w-1.5 h-1.5 rounded-full bg-blue" />
+                 <span className="text-[0.55rem] font-bold text-muted uppercase tracking-widest">Simulado</span>
+               </div>
+             </div>
+          </div>
+        </div>
 
-            {/* Elevation Profile */}
-            {gpxStats && (
-              <div className="mt-2 p-4 rounded-2xl bg-blue/5 border border-blue/10 flex items-center justify-between group/ele">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60 group-hover/ele:text-blue/60 transition-colors">Perfil de Elevação</span>
-                  <div className="text-[0.7rem] font-bold text-blue/80 flex items-center gap-3">
-                    <span className="flex items-center gap-1"><Mountain size={12} /> {gpxStats.minElevation}m – {gpxStats.maxElevation}m</span>
-                    <span className="w-px h-3 bg-blue/10" />
-                    <span>↗ +{gpxStats.elevationGain}m</span>
-                    <span className="w-px h-3 bg-blue/10" />
-                    <span>↘ -{gpxStats.elevationLoss}m</span>
-                  </div>
-                </div>
+        {/* COL 2: SAÚDE & INÉRCIA */}
+        <div className="flex flex-col gap-6">
+          <TempVoltCard telemetry={telemetryData} health={healthData} sources={gpxSources} />
+          <IMUCard data={imuData} sources={gpxSources} />
+        </div>
+
+        {/* COL 3: MAPA */}
+        <div className="flex flex-col gap-6">
+          <div className="relative flex-1 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[500px]">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
+            <RouteMap
+              gpsTrack={gpsTrack}
+              currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
+            />
+            {!hasRows && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+                <div className="text-5xl grayscale opacity-20">🗺️</div>
+                <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega um percurso para ativar o mapa</p>
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* ROUTE MAP */}
-      <div className="relative flex-1 min-h-[450px] bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
-        <RouteMap
-          gpsTrack={gpsTrack}
-          currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
-        />
-        {!hasRows && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10 animate-fade-in">
-            <div className="text-7xl grayscale opacity-20">🗺️</div>
-            <p className="text-sm font-black text-white/40 uppercase tracking-widest">Carrega um percurso para visualizar o mapa</p>
-          </div>
-        )}
+          {socketError && (
+            <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
+              <AlertTriangle size={18} />
+              <span>{socketError}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* PLAYBACK CONTROLS */}
