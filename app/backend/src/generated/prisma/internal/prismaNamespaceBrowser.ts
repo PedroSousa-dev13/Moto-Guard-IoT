@@ -152,6 +152,7 @@ export const TripScalarFieldEnum = {
   mlModelVersion: 'mlModelVersion',
   category: 'category',
   categoryConfidence: 'categoryConfidence',
+  drivingStyle: 'drivingStyle',
   createdAt: 'createdAt'
 } as const
 

@@ -153,7 +153,7 @@ export default function Trips() {
     return () => { socket.disconnect(); };
   }, []);
 
-  useEffect(() => { void refresh(); setExpandedId(null); setPage(1); }, [view, sourceFilter]);
+  useEffect(() => { void refresh(); setExpandedId(null); setPage(1); }, [view, sourceFilter, statusFilter]);
 
   async function loadMotos() {
     try {
@@ -166,7 +166,10 @@ export default function Trips() {
   async function loadTrips() {
     try {
       setIsLoading(true); setError(null);
-      const res = await tripsAPI.getAll(sourceFilter === "ALL" ? undefined : sourceFilter);
+      const res = await tripsAPI.getAll(
+        sourceFilter === "ALL" ? undefined : sourceFilter,
+        statusFilter === "ALL" ? undefined : statusFilter,
+      );
       setTrips(res.data);
     } catch { setError("Não foi possível carregar as viagens."); }
     finally { setIsLoading(false); }
@@ -175,7 +178,11 @@ export default function Trips() {
   async function loadFeed() {
     try {
       setFeedLoading(true); setFeedError(null);
-      const res = await tripsAPI.getFeed(sourceFilter === "ALL" ? undefined : sourceFilter, 200);
+      const res = await tripsAPI.getFeed(
+        sourceFilter === "ALL" ? undefined : sourceFilter,
+        statusFilter === "ALL" ? undefined : statusFilter,
+        200,
+      );
       setFeed(res.data);
     } catch { setFeedError("Não foi possível carregar o feed."); }
     finally { setFeedLoading(false); }
@@ -271,7 +278,12 @@ export default function Trips() {
 
   // Summary stats for hero
   const totalKm = (view === "FEED" ? filteredFeed : filteredTrips).reduce((acc, t) => acc + (t.distanceKm ?? 0), 0);
-  const avgSafety = (view === "FEED" ? filteredFeed : filteredTrips).reduce((acc, t) => acc + (t.safetyScore ?? 0), 0) / (activeCount || 1);
+  const safetyValues = (view === "FEED" ? filteredFeed : filteredTrips)
+    .map((t) => t.safetyScore)
+    .filter((score): score is number => typeof score === "number" && Number.isFinite(score));
+  const avgSafety = safetyValues.length
+    ? safetyValues.reduce((acc, score) => acc + score, 0) / safetyValues.length
+    : null;
 
 
   // ── Loading ──────────────────────────────────────────────────────────────
@@ -347,8 +359,8 @@ export default function Trips() {
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score Médio</span>
-            <span className={`text-5xl font-black tracking-tighter tabular-nums transition-colors ${scoreStyle(avgSafety).className}`}>
-              {avgSafety.toFixed(0)}
+            <span className={`text-5xl font-black tracking-tighter tabular-nums transition-colors ${avgSafety === null ? "text-muted" : scoreStyle(avgSafety).className}`}>
+              {avgSafety === null ? "—" : avgSafety.toFixed(0)}
             </span>
           </div>
         </div>
@@ -397,7 +409,17 @@ export default function Trips() {
           <div className="flex flex-col gap-2.5">
             <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Origem</label>
             <select className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer" value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as TripSourceFilter)}>
+              onChange={(e) => {
+                const nextSource = e.target.value as TripSourceFilter;
+                setSourceFilter(nextSource);
+                // Evita estado "sem resultados" por filtros herdados de outra origem.
+                setSelectedMotoId("ALL");
+                if (nextSource === "GPX_IMPORTED" && statusFilter === "ACTIVE") {
+                  setStatusFilter("COMPLETED");
+                }
+                setPage(1);
+                setExpandedId(null);
+              }}>
               <option value="ALL" className="bg-slate-900">Todas</option>
               <option value="SIMULATOR" className="bg-slate-900">Simulador IoT</option>
               <option value="GPX_IMPORTED" className="bg-slate-900">Ficheiros GPX</option>
@@ -449,6 +471,11 @@ export default function Trips() {
                 ? "Esta mota ainda não tem viagens que correspondam aos filtros aplicados."
                 : "Inicie uma simulação no simulador IoT ou importe um ficheiro GPX para ver resultados aqui."}
             </p>
+            {(sourceFilter !== "ALL" || statusFilter !== "ALL") && (
+              <p className="text-xs text-muted/70 font-semibold uppercase tracking-wider m-0">
+                Filtros ativos: origem={sourceFilter} | estado={statusFilter}
+              </p>
+            )}
           </div>
         </div>
       )}
