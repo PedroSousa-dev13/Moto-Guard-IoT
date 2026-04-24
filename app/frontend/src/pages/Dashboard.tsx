@@ -389,7 +389,12 @@ export default function Dashboard() {
             
             <div className="flex flex-col gap-3">
               {recentAlerts.length > 0 ? recentAlerts.map(a => (
-                <div key={a.id} className="flex items-center gap-4 p-3 rounded-2xl bg-panel border border-border-glass-subtle hover:bg-panel-hover transition-all group">
+                <Link
+                  key={a.id}
+                  to="/alertas"
+                  state={{ selectedAlertId: a.id }}
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-panel border border-border-glass-subtle hover:bg-panel-hover transition-all group"
+                >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110 ${a.severity === 'CRITICAL' ? 'bg-red/10 text-red border-red/20' : 'bg-orange/10 text-orange border-orange/20'}`}>
                     <AlertTriangle size={16} />
                   </div>
@@ -397,7 +402,7 @@ export default function Dashboard() {
                     <span className="text-sm font-black text-text leading-tight">{a.title}</span>
                     <span className="text-[0.65rem] font-bold text-muted uppercase tracking-widest">{fmtTime(a.timestamp)}</span>
                   </div>
-                </div>
+                </Link>
               )) : (
                 <div className="py-8 flex flex-col items-center justify-center text-center gap-2 opacity-50">
                   <CheckCircle2 size={32} className="text-muted" />
@@ -408,20 +413,20 @@ export default function Dashboard() {
           </Card>
 
           {/* TELEMETRIA AO VIVO STATUS */}
-          <Card className="flex flex-col items-center text-center gap-8 p-10 relative overflow-hidden group">
+          <Card className="flex flex-col items-center text-center gap-8 px-7 sm:px-10 py-10 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             
-            <div className="relative w-28 h-28 flex items-center justify-center">
+            <div className="relative w-28 h-28 flex items-center justify-center mx-auto">
               <div className="absolute inset-0 border border-accent/5 rounded-full" />
               <div className="absolute inset-3 border border-accent/10 rounded-full" />
               <div className="absolute inset-6 border border-accent/20 rounded-full" />
               <div className={`absolute inset-0 border-2 border-accent rounded-full animate-ping opacity-0 ${hasData ? 'opacity-20' : ''}`} />
-              <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
+              <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 mx-auto ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
                 <Cpu size={32} />
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 max-w-[240px] mx-auto">
+            <div className="flex flex-col gap-3 max-w-[280px] px-1 mx-auto">
               <h3 className="text-xl font-black text-text m-0 tracking-tight">{hasData ? "Telemetria Ativa" : "Sistema em Standby"}</h3>
               <p className="text-xs text-muted font-medium leading-relaxed m-0 opacity-60">
                 {hasData 
@@ -430,7 +435,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <Link to="/simulator-contexts" className="w-full mt-2">
+            <Link to="/simulator-contexts" className="w-full max-w-[290px] mt-2 mx-auto">
               <button className="w-full flex items-center justify-center gap-3 bg-accent text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all group/btn">
                 <Play size={18} fill="white" className="transition-transform group-hover/btn:scale-110" />
                 Abrir Simulador
