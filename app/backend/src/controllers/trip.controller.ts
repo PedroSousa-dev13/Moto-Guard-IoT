@@ -14,6 +14,8 @@ import { categorizeTripById } from "../services/trip-categorization.service";
 
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
 type TripSourceFilter = (typeof VALID_TRIP_SOURCES)[number];
+const VALID_TRIP_STATUSES = ["ACTIVE", "COMPLETED", "CANCELLED"] as const;
+type TripStatusFilter = (typeof VALID_TRIP_STATUSES)[number];
 
 function clampInt(value: unknown, fallback: number, lo: number, hi: number): number {
   const n = typeof value === "string" ? parseInt(value, 10) : Number.NaN;
@@ -25,10 +27,18 @@ function clampInt(value: unknown, fallback: number, lo: number, hi: number): num
 export async function listTrips(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
   const source = req.query.source as string | undefined;
+  const status = req.query.status as string | undefined;
 
   if (source && !VALID_TRIP_SOURCES.includes(source as TripSourceFilter)) {
     res.status(400).json({
       error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+    });
+    return;
+  }
+
+  if (status && !VALID_TRIP_STATUSES.includes(status as TripStatusFilter)) {
+    res.status(400).json({
+      error: "Parâmetro status inválido. Use: ACTIVE | COMPLETED | CANCELLED",
     });
     return;
   }
@@ -38,15 +48,48 @@ export async function listTrips(req: AuthRequest, res: Response): Promise<void> 
       where: {
         userId,
         ...(source ? { source: source as TripSourceFilter } : {}),
+        ...(status ? { status: status as TripStatusFilter } : {}),
       },
       orderBy: { startedAt: "desc" },
       include: {
-        motorcycle: { select: { id: true, name: true, brand: true, category: true } },
+        motorcycle: { select: { id: true, name: true, brand: true, category: true, profile: true } },
+        events: { select: { type: true, severity: true } },
         _count: { select: { events: true } },
       },
     });
 
-    res.json(trips);
+    const items = trips.map((t) => {
+      const feedItem = buildTripFeedItem(
+        {
+          id: t.id,
+          startedAt: t.startedAt,
+          endedAt: t.endedAt,
+          status: t.status,
+          source: t.source,
+          distanceKm: t.distanceKm,
+          avgSpeedKmh: t.avgSpeedKmh,
+          maxSpeedKmh: t.maxSpeedKmh,
+          maxRollDeg: t.maxRollDeg,
+          maxGForce: t.maxGForce,
+          category: t.category,
+          categoryConfidence: t.categoryConfidence,
+          drivingStyle: t.drivingStyle,
+          motorcycle: t.motorcycle
+            ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category }
+            : null,
+          profile: t.motorcycle?.profile ?? null,
+        },
+        t.events,
+      );
+
+      return {
+        ...t,
+        safetyScore: feedItem.safetyScore,
+        performanceScore: feedItem.performanceScore,
+      };
+    });
+
+    res.json(items);
   } catch (err) {
     console.error("[listTrips] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
@@ -56,10 +99,18 @@ export async function listTrips(req: AuthRequest, res: Response): Promise<void> 
 export async function listTripFeed(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId!;
   const source = req.query.source as string | undefined;
+  const status = req.query.status as string | undefined;
 
   if (source && !VALID_TRIP_SOURCES.includes(source as TripSourceFilter)) {
     res.status(400).json({
       error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+    });
+    return;
+  }
+
+  if (status && !VALID_TRIP_STATUSES.includes(status as TripStatusFilter)) {
+    res.status(400).json({
+      error: "Parâmetro status inválido. Use: ACTIVE | COMPLETED | CANCELLED",
     });
     return;
   }
@@ -70,7 +121,7 @@ export async function listTripFeed(req: AuthRequest, res: Response): Promise<voi
     const trips = await prisma.trip.findMany({
       where: {
         userId,
-        status: "COMPLETED",
+        ...(status ? { status: status as TripStatusFilter } : {}),
         ...(source ? { source: source as TripSourceFilter } : {}),
       },
       orderBy: { startedAt: "desc" },
@@ -96,6 +147,7 @@ export async function listTripFeed(req: AuthRequest, res: Response): Promise<voi
           maxGForce: t.maxGForce,
           category: t.category,
           categoryConfidence: t.categoryConfidence,
+          drivingStyle: t.drivingStyle,
           motorcycle: t.motorcycle ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category } : null,
           profile: t.motorcycle?.profile ?? null,
         },

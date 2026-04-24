@@ -28,6 +28,15 @@ export const TripCategory = {
 export type TripCategory = (typeof TripCategory)[keyof typeof TripCategory]
 
 
+export const DrivingStyle = {
+  AGGRESSIVE: 'AGGRESSIVE',
+  DEFENSIVE: 'DEFENSIVE',
+  ECONOMY: 'ECONOMY'
+} as const
+
+export type DrivingStyle = (typeof DrivingStyle)[keyof typeof DrivingStyle]
+
+
 export const TripSource = {
   SIMULATOR: 'SIMULATOR',
   GPX_IMPORTED: 'GPX_IMPORTED',
@@ -47,7 +56,11 @@ export const EventType = {
   RAPID_ACCELERATION: 'RAPID_ACCELERATION',
   TIRE_PRESSURE_LOW: 'TIRE_PRESSURE_LOW',
   OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW',
-  SPEEDING: 'SPEEDING'
+  SPEEDING: 'SPEEDING',
+  ENGINE_OVERREV: 'ENGINE_OVERREV',
+  WHEELIE_DETECTED: 'WHEELIE_DETECTED',
+  STOPPIE_DETECTED: 'STOPPIE_DETECTED',
+  SAFETY_SYSTEM_ACTIVE: 'SAFETY_SYSTEM_ACTIVE'
 } as const
 
 export type EventType = (typeof EventType)[keyof typeof EventType]
