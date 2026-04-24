@@ -65,10 +65,13 @@ export default function Settings() {
     <div className="flex flex-col gap-8 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
-            <Settings2 className="text-accent" size={28} /> {t('settings.title')}
+          <h1 className="text-3xl font-black text-text flex items-center gap-4 tracking-tight">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+              <Settings2 size={24} />
+            </div>
+            {t('settings.title')}
           </h1>
-          <p className="text-muted text-sm font-medium">{t('settings.subtitle')}</p>
+          <p className="text-muted text-sm font-medium mt-1">{t('settings.subtitle')}</p>
         </div>
         {isDirty && (
           <div className="flex items-center gap-3 animate-fade-in">

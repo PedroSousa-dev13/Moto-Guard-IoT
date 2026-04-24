@@ -166,9 +166,12 @@ export default function Garage() {
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black text-text flex items-center gap-3 tracking-tight">
-            <Bike className="text-accent" size={28} /> Garagem
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-black text-text flex items-center gap-4 tracking-tight">
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+              <Bike size={24} />
+            </div>
+            Minha Garagem
           </h1>
           <p className="text-muted text-sm font-medium mt-1">
             {motos.length} mota{motos.length !== 1 ? "s" : ""} registadas na sua conta premium
@@ -258,26 +261,23 @@ export default function Garage() {
             const isDetail = detailId === moto.id;
             const isConfirmDelete = confirmDeleteId === moto.id;
             return (
-              <div key={moto.id} className={`group bg-surface/60 backdrop-blur-md border ${isDetail ? 'border-accent shadow-lg shadow-accent/10' : 'border-white/10 shadow-sm'} rounded-2xl flex flex-col transition-all duration-300 hover:border-white/20 overflow-hidden`}>
-                <div className="p-6">
-                  <div className="flex gap-4 items-center">
-                    <div className="w-24 h-16 rounded-xl overflow-hidden bg-black/20 flex-shrink-0 border border-white/5 p-1 group-hover:scale-105 transition-transform">
-                      <img 
-                        src={imageFromCategory(moto.category)} 
-                        alt={moto.category ?? "moto"} 
-                        className="w-full h-full object-contain drop-shadow-md"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-black text-lg text-text truncate leading-tight mb-1">{moto.name}</h3>
-                      <p className="text-[0.7rem] text-muted font-bold uppercase tracking-wider">
-                        {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "Especificação base"}
-                      </p>
-                    </div>
+              <div key={moto.id} className={`relative group bg-surface/60 backdrop-blur-md border ${isDetail ? 'border-accent shadow-lg shadow-accent/10' : 'border-white/10 shadow-sm'} rounded-2xl flex flex-col transition-all duration-300 hover:border-white/20 overflow-hidden min-h-[220px]`}>
+                <img 
+                  src={imageFromCategory(moto.category)} 
+                  alt={moto.category ?? "moto"} 
+                  className="moto-card-bg"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent pointer-events-none" />
+                <div className="p-6 relative z-10 flex-1 flex flex-col">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-xl text-text truncate leading-tight mb-1 group-hover:text-accent transition-colors">{moto.name}</h3>
+                    <p className="text-[0.7rem] text-muted font-bold uppercase tracking-wider">
+                      {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "Especificação base"}
+                    </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mt-5">
-                    <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-accent/10 text-accent border border-accent/20">
+                  <div className="badge-row mt-4">
+                    <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-accent/10 text-accent border border-accent/20 shadow-inner">
                       {moto.category}
                     </span>
                     {moto.plate && (
@@ -305,7 +305,7 @@ export default function Garage() {
                   )}
                 </div>
 
-                <div className="mt-auto p-4 bg-black/20 border-t border-white/5 flex gap-2 justify-end">
+                <div className="p-4 bg-black/20 border-t border-white/5 flex gap-2 justify-end relative z-10 mt-auto">
                   {isConfirmDelete ? (
                     <div className="flex items-center gap-3 w-full">
                       <span className="text-xs font-bold text-red flex-1 animate-pulse">Confirmar remoção?</span>

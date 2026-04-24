@@ -499,4 +499,17 @@
   .leaflet-marker-icon {
     transition: transform 0.1s linear !important;
   }
+
+  /* Premium Moto Cards Utilities */
+  .moto-card-bg {
+    @apply absolute right-[-20%] bottom-[-10%] h-[120%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.15] group-hover:-translate-x-2 pointer-events-none;
+  }
+  
+  .card-centered {
+    @apply flex flex-col justify-center items-center h-full w-full;
+  }
+  
+  .badge-row {
+    @apply flex flex-wrap gap-2 items-center;
+  }
 }

@@ -20,6 +20,7 @@ import {
 import { gpxAPI, tripsAPI } from "../services/api";
 import type { Trip, TripTelemetryResponse, TripEvent } from "../types";
 import { deriveGpxSeries } from "../utils/gpx";
+import { imageFromCategory } from "../utils/categoryImageMap";
 import { 
   MapPin, 
   Activity, 
@@ -473,10 +474,12 @@ export default function TripDetail() {
 
       <div ref={reportRef} className="flex flex-col gap-10">
         {/* HERO SECTION */}
-        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group">
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group min-h-[260px]">
+          <img src={imageFromCategory((trip.motorcycle as any)?.category)} alt="moto" className="moto-card-bg" />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent pointer-events-none" />
           <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
           
-          <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left">
+          <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left justify-center">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter m-0 leading-tight flex flex-wrap items-center gap-4">
               {trip.motorcycle?.name ?? "Viagem Sem Nome"}
               {summary.hasStunts && (
@@ -499,9 +502,9 @@ export default function TripDetail() {
             </div>
           </div>
           
-          <div className="flex gap-6 relative z-10">
+          <div className="flex gap-6 relative z-10 items-center">
             {trip.safetyScore != null && (
-              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.safetyScore >= 80 ? 'INFO' : (trip.safetyScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.safetyScore}
@@ -510,7 +513,7 @@ export default function TripDetail() {
               </div>
             )}
             {trip.performanceScore != null && (
-              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Performance</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.performanceScore >= 80 ? 'INFO' : (trip.performanceScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.performanceScore}
