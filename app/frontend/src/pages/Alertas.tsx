@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   loadAlerts,
   saveAlerts,
@@ -105,6 +105,7 @@ function SeverityIcon({ severity }: { severity: AlertSeverity }) {
 }
 
 export default function Alertas() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { markAllRead } = useNotifications();
   const [alerts, setAlerts] = useState<AlertItem[]>(() => loadAlerts());
@@ -266,6 +267,14 @@ export default function Alertas() {
     if (!selectedId) return null;
     return allAlerts.find((a) => a.id === selectedId) ?? null;
   }, [allAlerts, selectedId]);
+
+  useEffect(() => {
+    const state = location.state as { selectedAlertId?: unknown } | null;
+    const selectedFromState = typeof state?.selectedAlertId === "string" ? state.selectedAlertId : null;
+    if (!selectedFromState) return;
+    if (!allAlerts.some((a) => a.id === selectedFromState)) return;
+    setSelectedId(selectedFromState);
+  }, [allAlerts, location.state]);
 
   useEffect(() => {
     if (!selectedId) return;
