@@ -142,7 +142,30 @@ export const mlAPI = {
   getStatus: () => api.get<{ enabled: boolean; modelLoaded: boolean; modelVersion: string | null; trainedAt: string | null; nSamples: number | null }>("/ml/status"),
 };
 
+export interface BackendAlertEventDTO {
+  id: unknown;
+  type: unknown;
+  message?: unknown;
+  severity: unknown;
+  occurredAt: unknown;
+  tripId?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
+  speedKmh?: unknown;
+  rollDeg?: unknown;
+  gForce?: unknown;
+  engineTempC?: unknown;
+  voltage?: unknown;
+  trip?: {
+    source?: unknown;
+    motorcycle?: {
+      deviceId?: unknown;
+      name?: unknown;
+    };
+  };
+}
+
 export const alertsAPI = {
   getAll: (params?: { severity?: string; type?: string; tripId?: string; limit?: number }) =>
-    api.get<any[]>("/alerts", { params }),
+    api.get<BackendAlertEventDTO[]>("/alerts", { params }),
 };

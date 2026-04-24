@@ -11,6 +11,7 @@ import {
 } from "../utils/alerts";
 import { loadSettings } from "../utils/settings";
 import { alertsAPI } from "../services/api";
+import type { BackendAlertEventDTO } from "../services/api";
 import { useNotifications } from "../hooks/useNotifications";
 import { 
   RefreshCw, 
@@ -39,6 +40,21 @@ type TypeFilter = "all" | AlertType;
 type ViewMode = "list" | "timeline";
 
 const PAGE_SIZE = 15;
+
+function asString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return fallback;
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  const out = asString(value, "").trim();
+  return out ? out : undefined;
+}
+
+function lowerText(value: unknown): string {
+  return asString(value, "").toLowerCase();
+}
 
 function formatDateTime(date: string) {
   return new Date(date).toLocaleString("pt-PT", {
@@ -112,7 +128,8 @@ export default function Alertas() {
     setBackendError(null);
     try {
       const res = await alertsAPI.getAll({ limit: 200 });
-      const mapped: AlertItem[] = res.data.map((ev: any) => {
+      const mapped: AlertItem[] = res.data.map((ev: BackendAlertEventDTO) => {
+        const eventType = asString(ev?.type, "UNKNOWN");
         const titleMapping: Record<string, string> = {
           ENGINE_OVERREV: "Rotações Excessivas",
           WHEELIE_DETECTED: "Wheelie Detetado",
@@ -147,18 +164,18 @@ export default function Alertas() {
         };
 
         return {
-          id: `backend:${ev.id}`,
-          title: titleMapping[ev.type] ?? ev.type.replace(/_/g, " "),
-          message: ev.message ?? ev.type,
+          id: `backend:${asString(ev?.id, crypto.randomUUID())}`,
+          title: titleMapping[eventType] ?? eventType.replace(/_/g, " "),
+          message: asString(ev?.message, eventType),
           severity: ev.severity as AlertSeverity,
-          type: typeMapping[ev.type] ?? "OTHER",
+          type: typeMapping[eventType] ?? "OTHER",
           status: "ack" as AlertStatus,
-          timestamp: ev.occurredAt,
-          deviceId: ev.trip?.motorcycle?.deviceId ?? undefined,
-          motoModel: ev.trip?.motorcycle?.name ?? undefined,
-          tripId: ev.tripId,
-          lat: ev.latitude ?? undefined,
-          lng: ev.longitude ?? undefined,
+          timestamp: asString(ev?.occurredAt, new Date().toISOString()),
+          deviceId: asOptionalString(ev?.trip?.motorcycle?.deviceId),
+          motoModel: asOptionalString(ev?.trip?.motorcycle?.name),
+          tripId: asOptionalString(ev?.tripId),
+          lat: typeof ev?.latitude === "number" ? ev.latitude : undefined,
+          lng: typeof ev?.longitude === "number" ? ev.longitude : undefined,
           meta: {
             speedKmh: ev.speedKmh,
             rollDeg: ev.rollDeg,
@@ -229,10 +246,10 @@ export default function Alertas() {
       .filter((a) => {
         if (!q) return true;
         return (
-          a.title.toLowerCase().includes(q) ||
-          a.message.toLowerCase().includes(q) ||
-          (a.deviceId ?? "").toLowerCase().includes(q) ||
-          (a.motoModel ?? "").toLowerCase().includes(q)
+          lowerText(a.title).includes(q) ||
+          lowerText(a.message).includes(q) ||
+          lowerText(a.deviceId).includes(q) ||
+          lowerText(a.motoModel).includes(q)
         );
       })
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

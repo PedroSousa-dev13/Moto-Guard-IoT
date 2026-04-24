@@ -43,13 +43,68 @@ export interface AlertItem {
 
 const KEY = "motoguard_alerts";
 
+function asString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return fallback;
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  const out = asString(value, "").trim();
+  return out ? out : undefined;
+}
+
+function normalizeStoredAlert(value: unknown): AlertItem | null {
+  if (!value || typeof value !== "object") return null;
+  const alert = value as Record<string, unknown>;
+  const id = asString(alert.id, "").trim();
+  if (!id) return null;
+
+  const severity = alert.severity;
+  const status = alert.status;
+  const type = alert.type;
+  if (severity !== "INFO" && severity !== "WARNING" && severity !== "CRITICAL") return null;
+  if (status !== "unread" && status !== "ack") return null;
+
+  const isValidType =
+    type === undefined ||
+    type === "SPEED" ||
+    type === "BRAKING" ||
+    type === "TILT" ||
+    type === "ENGINE" ||
+    type === "BATTERY" ||
+    type === "GEOFENCE" ||
+    type === "IMPACT" ||
+    type === "MAINTENANCE" ||
+    type === "OTHER";
+  if (!isValidType) return null;
+
+  return {
+    id,
+    title: asString(alert.title, "Sem titulo"),
+    message: asString(alert.message, ""),
+    severity,
+    status,
+    timestamp: asString(alert.timestamp, new Date().toISOString()),
+    type: type as AlertType | undefined,
+    deviceId: asOptionalString(alert.deviceId),
+    motoModel: asOptionalString(alert.motoModel),
+    tripId: asOptionalString(alert.tripId),
+    lat: typeof alert.lat === "number" ? alert.lat : undefined,
+    lng: typeof alert.lng === "number" ? alert.lng : undefined,
+    meta: (alert.meta && typeof alert.meta === "object") ? (alert.meta as Record<string, unknown>) : undefined,
+  };
+}
+
 export function loadAlerts(): AlertItem[] {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed as AlertItem[];
+    return parsed
+      .map(normalizeStoredAlert)
+      .filter((a): a is AlertItem => a !== null);
   } catch {
     return [];
   }
