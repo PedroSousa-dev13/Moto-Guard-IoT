@@ -309,7 +309,29 @@ export default function TripDetail() {
     }
 
     if (routePoints.length > 1) {
-      mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [20, 20] });
+      routeLayerRef.current.setLatLngs(routePoints);
+
+      // Add green start marker
+      const startIcon = L.icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10" fill="#22c55e" stroke="#16a34a" stroke-width="3"/></svg>'),
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      L.marker(routePoints[0], { icon: startIcon })
+        .bindPopup(`<div style="font-weight:600;color:#22c55e">Início da Viagem</div><div style="color:#71717a">${formatDateTime(trip.startedAt)}</div>`)
+        .addTo(eventsLayerRef.current!);
+
+      // Add red end marker
+      const endIcon = L.icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#dc2626" stroke-width="3"/></svg>'),
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      L.marker(routePoints[routePoints.length - 1], { icon: endIcon })
+        .bindPopup(`<div style="font-weight:600;color:#ef4444">Fim da Viagem</div><div style="color:#71717a">${trip.endedAt ? formatDateTime(trip.endedAt) : 'Em curso'}</div>`)
+        .addTo(eventsLayerRef.current!);
+
+      mapRef.current!.fitBounds(routeLayerRef.current.getBounds(), { padding: [20, 20] });
     } else if (routePoints.length === 1) {
       mapRef.current.setView(routePoints[0], 16);
     } else {

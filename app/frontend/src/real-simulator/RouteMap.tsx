@@ -55,50 +55,65 @@ export default function RouteMap({ gpsTrack, currentPosition }: RouteMapProps) {
     const map = mapRef.current;
     if (!map) return;
 
-    // Remove previous route layers
-    polylineRef.current?.remove();
-    startMarkerRef.current?.remove();
-    endMarkerRef.current?.remove();
-    polylineRef.current = null;
-    startMarkerRef.current = null;
-    endMarkerRef.current = null;
-
-    if (gpsTrack.length === 0) return;
+    if (gpsTrack.length === 0) {
+      polylineRef.current?.remove();
+      startMarkerRef.current?.remove();
+      endMarkerRef.current?.remove();
+      polylineRef.current = null;
+      startMarkerRef.current = null;
+      endMarkerRef.current = null;
+      return;
+    }
 
     const latLngs: L.LatLngTuple[] = gpsTrack.map((p) => [p.lat, p.lng]);
 
-    // Draw polyline for the full route
-    polylineRef.current = L.polyline(latLngs, {
-      color: "#3b82f6",
-      weight: 4,
-      opacity: 0.85,
-    }).addTo(map);
+    if (polylineRef.current) {
+      // Update existing polyline in place (avoid flicker/disappearing)
+      polylineRef.current.setLatLngs(latLngs);
+    } else {
+      // Create polyline for the full route
+      polylineRef.current = L.polyline(latLngs, {
+        color: "#3b82f6",
+        weight: 4,
+        opacity: 0.85,
+      }).addTo(map);
+    }
 
-    // Green marker at start
-    startMarkerRef.current = L.circleMarker(latLngs[0], {
-      radius: 9,
-      color: "#16a34a",
-      fillColor: "#22c55e",
-      fillOpacity: 1,
-      weight: 2,
-    })
-      .addTo(map)
-      .bindTooltip("Início", { permanent: false });
+    // Green marker at start (only create once)
+    if (!startMarkerRef.current && latLngs.length > 0) {
+      startMarkerRef.current = L.circleMarker(latLngs[0], {
+        radius: 9,
+        color: "#16a34a",
+        fillColor: "#22c55e",
+        fillOpacity: 1,
+        weight: 2,
+      })
+        .addTo(map)
+        .bindTooltip("Início", { permanent: false });
+    }
 
-    // Red marker at end
-    const last = latLngs[latLngs.length - 1];
-    endMarkerRef.current = L.circleMarker(last, {
-      radius: 9,
-      color: "#b91c1c",
-      fillColor: "#ef4444",
-      fillOpacity: 1,
-      weight: 2,
-    })
-      .addTo(map)
-      .bindTooltip("Fim", { permanent: false });
+    // Red marker at end (only create once, update position if track changes)
+    if (latLngs.length > 0) {
+      const last = latLngs[latLngs.length - 1];
+      if (endMarkerRef.current) {
+        endMarkerRef.current.setLatLng(last);
+      } else {
+        endMarkerRef.current = L.circleMarker(last, {
+          radius: 9,
+          color: "#b91c1c",
+          fillColor: "#ef4444",
+          fillOpacity: 1,
+          weight: 2,
+        })
+          .addTo(map)
+          .bindTooltip("Fim", { permanent: false });
+      }
+    }
 
-    // Fit map to the route bounds
-    map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40], animate: true });
+    // Fit map to the route bounds (only on first load)
+    if (gpsTrack.length > 1 && !polylineRef.current) {
+      map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40], animate: true });
+    }
   }, [gpsTrack]);
 
   // Update current position marker during playback
