@@ -31,12 +31,16 @@ function formatDate(date: string) {
 
 function formatDuration(start: string, end?: string) {
   if (!end) return "A decorrer";
-  const ms = new Date(end).getTime() - new Date(start).getTime();
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const ms = endDate.getTime() - startDate.getTime();
   const totalMins = Math.floor(ms / 60000);
   const hours = Math.floor(totalMins / 60);
   const mins = totalMins % 60;
-  if (hours > 0) return `${hours}h ${mins}m`;
-  return `${totalMins}m`;
+  const secs = Math.floor((ms % 60000) / 1000);
+  if (hours > 0) return `${hours}h ${String(mins).padStart(2, '0')}m`;
+  if (totalMins > 0) return `${totalMins}m ${String(secs).padStart(2, '0')}s`;
+  return `${secs}s`;
 }
 
 function statusBadge(status: string) {
