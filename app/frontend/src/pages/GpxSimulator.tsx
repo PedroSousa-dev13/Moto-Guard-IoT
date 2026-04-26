@@ -90,8 +90,11 @@ export default function GpxSimulator() {
     };
   }, []);
 
-  // GPS track for map
-  const gpsTrack = simSession.rows.map((r) => ({ lat: r.latitude, lng: r.longitude }));
+  // GPS track for map (stabilized with useMemo)
+  const gpsTrack = useMemo(
+    () => simSession.rows.map((r) => ({ lat: r.latitude, lng: r.longitude })),
+    [simSession.rows]
+  );
 
   const currentPosition =
     simSession.rows.length > 0 && simSession.currentRowIndex < simSession.rows.length
