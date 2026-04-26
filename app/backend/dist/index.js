@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.server = exports.app = void 0;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const http_1 = __importDefault(require("http"));
@@ -34,18 +35,18 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason) => {
     console.error("[unhandledRejection] Promise rejeitada sem handler:", reason);
 });
-const app = (0, express_1.default)();
-const server = http_1.default.createServer(app);
-app.use((0, cors_1.default)());
-app.use(express_1.default.json({ limit: "10mb" }));
-app.use(perf_logger_middleware_1.perfLogger);
-app.use("/api", routes_1.default);
+exports.app = (0, express_1.default)();
+exports.server = http_1.default.createServer(exports.app);
+exports.app.use((0, cors_1.default)());
+exports.app.use(express_1.default.json({ limit: "10mb" }));
+exports.app.use(perf_logger_middleware_1.perfLogger);
+exports.app.use("/api", routes_1.default);
 // ─── Serve frontend estático (Opção B / produção) ────────────────────────────
 // Só activo se o build do React existir. Em dev (Opção A) é um no-op.
 const FRONTEND_DIST = path_1.default.join(__dirname, "..", "..", "frontend", "dist");
-(0, setup_static_serving_1.setupStaticServing)(app, FRONTEND_DIST);
+(0, setup_static_serving_1.setupStaticServing)(exports.app, FRONTEND_DIST);
 mqtt_service_1.mqttService.connect();
-socket_service_1.socketService.init(server);
+socket_service_1.socketService.init(exports.server);
 async function start() {
     try {
         await prisma_service_1.prisma.$connect();
@@ -56,7 +57,7 @@ async function start() {
     }
     // Garantir que o bucket do InfluxDB existe (cria automaticamente se necessário)
     await influx_service_1.influxService.ensureBucket();
-    server.listen(env_1.env.PORT, () => {
+    exports.server.listen(env_1.env.PORT, () => {
         console.log(`MotoGuard Backend a correr na porta ${env_1.env.PORT}`);
         console.log(`Dashboard:    http://localhost:${env_1.env.PORT}`);
         console.log(`Health check: http://localhost:${env_1.env.PORT}/api/health`);
@@ -64,7 +65,9 @@ async function start() {
         console.log(`MQTT Broker:  ${env_1.env.MQTT_BROKER_URL}`);
     });
 }
-start();
+if (env_1.env.NODE_ENV !== "test") {
+    start();
+}
 process.on("SIGINT", async () => {
     await prisma_service_1.prisma.$disconnect();
     process.exit(0);

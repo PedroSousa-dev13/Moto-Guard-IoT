@@ -48,6 +48,7 @@ export type TripMinAggregateOutputType = {
     mlModelVersion: string | null;
     category: $Enums.TripCategory | null;
     categoryConfidence: number | null;
+    drivingStyle: $Enums.DrivingStyle | null;
     createdAt: Date | null;
 };
 export type TripMaxAggregateOutputType = {
@@ -67,6 +68,7 @@ export type TripMaxAggregateOutputType = {
     mlModelVersion: string | null;
     category: $Enums.TripCategory | null;
     categoryConfidence: number | null;
+    drivingStyle: $Enums.DrivingStyle | null;
     createdAt: Date | null;
 };
 export type TripCountAggregateOutputType = {
@@ -86,6 +88,7 @@ export type TripCountAggregateOutputType = {
     mlModelVersion: number;
     category: number;
     categoryConfidence: number;
+    drivingStyle: number;
     createdAt: number;
     _all: number;
 };
@@ -124,6 +127,7 @@ export type TripMinAggregateInputType = {
     mlModelVersion?: true;
     category?: true;
     categoryConfidence?: true;
+    drivingStyle?: true;
     createdAt?: true;
 };
 export type TripMaxAggregateInputType = {
@@ -143,6 +147,7 @@ export type TripMaxAggregateInputType = {
     mlModelVersion?: true;
     category?: true;
     categoryConfidence?: true;
+    drivingStyle?: true;
     createdAt?: true;
 };
 export type TripCountAggregateInputType = {
@@ -162,6 +167,7 @@ export type TripCountAggregateInputType = {
     mlModelVersion?: true;
     category?: true;
     categoryConfidence?: true;
+    drivingStyle?: true;
     createdAt?: true;
     _all?: true;
 };
@@ -258,6 +264,7 @@ export type TripGroupByOutputType = {
     mlModelVersion: string | null;
     category: $Enums.TripCategory | null;
     categoryConfidence: number | null;
+    drivingStyle: $Enums.DrivingStyle | null;
     createdAt: Date;
     _count: TripCountAggregateOutputType | null;
     _avg: TripAvgAggregateOutputType | null;
@@ -288,6 +295,7 @@ export type TripWhereInput = {
     mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null;
     category?: Prisma.EnumTripCategoryNullableFilter<"Trip"> | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.FloatNullableFilter<"Trip"> | number | null;
+    drivingStyle?: Prisma.EnumDrivingStyleNullableFilter<"Trip"> | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string;
     user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>;
@@ -311,6 +319,7 @@ export type TripOrderByWithRelationInput = {
     mlModelVersion?: Prisma.SortOrderInput | Prisma.SortOrder;
     category?: Prisma.SortOrderInput | Prisma.SortOrder;
     categoryConfidence?: Prisma.SortOrderInput | Prisma.SortOrder;
+    drivingStyle?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     user?: Prisma.UserOrderByWithRelationInput;
     motorcycle?: Prisma.MotorcycleOrderByWithRelationInput;
@@ -337,6 +346,7 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
     mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null;
     category?: Prisma.EnumTripCategoryNullableFilter<"Trip"> | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.FloatNullableFilter<"Trip"> | number | null;
+    drivingStyle?: Prisma.EnumDrivingStyleNullableFilter<"Trip"> | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string;
     user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     motorcycle?: Prisma.XOR<Prisma.MotorcycleScalarRelationFilter, Prisma.MotorcycleWhereInput>;
@@ -360,6 +370,7 @@ export type TripOrderByWithAggregationInput = {
     mlModelVersion?: Prisma.SortOrderInput | Prisma.SortOrder;
     category?: Prisma.SortOrderInput | Prisma.SortOrder;
     categoryConfidence?: Prisma.SortOrderInput | Prisma.SortOrder;
+    drivingStyle?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     _count?: Prisma.TripCountOrderByAggregateInput;
     _avg?: Prisma.TripAvgOrderByAggregateInput;
@@ -387,6 +398,7 @@ export type TripScalarWhereWithAggregatesInput = {
     mlModelVersion?: Prisma.StringNullableWithAggregatesFilter<"Trip"> | string | null;
     category?: Prisma.EnumTripCategoryNullableWithAggregatesFilter<"Trip"> | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.FloatNullableWithAggregatesFilter<"Trip"> | number | null;
+    drivingStyle?: Prisma.EnumDrivingStyleNullableWithAggregatesFilter<"Trip"> | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string;
 };
 export type TripCreateInput = {
@@ -404,6 +416,7 @@ export type TripCreateInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     user: Prisma.UserCreateNestedOneWithoutTripsInput;
     motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput;
@@ -427,6 +440,7 @@ export type TripUncheckedCreateInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput;
     gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput;
@@ -446,6 +460,7 @@ export type TripUpdateInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput;
     motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput;
@@ -469,6 +484,7 @@ export type TripUncheckedUpdateInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput;
     gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput;
@@ -490,6 +506,7 @@ export type TripCreateManyInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
 };
 export type TripUpdateManyMutationInput = {
@@ -507,6 +524,7 @@ export type TripUpdateManyMutationInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 export type TripUncheckedUpdateManyInput = {
@@ -526,6 +544,7 @@ export type TripUncheckedUpdateManyInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 export type TripListRelationFilter = {
@@ -553,6 +572,7 @@ export type TripCountOrderByAggregateInput = {
     mlModelVersion?: Prisma.SortOrder;
     category?: Prisma.SortOrder;
     categoryConfidence?: Prisma.SortOrder;
+    drivingStyle?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
 };
 export type TripAvgOrderByAggregateInput = {
@@ -581,6 +601,7 @@ export type TripMaxOrderByAggregateInput = {
     mlModelVersion?: Prisma.SortOrder;
     category?: Prisma.SortOrder;
     categoryConfidence?: Prisma.SortOrder;
+    drivingStyle?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
 };
 export type TripMinOrderByAggregateInput = {
@@ -600,6 +621,7 @@ export type TripMinOrderByAggregateInput = {
     mlModelVersion?: Prisma.SortOrder;
     category?: Prisma.SortOrder;
     categoryConfidence?: Prisma.SortOrder;
+    drivingStyle?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
 };
 export type TripSumOrderByAggregateInput = {
@@ -710,6 +732,9 @@ export type EnumTripStatusFieldUpdateOperationsInput = {
 export type NullableEnumTripCategoryFieldUpdateOperationsInput = {
     set?: $Enums.TripCategory | null;
 };
+export type NullableEnumDrivingStyleFieldUpdateOperationsInput = {
+    set?: $Enums.DrivingStyle | null;
+};
 export type TripCreateNestedOneWithoutEventsInput = {
     create?: Prisma.XOR<Prisma.TripCreateWithoutEventsInput, Prisma.TripUncheckedCreateWithoutEventsInput>;
     connectOrCreate?: Prisma.TripCreateOrConnectWithoutEventsInput;
@@ -749,6 +774,7 @@ export type TripCreateWithoutUserInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput;
     events?: Prisma.TripEventCreateNestedManyWithoutTripInput;
@@ -770,6 +796,7 @@ export type TripUncheckedCreateWithoutUserInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput;
     gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput;
@@ -815,6 +842,7 @@ export type TripScalarWhereInput = {
     mlModelVersion?: Prisma.StringNullableFilter<"Trip"> | string | null;
     category?: Prisma.EnumTripCategoryNullableFilter<"Trip"> | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.FloatNullableFilter<"Trip"> | number | null;
+    drivingStyle?: Prisma.EnumDrivingStyleNullableFilter<"Trip"> | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string;
 };
 export type TripCreateWithoutMotorcycleInput = {
@@ -832,6 +860,7 @@ export type TripCreateWithoutMotorcycleInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     user: Prisma.UserCreateNestedOneWithoutTripsInput;
     events?: Prisma.TripEventCreateNestedManyWithoutTripInput;
@@ -853,6 +882,7 @@ export type TripUncheckedCreateWithoutMotorcycleInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput;
     gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput;
@@ -893,6 +923,7 @@ export type TripCreateWithoutEventsInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     user: Prisma.UserCreateNestedOneWithoutTripsInput;
     motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput;
@@ -915,6 +946,7 @@ export type TripUncheckedCreateWithoutEventsInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     gpxData?: Prisma.GpxDataUncheckedCreateNestedOneWithoutTripInput;
 };
@@ -946,6 +978,7 @@ export type TripUpdateWithoutEventsInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput;
     motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput;
@@ -968,6 +1001,7 @@ export type TripUncheckedUpdateWithoutEventsInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput;
 };
@@ -986,6 +1020,7 @@ export type TripCreateWithoutGpxDataInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     user: Prisma.UserCreateNestedOneWithoutTripsInput;
     motorcycle: Prisma.MotorcycleCreateNestedOneWithoutTripsInput;
@@ -1008,6 +1043,7 @@ export type TripUncheckedCreateWithoutGpxDataInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
     events?: Prisma.TripEventUncheckedCreateNestedManyWithoutTripInput;
 };
@@ -1039,6 +1075,7 @@ export type TripUpdateWithoutGpxDataInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput;
     motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput;
@@ -1061,6 +1098,7 @@ export type TripUncheckedUpdateWithoutGpxDataInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput;
 };
@@ -1080,6 +1118,7 @@ export type TripCreateManyUserInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
 };
 export type TripUpdateWithoutUserInput = {
@@ -1097,6 +1136,7 @@ export type TripUpdateWithoutUserInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     motorcycle?: Prisma.MotorcycleUpdateOneRequiredWithoutTripsNestedInput;
     events?: Prisma.TripEventUpdateManyWithoutTripNestedInput;
@@ -1118,6 +1158,7 @@ export type TripUncheckedUpdateWithoutUserInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput;
     gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput;
@@ -1138,6 +1179,7 @@ export type TripUncheckedUpdateManyWithoutUserInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 export type TripCreateManyMotorcycleInput = {
@@ -1156,6 +1198,7 @@ export type TripCreateManyMotorcycleInput = {
     mlModelVersion?: string | null;
     category?: $Enums.TripCategory | null;
     categoryConfidence?: number | null;
+    drivingStyle?: $Enums.DrivingStyle | null;
     createdAt?: Date | string;
 };
 export type TripUpdateWithoutMotorcycleInput = {
@@ -1173,6 +1216,7 @@ export type TripUpdateWithoutMotorcycleInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     user?: Prisma.UserUpdateOneRequiredWithoutTripsNestedInput;
     events?: Prisma.TripEventUpdateManyWithoutTripNestedInput;
@@ -1194,6 +1238,7 @@ export type TripUncheckedUpdateWithoutMotorcycleInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     events?: Prisma.TripEventUncheckedUpdateManyWithoutTripNestedInput;
     gpxData?: Prisma.GpxDataUncheckedUpdateOneWithoutTripNestedInput;
@@ -1214,6 +1259,7 @@ export type TripUncheckedUpdateManyWithoutMotorcycleInput = {
     mlModelVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     category?: Prisma.NullableEnumTripCategoryFieldUpdateOperationsInput | $Enums.TripCategory | null;
     categoryConfidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+    drivingStyle?: Prisma.NullableEnumDrivingStyleFieldUpdateOperationsInput | $Enums.DrivingStyle | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 /**
@@ -1257,6 +1303,7 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
     mlModelVersion?: boolean;
     category?: boolean;
     categoryConfidence?: boolean;
+    drivingStyle?: boolean;
     createdAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>;
@@ -1281,6 +1328,7 @@ export type TripSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     mlModelVersion?: boolean;
     category?: boolean;
     categoryConfidence?: boolean;
+    drivingStyle?: boolean;
     createdAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>;
@@ -1302,6 +1350,7 @@ export type TripSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
     mlModelVersion?: boolean;
     category?: boolean;
     categoryConfidence?: boolean;
+    drivingStyle?: boolean;
     createdAt?: boolean;
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>;
@@ -1323,9 +1372,10 @@ export type TripSelectScalar = {
     mlModelVersion?: boolean;
     category?: boolean;
     categoryConfidence?: boolean;
+    drivingStyle?: boolean;
     createdAt?: boolean;
 };
-export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "motorcycleId" | "source" | "startedAt" | "endedAt" | "distanceKm" | "maxSpeedKmh" | "avgSpeedKmh" | "maxRollDeg" | "maxGForce" | "status" | "mlScore" | "mlModelVersion" | "category" | "categoryConfidence" | "createdAt", ExtArgs["result"]["trip"]>;
+export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "motorcycleId" | "source" | "startedAt" | "endedAt" | "distanceKm" | "maxSpeedKmh" | "avgSpeedKmh" | "maxRollDeg" | "maxGForce" | "status" | "mlScore" | "mlModelVersion" | "category" | "categoryConfidence" | "drivingStyle" | "createdAt", ExtArgs["result"]["trip"]>;
 export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     motorcycle?: boolean | Prisma.MotorcycleDefaultArgs<ExtArgs>;
@@ -1366,6 +1416,7 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
         mlModelVersion: string | null;
         category: $Enums.TripCategory | null;
         categoryConfidence: number | null;
+        drivingStyle: $Enums.DrivingStyle | null;
         createdAt: Date;
     }, ExtArgs["result"]["trip"]>;
     composites: {};
@@ -1741,6 +1792,7 @@ export interface TripFieldRefs {
     readonly mlModelVersion: Prisma.FieldRef<"Trip", 'String'>;
     readonly category: Prisma.FieldRef<"Trip", 'TripCategory'>;
     readonly categoryConfidence: Prisma.FieldRef<"Trip", 'Float'>;
+    readonly drivingStyle: Prisma.FieldRef<"Trip", 'DrivingStyle'>;
     readonly createdAt: Prisma.FieldRef<"Trip", 'DateTime'>;
 }
 /**

@@ -11,6 +11,12 @@ export declare const TripCategory: {
     readonly OFF_ROAD: "OFF_ROAD";
 };
 export type TripCategory = (typeof TripCategory)[keyof typeof TripCategory];
+export declare const DrivingStyle: {
+    readonly AGGRESSIVE: "AGGRESSIVE";
+    readonly DEFENSIVE: "DEFENSIVE";
+    readonly ECONOMY: "ECONOMY";
+};
+export type DrivingStyle = (typeof DrivingStyle)[keyof typeof DrivingStyle];
 export declare const TripSource: {
     readonly SIMULATOR: "SIMULATOR";
     readonly GPX_IMPORTED: "GPX_IMPORTED";
@@ -28,6 +34,10 @@ export declare const EventType: {
     readonly TIRE_PRESSURE_LOW: "TIRE_PRESSURE_LOW";
     readonly OIL_PRESSURE_LOW: "OIL_PRESSURE_LOW";
     readonly SPEEDING: "SPEEDING";
+    readonly ENGINE_OVERREV: "ENGINE_OVERREV";
+    readonly WHEELIE_DETECTED: "WHEELIE_DETECTED";
+    readonly STOPPIE_DETECTED: "STOPPIE_DETECTED";
+    readonly SAFETY_SYSTEM_ACTIVE: "SAFETY_SYSTEM_ACTIVE";
 };
 export type EventType = (typeof EventType)[keyof typeof EventType];
 export declare const EventSeverity: {

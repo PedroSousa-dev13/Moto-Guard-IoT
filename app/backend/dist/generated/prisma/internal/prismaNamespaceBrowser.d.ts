@@ -109,6 +109,7 @@ export declare const TripScalarFieldEnum: {
     readonly mlModelVersion: "mlModelVersion";
     readonly category: "category";
     readonly categoryConfidence: "categoryConfidence";
+    readonly drivingStyle: "drivingStyle";
     readonly createdAt: "createdAt";
 };
 export type TripScalarFieldEnum = (typeof TripScalarFieldEnum)[keyof typeof TripScalarFieldEnum];

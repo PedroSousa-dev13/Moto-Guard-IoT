@@ -7,11 +7,13 @@ export interface MotorcycleProfileThresholds {
     crashGForce: number;
     criticalTemp: number;
     criticalVoltage: number;
+    criticalRpm: number;
 }
 export interface HeuristicState {
     prevPayload: TelemetryPayload | null;
     gForceWindow: number[];
     overheatTicks: number;
+    overrevTicks: number;
     lowVoltageTicks: number;
     speedingTicks: number;
     lastEventAtByType: Partial<Record<EventType, number>>;

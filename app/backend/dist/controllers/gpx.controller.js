@@ -19,8 +19,14 @@ async function importGpx(req, res) {
         res.status(400).json({ error: "Ficheiro GPX em falta (campo 'file')" });
         return;
     }
-    const requestedMotorcycleId = typeof req.body?.motorcycleId === "string" ? req.body.motorcycleId : null;
+    const requestedMotorcycleId = typeof req.body?.motorcycleId === "string" && req.body.motorcycleId.trim() !== ""
+        ? req.body.motorcycleId.trim()
+        : null;
     try {
+        if (!requestedMotorcycleId) {
+            res.status(400).json({ error: "Seleciona uma mota para associar a viagem GPX." });
+            return;
+        }
         const xml = file.buffer.toString("utf8");
         const parsed = (0, gpx_import_service_1.parseGpx)(xml);
         if (parsed.waypoints.length === 0) {
@@ -30,14 +36,21 @@ async function importGpx(req, res) {
         const startedAt = parsed.startedAt ?? new Date();
         const endedAt = parsed.endedAt ?? startedAt;
         const result = await prisma_service_1.prisma.$transaction(async (tx) => {
-            const motorcycle = requestedMotorcycleId
-                ? await tx.motorcycle.findFirst({ where: { id: requestedMotorcycleId, userId } })
-                : await tx.motorcycle.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
-            if (!motorcycle) {
-                if (requestedMotorcycleId) {
-                    throw badRequest("Mota selecionada não encontrada");
-                }
+            // Verify user has at least one motorcycle (prevents GPX import for users without garage)
+            const userMotorcycles = await tx.motorcycle.findMany({
+                where: { userId },
+                select: { id: true },
+                take: 1,
+            });
+            if (userMotorcycles.length === 0) {
                 throw badRequest("Não tens motas registadas. Adiciona uma mota na Garagem antes de importar um GPX.");
+            }
+            // Verify the requested motorcycle belongs to this user
+            const motorcycle = await tx.motorcycle.findFirst({
+                where: { id: requestedMotorcycleId, userId },
+            });
+            if (!motorcycle) {
+                throw badRequest("Mota selecionada não encontrada ou não pertence ao utilizador");
             }
             const ensuredMotorcycle = motorcycle;
             const trip = await tx.trip.create({

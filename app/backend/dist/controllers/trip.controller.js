@@ -18,6 +18,7 @@ const trip_ml_pipeline_service_1 = require("../services/trip-ml-pipeline.service
 const trip_feed_service_1 = require("../services/trip-feed.service");
 const trip_categorization_service_1 = require("../services/trip-categorization.service");
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"];
+const VALID_TRIP_STATUSES = ["ACTIVE", "COMPLETED", "CANCELLED"];
 function clampInt(value, fallback, lo, hi) {
     const n = typeof value === "string" ? parseInt(value, 10) : Number.NaN;
     if (!Number.isFinite(n))
@@ -28,9 +29,16 @@ function clampInt(value, fallback, lo, hi) {
 async function listTrips(req, res) {
     const userId = req.userId;
     const source = req.query.source;
+    const status = req.query.status;
     if (source && !VALID_TRIP_SOURCES.includes(source)) {
         res.status(400).json({
             error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+        });
+        return;
+    }
+    if (status && !VALID_TRIP_STATUSES.includes(status)) {
+        res.status(400).json({
+            error: "Parâmetro status inválido. Use: ACTIVE | COMPLETED | CANCELLED",
         });
         return;
     }
@@ -39,14 +47,42 @@ async function listTrips(req, res) {
             where: {
                 userId,
                 ...(source ? { source: source } : {}),
+                ...(status ? { status: status } : {}),
             },
             orderBy: { startedAt: "desc" },
             include: {
-                motorcycle: { select: { id: true, name: true, brand: true, category: true } },
+                motorcycle: { select: { id: true, name: true, brand: true, category: true, profile: true } },
+                events: { select: { type: true, severity: true } },
                 _count: { select: { events: true } },
             },
         });
-        res.json(trips);
+        const items = trips.map((t) => {
+            const feedItem = (0, trip_feed_service_1.buildTripFeedItem)({
+                id: t.id,
+                startedAt: t.startedAt,
+                endedAt: t.endedAt,
+                status: t.status,
+                source: t.source,
+                distanceKm: t.distanceKm,
+                avgSpeedKmh: t.avgSpeedKmh,
+                maxSpeedKmh: t.maxSpeedKmh,
+                maxRollDeg: t.maxRollDeg,
+                maxGForce: t.maxGForce,
+                category: t.category,
+                categoryConfidence: t.categoryConfidence,
+                drivingStyle: t.drivingStyle,
+                motorcycle: t.motorcycle
+                    ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category }
+                    : null,
+                profile: t.motorcycle?.profile ?? null,
+            }, t.events);
+            return {
+                ...t,
+                safetyScore: feedItem.safetyScore,
+                performanceScore: feedItem.performanceScore,
+            };
+        });
+        res.json(items);
     }
     catch (err) {
         console.error("[listTrips] Erro interno:", err);
@@ -56,9 +92,16 @@ async function listTrips(req, res) {
 async function listTripFeed(req, res) {
     const userId = req.userId;
     const source = req.query.source;
+    const status = req.query.status;
     if (source && !VALID_TRIP_SOURCES.includes(source)) {
         res.status(400).json({
             error: "Parâmetro source inválido. Use: SIMULATOR | GPX_IMPORTED | DEVICE_REAL",
+        });
+        return;
+    }
+    if (status && !VALID_TRIP_STATUSES.includes(status)) {
+        res.status(400).json({
+            error: "Parâmetro status inválido. Use: ACTIVE | COMPLETED | CANCELLED",
         });
         return;
     }
@@ -67,7 +110,7 @@ async function listTripFeed(req, res) {
         const trips = await prisma_service_1.prisma.trip.findMany({
             where: {
                 userId,
-                status: "COMPLETED",
+                ...(status ? { status: status } : {}),
                 ...(source ? { source: source } : {}),
             },
             orderBy: { startedAt: "desc" },
@@ -90,6 +133,7 @@ async function listTripFeed(req, res) {
             maxGForce: t.maxGForce,
             category: t.category,
             categoryConfidence: t.categoryConfidence,
+            drivingStyle: t.drivingStyle,
             motorcycle: t.motorcycle ? { id: t.motorcycle.id, name: t.motorcycle.name, brand: t.motorcycle.brand, category: t.motorcycle.category } : null,
             profile: t.motorcycle?.profile ?? null,
         }, t.events));
@@ -194,6 +238,7 @@ async function listAlerts(req, res) {
         "HARD_BRAKING", "EXCESSIVE_LEAN", "HIGH_VIBRATION", "OVERHEAT",
         "LOW_VOLTAGE", "CRASH_DETECTED", "RAPID_ACCELERATION",
         "TIRE_PRESSURE_LOW", "OIL_PRESSURE_LOW", "SPEEDING",
+        "WHEELIE_DETECTED", "STOPPIE_DETECTED", "ENGINE_OVERREV", "SAFETY_SYSTEM_ACTIVE",
     ];
     if (severity && !VALID_SEVERITIES.includes(severity)) {
         res.status(400).json({ error: "severity inválido" });

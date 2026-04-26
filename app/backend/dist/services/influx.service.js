@@ -109,6 +109,7 @@ from(bucket: "${env_1.env.INFLUXDB_BUCKET}")
   |> range(start: ${startedAt.toISOString()}, stop: ${stop})
   |> filter(fn: (r) => r._measurement == "telemetry")
 ${deviceFilter}
+  |> aggregateWindow(every: 1s, fn: mean, createEmpty: false)
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
   |> sort(columns: ["_time"])
 `;

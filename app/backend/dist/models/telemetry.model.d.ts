@@ -15,6 +15,7 @@ export interface IMUData {
     pitch_deg: number;
     yaw_deg: number;
     g_force: number;
+    accel_g?: number;
 }
 export interface ActiveSafety {
     abs_active: boolean;
@@ -50,8 +51,10 @@ export interface TelemetryPayload {
 export interface SimulatorCommand {
     acao: string;
     modelo?: string;
+    motorcycleName?: string;
     tipo?: string;
     device_id?: string;
+    new_device_id?: string;
     userId?: string;
     route?: {
         start: {

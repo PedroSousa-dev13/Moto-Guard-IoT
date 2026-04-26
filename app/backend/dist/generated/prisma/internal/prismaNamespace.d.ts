@@ -799,6 +799,7 @@ export declare const TripScalarFieldEnum: {
     readonly mlModelVersion: "mlModelVersion";
     readonly category: "category";
     readonly categoryConfidence: "categoryConfidence";
+    readonly drivingStyle: "drivingStyle";
     readonly createdAt: "createdAt";
 };
 export type TripScalarFieldEnum = (typeof TripScalarFieldEnum)[keyof typeof TripScalarFieldEnum];
@@ -915,6 +916,14 @@ export type EnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'TripCategory[]'
  */
 export type ListEnumTripCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TripCategory[]'>;
+/**
+ * Reference to a field of type 'DrivingStyle'
+ */
+export type EnumDrivingStyleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DrivingStyle'>;
+/**
+ * Reference to a field of type 'DrivingStyle[]'
+ */
+export type ListEnumDrivingStyleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DrivingStyle[]'>;
 /**
  * Reference to a field of type 'EventType'
  */

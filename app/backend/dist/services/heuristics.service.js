@@ -8,6 +8,7 @@ function createInitialHeuristicState() {
         prevPayload: null,
         gForceWindow: [],
         overheatTicks: 0,
+        overrevTicks: 0,
         lowVoltageTicks: 0,
         speedingTicks: 0,
         lastEventAtByType: {},
@@ -47,18 +48,21 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
     const temp = payload.telemetry.engine_temp_c ?? 0;
     const volt = payload.telemetry.voltage ?? 0;
     const roll = payload.imu.roll_deg ?? 0;
-    const gForce = payload.imu.g_force ?? 0;
+    const gForce = payload.imu.accel_g ?? (payload.imu.g_force ?? 0);
+    const pitch = payload.imu.pitch_deg ?? 0;
+    const absActive = payload.active_safety?.abs_active ?? false;
+    const tcActive = payload.active_safety?.tc_active ?? false;
     const oil = payload.health.oil_pressure_bar ?? 0;
     const tireFront = payload.health.tire_pressure_front_bar ?? 0;
     const tireRear = payload.health.tire_pressure_rear_bar ?? 0;
     const prevSpeed = state.prevPayload?.telemetry?.speed_kmh ?? speed;
     const accelMs2 = ((speed - prevSpeed) / 3.6) / Math.max(dtSec, 0.001);
     const accelG = accelMs2 / 9.81;
-    pushLimited(state.gForceWindow, gForce, 12);
-    pushLimited(state.temps, temp, 18);
-    pushLimited(state.volts, volt, 18);
-    pushLimited(state.tiresFront, tireFront, 30);
-    pushLimited(state.tiresRear, tireRear, 30);
+    pushLimited(state.gForceWindow, gForce, 120);
+    pushLimited(state.temps, temp, 180);
+    pushLimited(state.volts, volt, 180);
+    pushLimited(state.tiresFront, tireFront, 300);
+    pushLimited(state.tiresRear, tireRear, 300);
     const gAvg = mean(state.gForceWindow);
     const rollAbs = Math.abs(roll);
     const shouldEmit = (type, cooldownMs) => {
@@ -113,14 +117,14 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
         state.overheatTicks += 1;
     else
         state.overheatTicks = 0;
-    if (state.overheatTicks === 3 && shouldEmit(enums_1.EventType.OVERHEAT, 12000)) {
+    if (state.overheatTicks === 30 && shouldEmit(enums_1.EventType.OVERHEAT, 12000)) {
         events.push({
             type: enums_1.EventType.OVERHEAT,
             severity: enums_1.EventSeverity.WARNING,
             message: `Temperatura acima do limiar (${temp.toFixed(1)}°C)`,
         });
     }
-    if (state.overheatTicks >= 8 && shouldEmit(enums_1.EventType.OVERHEAT, 12000)) {
+    if (state.overheatTicks >= 80 && shouldEmit(enums_1.EventType.OVERHEAT, 12000)) {
         events.push({
             type: enums_1.EventType.OVERHEAT,
             severity: enums_1.EventSeverity.CRITICAL,
@@ -131,14 +135,14 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
         state.lowVoltageTicks += 1;
     else
         state.lowVoltageTicks = 0;
-    if (state.lowVoltageTicks === 3 && shouldEmit(enums_1.EventType.LOW_VOLTAGE, 12000)) {
+    if (state.lowVoltageTicks === 30 && shouldEmit(enums_1.EventType.LOW_VOLTAGE, 12000)) {
         events.push({
             type: enums_1.EventType.LOW_VOLTAGE,
             severity: enums_1.EventSeverity.WARNING,
             message: `Voltagem baixa (${volt.toFixed(1)}V)`,
         });
     }
-    if (state.lowVoltageTicks >= 8 && shouldEmit(enums_1.EventType.LOW_VOLTAGE, 12000)) {
+    if (state.lowVoltageTicks >= 80 && shouldEmit(enums_1.EventType.LOW_VOLTAGE, 12000)) {
         events.push({
             type: enums_1.EventType.LOW_VOLTAGE,
             severity: enums_1.EventSeverity.CRITICAL,
@@ -198,6 +202,44 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
             message: "Tendência de pressão: possível perda lenta",
         });
     }
+    // ── Rotações Excessivas (Overrev) ──────────────────────────────────────
+    if (rpm >= profile.criticalRpm)
+        state.overrevTicks += 1;
+    else
+        state.overrevTicks = 0;
+    if (state.overrevTicks >= 15 && shouldEmit(enums_1.EventType.ENGINE_OVERREV, 10000)) {
+        events.push({
+            type: enums_1.EventType.ENGINE_OVERREV,
+            severity: enums_1.EventSeverity.WARNING,
+            message: `Rotações excessivas: ${rpm} RPM (Redline: ${profile.criticalRpm})`,
+        });
+    }
+    // ── Manobras de Pitch (Wheelie / Stoppie) ──────────────────────────────
+    if (speed > 10) {
+        if (pitch > 15 && shouldEmit(enums_1.EventType.WHEELIE_DETECTED, 8000)) {
+            events.push({
+                type: enums_1.EventType.WHEELIE_DETECTED,
+                severity: pitch > 25 ? enums_1.EventSeverity.CRITICAL : enums_1.EventSeverity.WARNING,
+                message: `Roda frontal levantada (Wheelie: ${pitch.toFixed(1)}°)`,
+            });
+        }
+        else if (pitch < -15 && shouldEmit(enums_1.EventType.STOPPIE_DETECTED, 8000)) {
+            events.push({
+                type: enums_1.EventType.STOPPIE_DETECTED,
+                severity: pitch < -25 ? enums_1.EventSeverity.CRITICAL : enums_1.EventSeverity.WARNING,
+                message: `Roda traseira levantada (Stoppie: ${pitch.toFixed(1)}°)`,
+            });
+        }
+    }
+    // ── Sistemas de Segurança Ativos (ABS / TC) ────────────────────────────
+    if ((absActive || tcActive) && shouldEmit(enums_1.EventType.SAFETY_SYSTEM_ACTIVE, 5000)) {
+        const system = absActive && tcActive ? "ABS & TC" : absActive ? "ABS" : "TC";
+        events.push({
+            type: enums_1.EventType.SAFETY_SYSTEM_ACTIVE,
+            severity: enums_1.EventSeverity.INFO,
+            message: `Sistema de segurança ativo (${system})`,
+        });
+    }
     // ── Excesso de velocidade ──────────────────────────────────────────────
     const legalLimit = payload.system?.speed_limit_kmh ?? 0;
     if (legalLimit > 0 && speed > 0) {
@@ -207,7 +249,7 @@ function evaluateTelemetryRisk(payload, state, profile, nowMs, dtSec) {
         else {
             state.speedingTicks = 0;
         }
-        if (state.speedingTicks >= 3) {
+        if (state.speedingTicks >= 30) {
             const excess = speed - legalLimit;
             const isCritical = speed > legalLimit * 1.25;
             if (shouldEmit(enums_1.EventType.SPEEDING, 8000)) {
