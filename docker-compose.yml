@@ -43,14 +43,14 @@ services:
       # DOCKER_INFLUXDB_INIT_MODE only needed on first run (fresh volume).
       # Keeping it set to "setup" on an already-initialized volume causes exit code 2.
       # Uncomment the block below only when starting with a clean volume.
-      # DOCKER_INFLUXDB_INIT_MODE: setup
-      # DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-motoguard}
-      # DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-motoguard123}
-      # DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-motoguard}
-      # DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
-      # DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
-      # DOCKER_INFLUXDB_INIT_RETENTION: 30d
-      INFLUXDB_HTTP_AUTH_ENABLED: "true"
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-motoguard}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-motoguard123}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-motoguard}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+      INFLUXDB_HTTP_AUTH_ENABLED: "false"
     volumes:
       - influxdb-data:/var/lib/influxdb2
       - influxdb-config:/etc/influxdb2
