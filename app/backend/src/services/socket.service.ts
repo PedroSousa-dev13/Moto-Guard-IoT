@@ -381,17 +381,40 @@ export class SocketService {
     const deviceId = payload.system.device_id;
     const timestamp = payload.system.timestamp;
 
+    // Verificar se já existe uma viagem ativa para este dispositivo
+    const existingTripId = this.activeTripIdByDevice.get(deviceId);
+    if (existingTripId) {
+      console.log(`[SocketService] Viagem já ativa para ${deviceId}: ${existingTripId} — ignorando novo início`);
+      return;
+    }
+
     try {
       // Priorizar o último utilizador que interagiu com este dispositivo (essencial para o simulador partilhado)
       const lastUserId = this.lastUserIdByDevice.get(deviceId);
       const motoModel = payload.system.moto_model;
-      
+
       console.log(`[SocketService] Tentando iniciar viagem para ${deviceId} (User em cache: ${lastUserId}, Modelo: ${motoModel})`);
-      
+
       const association = await deviceAssociationService.getAssociation(deviceId, lastUserId, motoModel);
 
       if (!association) {
         console.warn(`[SocketService] Mota não encontrada para deviceId: ${deviceId} (User: ${lastUserId}, Model: ${motoModel}). Viagem ignorada.`);
+        return;
+      }
+
+      // Verificar na BD se há viagem ativa (segurança extra)
+      const dbActiveTrip = await prisma.trip.findFirst({
+        where: {
+          motorcycleId: association.motorcycleId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (dbActiveTrip) {
+        console.log(`[SocketService] Viagem ativa na BD para ${deviceId}: ${dbActiveTrip.id} — retomando`);
+        this.activeTripIdByDevice.set(deviceId, dbActiveTrip.id);
+        this.tripActiveByDevice.set(deviceId, true);
+        this.stationaryTicksByDevice.set(deviceId, 0);
         return;
       }
 
