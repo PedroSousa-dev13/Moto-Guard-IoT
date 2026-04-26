@@ -529,35 +529,53 @@ export class SocketService {
         select: { userId: true }
       });
 
-      await prisma.trip.update({
-        where: { id: tripId },
-        data: {
-          endedAt: new Date(timestamp),
-          status: "COMPLETED",
+      // Se todos os stats são zeros, apagar a viagem em vez de guardar dados inválidos
+      const allZeros = (distanceKm === 0 || distanceKm === null) &&
+        (stats?.maxSpeed ?? 0) === 0 &&
+        (stats?.maxRoll ?? 0) === 0 &&
+        (stats?.maxGForce ?? 0) === 0;
+
+      if (allZeros) {
+        await prisma.trip.delete({ where: { id: tripId } });
+        console.log(`Viagem apagada (dados inválidos): ${tripId}`);
+        this.io?.emit("trip_ended", {
+          deviceId,
+          motoModel: payload.system.moto_model,
+          timestamp,
+          tripId,
+          error: "Viagem sem dados telemáticos"
+        });
+      } else {
+        await prisma.trip.update({
+          where: { id: tripId },
+          data: {
+            endedAt: new Date(timestamp),
+            status: "COMPLETED",
+            distanceKm,
+            maxSpeedKmh: stats?.maxSpeed ?? 0,
+            maxRollDeg: stats?.maxRoll ?? 0,
+            maxGForce: stats?.maxGForce ?? 0,
+            avgSpeedKmh,
+          },
+        });
+
+        console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
+
+        // Iniciar clustering para atualizar estilo de condução
+        if (trip?.userId) {
+          void tripClusteringService.clusterUserTrips(trip.userId);
+        }
+
+        this.io?.emit("trip_ended", {
+          deviceId,
+          motoModel: payload.system.moto_model,
+          timestamp,
+          tripId,
           distanceKm,
           maxSpeedKmh: stats?.maxSpeed ?? 0,
-          maxRollDeg: stats?.maxRoll ?? 0,
-          maxGForce: stats?.maxGForce ?? 0,
-          avgSpeedKmh,
-        },
-      });
-
-      console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
-      
-      // Iniciar clustering para atualizar estilo de condução
-      if (trip?.userId) {
-        void tripClusteringService.clusterUserTrips(trip.userId);
+          status: "COMPLETED"
+        });
       }
-
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: payload.system.moto_model,
-        timestamp,
-        tripId,
-        distanceKm,
-        maxSpeedKmh: stats?.maxSpeed ?? 0,
-        status: "COMPLETED"
-      });
 
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
@@ -566,9 +584,9 @@ export class SocketService {
       // Notificamos o frontend de que "tentámos" terminar, mas o status na BD pode estar inconsistente.
       // No entanto, é melhor não emitir nada ou emitir um erro.
       // Aqui vamos emitir um sinal genérico para que o dashboard resete a vista.
-      this.io?.emit("trip_ended", { 
-        deviceId, 
-        motoModel: payload.system.moto_model, 
+      this.io?.emit("trip_ended", {
+        deviceId,
+        motoModel: payload.system.moto_model,
         timestamp,
         error: "Falha ao persistir fim da viagem no servidor"
       });
@@ -613,6 +631,30 @@ export class SocketService {
       }
       this.lastStopHandledAtByDevice.set(deviceId, now);
 
+      // Check if there's a recently ended trip for this device (within last 30s)
+      const recentTrip = await prisma.trip.findFirst({
+        where: {
+          motorcycle: { deviceId },
+          status: "COMPLETED",
+          endedAt: { gte: new Date(endedAt.getTime() - 30000) },
+        },
+        orderBy: { endedAt: "desc" },
+      });
+
+      if (recentTrip) {
+        console.log(`Viagem já finalizada recentemente: ${recentTrip.id}`);
+        this.io?.emit("trip_ended", {
+          deviceId,
+          motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
+          timestamp: endedAt.toISOString(),
+          tripId: recentTrip.id,
+          distanceKm: recentTrip.distanceKm,
+          maxSpeedKmh: recentTrip.maxSpeedKmh,
+          status: "COMPLETED"
+        });
+        return;
+      }
+
       const created = lastPayload
         ? await this.createCompletedTripFromLastPayload(deviceId, endedAt)
         : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt);
@@ -646,30 +688,48 @@ export class SocketService {
       stats && stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null;
 
     try {
-      await prisma.trip.update({
-        where: { id: tripId },
-        data: {
-          endedAt,
-          status: "COMPLETED",
+      // Se todos os stats são zeros, apagar a viagem em vez de guardar dados inválidos
+      const allZeros = (distanceKm === 0 || distanceKm === null) &&
+        (stats?.maxSpeed ?? 0) === 0 &&
+        (stats?.maxRoll ?? 0) === 0 &&
+        (stats?.maxGForce ?? 0) === 0;
+
+      if (allZeros) {
+        await prisma.trip.delete({ where: { id: tripId } });
+        console.log(`Viagem apagada (dados inválidos): ${tripId}`);
+        this.io?.emit("trip_ended", {
+          deviceId,
+          motoModel: lastPayload?.system.moto_model ?? "—",
+          timestamp: endedAt.toISOString(),
+          tripId,
+          error: "Viagem sem dados telemetryicos"
+        });
+      } else {
+        await prisma.trip.update({
+          where: { id: tripId },
+          data: {
+            endedAt,
+            status: "COMPLETED",
+            distanceKm,
+            maxSpeedKmh: stats?.maxSpeed ?? 0,
+            maxRollDeg: stats?.maxRoll ?? 0,
+            maxGForce: stats?.maxGForce ?? 0,
+            avgSpeedKmh,
+          },
+        });
+
+        console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
+
+        this.io?.emit("trip_ended", {
+          deviceId,
+          motoModel: lastPayload?.system.moto_model ?? "—",
+          timestamp: endedAt.toISOString(),
+          tripId,
           distanceKm,
           maxSpeedKmh: stats?.maxSpeed ?? 0,
-          maxRollDeg: stats?.maxRoll ?? 0,
-          maxGForce: stats?.maxGForce ?? 0,
-          avgSpeedKmh,
-        },
-      });
-
-      console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
-      
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: lastPayload?.system.moto_model ?? "—",
-        timestamp: endedAt.toISOString(),
-        tripId,
-        distanceKm,
-        maxSpeedKmh: stats?.maxSpeed ?? 0,
-        status: "COMPLETED"
-      });
+          status: "COMPLETED"
+        });
+      }
     } catch (error) {
       console.error("Erro ao finalizar viagem (forceEndTrip):", error);
       this.io?.emit("trip_ended", {

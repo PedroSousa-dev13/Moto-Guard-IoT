@@ -1,10 +1,11 @@
 import http from "http";
-declare class SocketService {
+export declare class SocketService {
     private io;
     private _connectedClients;
     private tripActiveByDevice;
     private stationaryTicksByDevice;
     private lastEventStatusByDevice;
+    private pendingEmergenciesByDevice;
     private lastTelemetryByDevice;
     private activeTripIdByDevice;
     private lastStopHandledAtByDevice;
@@ -16,13 +17,14 @@ declare class SocketService {
     private static readonly TRIP_START_SPEED_KMH;
     private static readonly TRIP_END_SPEED_KMH;
     private static readonly TRIP_END_STATIONARY_TICKS;
+    /** Emitir evento para todos os clientes ligados */
+    emit(event: string, data: any): void;
     /** Número de clientes WebSocket ligados */
     get connectedClients(): number;
     /** Inicializa o Socket.IO com o servidor HTTP */
     init(httpServer: http.Server): void;
     private getProfileThresholds;
     private handleHeuristicEvents;
-    private static readonly CRASH_STATUSES;
     private handleAlertEvent;
     private handleTripLifecycle;
     private startTrip;
@@ -40,11 +42,12 @@ declare class SocketService {
     private haversineDistance;
     private toRad;
     private normalizeEventStatus;
+    private getEventTypeFromStatus;
     /** Persiste evento de risco na base de dados (etapa 1.12) */
     private persistTripEvent;
-    private notifyEmergencyContact;
+    private sendEmergencyEmail;
+    private handleCancelEmergency;
     private mapStatusToEventType;
 }
 export declare const socketService: SocketService;
-export {};
 //# sourceMappingURL=socket.service.d.ts.map

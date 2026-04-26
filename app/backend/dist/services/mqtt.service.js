@@ -84,7 +84,7 @@ class MqttService {
             return false;
         }
         const acao = command?.acao;
-        const retain = acao === "definir_rota" || acao === "reset_rota";
+        const retain = acao === "definir_rota" || acao === "reset_rota" || acao === "definir_modelo";
         this.client.publish(env_1.env.MQTT_TOPIC_COMANDO, JSON.stringify(command), { qos: 1, retain });
         return true;
     }

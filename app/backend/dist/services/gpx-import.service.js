@@ -52,6 +52,53 @@ function computeBoundsFromWaypoints(waypoints) {
     }
     return { minLat, maxLat, minLon, maxLon };
 }
+function waypointsFromRawPoints(raw) {
+    const waypoints = [];
+    for (const pt of raw) {
+        if (!pt || typeof pt !== "object")
+            continue;
+        const p = pt;
+        const lat = toNumber(p["@_lat"]);
+        const lon = toNumber(p["@_lon"]);
+        if (lat === null || lon === null)
+            continue;
+        const ele = toNumber(p.ele ?? null) ?? undefined;
+        const timeStr = typeof p.time === "string" ? p.time : undefined;
+        waypoints.push({ lat, lon, ele, time: timeStr });
+    }
+    return waypoints;
+}
+/** Escolhe trkpt / rtept / wpt: muitos GPX têm a rota real em <rte> e um <trk> quase vazio. */
+function pickBestWaypointSource(gpx) {
+    if (!gpx)
+        return [];
+    const trks = asArray(gpx.trk);
+    const trkpts = trks.flatMap((trk) => asArray(trk?.trkseg).flatMap((seg) => asArray(seg?.trkpt)));
+    const rtes = asArray(gpx.rte);
+    const rtepts = rtes.flatMap((rte) => asArray(rte?.rtept));
+    const wpts = asArray(gpx.wpt);
+    const trkWaypoints = waypointsFromRawPoints(trkpts);
+    const rteWaypoints = waypointsFromRawPoints(rtepts);
+    const wptWaypoints = waypointsFromRawPoints(wpts);
+    const candidates = [
+        { pts: trkWaypoints, prio: 3 },
+        { pts: rteWaypoints, prio: 2 },
+        { pts: wptWaypoints, prio: 1 },
+    ].filter((c) => c.pts.length >= 2);
+    if (candidates.length > 0) {
+        candidates.sort((a, b) => {
+            if (b.pts.length !== a.pts.length)
+                return b.pts.length - a.pts.length;
+            return b.prio - a.prio;
+        });
+        return candidates[0].pts;
+    }
+    if (trkWaypoints.length > 0)
+        return trkWaypoints;
+    if (rteWaypoints.length > 0)
+        return rteWaypoints;
+    return wptWaypoints;
+}
 function parseGpx(xml) {
     const parser = new fast_xml_parser_1.XMLParser({
         ignoreAttributes: false,
@@ -63,20 +110,7 @@ function parseGpx(xml) {
     });
     const parsed = parser.parse(xml);
     const gpx = parsed?.gpx;
-    const trks = asArray(gpx?.trk);
-    const trkpts = trks.flatMap((trk) => asArray(trk?.trkseg).flatMap((seg) => asArray(seg?.trkpt)));
-    const wpts = asArray(gpx?.wpt);
-    const pts = trkpts.length > 0 ? trkpts : wpts;
-    const waypoints = [];
-    for (const pt of pts) {
-        const lat = toNumber(pt?.["@_lat"]);
-        const lon = toNumber(pt?.["@_lon"]);
-        if (lat === null || lon === null)
-            continue;
-        const ele = toNumber(pt?.ele ?? null) ?? undefined;
-        const timeStr = typeof pt?.time === "string" ? pt.time : undefined;
-        waypoints.push({ lat, lon, ele, time: timeStr });
-    }
+    const waypoints = pickBestWaypointSource(gpx);
     const metaBounds = gpx?.metadata?.bounds;
     const boundsFromMeta = metaBounds && typeof metaBounds === "object"
         ? (() => {
@@ -90,7 +124,8 @@ function parseGpx(xml) {
             return { minLat, maxLat, minLon, maxLon };
         })()
         : null;
-    const bounds = boundsFromMeta ?? computeBoundsFromWaypoints(waypoints) ?? {
+    const bounds = computeBoundsFromWaypoints(waypoints) ??
+        boundsFromMeta ?? {
         minLat: 0,
         maxLat: 0,
         minLon: 0,

@@ -156,6 +156,7 @@ exports.TripScalarFieldEnum = {
     mlModelVersion: 'mlModelVersion',
     category: 'category',
     categoryConfidence: 'categoryConfidence',
+    drivingStyle: 'drivingStyle',
     createdAt: 'createdAt'
 };
 exports.TripEventScalarFieldEnum = {

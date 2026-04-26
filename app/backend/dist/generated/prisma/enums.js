@@ -9,7 +9,7 @@
 * 🟢 You can import this file directly.
 */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EventSeverity = exports.EventType = exports.TripSource = exports.TripCategory = exports.TripStatus = void 0;
+exports.EventSeverity = exports.EventType = exports.TripSource = exports.DrivingStyle = exports.TripCategory = exports.TripStatus = void 0;
 exports.TripStatus = {
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
@@ -20,6 +20,11 @@ exports.TripCategory = {
     WEEKEND_RIDE: 'WEEKEND_RIDE',
     TRACK_DAY: 'TRACK_DAY',
     OFF_ROAD: 'OFF_ROAD'
+};
+exports.DrivingStyle = {
+    AGGRESSIVE: 'AGGRESSIVE',
+    DEFENSIVE: 'DEFENSIVE',
+    ECONOMY: 'ECONOMY'
 };
 exports.TripSource = {
     SIMULATOR: 'SIMULATOR',
@@ -36,7 +41,11 @@ exports.EventType = {
     RAPID_ACCELERATION: 'RAPID_ACCELERATION',
     TIRE_PRESSURE_LOW: 'TIRE_PRESSURE_LOW',
     OIL_PRESSURE_LOW: 'OIL_PRESSURE_LOW',
-    SPEEDING: 'SPEEDING'
+    SPEEDING: 'SPEEDING',
+    ENGINE_OVERREV: 'ENGINE_OVERREV',
+    WHEELIE_DETECTED: 'WHEELIE_DETECTED',
+    STOPPIE_DETECTED: 'STOPPIE_DETECTED',
+    SAFETY_SYSTEM_ACTIVE: 'SAFETY_SYSTEM_ACTIVE'
 };
 exports.EventSeverity = {
     INFO: 'INFO',

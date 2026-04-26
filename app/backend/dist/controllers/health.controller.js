@@ -1,9 +1,4 @@
 "use strict";
-// =============================================================================
-// MotoGuard IoT — Controller: Health
-// =============================================================================
-// Endpoint de health check — retorna estado geral do backend.
-// =============================================================================
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getHealth = getHealth;
 const env_1 = require("../config/env");

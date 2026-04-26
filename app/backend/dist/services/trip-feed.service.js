@@ -111,6 +111,7 @@ function buildTripFeedItem(trip, events) {
         maxSpeedKmh: trip.maxSpeedKmh,
         category: trip.category ?? null,
         categoryConfidence: trip.categoryConfidence ?? null,
+        drivingStyle: trip.drivingStyle ?? null,
         motorcycle: trip.motorcycle,
         eventCounts: {
             total: events.length,

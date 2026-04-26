@@ -16,6 +16,7 @@ export type TripFeedTripLite = {
     maxGForce: number | null;
     category?: string | null;
     categoryConfidence?: number | null;
+    drivingStyle?: string | null;
     motorcycle: {
         id: string;
         name: string;
@@ -40,6 +41,7 @@ export type TripFeedItem = {
     maxSpeedKmh: number | null;
     category?: string | null;
     categoryConfidence?: number | null;
+    drivingStyle?: string | null;
     motorcycle: {
         id: string;
         name: string;
