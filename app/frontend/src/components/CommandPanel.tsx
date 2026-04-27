@@ -37,12 +37,9 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
     const activeRoute = (route?.start && route?.end &&
       typeof route.start.latitude === "number" && typeof route.end.latitude === "number"
     ) ? route : DEFAULT_ROUTE;
-    sendCommand({ acao: "definir_modelo", modelo: effectiveModel });
+    // Enviar comando de modelo - o sendCommandAndSignal vai tratar de enviar a rota
+    sendCommand({ acao: "definir_modelo", modelo: effectiveModel, _route: activeRoute });
     addLog("Modelo definido — a enviar rota...", "#f97316");
-    setTimeout(() => {
-      sendCommand({ acao: "definir_rota", route: activeRoute });
-      addLog(activeRoute === DEFAULT_ROUTE ? "Rota padrão enviada" : "Rota personalizada enviada", "#f97316");
-    }, 500);
   }
 
   function handleStop() {
