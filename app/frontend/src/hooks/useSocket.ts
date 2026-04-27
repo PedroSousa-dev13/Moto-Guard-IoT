@@ -37,6 +37,7 @@ function getStoredUserId(): string | null {
 export function useSocket() {
   const { isDemoMode, registerEmitter } = useDemoContext();
   const socketRef = useRef<Socket | null>(null);
+  const lastKnownDeviceIdRef = useRef<string | null>(null);
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
   const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
@@ -86,7 +87,13 @@ export function useSocket() {
         const device_id = cmd.device_id
           ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined)
           ?? activeDeviceId
-          ?? lastDeviceId;
+          ?? lastDeviceId
+          ?? lastKnownDeviceIdRef.current
+          ?? undefined;
+        if (cmd.acao === "override" && !device_id) {
+          addLog("Comando override ignorado: sem device_id ativo", "#eab308");
+          return;
+        }
         const userId = cmd.userId ?? getStoredUserId() ?? undefined;
         const payload = { ...cmd, ...(device_id ? { device_id } : {}), ...(userId ? { userId } : {}) };
         socketRef.current.emit("send_command", payload);
@@ -137,6 +144,7 @@ export function useSocket() {
       emitter.on("telemetry_update", (data: unknown) => {
         const payload = data as TelemetryPayload;
         const deviceId = payload.system.device_id;
+        lastKnownDeviceIdRef.current = deviceId;
         setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: payload }));
         setLastDeviceId(deviceId);
         setActiveDeviceId((prev) => (prev ? prev : deviceId));
@@ -183,6 +191,7 @@ export function useSocket() {
 
     socket.on("telemetry_update", (data: TelemetryPayload) => {
       const deviceId = data.system.device_id;
+      lastKnownDeviceIdRef.current = deviceId;
       setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: data }));
       setLastDeviceId(deviceId);
       

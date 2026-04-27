@@ -46,7 +46,7 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
   }
 
   function handleStop() {
-    sendCommand({ acao: "parar" });
+    sendCommand({ acao: "parar", source: "SIMULATOR" });
     setSelectedModel("");
     onStop?.();
   }
