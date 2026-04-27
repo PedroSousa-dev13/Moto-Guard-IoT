@@ -134,6 +134,14 @@ export const gpxAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  saveSimulatorTrip: (payload: {
+    tripId: string;
+    filename: string;
+    fileSize: number;
+    waypoints: Array<{ lat: number; lon: number; ele?: number; time?: string }>;
+    bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+    totalTime?: number;
+  }) => api.post("/gpx/simulator", payload),
   exportTrip: (tripId: string) =>
     api.get(`/gpx/export/${tripId}`, { responseType: "blob" }),
 };

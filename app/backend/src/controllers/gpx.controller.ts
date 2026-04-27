@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { prisma } from "../services/prisma.service";
+import { Prisma } from "../generated/prisma/client";
 import type { AuthRequest } from "../middleware/auth.middleware";
 import { parseGpx, type ParsedGpx } from "../services/gpx-import.service";
 import { influxService } from "../services/influx.service";
@@ -23,10 +24,127 @@ interface GpxParseResult {
   validationErrors?: string[];
 }
 
+interface GpxWaypointPayload {
+  lat: number;
+  lon: number;
+  ele?: number;
+  time?: string;
+}
+
+interface SaveSimulatorGpxPayload {
+  tripId?: string;
+  filename?: string;
+  fileSize?: number;
+  waypoints?: GpxWaypointPayload[];
+  bounds?: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+  totalTime?: number;
+}
+
 function badRequest(message: string): Error & { statusCode: number } {
   const err = new Error(message) as Error & { statusCode: number };
   err.statusCode = 400;
   return err;
+}
+
+function normalizeWaypoints(input: GpxWaypointPayload[] = []): GpxWaypointPayload[] {
+  const out: GpxWaypointPayload[] = [];
+  for (const pt of input) {
+    const lat = Number(pt?.lat);
+    const lon = Number(pt?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    out.push({
+      lat,
+      lon,
+      ele: Number.isFinite(Number(pt?.ele)) ? Number(pt?.ele) : undefined,
+      time: typeof pt?.time === "string" ? pt.time : undefined,
+    });
+  }
+  return out;
+}
+
+function computeBounds(waypoints: GpxWaypointPayload[]): { minLat: number; maxLat: number; minLon: number; maxLon: number } {
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+
+  for (const pt of waypoints) {
+    minLat = Math.min(minLat, pt.lat);
+    maxLat = Math.max(maxLat, pt.lat);
+    minLon = Math.min(minLon, pt.lon);
+    maxLon = Math.max(maxLon, pt.lon);
+  }
+
+  return { minLat, maxLat, minLon, maxLon };
+}
+
+export async function saveSimulatorGpxData(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const payload = (req.body ?? {}) as SaveSimulatorGpxPayload;
+  const tripId = typeof payload.tripId === "string" ? payload.tripId.trim() : "";
+
+  if (!tripId) {
+    res.status(400).json({ error: "tripId em falta" });
+    return;
+  }
+
+  const waypoints = normalizeWaypoints(payload.waypoints ?? []);
+  if (waypoints.length === 0) {
+    res.status(400).json({ error: "Waypoints inválidos ou vazios" });
+    return;
+  }
+
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id: tripId, userId },
+      select: { id: true, source: true },
+    });
+
+    if (!trip) {
+      res.status(404).json({ error: "Viagem não encontrada" });
+      return;
+    }
+
+    const bounds = payload.bounds && Number.isFinite(payload.bounds.minLat)
+      ? payload.bounds
+      : computeBounds(waypoints);
+
+    const filename = typeof payload.filename === "string" && payload.filename.trim()
+      ? payload.filename.trim()
+      : "gpx-simulator.gpx";
+    const fileSize = Number.isFinite(Number(payload.fileSize)) ? Number(payload.fileSize) : 0;
+    const totalTime = Number.isFinite(Number(payload.totalTime)) ? Number(payload.totalTime) : null;
+
+    const gpxData = await prisma.$transaction(async (tx) => {
+      if (trip.source !== "GPX_IMPORTED") {
+        await tx.trip.update({ where: { id: tripId }, data: { source: "GPX_IMPORTED" } });
+      }
+
+      return tx.gpxData.upsert({
+        where: { tripId },
+        update: {
+          filename,
+          fileSize,
+          waypoints: waypoints as unknown as Prisma.InputJsonValue,
+          bounds: bounds as unknown as Prisma.InputJsonValue,
+          totalTime: totalTime ?? undefined,
+        },
+        create: {
+          tripId,
+          filename,
+          fileSize,
+          waypoints: waypoints as unknown as Prisma.InputJsonValue,
+          bounds: bounds as unknown as Prisma.InputJsonValue,
+          totalTime: totalTime ?? undefined,
+        },
+      });
+    });
+
+    res.status(201).json({ success: true, gpxDataId: gpxData.id });
+  } catch (err) {
+    console.error("[saveSimulatorGpxData] Erro interno:", err);
+    res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
+  }
 }
 
 export async function importGpx(req: GpxImportRequest, res: Response): Promise<void> {

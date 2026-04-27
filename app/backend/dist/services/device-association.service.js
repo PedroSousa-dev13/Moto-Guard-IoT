@@ -15,8 +15,8 @@ class DeviceAssociationService {
     async getAssociation(deviceId, userId, motoModel) {
         // Para simuladores, o cacheKey deve incluir o modelo se disponível
         const isSim = deviceId.toUpperCase().includes("-SIM-");
-        const cleanModel = motoModel?.trim();
-        const cacheKey = [deviceId, userId, isSim ? cleanModel : undefined].filter(Boolean).join(":");
+        const cleanModel = typeof motoModel === "string" ? motoModel.trim() : String(motoModel ?? "").trim();
+        const cacheKey = [deviceId, userId, isSim ? (cleanModel || undefined) : undefined].filter(Boolean).join(":");
         const cached = this.getFromCache(cacheKey);
         if (cached)
             return cached;

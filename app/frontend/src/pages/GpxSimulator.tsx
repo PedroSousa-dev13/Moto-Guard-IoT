@@ -17,7 +17,7 @@ import { PlaybackControls } from "../real-simulator/PlaybackControls";
 import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
 import { useAuth } from "../hooks/useAuth";
-import { motorcyclesAPI } from "../services/api";
+import { gpxAPI, motorcyclesAPI } from "../services/api";
 import type { Motorcycle, MotorcycleProfile } from "../types";
 import { Navigation, AlertTriangle, Mountain, Activity, MoveHorizontal, MoveVertical, Compass, Gauge, Zap, Disc, ArrowUpCircle, Thermometer, Droplets, CircleDot } from "lucide-react";
 import GaugeCard from "../components/GaugeCard";
@@ -57,6 +57,9 @@ export default function GpxSimulator() {
   const [simSession, setSession] = useState<SimulatorSession>(INITIAL_SESSION);
   const [socketError, setSocketError] = useState<string | null>(null);
   const [gpxStats, setGpxStats] = useState<GpxStats | null>(null);
+  const [gpxFileName, setGpxFileName] = useState<string | null>(null);
+  const [gpxFileSize, setGpxFileSize] = useState<number | null>(null);
+  const [tripId, setTripId] = useState<string | null>(null);
   const [totalDurationSec, setTotalDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
   const [profiles, setProfiles] = useState<MotorcycleProfile[]>([
@@ -66,6 +69,7 @@ export default function GpxSimulator() {
 
   const socketRef = useRef<Socket | null>(null);
   const simulationStartTimeRef = useRef<Date>(new Date());
+  const gpxPersistedRef = useRef(false);
 
   // Dummy video ref (useSyncEngine requires it but we pass null)
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
@@ -87,11 +91,67 @@ export default function GpxSimulator() {
 
     const socket = io();
     socketRef.current = socket;
+
+    const handleTripStarted = (data: { deviceId?: string; tripId?: string }) => {
+      if (data?.deviceId === simSession.deviceId && data.tripId) {
+        setTripId(data.tripId);
+      }
+    };
+
+    const handleTripEnded = (data: { deviceId?: string }) => {
+      if (data?.deviceId === simSession.deviceId) {
+        setTripId(null);
+      }
+    };
+
+    socket.on("trip_started", handleTripStarted);
+    socket.on("trip_ended", handleTripEnded);
+
     return () => {
+      socket.off("trip_started", handleTripStarted);
+      socket.off("trip_ended", handleTripEnded);
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
+  }, [simSession.deviceId]);
+
+  const persistGpxData = useCallback(async () => {
+    if (gpxPersistedRef.current) return;
+    if (!tripId || simSession.rows.length === 0 || !gpxStats) return;
+
+    const baseTime = simulationStartTimeRef.current.getTime();
+    const waypoints = simSession.rows.map((row) => ({
+      lat: row.latitude,
+      lon: row.longitude,
+      time: new Date(baseTime + row.timestampSec * 1000).toISOString(),
+    }));
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLon = Infinity;
+    let maxLon = -Infinity;
+
+    for (const pt of waypoints) {
+      minLat = Math.min(minLat, pt.lat);
+      maxLat = Math.max(maxLat, pt.lat);
+      minLon = Math.min(minLon, pt.lon);
+      maxLon = Math.max(maxLon, pt.lon);
+    }
+
+    try {
+      await gpxAPI.saveSimulatorTrip({
+        tripId,
+        filename: gpxFileName ?? "gpx-simulator.gpx",
+        fileSize: gpxFileSize ?? 0,
+        waypoints,
+        bounds: { minLat, maxLat, minLon, maxLon },
+        totalTime: Math.round(gpxStats.durationSec),
+      });
+      gpxPersistedRef.current = true;
+    } catch (error) {
+      console.error("[GpxSimulator] Falha ao guardar gpxData:", error);
+    }
+  }, [gpxFileName, gpxFileSize, gpxStats, simSession.rows, tripId]);
 
   // GPS track for map (stabilized with useMemo)
   const gpsTrack = useMemo(
@@ -154,6 +214,7 @@ export default function GpxSimulator() {
 
         // Forçar fecho no backend
         socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
+        void persistGpxData();
       }
       
       setCurrentTimeSec(0);
@@ -195,6 +256,7 @@ export default function GpxSimulator() {
 
       // Notificar backend para fechar a viagem imediatamente
       socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
+      void persistGpxData();
     }
 
     setCurrentTimeSec(0);
@@ -239,8 +301,12 @@ export default function GpxSimulator() {
   );
 
   // GPX parsed
-  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats) => {
+  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number }) => {
     setGpxStats(stats);
+    setGpxFileName(meta.fileName);
+    setGpxFileSize(meta.fileSize);
+    setTripId(null);
+    gpxPersistedRef.current = false;
     setTotalDurationSec(result.durationSec);
     setCurrentTimeSec(0);
     setSession((prev) => ({
@@ -335,7 +401,7 @@ export default function GpxSimulator() {
               <span className="text-xs font-bold text-white/80">{hasRows ? "Ficheiro GPX Carregado" : "Nenhum ficheiro selecionado"}</span>
             </div>
           </div>
-          <GpxDropzone onParsed={handleGpxParsed} compact />
+          <GpxDropzone onParsed={handleGpxParsed} />
         </div>
         
         {gpxStats && (
