@@ -8,6 +8,14 @@
 
 echo "MotoGuard IoT Backend a arrancar..."
 
+# Aguardar pelo PostgreSQL
+echo "A aguardar pelo PostgreSQL em postgres:5432..."
+until pg_isready -h postgres -p 5432 -U ${POSTGRES_USER:-motoguard}; do
+  echo "PostgreSQL ainda não está pronto. A tentar novamente em 2 segundos..."
+  sleep 2
+done
+echo "PostgreSQL está pronto!"
+
 echo "A executar migrations do Prisma..."
 npx prisma migrate deploy
 
