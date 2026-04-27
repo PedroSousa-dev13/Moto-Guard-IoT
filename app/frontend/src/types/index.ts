@@ -25,6 +25,19 @@ export interface Motorcycle {
   profile?: { id: string; name: string } | null;
 }
 
+export interface MotorcycleProfile {
+  id: string;
+  name: string;
+  maxSpeedKmh: number;
+  typicalMaxRollDeg: number;
+  crashRollThreshold: number;
+  crashGForce: number;
+  criticalTemp: number;
+  criticalVoltage: number;
+  criticalRpm: number;
+  createdAt: string;
+}
+
 export interface MotorcycleSummary {
   id: string;
   name: string;

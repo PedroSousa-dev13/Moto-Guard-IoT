@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { tripsAPI, motorcyclesAPI } from "../services/api";
+import { tripsAPI, motorcyclesAPI, gpxAPI } from "../services/api";
 import { Motorcycle } from "../types";
 import { Activity, Navigation, AlertTriangle, CheckCircle, Zap } from "lucide-react";
 
@@ -48,7 +48,7 @@ export default function Gpx() {
     setImportError(null);
     setImportSuccess(null);
     try {
-      const res = await tripsAPI.importGpx(file, selectedMotorcycleId);
+      const res = await gpxAPI.import(file, selectedMotorcycleId);
       setImportSuccess(res.data);
       await loadTrips();
     } catch (err: any) {
@@ -157,19 +157,19 @@ export default function Gpx() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="flex flex-col gap-1">
                       <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">Pontos</span>
-                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.points}</span>
+                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.stats.points}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">Distância</span>
-                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.distanceKm.toFixed(2)} km</span>
+                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.stats.distanceKm.toFixed(2)} km</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">Vel. Média</span>
-                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.avgSpeedKmh.toFixed(1)}</span>
+                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.stats.avgSpeedKmh.toFixed(1)}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">Vel. Máx</span>
-                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.maxSpeedKmh.toFixed(1)}</span>
+                      <span className="text-lg font-black text-white tabular-nums">{importSuccess.stats.maxSpeedKmh.toFixed(1)}</span>
                     </div>
                   </div>
                   <div className="flex gap-3 mt-2">

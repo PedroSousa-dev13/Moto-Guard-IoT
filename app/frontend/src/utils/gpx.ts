@@ -37,10 +37,24 @@ export interface DerivedGpxSample {
 }
 
 export function deriveGpxSeries(points: GpxPoint[]): DerivedGpxSample[] {
-  const timed = points
-    .map((p) => ({ p, t: toTimeMs(p.time) }))
-    .filter((x): x is { p: GpxPoint; t: number } => x.t !== null)
-    .sort((a, b) => a.t - b.t);
+  // Check if we have at least some timing information
+  const hasTiming = points.some(p => p.time && !Number.isNaN(new Date(p.time).getTime()));
+
+  let timed: { p: GpxPoint; t: number }[] = [];
+
+  if (hasTiming) {
+    timed = points
+      .map((p) => ({ p, t: toTimeMs(p.time) }))
+      .filter((x): x is { p: GpxPoint; t: number } => x.t !== null)
+      .sort((a, b) => a.t - b.t);
+  } else {
+    // If no timing, assign synthetic timing (1s apart) to allow plotting
+    const now = Date.now();
+    timed = points.map((p, i) => ({
+      p,
+      t: now + i * 1000
+    }));
+  }
 
   const out: DerivedGpxSample[] = [];
   let cumKm = 0;
@@ -52,10 +66,13 @@ export function deriveGpxSeries(points: GpxPoint[]): DerivedGpxSample[] {
     if (prev) {
       const dtSec = (t - prev.t) / 1000;
       const dKm = haversineKm(prev.lat, prev.lon, p.lat, p.lon);
-      // Always accumulate distance; only compute speed when timing is valid
+      // Always accumulate distance
       cumKm += dKm;
+      
+      // Only compute speed if we have real timing or if it's our synthetic timing (which is always 1s)
       if (dtSec > 0) {
         const candidateSpeed = (dKm / dtSec) * 3600;
+        // Basic filtering for realistic speeds (0-250 km/h)
         if (Number.isFinite(candidateSpeed) && candidateSpeed >= 0 && candidateSpeed <= 250) {
           speedKmh = candidateSpeed;
         }

@@ -1,6 +1,6 @@
 import { Play, Pause, Square, Bike } from 'lucide-react';
 import { formatTime } from './utils';
-import type { Motorcycle } from '../types';
+import type { Motorcycle, MotorcycleProfile } from '../types';
 
 type PlaybackState = 'idle' | 'playing' | 'paused' | 'stopped';
 type PlaybackSpeed = 0.25 | 0.5 | 1 | 2 | 4;
@@ -21,6 +21,8 @@ interface PlaybackControlsProps {
   onDeviceIdChange: (id: string) => void;
   onSeek: (timeSec: number) => void;
   onMotorcycleChange?: (m: Motorcycle) => void;
+  profiles?: MotorcycleProfile[];
+  onProfileChange?: (p: MotorcycleProfile) => void;
 }
 
 const SPEED_OPTIONS: PlaybackSpeed[] = [0.25, 0.5, 1, 2, 4];
@@ -41,6 +43,8 @@ export function PlaybackControls({
   onDeviceIdChange,
   onSeek,
   onMotorcycleChange,
+  profiles = [],
+  onProfileChange,
 }: PlaybackControlsProps) {
   const isPlaying = playbackState === 'playing';
   const progress = totalDurationSec > 0 ? currentTimeSec / totalDurationSec : 0;
@@ -52,9 +56,16 @@ export function PlaybackControls({
       if (moto.deviceId) onDeviceIdChange(moto.deviceId);
     }
   };
+  
+  const handleProfileChange = (id: string) => {
+    const profile = profiles.find((p) => p.id === id);
+    if (profile && onProfileChange) {
+      onProfileChange(profile);
+    }
+  };
 
   return (
-    <div className="bg-surface/80 backdrop-blur-2xl border-t border-border-glass px-8 py-6 flex flex-col md:flex-row items-center gap-8 shadow-2xl animate-fade-in">
+    <div className="bg-surface/80 backdrop-blur-2xl border-t border-border-glass px-8 py-6 flex flex-col md:flex-row items-center gap-8 shadow-2xl animate-fade-in v2-debug-indicator">
       {/* Transport buttons */}
       <div className="flex items-center gap-3">
         {isPlaying ? (
@@ -126,12 +137,26 @@ export function PlaybackControls({
         </div>
       </div>
 
-      {/* Motorcycle / Device ID */}
+      {/* Motorcycle / Profile Selector */}
       <div className="flex flex-col gap-2 min-w-[200px]">
         <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted opacity-60 flex items-center gap-1.5">
-          <Bike size={14} /> Mota da Garagem
+          <Bike size={14} /> {profiles.length > 0 ? "[V2] Perfil da Mota" : "Mota da Garagem"}
         </label>
-        {motorcycles.length > 0 ? (
+        {profiles.length > 0 ? (
+          <select
+            className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
+            disabled={isPlaying || disabled}
+            value={profiles.find(p => p.name === deviceId)?.id || ""} // Note: using deviceId as a proxy or just need a way to track selected
+            onChange={(e) => handleProfileChange(e.target.value)}
+          >
+            <option value="" disabled className="bg-surface">— Selecionar Perfil —</option>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id} className="bg-surface">
+                {p.name}
+              </option>
+            ))}
+          </select>
+        ) : motorcycles.length > 0 ? (
           <select
             className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
             disabled={isPlaying || disabled}
