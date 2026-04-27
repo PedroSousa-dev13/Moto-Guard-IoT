@@ -43,13 +43,13 @@ services:
       # DOCKER_INFLUXDB_INIT_MODE only needed on first run (fresh volume).
       # Keeping it set to "setup" on an already-initialized volume causes exit code 2.
       # Uncomment the block below only when starting with a clean volume.
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-motoguard}
-      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-motoguard123}
-      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-motoguard}
-      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
-      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+      # DOCKER_INFLUXDB_INIT_MODE: setup
+      # DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_USER:-motoguard}
+      # DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD:-motoguard123}
+      # DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-motoguard}
+      # DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-motoguard_telemetry}
+      # DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:-motoguard-dev-token}
+      # DOCKER_INFLUXDB_INIT_RETENTION: 30d
       INFLUXDB_HTTP_AUTH_ENABLED: "false"
     volumes:
       - influxdb-data:/var/lib/influxdb2
@@ -108,6 +108,11 @@ services:
       # ML Pipeline
       ML_ENABLED: ${ML_ENABLED:-true}
       ML_MODEL_PATH: ${ML_MODEL_PATH:-ml/models/isolation_forest.pkl}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       mosquitto:
         condition: service_started
@@ -176,7 +181,7 @@ services:
       BACKEND_URL: http://backend:3000
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./app/frontend:/app
       - frontend-node-modules:/app/node_modules
