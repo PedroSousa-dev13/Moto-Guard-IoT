@@ -17,7 +17,7 @@ import { useSyncEngine } from "../real-simulator/useSyncEngine";
 import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter";
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
-import type { Motorcycle } from "../types";
+import type { Motorcycle, MotorcycleProfile } from "../types";
 import { Activity, Gauge, Zap, AlertTriangle } from "lucide-react";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
@@ -60,8 +60,8 @@ export default function RealSimulator() {
   const [sourceFormat, setSourceFormat] = useState<ParseResult["format"] | null>(null);
   const [totalDurationSec, setTotalDurationSec] = useState(0);
   const [currentTimeSec, setCurrentTimeSec] = useState(0);
-  const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
-  const [selectedMotorcycle, setSelectedMotorcycle] = useState<Motorcycle | null>(null);
+  const [profiles, setProfiles] = useState<MotorcycleProfile[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState<MotorcycleProfile | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
@@ -72,13 +72,14 @@ export default function RealSimulator() {
   }, []);
 
   useEffect(() => {
-    motorcyclesAPI.getAll().then((res) => {
-      setMotorcycles(res.data);
+    motorcyclesAPI.getProfiles().then((res) => {
+      setProfiles(res.data);
       if (res.data.length > 0) {
-        setSelectedMotorcycle(res.data[0]);
-        setSession(prev => ({ ...prev, deviceId: res.data[0].deviceId || "" }));
+        setSelectedProfile(res.data[0]);
       }
     });
+
+    setSession(prev => ({ ...prev, deviceId: "MOTOGUARD-IRL-SIM" }));
 
     const socket = io();
     socketRef.current = socket;
@@ -111,7 +112,7 @@ export default function RealSimulator() {
           prev.deviceId,
           simulationStartTimeRef.current,
           "TRIP_ACTIVE",
-          selectedMotorcycle?.model || "Real Simulator",
+          selectedProfile?.name || "Real Simulator",
           index
         );
         emitTelemetry(socketRef.current, payload);
@@ -124,7 +125,7 @@ export default function RealSimulator() {
       });
       setCurrentTimeSec(row.timestampSec);
     },
-    [selectedMotorcycle]
+    [selectedProfile]
   );
 
   const syncEngine = useSyncEngine({
@@ -133,6 +134,7 @@ export default function RealSimulator() {
     playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
     onEnd: () => {
+      console.log("[RealSimulator] Playback finished.");
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
@@ -145,10 +147,13 @@ export default function RealSimulator() {
           simSession.deviceId,
           simulationStartTimeRef.current,
           "TRIP_ENDED",
-          selectedMotorcycle?.model || "Real Simulator",
+          selectedProfile?.name || "Real Simulator",
           simSession.rows.length - 1
         );
         emitTelemetry(socket, payload);
+
+        // Forçar fecho no backend
+        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
       }
       setCurrentTimeSec(0);
       setSession((prev) => ({
@@ -171,6 +176,7 @@ export default function RealSimulator() {
   }, [simSession.videoFile, syncEngine]);
 
   const handleStop = useCallback(() => {
+    console.log("[RealSimulator] Stop clicked.");
     syncEngine.stop();
     if (videoRef.current) {
       videoRef.current.pause();
@@ -184,9 +190,13 @@ export default function RealSimulator() {
         simSession.deviceId,
         simulationStartTimeRef.current,
         "TRIP_ENDED",
+        selectedProfile?.name || "Real Simulator",
         simSession.currentRowIndex
       );
       emitTelemetry(socket, payload);
+
+      // Notificar backend para fechar a viagem imediatamente
+      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
     }
     setCurrentTimeSec(0);
     setSession((prev) => ({
@@ -195,7 +205,7 @@ export default function RealSimulator() {
       currentRowIndex: 0,
       emittedCount: 0,
     }));
-  }, [syncEngine, simSession.rows, simSession.currentRowIndex, simSession.deviceId]);
+  }, [syncEngine, simSession.rows, simSession.currentRowIndex, simSession.deviceId, selectedProfile?.name]);
 
   const handlePlay = useCallback(() => {
     const socket = socketRef.current;
@@ -204,12 +214,13 @@ export default function RealSimulator() {
     } else {
       setSocketError(null);
       if (user?.id) {
-        console.log("[RealSimulator] Defining motorcycle model:", selectedMotorcycle?.model || "Real Simulator");
+        console.log("[RealSimulator] Defining motorcycle model:", selectedProfile?.name || "Real Simulator");
         socket.emit("send_command", {
           acao: "definir_modelo",
-          modelo: selectedMotorcycle?.model || "Real Simulator",
+          modelo: selectedProfile?.name || "Real Simulator",
           device_id: simSession.deviceId,
-          userId: user.id
+          userId: user.id,
+          source: "DEVICE_REAL"
         });
       }
     }
@@ -220,7 +231,7 @@ export default function RealSimulator() {
     }
     syncEngine.start();
     setSession((prev) => ({ ...prev, playbackState: "playing" }));
-  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId, selectedMotorcycle?.model]);
+  }, [simSession.videoFile, simSession.playbackSpeed, syncEngine, user?.id, simSession.deviceId, selectedProfile?.name]);
 
   const handleSpeedChange = useCallback(
     (speed: PlaybackSpeed) => {
@@ -453,16 +464,13 @@ export default function RealSimulator() {
           emittedCount={simSession.emittedCount}
           deviceId={simSession.deviceId}
           disabled={isDisabled}
-          motorcycles={motorcycles}
+          profiles={profiles}
           onPlay={handlePlay}
           onPause={handlePause}
           onStop={handleStop}
           onSpeedChange={handleSpeedChange}
           onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
-          onMotorcycleChange={(m) => {
-            setSelectedMotorcycle(m);
-            setSession(prev => ({ ...prev, deviceId: m?.deviceId || "" }));
-          }}
+          onProfileChange={(p) => setSelectedProfile(p)}
           onSeek={handleSeek}
         />
       </div>

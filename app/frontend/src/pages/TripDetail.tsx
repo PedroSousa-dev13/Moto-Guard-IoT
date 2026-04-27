@@ -103,11 +103,13 @@ export default function TripDetail() {
 
         const tripRes = await tripsAPI.getById(id);
         if (cancelled) return;
+        console.log("[TripDetail] Trip loaded:", tripRes.data);
         setTrip(tripRes.data);
 
         if (tripRes.data.source !== "GPX_IMPORTED") {
           const telem = await tripsAPI.getTelemetry(id);
           if (cancelled) return;
+          console.log("[TripDetail] Telemetry loaded:", telem.data);
           setTelemetryRes(telem.data);
         } else {
           setTelemetryRes(null);
@@ -127,14 +129,20 @@ export default function TripDetail() {
   }, [tripId]);
 
   const routePoints = useMemo<L.LatLngTuple[]>(() => {
-    if (trip?.gpxData?.waypoints?.length) {
-      return trip.gpxData.waypoints.map((p) => [p.lat, p.lon]);
+    if (trip?.gpxData?.waypoints && Array.isArray(trip.gpxData.waypoints)) {
+      return (trip.gpxData.waypoints as any[]).map((p) => {
+        const lat = p.lat ?? p.latitude;
+        const lon = p.lon ?? p.longitude;
+        return [lat, lon] as L.LatLngTuple;
+      }).filter(p => typeof p[0] === 'number' && typeof p[1] === 'number');
     }
     const points = telemetryRes?.data ?? [];
     const out: L.LatLngTuple[] = [];
     for (const p of points) {
-      if (typeof p.latitude === "number" && typeof p.longitude === "number") {
-        out.push([p.latitude, p.longitude]);
+      const lat = p.latitude;
+      const lon = p.longitude;
+      if (typeof lat === "number" && typeof lon === "number") {
+        out.push([lat, lon]);
       }
     }
     return out;
@@ -192,9 +200,11 @@ export default function TripDetail() {
       const avgSpeed = typeof trip.avgSpeedKmh === "number" ? trip.avgSpeedKmh : null;
       const distanceKm = typeof trip.distanceKm === "number" ? trip.distanceKm : (gpxSeries.length > 0 ? gpxSeries[gpxSeries.length - 1].distanceKm : null);
 
+      const waypoints = Array.isArray(trip.gpxData?.waypoints) ? trip.gpxData.waypoints : [];
+      
       return {
-        points: trip.gpxData?.waypoints?.length ?? 0,
-        gpsPoints: trip.gpxData?.waypoints?.length ?? 0,
+        points: waypoints.length,
+        gpsPoints: waypoints.length,
         avgSpeed,
         maxSpeed,
         maxRoll: null,

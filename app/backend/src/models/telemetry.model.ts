@@ -70,6 +70,7 @@ export interface SimulatorCommand {
   device_id?: string;
   new_device_id?: string;
   userId?: string;
+  source?: string;
   route?: {
     start: { latitude: number; longitude: number };
     end: { latitude: number; longitude: number };
