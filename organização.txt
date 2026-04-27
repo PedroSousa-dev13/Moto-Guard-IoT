@@ -669,3 +669,15 @@
 #                              └───────────┘
 #
 # =============================================================================
+
+# =============================================================================
+#  METAS DE OTIMIZAÇÃO (ARQUITETURA)
+# =============================================================================
+#
+#  [ ] Transição para Arquitetura Monolítica (Opção A)
+#      → Objetivo: Backend servir o Frontend estático diretamente.
+#      → Remover contentor separado 'frontend' do docker-compose.yml.
+#      → Centralizar tudo na porta 3000 (API + UI).
+#      → Reduzir consumo de RAM e simplificar deploy final.
+#
+# =============================================================================
