@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
@@ -14,6 +14,12 @@ import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
 import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
 
+const DEFAULT_ROUTE = {
+  start: { latitude: 41.2951, longitude: -7.7463 },
+  end:   { latitude: 41.3045, longitude: -7.7388 },
+  loop: false,
+};
+
 const ADMIN_EMAIL = 'admin@admin.com';
 
 export default function SimulatorContexts() {
@@ -26,28 +32,68 @@ export default function SimulatorContexts() {
   const [mapRouteSignal, setMapRouteSignal] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [routeStart, setRouteStart] = useState<{ lat: number; lng: number } | null>(null);
+  const pendingDeviceIdRef = useRef<string | null>(null);
 
   // Wrapper que deteta quando uma rota é enviada e incrementa o sinal
   function sendCommandAndSignal(cmd: any) {
-    // Target current simulator, but pass new identity
-    const enrichedCmd = { ...cmd, userId: user?.id, device_id: activeDeviceId };
+    // Determinar o device_id a usar (usar pendingDeviceIdRef se disponível)
+    let targetDeviceId = pendingDeviceIdRef.current || activeDeviceId;
+    let newDeviceId: string | null = null;
+    const routeToSend = cmd._route || null;
+    
+    // Se estamos a definir modelo, preparar o novo device_id
     if (cmd.acao === "definir_modelo" && cmd.modelo) {
-      // Procurar por nome exato primeiro, depois por categoria
       const bike = userMotos.find(m => m.name === cmd.modelo) || 
                    userMotos.find(m => m.category === cmd.modelo);
                    
       if (bike) {
-        enrichedCmd.motorcycleName = bike.name;
-        enrichedCmd.modelo = bike.category || "Naked";
-        enrichedCmd.new_device_id = bike.deviceId;
+        cmd.motorcycleName = bike.name;
+        cmd.modelo = bike.category || "Naked";
+        cmd.new_device_id = bike.deviceId;
+        newDeviceId = bike.deviceId;
       } else if (CATEGORY_DEVICE_MAP[cmd.modelo]) {
-        // Fallback para quando o modelo é uma categoria (admin ou sem motas)
-        enrichedCmd.new_device_id = CATEGORY_DEVICE_MAP[cmd.modelo];
-        enrichedCmd.motorcycleName = cmd.modelo;
+        cmd.new_device_id = CATEGORY_DEVICE_MAP[cmd.modelo];
+        cmd.motorcycleName = cmd.modelo;
+        newDeviceId = CATEGORY_DEVICE_MAP[cmd.modelo];
       }
+      
+      // Armazenar o novo device_id no ref para uso síncrono
+      if (newDeviceId) {
+        pendingDeviceIdRef.current = newDeviceId;
+      }
+    }
+    
+    // Usar o novo device_id se estamos a definir modelo, senão usar o ativo
+    const deviceIdToUse = newDeviceId || targetDeviceId;
+    const enrichedCmd = { ...cmd, userId: user?.id, device_id: deviceIdToUse };
+    
+    // Remover _route do comando antes de enviar
+    if (enrichedCmd._route) {
+      delete enrichedCmd._route;
+    }
+
+    // Atualizar activeDeviceId imediatamente se houver novo device_id
+    if (newDeviceId) {
+      setActiveDeviceId(newDeviceId);
     }
 
     sendCommand(enrichedCmd);
+    
+    // Se há uma rota para enviar após definir modelo, agenda o envio
+    if (routeToSend && newDeviceId) {
+      setTimeout(() => {
+        const routeCmd = { 
+          acao: "definir_rota", 
+          route: routeToSend,
+          device_id: newDeviceId 
+        };
+        sendCommand(routeCmd);
+        addLog(routeToSend === DEFAULT_ROUTE ? "Rota padrão enviada" : "Rota personalizada enviada", "#f97316");
+        setMapRouteSignal((v) => v + 1);
+        pendingDeviceIdRef.current = null;
+      }, 500);
+    }
+    
     if (cmd.acao === "definir_rota") {
       setMapRouteSignal((v) => v + 1);
     }

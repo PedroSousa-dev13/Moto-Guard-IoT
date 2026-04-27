@@ -169,6 +169,9 @@ services:
       - motoguard-net
 
   # ─── Frontend React (Vite dev server) ────────────────────────────────────
+  # NOTA: O frontend é buildado dentro do container do backend (Dockerfile)
+  # Este serviço é mantido apenas para desenvolvimento com hot-reload
+  # Para usar: docker compose --profile dev up frontend
   frontend:
     image: node:20-alpine
     container_name: motoguard-frontend
@@ -187,6 +190,8 @@ services:
       - frontend-node-modules:/app/node_modules
     networks:
       - motoguard-net
+    profiles:
+      - dev
 
 # ─── Volumes persistentes ──────────────────────────────────────────────────
 volumes:
