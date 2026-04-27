@@ -153,7 +153,7 @@ export default function RealSimulator() {
         emitTelemetry(socket, payload);
 
         // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
+        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "DEVICE_REAL" });
       }
       setCurrentTimeSec(0);
       setSession((prev) => ({
@@ -196,7 +196,7 @@ export default function RealSimulator() {
       emitTelemetry(socket, payload);
 
       // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
+      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "DEVICE_REAL" });
     }
     setCurrentTimeSec(0);
     setSession((prev) => ({

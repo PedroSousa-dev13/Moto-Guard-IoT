@@ -153,7 +153,7 @@ export default function GpxSimulator() {
         emitTelemetry(socket, payload);
 
         // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
+        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
       }
       
       setCurrentTimeSec(0);
@@ -194,7 +194,7 @@ export default function GpxSimulator() {
       emitTelemetry(socket, payload);
 
       // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId });
+      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
     }
 
     setCurrentTimeSec(0);
