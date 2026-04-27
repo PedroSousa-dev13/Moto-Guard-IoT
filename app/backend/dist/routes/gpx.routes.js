@@ -60,6 +60,7 @@ router.post("/gpx/parse", auth_middleware_1.authMiddleware, (req, res, next) => 
         });
     });
 }, gpx_controller_1.parseGpxFile);
+router.post("/gpx/simulator", auth_middleware_1.authMiddleware, gpx_controller_1.saveSimulatorGpxData);
 router.get("/gpx/export/:tripId", auth_middleware_1.authMiddleware, gpx_controller_1.exportTripGpx);
 exports.default = router;
 //# sourceMappingURL=gpx.routes.js.map

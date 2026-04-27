@@ -30,8 +30,10 @@ class SocketService {
     lastTelemetryByDevice = new Map();
     activeTripIdByDevice = new Map(); // Persistência: tripId atual
     lastStopHandledAtByDevice = new Map();
+    lastTripEndedAtByDevice = new Map();
     lastUserIdByDevice = new Map();
     lastMotoModelByDevice = new Map();
+    lastSourceByDevice = new Map();
     tripStatsByDevice = new Map();
     heuristicStateByDevice = new Map();
     profileThresholdsCacheByDevice = new Map();
@@ -84,6 +86,11 @@ class SocketService {
                         this.lastUserIdByDevice.set(identityDeviceId, userId);
                         this.lastMotoModelByDevice.set(transportDeviceId, motoModel);
                         this.lastMotoModelByDevice.set(identityDeviceId, motoModel);
+                        // Guardar origem explícita se fornecida (SIMULATOR | GPX_IMPORTED | DEVICE_REAL)
+                        if (command.source) {
+                            this.lastSourceByDevice.set(transportDeviceId, command.source);
+                            this.lastSourceByDevice.set(identityDeviceId, command.source);
+                        }
                     }
                     catch (error) {
                         console.error("[SocketService] Erro ao associar device ao utilizador:", error);
@@ -91,8 +98,24 @@ class SocketService {
                 }
                 if (command?.acao === "parar") {
                     try {
-                        await this.forceEndTripsOnStopCommand(transportDeviceId ?? null);
-                        this.clearRuntimeStateAfterStop(transportDeviceId ?? null);
+                        const stopSource = command?.source?.toUpperCase() ?? "";
+                        const simulatorStopSources = new Set(["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"]);
+                        const lastStatus = transportDeviceId
+                            ? this.lastTelemetryByDevice.get(transportDeviceId)?.system?.event_status?.toUpperCase()
+                            : null;
+                        const now = Date.now();
+                        const lastTripEndedAt = transportDeviceId
+                            ? this.lastTripEndedAtByDevice.get(transportDeviceId) ?? 0
+                            : 0;
+                        const recentTripEnded = transportDeviceId ? now - lastTripEndedAt < 3000 : false;
+                        const isSimulatorStop = simulatorStopSources.has(stopSource) || lastStatus === "TRIP_ENDED";
+                        if (!isSimulatorStop && !recentTripEnded) {
+                            await this.forceEndTripsOnStopCommand(transportDeviceId ?? null);
+                            this.clearRuntimeStateAfterStop(transportDeviceId ?? null);
+                        }
+                        else if (transportDeviceId && !(this.tripActiveByDevice.get(transportDeviceId) ?? false) && !recentTripEnded) {
+                            this.clearRuntimeStateAfterStop(transportDeviceId);
+                        }
                         this.io?.emit("status", telemetry_store_1.telemetryStore.getStatus(mqtt_service_1.mqttService.connected));
                     }
                     catch (error) {
@@ -275,8 +298,15 @@ class SocketService {
     handleTripLifecycle(payload) {
         const deviceId = payload.system.device_id;
         const speed = payload.telemetry.speed_kmh;
+        const status = payload.system.event_status?.toUpperCase();
         const tripActive = this.tripActiveByDevice.get(deviceId) ?? false;
-        if (!tripActive && speed >= SocketService.TRIP_START_SPEED_KMH) {
+        // Se o payload indicar explicitamente que a viagem terminou, encerramos já.
+        if (tripActive && status === "TRIP_ENDED") {
+            console.log(`[SocketService] Fim de viagem forçado por status "TRIP_ENDED" em ${deviceId}`);
+            this.endTrip(payload);
+            return;
+        }
+        if (!tripActive && (speed >= SocketService.TRIP_START_SPEED_KMH || status === "TRIP_STARTED")) {
             this.startTrip(payload);
             return;
         }
@@ -287,6 +317,7 @@ class SocketService {
             const stationaryTicks = (this.stationaryTicksByDevice.get(deviceId) ?? 0) + 1;
             this.stationaryTicksByDevice.set(deviceId, stationaryTicks);
             if (stationaryTicks >= SocketService.TRIP_END_STATIONARY_TICKS) {
+                console.log(`[SocketService] Fim de viagem automático (stationary) em ${deviceId} (${stationaryTicks} ticks)`);
                 this.endTrip(payload);
             }
             return;
@@ -327,11 +358,12 @@ class SocketService {
                 this.stationaryTicksByDevice.set(deviceId, 0);
                 return;
             }
+            const explicitSource = this.lastSourceByDevice.get(deviceId);
             const trip = await prisma_service_1.prisma.trip.create({
                 data: {
                     userId: association.userId,
                     motorcycleId: association.motorcycleId,
-                    source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+                    source: explicitSource ?? (deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL"),
                     startedAt: new Date(timestamp),
                     status: "ACTIVE",
                     // Inicializar com 0 para evitar nulls no frontend
@@ -446,21 +478,34 @@ class SocketService {
                 where: { id: tripId },
                 select: { userId: true }
             });
-            // Se todos os stats são zeros, apagar a viagem em vez de guardar dados inválidos
+            // Se todos os stats são zeros, manter a viagem mas marcar como CANCELLED
             const allZeros = (distanceKm === 0 || distanceKm === null) &&
                 (stats?.maxSpeed ?? 0) === 0 &&
                 (stats?.maxRoll ?? 0) === 0 &&
                 (stats?.maxGForce ?? 0) === 0;
             if (allZeros) {
-                await prisma_service_1.prisma.trip.delete({ where: { id: tripId } });
-                console.log(`Viagem apagada (dados inválidos): ${tripId}`);
+                await prisma_service_1.prisma.trip.update({
+                    where: { id: tripId },
+                    data: {
+                        endedAt: new Date(timestamp),
+                        status: "CANCELLED",
+                        distanceKm,
+                        maxSpeedKmh: stats?.maxSpeed ?? 0,
+                        maxRollDeg: stats?.maxRoll ?? 0,
+                        maxGForce: stats?.maxGForce ?? 0,
+                        avgSpeedKmh,
+                    },
+                });
+                console.log(`Viagem cancelada (dados insuficientes): ${tripId}`);
                 this.io?.emit("trip_ended", {
                     deviceId,
                     motoModel: payload.system.moto_model,
                     timestamp,
                     tripId,
-                    error: "Viagem sem dados telemáticos"
+                    status: "CANCELLED",
+                    error: "Viagem sem dados suficientes para registo"
                 });
+                this.lastTripEndedAtByDevice.set(deviceId, Date.now());
             }
             else {
                 await prisma_service_1.prisma.trip.update({
@@ -489,6 +534,7 @@ class SocketService {
                     maxSpeedKmh: stats?.maxSpeed ?? 0,
                     status: "COMPLETED"
                 });
+                this.lastTripEndedAtByDevice.set(deviceId, Date.now());
             }
             this.activeTripIdByDevice.delete(deviceId);
             this.tripStatsByDevice.delete(deviceId);
@@ -570,6 +616,7 @@ class SocketService {
                 distanceKm: created?.distanceKm,
                 maxSpeedKmh: created?.maxSpeedKmh,
             });
+            this.lastTripEndedAtByDevice.set(deviceId, Date.now());
             return;
         }
         let distanceKm = 0;
@@ -584,21 +631,34 @@ class SocketService {
         }
         const avgSpeedKmh = stats && stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null;
         try {
-            // Se todos os stats são zeros, apagar a viagem em vez de guardar dados inválidos
+            // Se todos os stats são zeros, manter a viagem mas marcar como CANCELLED
             const allZeros = (distanceKm === 0 || distanceKm === null) &&
                 (stats?.maxSpeed ?? 0) === 0 &&
                 (stats?.maxRoll ?? 0) === 0 &&
                 (stats?.maxGForce ?? 0) === 0;
             if (allZeros) {
-                await prisma_service_1.prisma.trip.delete({ where: { id: tripId } });
-                console.log(`Viagem apagada (dados inválidos): ${tripId}`);
+                await prisma_service_1.prisma.trip.update({
+                    where: { id: tripId },
+                    data: {
+                        endedAt,
+                        status: "CANCELLED",
+                        distanceKm,
+                        maxSpeedKmh: stats?.maxSpeed ?? 0,
+                        maxRollDeg: stats?.maxRoll ?? 0,
+                        maxGForce: stats?.maxGForce ?? 0,
+                        avgSpeedKmh,
+                    },
+                });
+                console.log(`[SocketService] Viagem cancelada (dados insuficientes): ${tripId}`);
                 this.io?.emit("trip_ended", {
                     deviceId,
                     motoModel: lastPayload?.system.moto_model ?? "—",
                     timestamp: endedAt.toISOString(),
                     tripId,
-                    error: "Viagem sem dados telemetryicos"
+                    status: "CANCELLED",
+                    error: "Viagem sem dados suficientes para registo"
                 });
+                this.lastTripEndedAtByDevice.set(deviceId, Date.now());
             }
             else {
                 await prisma_service_1.prisma.trip.update({
@@ -623,6 +683,7 @@ class SocketService {
                     maxSpeedKmh: stats?.maxSpeed ?? 0,
                     status: "COMPLETED"
                 });
+                this.lastTripEndedAtByDevice.set(deviceId, Date.now());
             }
         }
         catch (error) {

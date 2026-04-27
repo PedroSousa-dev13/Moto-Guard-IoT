@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { authMiddleware } from "../middleware/auth.middleware";
-import { exportTripGpx, importGpx, parseGpxFile } from "../controllers/gpx.controller";
+import { exportTripGpx, importGpx, parseGpxFile, saveSimulatorGpxData } from "../controllers/gpx.controller";
 
 const router = Router();
 
@@ -67,6 +67,8 @@ router.post("/gpx/parse", authMiddleware, (req, res, next) => {
     });
   });
 }, parseGpxFile);
+
+router.post("/gpx/simulator", authMiddleware, saveSimulatorGpxData);
 
 router.get("/gpx/export/:tripId", authMiddleware, exportTripGpx);
 

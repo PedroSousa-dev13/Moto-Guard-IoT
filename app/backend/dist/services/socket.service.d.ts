@@ -9,8 +9,10 @@ export declare class SocketService {
     private lastTelemetryByDevice;
     private activeTripIdByDevice;
     private lastStopHandledAtByDevice;
+    private lastTripEndedAtByDevice;
     private lastUserIdByDevice;
     private lastMotoModelByDevice;
+    private lastSourceByDevice;
     private tripStatsByDevice;
     private heuristicStateByDevice;
     private profileThresholdsCacheByDevice;
