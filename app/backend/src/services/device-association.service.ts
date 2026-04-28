@@ -56,6 +56,19 @@ class DeviceAssociationService {
          }
       }
       
+      // Fallback adicional: se é simulador, buscar qualquer mota com este deviceId (sem filtro de user/modelo)
+      if (isSim) {
+         const anyDevice = await prisma.motorcycle.findFirst({
+           where: { deviceId },
+           select: { id: true, userId: true, deviceId: true },
+         });
+         if (anyDevice) {
+           const assoc = { motorcycleId: anyDevice.id, userId: anyDevice.userId, deviceId: anyDevice.deviceId! };
+           this.setCache(cacheKey, assoc);
+           return assoc;
+         }
+      }
+      
       console.warn(`[getAssociation] Mota não encontrada para deviceId: ${deviceId} (user: ${userId}, model: ${cleanModel})`);
       return null;
     }

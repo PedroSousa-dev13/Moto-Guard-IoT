@@ -52,13 +52,32 @@ export function useSocket() {
   const [crashAlert, setCrashAlert] = useState<{ deviceId: string; countdownSec: number; timestamp: string } | null>(null);
   const [realtimeAnomaly, setRealtimeAnomaly] = useState<{ deviceId: string; reason: string; score: number; timestamp: string } | null>(null);
 
-  const resetSimulationView = useCallback(() => {
+  // ── Enviar comando "parar" ao simulador Python (usa refs para não depender de state) ──
+  const sendStopCommand = useCallback(() => {
+    if (isDemoMode || !socketRef.current) return;
+    // Determinar o device_id a partir de refs e state snapshot
+    const deviceId =
+      lastKnownDeviceIdRef.current ?? "MOTOGUARD-SIM-01";
+    const userId = getStoredUserId() ?? undefined;
+    const payload = {
+      acao: "parar" as const,
+      device_id: deviceId,
+      ...(userId ? { userId } : {}),
+    };
+    socketRef.current.emit("send_command", payload);
+    console.log(`[useSocket] Stop command sent to ${deviceId}`);
+  }, [isDemoMode]);
+
+  const resetSimulationView = useCallback((sendStop = false) => {
+    if (sendStop) {
+      sendStopCommand();
+    }
     setTelemetryByDevice({});
     setLastDeviceId(null);
     setActiveDeviceId(null);
     setMsgCount(0);
     setStatus((prev) => ({ ...prev, hasData: false }));
-  }, []);
+  }, [sendStopCommand]);
 
   // ── Adicionar entrada ao log ──────────────────────────────────────────
   const addLog = useCallback((message: string, color: string = "#aaa") => {
@@ -293,5 +312,5 @@ export function useSocket() {
     };
   }, [addLog, isDemoMode, registerEmitter]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, addLog, resetSimulationView, crashAlert, cancelEmergency, realtimeAnomaly };
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, sendStopCommand, addLog, resetSimulationView, crashAlert, cancelEmergency, realtimeAnomaly };
 }
