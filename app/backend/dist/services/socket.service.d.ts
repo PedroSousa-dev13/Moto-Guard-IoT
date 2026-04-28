@@ -50,6 +50,13 @@ export declare class SocketService {
     private sendEmergencyEmail;
     private handleCancelEmergency;
     private mapStatusToEventType;
+    /**
+     * Resolves the trip source for a device using a deterministic chain:
+     * 1. Explicit source cached from frontend command (definir_modelo) or telemetry payload
+     * 2. Device ID prefix pattern matching (MOTOGUARD-GPX-* / MOTOGUARD-IRL-* / MOTOGUARD-SIM-*)
+     * 3. Final fallback: SIMULATOR
+     */
+    private resolveSourceForDevice;
 }
 export declare const socketService: SocketService;
 //# sourceMappingURL=socket.service.d.ts.map

@@ -18,6 +18,7 @@ import type { ParsedRow } from "./csvParser";
  * @param eventStatus        - "TRIP_ACTIVE" durante reprodução, "TRIP_ENDED" no stop
  * @param motoModel          - Modelo da mota (ex: "Naked", "Sport")
  * @param tick               - Índice da linha CSV atual (default: row.timestampSec arredondado)
+ * @param source             - Origem da viagem: "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL"
  */
 export function buildPayload(
   row: ParsedRow,
@@ -25,7 +26,8 @@ export function buildPayload(
   simulationStartTime: Date,
   eventStatus: string,
   motoModel: string = "Real Simulator",
-  tick: number = 0
+  tick: number = 0,
+  source?: string
 ): TelemetryPayload {
   // system.timestamp = simulationStartTime + row.timestampSec * 1000ms (ISO 8601)
   const absoluteMs = simulationStartTime.getTime() + row.timestampSec * 1000;
@@ -69,6 +71,7 @@ export function buildPayload(
       event_status: eventStatus,
       tick,
       timestamp,
+      ...(source ? { source } : {}),
     },
   };
 }

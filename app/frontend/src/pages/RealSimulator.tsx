@@ -113,7 +113,8 @@ export default function RealSimulator() {
           simulationStartTimeRef.current,
           "TRIP_ACTIVE",
           selectedProfile?.name || "Real Simulator",
-          index
+          index,
+          "DEVICE_REAL"
         );
         emitTelemetry(socketRef.current, payload);
 
@@ -148,7 +149,8 @@ export default function RealSimulator() {
           simulationStartTimeRef.current,
           "TRIP_ENDED",
           selectedProfile?.name || "Real Simulator",
-          simSession.rows.length - 1
+          simSession.rows.length - 1,
+          "DEVICE_REAL"
         );
         emitTelemetry(socket, payload);
 
@@ -191,7 +193,8 @@ export default function RealSimulator() {
         simulationStartTimeRef.current,
         "TRIP_ENDED",
         selectedProfile?.name || "Real Simulator",
-        simSession.currentRowIndex
+        simSession.currentRowIndex,
+        "DEVICE_REAL"
       );
       emitTelemetry(socket, payload);
 

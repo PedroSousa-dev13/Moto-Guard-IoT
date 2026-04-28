@@ -39,11 +39,8 @@ async function getTripTelemetry(req, res) {
         res.status(404).json({ error: "Viagem não encontrada" });
         return;
     }
-    if (trip.source === "GPX_IMPORTED") {
-        console.log(`[TELEMETRY] ${tripId} — GPX_IMPORTED, sem dados InfluxDB (${Date.now() - t0}ms)`);
-        res.json({ trip, total_points: 0, data: [] });
-        return;
-    }
+    // NOTA: GPX_IMPORTED trips agora também têm telemetria no InfluxDB
+    // (emitida pelo GPX Simulator via Socket.IO), portanto não fazemos early-return.
     // Obter deviceId da mota associada à viagem (para filtrar no InfluxDB)
     const motorcycle = await prisma_service_1.prisma.motorcycle.findFirst({
         where: { trips: { some: { id: tripId } } },

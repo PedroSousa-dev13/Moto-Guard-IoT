@@ -37,6 +37,7 @@ export interface SystemData {
     tick: number;
     timestamp: string;
     speed_limit_kmh?: number;
+    source?: string;
 }
 /** Payload completo recebido do simulador via MQTT */
 export interface TelemetryPayload {

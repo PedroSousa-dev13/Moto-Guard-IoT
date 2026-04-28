@@ -177,7 +177,8 @@ export default function GpxSimulator() {
           simulationStartTimeRef.current,
           "TRIP_ACTIVE",
           selectedProfile?.name || "GPX Simulator",
-          index
+          index,
+          "GPX_IMPORTED"
         );
         emitTelemetry(socketRef.current, payload);
       }
@@ -208,7 +209,8 @@ export default function GpxSimulator() {
           simulationStartTimeRef.current,
           "TRIP_ENDED",
           selectedProfile?.name || "GPX Simulator",
-          simSession.rows.length - 1
+          simSession.rows.length - 1,
+          "GPX_IMPORTED"
         );
         emitTelemetry(socket, payload);
 
@@ -250,7 +252,8 @@ export default function GpxSimulator() {
         simulationStartTimeRef.current,
         "TRIP_ENDED",
         selectedProfile?.name || "GPX Simulator",
-        simSession.currentRowIndex
+        simSession.currentRowIndex,
+        "GPX_IMPORTED"
       );
       emitTelemetry(socket, payload);
 
