@@ -106,12 +106,16 @@ export default function TripDetail() {
         console.log("[TripDetail] Trip loaded:", tripRes.data);
         setTrip(tripRes.data);
 
-        if (tripRes.data.source !== "GPX_IMPORTED") {
+        // Carregar telemetria InfluxDB para TODOS os tipos de viagem
+        // (GPX_IMPORTED agora também tem dados no InfluxDB via GPX Simulator)
+        try {
           const telem = await tripsAPI.getTelemetry(id);
           if (cancelled) return;
           console.log("[TripDetail] Telemetry loaded:", telem.data);
           setTelemetryRes(telem.data);
-        } else {
+        } catch {
+          if (cancelled) return;
+          console.warn("[TripDetail] Could not load telemetry, using GPX waypoints only.");
           setTelemetryRes(null);
         }
       } catch (err: any) {
@@ -587,7 +591,7 @@ export default function TripDetail() {
             <StatCard icon={<Gauge size={28} />} label="Velocidade Máx." value={summary.maxSpeed?.toFixed(1) ?? "—"} unit="km/h" />
             <StatCard icon={<Activity size={28} />} label="Velocidade Média" value={summary.avgSpeed?.toFixed(1) ?? "—"} unit="km/h" />
             
-            {trip.source !== "GPX_IMPORTED" ? (
+            {(chartSeries.length > 0 || trip.source !== "GPX_IMPORTED") ? (
               <>
                 <StatCard icon={<Zap size={28} />} label="Inclinação Máx." value={summary.maxRoll?.toFixed(1) ?? "—"} unit="°" />
                 <StatCard icon={<Thermometer size={28} />} label="Temp. Máxima" value={summary.maxTemp?.toFixed(1) ?? "—"} unit="°C" />
@@ -608,7 +612,7 @@ export default function TripDetail() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {trip.source === "GPX_IMPORTED" ? (
+            {(chartSeries.length === 0 && trip.source === "GPX_IMPORTED") ? (
               <>
                 <ChartCard title="Perfil de Velocidade" icon={<Gauge size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
@@ -696,7 +700,7 @@ export default function TripDetail() {
             )}
           </div>
 
-          {trip.source !== "GPX_IMPORTED" && (
+          {(chartSeries.length > 0) && (
             <>
               <div className="flex items-center gap-5 mt-12">
                 <span className="text-[0.7rem] font-black uppercase tracking-[0.4em] text-accent">Saúde do Motor e Monitorização Avançada</span>

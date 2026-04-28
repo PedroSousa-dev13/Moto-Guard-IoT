@@ -49,6 +49,7 @@ export interface SystemData {
   tick: number;
   timestamp: string;
   speed_limit_kmh?: number;
+  source?: string;  // SIMULATOR | GPX_IMPORTED | DEVICE_REAL
 }
 
 /** Payload completo recebido do simulador via MQTT */

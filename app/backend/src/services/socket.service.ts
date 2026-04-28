@@ -172,11 +172,13 @@ export class SocketService {
 
       socket.on("telemetry_update", async (payload: TelemetryPayload) => {
         // Processar telemetria vinda do frontend (Simuladores GPX/Real)
-        this.lastTelemetryByDevice.set(payload.system.device_id, payload);
+        const deviceId = payload.system.device_id;
+        this.lastTelemetryByDevice.set(deviceId, payload);
         
-        // Se o payload não trouxer userId (o que é o caso atual), tentamos ver se 
-        // já registamos um userId para este device nesta sessão.
-        // Se não, o startTrip usará o que estiver no lastUserIdByDevice.
+        // Extrair e cachear source do payload (cada pacote GPX/Real agora traz source)
+        if (payload.system.source) {
+          this.lastSourceByDevice.set(deviceId, payload.system.source);
+        }
         
         influxService.writeTelemetry(payload);
         socket.broadcast.emit("telemetry_update", payload);
@@ -452,12 +454,12 @@ export class SocketService {
         return;
       }
 
-      const explicitSource = this.lastSourceByDevice.get(deviceId) as any;
+      const tripSource = this.resolveSourceForDevice(deviceId);
       const trip = await prisma.trip.create({
         data: {
           userId: association.userId,
           motorcycleId: association.motorcycleId,
-          source: explicitSource ?? (deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL"),
+          source: tripSource,
           startedAt: new Date(timestamp),
           status: "ACTIVE",
           // Inicializar com 0 para evitar nulls no frontend
@@ -905,7 +907,7 @@ export class SocketService {
       data: {
         userId: association.userId,
         motorcycleId: association.motorcycleId,
-        source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+        source: this.resolveSourceForDevice(deviceId),
         startedAt,
         endedAt,
         status: "COMPLETED",
@@ -945,7 +947,7 @@ export class SocketService {
       data: {
         userId: association.userId,
         motorcycleId: association.motorcycleId,
-        source: deviceId.toUpperCase().includes("SIM") ? "SIMULATOR" : "DEVICE_REAL",
+        source: this.resolveSourceForDevice(deviceId),
         startedAt: endedAt,
         endedAt,
         status: "COMPLETED",
@@ -1159,6 +1161,32 @@ export class SocketService {
       severity: severityMap[eventType] || "INFO", 
       message: messageMap[eventType] || `Evento: ${status}` 
     };
+  }
+
+  /**
+   * Resolves the trip source for a device using a deterministic chain:
+   * 1. Explicit source cached from frontend command (definir_modelo) or telemetry payload
+   * 2. Device ID prefix pattern matching (MOTOGUARD-GPX-* / MOTOGUARD-IRL-* / MOTOGUARD-SIM-*)
+   * 3. Final fallback: SIMULATOR
+   */
+  private resolveSourceForDevice(deviceId: string): "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL" {
+    // 1. Check explicit source from frontend commands or telemetry payloads
+    const explicit = this.lastSourceByDevice.get(deviceId);
+    if (explicit === "GPX_IMPORTED" || explicit === "DEVICE_REAL" || explicit === "SIMULATOR") {
+      return explicit;
+    }
+
+    // 2. Resolve from device ID prefix pattern
+    const id = deviceId.toUpperCase();
+    if (id.startsWith("MOTOGUARD-GPX") || id.includes("-GPX-") || id.includes("GPX")) {
+      return "GPX_IMPORTED";
+    }
+    if (id.startsWith("MOTOGUARD-IRL") || id.includes("-IRL-") || id.includes("IRL")) {
+      return "DEVICE_REAL";
+    }
+
+    // 3. Final fallback: SIMULATOR (headless simulator, MOTOGUARD-SIM-*, etc.)
+    return "SIMULATOR";
   }
 }
 

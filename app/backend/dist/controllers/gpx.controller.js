@@ -81,16 +81,16 @@ async function saveSimulatorGpxData(req, res) {
                 update: {
                     filename,
                     fileSize,
-                    waypoints,
-                    bounds,
+                    waypoints: waypoints,
+                    bounds: bounds,
                     totalTime: totalTime ?? undefined,
                 },
                 create: {
                     tripId,
                     filename,
                     fileSize,
-                    waypoints,
-                    bounds,
+                    waypoints: waypoints,
+                    bounds: bounds,
                     totalTime: totalTime ?? undefined,
                 },
             });
