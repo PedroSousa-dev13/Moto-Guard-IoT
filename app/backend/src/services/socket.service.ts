@@ -388,6 +388,19 @@ export class SocketService {
       return;
     }
 
+    // Se não há viagem ativa mas o simulador enviou TRIP_ENDED, 
+    // notificar o frontend para parar a UI
+    if (!tripActive && status === "TRIP_ENDED") {
+      this.io?.emit("trip_ended", {
+        deviceId,
+        motoModel: payload.system.moto_model,
+        timestamp: payload.system.timestamp,
+        status: "NO_TRIP",
+        error: "Viagem concluída (sem dados registados localmente)"
+      });
+      return;
+    }
+
     if (!tripActive && (speed >= SocketService.TRIP_START_SPEED_KMH || status === "TRIP_STARTED")) {
       this.startTrip(payload);
       return;
@@ -431,11 +444,21 @@ export class SocketService {
 
       console.log(`[SocketService] Tentando iniciar viagem para ${deviceId} (User em cache: ${lastUserId}, Modelo: ${motoModel})`);
 
-      const association = await deviceAssociationService.getAssociation(deviceId, lastUserId, motoModel);
+      let association = await deviceAssociationService.getAssociation(deviceId, lastUserId, motoModel);
 
       if (!association) {
-        console.warn(`[SocketService] Mota não encontrada para deviceId: ${deviceId} (User: ${lastUserId}, Model: ${motoModel}). Viagem ignorada.`);
-        return;
+        // Fallback: tentar sem modelo (qualquer mota registada para este device)
+        association = await deviceAssociationService.getAssociation(deviceId, lastUserId);
+        
+        if (!association) {
+          // Último recurso: tentar sem userId nem modelo
+          association = await deviceAssociationService.getAssociation(deviceId);
+          
+          if (!association) {
+            console.warn(`[SocketService] Mota não encontrada para deviceId: ${deviceId} (User: ${lastUserId}, Model: ${motoModel}). Viagem ignorada.`);
+            return;
+          }
+        }
       }
 
       // Verificar na BD se há viagem ativa (segurança extra)

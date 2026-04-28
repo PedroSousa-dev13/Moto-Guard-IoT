@@ -24,7 +24,7 @@ const ADMIN_EMAIL = 'admin@admin.com';
 
 export default function SimulatorContexts() {
   const { user } = useAuth();
-  const { telemetry, msgCount, logs, status, sendCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
+  const { telemetry, msgCount, logs, status, sendCommand, sendStopCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
@@ -137,6 +137,7 @@ export default function SimulatorContexts() {
     }
   }, [isAdmin]);
 
+  // Quando a viagem termina, enviar "parar" ao simulador Python e limpar a vista
   useEffect(() => {
     if (!tripEndedSignal) return;
     setToast((prev) =>
@@ -145,8 +146,17 @@ export default function SimulatorContexts() {
         : { message: "Simulação terminada", type: "success" }
     );
     setMapResetSignal((v) => v + 1);
-    resetSimulationView();
+    resetSimulationView(true); // true = envia "parar" via MQTT antes de limpar estado
   }, [tripEndedSignal, resetSimulationView]);
+
+  // Cleanup: ao sair da página do simulador, parar o motor Python
+  useEffect(() => {
+    return () => {
+      console.log('[SimulatorContexts] Unmounting — sending stop command to simulator');
+      sendStopCommand();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-10">
@@ -258,7 +268,7 @@ export default function SimulatorContexts() {
               onStop={() => {
                 setToast({ message: "Simulação terminada", type: "success" });
                 setMapResetSignal((v) => v + 1);
-                resetSimulationView();
+                resetSimulationView(true);
               }}
             />
           </div>
