@@ -273,10 +273,25 @@ class HeadlessSimulator:
         # Temperatura inicial = marcha lenta do perfil (motor já ligado)
         self.tele.temp_motor = self.temp_min + self.temp_idle_off
 
+        # Configurar rota
         if self._route_override and self._route_override_waypoints:
             self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
         else:
-            self.route_cursor = None
+            # Tentar carregar rota padrão se não houver override (essencial para modo headless autónomo)
+            try:
+                from routes import get_route
+                from config import ROUTE_NAME
+                wps = get_route(ROUTE_NAME)
+                if wps:
+                    self.route_cursor = RouteCursor(wps, close_loop=True)
+                    # Posicionar a mota no início da rota para evitar saltos
+                    self.tele.lat, self.tele.lng = wps[0]
+                    log(f"Rota padrão '{ROUTE_NAME}' carregada ({len(wps)} pontos)")
+                else:
+                    self.route_cursor = None
+            except Exception as e:
+                log(f"Aviso: Não foi possível carregar rota padrão: {e}")
+                self.route_cursor = None
         return True
 
     # ========================================================================
@@ -328,8 +343,14 @@ class HeadlessSimulator:
             return
 
         target_id = dados.get("device_id")
-        if target_id and target_id != self.current_device_id and target_id != DEVICE_ID:
-            return
+        if target_id:
+            # Se o ID for um dos simuladores padrão do frontend ou o nosso ID configurado, adotamos
+            if (target_id.startswith("MOTOGUARD-SIM-") or target_id == DEVICE_ID) and target_id != self.current_device_id:
+                log(f"Adotando novo device_id para escuta: {target_id}")
+                self.current_device_id = target_id
+            elif target_id != self.current_device_id and target_id != DEVICE_ID:
+                # Se for para outro ID específico que não reconhecemos, ignoramos
+                return
 
         acao_raw = dados.get("acao", "")
         acao = str(acao_raw).strip().lower()
@@ -374,7 +395,16 @@ class HeadlessSimulator:
             else:
                 log("Arrancar: geração já activa.")
         elif acao == "parar":
-            log("Comando: parar — simulador a ficar inactivo (aguarda novo 'definir_modelo')")
+            log("Comando: parar — a enviar TRIP_ENDED e a ficar inactivo")
+            # Publicar payload TRIP_ENDED se havia perfil ativo (para o backend finalizar a viagem)
+            if self.perfil_nome and self.route_cursor is not None and not self._generation_paused:
+                try:
+                    payload = self._sim_tick()
+                    payload["system"]["event_status"] = "TRIP_ENDED"
+                    self._publicar(payload)
+                    log("Payload TRIP_ENDED publicado antes de parar.")
+                except Exception as e:
+                    log(f"Aviso: falha ao publicar TRIP_ENDED no parar: {e}")
             self._clear_simulator_state()
         elif acao in ("definir_rota", "set_route", "set-rota"):
             route = dados.get("route") or {}
@@ -460,8 +490,7 @@ class HeadlessSimulator:
 
         if self._route_override and self._route_override_waypoints:
             self.route_cursor = RouteCursor(self._route_override_waypoints, close_loop=self._route_override_loop)
-        else:
-            self.route_cursor = None
+        # Se não há override, manter o route_cursor que _carregar_perfil definiu (rota padrão)
 
         if self.route_cursor is not None:
             self.route_cursor.reset(0)
@@ -944,8 +973,12 @@ class HeadlessSimulator:
             log("Timeout à espera de conexão MQTT — a sair")
             sys.exit(1)
 
-        # Não arranca automaticamente — aguarda comando 'definir_modelo' do frontend
-        log("Simulador idle — à espera do comando 'definir_modelo' do frontend...")
+        # No modo headless, se tivermos um modelo inicial, arrancamos logo
+        if self.modelo_inicial:
+            log(f"Arranque automático com modelo: {self.modelo_inicial}")
+            self._aplicar_modelo(self.modelo_inicial)
+        else:
+            log("Simulador idle — à espera do comando 'definir_modelo' do frontend...")
 
         # Loop principal
         while self.running:
@@ -973,6 +1006,14 @@ class HeadlessSimulator:
                         self._stop_countdown = int(15 / self.dt) # 15 segundos
                     self._stop_countdown -= 1
                     if self._stop_countdown <= 0:
+                        # Publicar payload final TRIP_ENDED antes de pausar
+                        try:
+                            final_payload = self._sim_tick()
+                            final_payload["system"]["event_status"] = "TRIP_ENDED"
+                            self._publicar(final_payload)
+                            log("Payload TRIP_ENDED publicado — backend vai finalizar viagem.")
+                        except Exception as e:
+                            log(f"Aviso: falha ao publicar TRIP_ENDED no fim de rota: {e}")
                         self._generation_paused = True
                         delattr(self, '_stop_countdown')
                         log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
