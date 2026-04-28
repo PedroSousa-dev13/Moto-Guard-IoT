@@ -1001,12 +1001,9 @@ class HeadlessSimulator:
                         "Aguarda 'reset_eventos' ou 'arrancar' para retomar.")
 
                 # Detectar fim de rota e paragem total
-                if self.route_cursor and self.route_cursor.finished and self.tele.velocidade < 0.1:
-                    if not hasattr(self, '_stop_countdown'): 
-                        self._stop_countdown = int(15 / self.dt) # 15 segundos
-                    self._stop_countdown -= 1
-                    if self._stop_countdown <= 0:
-                        # Publicar payload final TRIP_ENDED antes de pausar
+                if self.route_cursor and self.route_cursor.finished and self.tele.velocidade < 0.5:
+                    if not hasattr(self, '_route_end_sent'):
+                        # Publicar TRIP_ENDED imediatamente (antes do stationary detection do backend)
                         try:
                             final_payload = self._sim_tick()
                             final_payload["system"]["event_status"] = "TRIP_ENDED"
@@ -1014,12 +1011,17 @@ class HeadlessSimulator:
                             log("Payload TRIP_ENDED publicado — backend vai finalizar viagem.")
                         except Exception as e:
                             log(f"Aviso: falha ao publicar TRIP_ENDED no fim de rota: {e}")
-                        self._generation_paused = True
-                        delattr(self, '_stop_countdown')
-                        log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
-                    else:
-                        if self._stop_countdown % int(5 / self.dt) == 0:
-                            log(f"A aguardar paragem total para fechar viagem... ({int(self._stop_countdown * self.dt)}s)")
+                        self._route_end_sent = True
+                        self._stop_countdown = int(2 / self.dt) # 2s de graça para flush
+
+                    if hasattr(self, '_stop_countdown'):
+                        self._stop_countdown -= 1
+                        if self._stop_countdown <= 0:
+                            self._generation_paused = True
+                            for attr in ('_stop_countdown', '_route_end_sent'):
+                                if hasattr(self, attr):
+                                    delattr(self, attr)
+                            log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
 
                 # Log a cada tick para verificação de 10Hz
                 if self._tick_count % 1 == 0:

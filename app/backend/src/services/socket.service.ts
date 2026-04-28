@@ -447,11 +447,25 @@ export class SocketService {
       });
 
       if (dbActiveTrip) {
-        console.log(`[SocketService] Viagem ativa na BD para ${deviceId}: ${dbActiveTrip.id} — retomando`);
-        this.activeTripIdByDevice.set(deviceId, dbActiveTrip.id);
-        this.tripActiveByDevice.set(deviceId, true);
-        this.stationaryTicksByDevice.set(deviceId, 0);
-        return;
+        const tripAgeMs = Date.now() - dbActiveTrip.startedAt.getTime();
+        const STALE_TRIP_MS = 5 * 60 * 1000; // 5 minutos
+
+        if (tripAgeMs > STALE_TRIP_MS) {
+          // Viagem abandonada/fantasma — cancelar e criar nova
+          await prisma.trip.update({
+            where: { id: dbActiveTrip.id },
+            data: { status: "CANCELLED", endedAt: new Date() },
+          });
+          console.log(`[SocketService] Viagem stale cancelada: ${dbActiveTrip.id} (age: ${Math.round(tripAgeMs / 1000)}s)`);
+          // Continuar para criar nova viagem
+        } else {
+          // Viagem recente — retomar normalmente
+          console.log(`[SocketService] Viagem ativa recente na BD para ${deviceId}: ${dbActiveTrip.id} — retomando`);
+          this.activeTripIdByDevice.set(deviceId, dbActiveTrip.id);
+          this.tripActiveByDevice.set(deviceId, true);
+          this.stationaryTicksByDevice.set(deviceId, 0);
+          return;
+        }
       }
 
       const tripSource = this.resolveSourceForDevice(deviceId);
@@ -653,6 +667,7 @@ export class SocketService {
 
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
+      this.heuristicStateByDevice.delete(deviceId);
     } catch (error) {
       console.error("Erro ao finalizar viagem:", error);
       // Notificamos o frontend de que "tentámos" terminar, mas o status na BD pode estar inconsistente.
@@ -871,6 +886,8 @@ export class SocketService {
     this.activeTripIdByDevice.delete(deviceId);
     this.tripStatsByDevice.delete(deviceId);
     this.lastStopHandledAtByDevice.delete(deviceId);
+    this.heuristicStateByDevice.delete(deviceId);
+    this.profileThresholdsCacheByDevice.delete(deviceId);
   }
 
   private async createCompletedTripFromLastPayload(
