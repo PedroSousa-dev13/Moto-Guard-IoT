@@ -28,7 +28,7 @@ from config import (
     DEFAULT_LAT, DEFAULT_LNG,
     QUEDA_ROLL_THRESHOLD, QUEDA_PITCH_THRESHOLD, QUEDA_G_FORCE,
     QUEDA_CONFIRMACAO_SEG, VOLTAGEM_NOMINAL, VOLTAGEM_CRITICA,
-    PERFIS_MOTO, ROUTE_NAME,
+    PERFIS_MOTO, ROUTE_NAME, ROUTE_LOOP,
                    )
 from routes import RouteCursor, get_route, get_route_between
 import moto_physics
@@ -163,6 +163,7 @@ class HeadlessSimulator:
         self.tele = TelemetriaState()
         self.perfil_nome: str | None = None
         self._tick_count = 0
+        self._route_finished_ticks = 0
         self._generation_paused: bool = False  # True após queda confirmada; retoma com reset_eventos/arrancar
         self.route_cursor: RouteCursor | None = None
         self._route_override = False
@@ -283,10 +284,13 @@ class HeadlessSimulator:
                 from config import ROUTE_NAME
                 wps = get_route(ROUTE_NAME)
                 if wps:
-                    self.route_cursor = RouteCursor(wps, close_loop=True)
+                    self.route_cursor = RouteCursor(wps, close_loop=ROUTE_LOOP)
                     # Posicionar a mota no início da rota para evitar saltos
                     self.tele.lat, self.tele.lng = wps[0]
-                    log(f"Rota padrão '{ROUTE_NAME}' carregada ({len(wps)} pontos)")
+                    log(
+                        f"Rota padrão '{ROUTE_NAME}' carregada ({len(wps)} pontos, "
+                        f"loop={'on' if ROUTE_LOOP else 'off'})"
+                    )
                 else:
                     self.route_cursor = None
             except Exception as e:
@@ -394,7 +398,7 @@ class HeadlessSimulator:
                 log("Arrancar: sem modelo activo — usa 'definir_modelo' primeiro.")
             else:
                 log("Arrancar: geração já activa.")
-        elif acao == "parar":
+        elif acao in ("parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"):
             log("Comando: parar — a enviar TRIP_ENDED e a ficar inactivo")
             # Publicar payload TRIP_ENDED se havia perfil ativo (para o backend finalizar a viagem)
             if self.perfil_nome and self.route_cursor is not None and not self._generation_paused:
@@ -1001,27 +1005,36 @@ class HeadlessSimulator:
                         "Aguarda 'reset_eventos' ou 'arrancar' para retomar.")
 
                 # Detectar fim de rota e paragem total
-                if self.route_cursor and self.route_cursor.finished and self.tele.velocidade < 0.5:
-                    if not hasattr(self, '_route_end_sent'):
-                        # Publicar TRIP_ENDED imediatamente (antes do stationary detection do backend)
-                        try:
-                            final_payload = self._sim_tick()
-                            final_payload["system"]["event_status"] = "TRIP_ENDED"
-                            self._publicar(final_payload)
-                            log("Payload TRIP_ENDED publicado — backend vai finalizar viagem.")
-                        except Exception as e:
-                            log(f"Aviso: falha ao publicar TRIP_ENDED no fim de rota: {e}")
-                        self._route_end_sent = True
-                        self._stop_countdown = int(2 / self.dt) # 2s de graça para flush
+                if self.route_cursor and self.route_cursor.finished:
+                    self._route_finished_ticks += 1
+                else:
+                    self._route_finished_ticks = 0
 
-                    if hasattr(self, '_stop_countdown'):
-                        self._stop_countdown -= 1
-                        if self._stop_countdown <= 0:
-                            self._generation_paused = True
-                            for attr in ('_stop_countdown', '_route_end_sent'):
-                                if hasattr(self, attr):
-                                    delattr(self, attr)
-                            log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
+                # Detectar fim de rota e paragem total
+                if self.route_cursor and self.route_cursor.finished:
+                    finished_seconds = self._route_finished_ticks * self.dt
+                    should_end = self.tele.velocidade < 0.5 or finished_seconds >= 5.0
+                    if should_end:
+                        if not hasattr(self, '_route_end_sent'):
+                            # Publicar TRIP_ENDED imediatamente (antes do stationary detection do backend)
+                            try:
+                                final_payload = self._sim_tick()
+                                final_payload["system"]["event_status"] = "TRIP_ENDED"
+                                self._publicar(final_payload)
+                                log("Payload TRIP_ENDED publicado — backend vai finalizar viagem.")
+                            except Exception as e:
+                                log(f"Aviso: falha ao publicar TRIP_ENDED no fim de rota: {e}")
+                            self._route_end_sent = True
+                            self._stop_countdown = int(2 / self.dt) # 2s de graça para flush
+
+                        if hasattr(self, '_stop_countdown'):
+                            self._stop_countdown -= 1
+                            if self._stop_countdown <= 0:
+                                self._generation_paused = True
+                                for attr in ('_stop_countdown', '_route_end_sent'):
+                                    if hasattr(self, attr):
+                                        delattr(self, attr)
+                                log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
 
                 # Log a cada tick para verificação de 10Hz
                 if self._tick_count % 1 == 0:

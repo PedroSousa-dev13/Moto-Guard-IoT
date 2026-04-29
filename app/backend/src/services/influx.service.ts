@@ -80,36 +80,39 @@ class InfluxService {
     try {
       const point = new Point("telemetry")
         // Tags (indexadas — usadas para filtrar por dispositivo/modelo)
-        .tag("device_id", payload.system.device_id)
-        .tag("moto_model", payload.system.moto_model)
+        .tag("device_id", payload.system?.device_id || "unknown")
+        .tag("moto_model", payload.system?.moto_model || "unknown")
         // Telemetria principal
-        .floatField("speed_kmh", payload.telemetry.speed_kmh)
-        .floatField("rpm", payload.telemetry.rpm)
-        .floatField("gear", payload.telemetry.gear)
-        .floatField("throttle_pct", payload.telemetry.throttle_pct)
-        .floatField("engine_temp_c", payload.telemetry.engine_temp_c)
-        .floatField("voltage", payload.telemetry.voltage)
-        .floatField("brake_front_pct", payload.telemetry.brake_front_pct)
-        .floatField("brake_rear_pct", payload.telemetry.brake_rear_pct)
+        .floatField("speed_kmh", payload.telemetry?.speed_kmh ?? 0)
+        .floatField("rpm", payload.telemetry?.rpm ?? 0)
+        .floatField("gear", payload.telemetry?.gear ?? 0)
+        .floatField("throttle_pct", payload.telemetry?.throttle_pct ?? 0)
+        .floatField("engine_temp_c", payload.telemetry?.engine_temp_c ?? 0)
+        .floatField("voltage", payload.telemetry?.voltage ?? 0)
+        .floatField("brake_front_pct", payload.telemetry?.brake_front_pct ?? 0)
+        .floatField("brake_rear_pct", payload.telemetry?.brake_rear_pct ?? 0)
         // IMU
-        .floatField("roll_deg", payload.imu.roll_deg)
-        .floatField("pitch_deg", payload.imu.pitch_deg)
-        .floatField("yaw_deg", payload.imu.yaw_deg)
-        .floatField("g_force", payload.imu.g_force)
+        .floatField("roll_deg", payload.imu?.roll_deg ?? 0)
+        .floatField("pitch_deg", payload.imu?.pitch_deg ?? 0)
+        .floatField("yaw_deg", payload.imu?.yaw_deg ?? 0)
+        .floatField("g_force", payload.imu?.g_force ?? 0)
         // GPS
-        .floatField("latitude", payload.location.latitude)
-        .floatField("longitude", payload.location.longitude)
+        .floatField("latitude", payload.location?.latitude ?? 0)
+        .floatField("longitude", payload.location?.longitude ?? 0)
         // Saúde
-        .floatField("oil_pressure_bar", payload.health.oil_pressure_bar)
-        .floatField("tire_pressure_front_bar", payload.health.tire_pressure_front_bar)
-        .floatField("tire_pressure_rear_bar", payload.health.tire_pressure_rear_bar)
-        // Timestamp do payload
-        .timestamp(new Date(payload.system.timestamp));
+        .floatField("oil_pressure_bar", payload.health?.oil_pressure_bar ?? 0)
+        .floatField("tire_pressure_front_bar", payload.health?.tire_pressure_front_bar ?? 0)
+        .floatField("tire_pressure_rear_bar", payload.health?.tire_pressure_rear_bar ?? 0);
+
+      // Handle potentially missing timestamp
+      if (payload.system?.timestamp) {
+        point.timestamp(new Date(payload.system.timestamp));
+      }
 
       this.writeApi.writePoint(point);
     } catch (err) {
       console.error("❌ InfluxDB write error:", (err as Error).message);
-      this._available = false;
+      // Removed this._available = false; formatting errors shouldn't permanently disable writes
     }
   }
 
