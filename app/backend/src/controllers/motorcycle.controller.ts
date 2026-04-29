@@ -28,11 +28,17 @@ export async function createMotorcycle(
   }
 
   try {
-    if (profileId) {
-      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: profileId } });
+    let finalProfileId = profileId;
+    if (finalProfileId) {
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: finalProfileId } });
       if (!profile) {
         res.status(400).json({ error: "Perfil de mota não encontrado" });
         return;
+      }
+    } else if (category) {
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { name: category } });
+      if (profile) {
+        finalProfileId = profile.id;
       }
     }
 
@@ -45,7 +51,7 @@ export async function createMotorcycle(
         year: year ? parseInt(year, 10) : null,
         plate: plate || null,
         category: category || null,
-        profileId: profileId || null,
+        profileId: finalProfileId || null,
         deviceId: deviceId || null,
       },
       include: { profile: true },
@@ -113,11 +119,17 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
       return;
     }
 
-    if (profileId) {
-      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: profileId } });
+    let finalProfileId = profileId;
+    if (finalProfileId) {
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { id: finalProfileId } });
       if (!profile) {
         res.status(400).json({ error: "Perfil de mota não encontrado" });
         return;
+      }
+    } else if (category) {
+      const profile = await prisma.motorcycleProfile.findUnique({ where: { name: category } });
+      if (profile) {
+        finalProfileId = profile.id;
       }
     }
 
@@ -131,7 +143,7 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
         ...(plate !== undefined ? { plate: plate || null } : {}),
         ...(category !== undefined ? { category: category || null } : {}),
         ...(deviceId !== undefined ? { deviceId: deviceId || null } : {}),
-        ...(profileId !== undefined ? { profileId: profileId || null } : {}),
+        ...(finalProfileId !== undefined ? { profileId: finalProfileId || null } : {}),
       },
       include: { profile: true },
     });

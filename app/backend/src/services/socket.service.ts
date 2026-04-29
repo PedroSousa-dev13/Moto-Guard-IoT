@@ -109,6 +109,8 @@ export class SocketService {
           return;
         }
 
+        const normalizedAction = command?.acao?.toLowerCase() ?? "";
+
         const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
         const identityDeviceId = command?.new_device_id ?? transportDeviceId;
         const userId = command?.userId ?? null;
@@ -142,7 +144,7 @@ export class SocketService {
           }
         }
 
-        if (command?.acao === "parar") {
+        if (["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction)) {
           try {
             const stopSource = command?.source?.toUpperCase() ?? "";
             const simulatorStopSources = new Set(["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"]);
@@ -487,6 +489,20 @@ export class SocketService {
           this.activeTripIdByDevice.set(deviceId, dbActiveTrip.id);
           this.tripActiveByDevice.set(deviceId, true);
           this.stationaryTicksByDevice.set(deviceId, 0);
+          
+          if (!this.tripStatsByDevice.has(deviceId)) {
+            this.tripStatsByDevice.set(deviceId, {
+              maxSpeed: payload.telemetry.speed_kmh,
+              maxRoll: Math.abs(payload.imu.roll_deg),
+              maxGForce: payload.imu.g_force,
+              startLat: payload.location.latitude,
+              startLon: payload.location.longitude,
+              speedSum: payload.telemetry.speed_kmh,
+              speedTicks: 1,
+              startOdometer: payload.telemetry.odometer_km ?? 0,
+              ticks: 1,
+            });
+          }
           return;
         }
       }
@@ -582,11 +598,12 @@ export class SocketService {
     this.tripActiveByDevice.set(deviceId, false);
     this.stationaryTicksByDevice.set(deviceId, 0);
 
-    // Quando a viagem acaba automaticamente, enviamos o comando "parar" 
+    // Quando a viagem acaba automaticamente, enviamos o comando "stop_trip"
     // para o simulador, tal como se o utilizador tivesse carregado no botão.
-    mqttService.publishCommand({ 
-      acao: "parar", 
-      device_id: deviceId 
+    mqttService.publishCommand({
+      acao: "stop_trip",
+      device_id: deviceId,
+      source: "BACKEND",
     });
 
     if (!tripId) {
@@ -645,7 +662,7 @@ export class SocketService {
             avgSpeedKmh,
           },
         });
-        console.log(`Viagem cancelada (dados insuficientes): ${tripId}`);
+        console.log(`Viagem cancelada (allZeros - dados insuficientes): ${tripId}`);
         this.io?.emit("trip_ended", {
           deviceId,
           motoModel: payload.system.moto_model,

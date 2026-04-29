@@ -40,6 +40,9 @@ DEFAULT_LNG = -7.7463
 #  Opções: "vila_real_urbano" | "vila_real_estrada"
 # ─────────────────────────────────────────────
 ROUTE_NAME = os.environ.get("ROUTE_NAME", "vila_real_estrada")
+ROUTE_LOOP = os.environ.get("ROUTE_LOOP", "false").strip().lower() in (
+    "1", "true", "yes", "y", "on"
+)
 
 # ─────────────────────────────────────────────
 #  DETECÇÃO DE QUEDA — valores por defeito
