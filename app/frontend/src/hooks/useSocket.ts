@@ -104,11 +104,10 @@ export function useSocket() {
           cmd.acao === "set_speed" ||
           cmd.acao === "set_speeding";
         const device_id = cmd.device_id
-          ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined)
           ?? activeDeviceId
           ?? lastDeviceId
           ?? lastKnownDeviceIdRef.current
-          ?? undefined;
+          ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined);
         if (cmd.acao === "override" && !device_id) {
           addLog("Comando override ignorado: sem device_id ativo", "#eab308");
           return;
