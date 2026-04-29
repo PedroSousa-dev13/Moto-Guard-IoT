@@ -106,7 +106,13 @@ export default function SimulatorContexts() {
   const [motosLoading, setMotosLoading] = useState(false);
   const [motosError, setMotosError] = useState<string | null>(null);
 
-  const running = status.ws && !!telemetry;
+  const isTripEnded = telemetry?.system?.event_status === "TRIP_ENDED";
+  // O componente renderiza sempre que recebe telemetria ou o relógio avança
+  // Comparamos a data da telemetria com a atual para ver se não é uma "viagem fantasma" morta.
+  const isTelemetryFresh = telemetry?.system?.timestamp 
+    ? (Date.now() - new Date(telemetry.system.timestamp).getTime() < 15000) 
+    : false;
+  const running = status.ws && !!telemetry && !isTripEnded && isTelemetryFresh;
 
   // Derive allowedModels from user's motos (unique categories, preserving order).
   // undefined = admin free selector (all 8 models).
@@ -223,7 +229,7 @@ export default function SimulatorContexts() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-auto min-h-[500px]">
           <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-border-glass shadow-2xl p-6 group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0" />
-            <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommand} running={running} routeStart={routeStart} />
+            <MotorcycleDigitalTwin data={telemetry} sendCommand={sendCommandAndSignal} running={running} routeStart={routeStart} />
           </div>
           <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/40 backdrop-blur-xl border border-border-glass shadow-2xl p-2 group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0" />
@@ -234,7 +240,7 @@ export default function SimulatorContexts() {
               msgCount={msgCount}
               resetSignal={mapResetSignal}
               routeSignal={mapRouteSignal}
-              sendCommand={sendCommand}
+              sendCommand={sendCommandAndSignal}
               onRouteStartChange={setRouteStart}
             />
           </div>
