@@ -646,7 +646,8 @@ Este projeto está licenciado sob a **MIT License**. Ver o ficheiro [LICENSE](LI
 ## 👥 Autores e Agradecimentos
 
 ### Autores
-- **[O Teu Nome]** — Desenvolvimento full-stack
+- **Pedro Sousa** — Desenvolvimento full-stack
+- **Nuno Americano ** - Parte do front-end
 
 ### Orientadores
 - **Cristiano Pendão** — Orientador
@@ -662,7 +663,7 @@ Este projeto está licenciado sob a **MIT License**. Ver o ficheiro [LICENSE](LI
 
 - **Email:** teu.email@exemplo.com
 - **GitHub:** https://github.com/PedroSousa-dev13
-- **LinkedIn:** Teu Perfilhttps://www.linkedin.com/feed/
+- **LinkedIn:** https://www.linkedin.com/feed/
 
 ---
 
