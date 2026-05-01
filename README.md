@@ -661,8 +661,8 @@ Este projeto está licenciado sob a **MIT License**. Ver o ficheiro [LICENSE](LI
 ## 📞 Contacto
 
 - **Email:** teu.email@exemplo.com
-- **GitHub:** [@teu-utilizador](https://github.com/teu-utilizador)
-- **LinkedIn:** [Teu Perfil](https://linkedin.com/in/teu-perfil)
+- **GitHub:** [@teu-utilizador]([https://github.com/PedroSousa-dev13])
+- **LinkedIn:** [Teu Perfil]([https://www.linkedin.com/feed/])
 
 ---
 
