@@ -278,9 +278,10 @@ class RouteCursor:
             self._seg_pos_m += remaining
             remaining = 0.0
 
-        a = self.waypoints[self._idx]
-        b = self.waypoints[self._idx + 1]
-        seg_len = self._segment_len_m(self._idx)
+        idx_safe = min(self._idx, n_segments - 1)
+        a = self.waypoints[idx_safe]
+        b = self.waypoints[idx_safe + 1]
+        seg_len = self._segment_len_m(idx_safe)
         t = (self._seg_pos_m / seg_len) if seg_len > 0 else 0.0
         lat = a[0] + (b[0] - a[0]) * t
         lng = a[1] + (b[1] - a[1]) * t

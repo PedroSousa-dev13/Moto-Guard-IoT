@@ -6,6 +6,7 @@ vi.mock('../controllers/gpx.controller', () => ({
   importGpx: (req: any, res: any) => res.status(200).json({ success: true }),
   parseGpxFile: (req: any, res: any) => res.status(200).json({ success: true, waypoints: [] }),
   exportTripGpx: (req: any, res: any) => res.status(200).send('GPX DATA'),
+  saveSimulatorGpxData: (req: any, res: any) => res.status(200).json({ success: true }),
 }));
 
 vi.mock('../middleware/auth.middleware', () => ({
@@ -42,5 +43,13 @@ describe('Gpx Routes', () => {
     const response = await request(app).get('/api/gpx/export/t1');
     expect(response.status).toBe(200);
     expect(response.text).toBe('GPX DATA');
+  });
+
+  it('should save simulator GPX data', async () => {
+    const response = await request(app)
+      .post('/api/gpx/simulator')
+      .send({ waypoints: [] });
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
   });
 });

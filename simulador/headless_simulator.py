@@ -43,7 +43,7 @@ BASE_LERP_VOLT  = 0.08
 
 # Redução progressiva de velocidade perto do destino final (rotas não-loop).
 ARRIVAL_SLOWDOWN_START_M = 300.0   # começa a abrandar apenas nos últimos 300m
-ARRIVAL_FULL_STOP_M = 8.0
+ARRIVAL_FULL_STOP_M = 1.0  # Antes 8.0 — o veículo parava a 8m do destino, mas o snap só dispara <5m, criando um deadlock (veículo preso a 8m, rota nunca termina)
 ARRIVAL_MIN_CRUISE_KMH = 6.0
 
 
@@ -75,13 +75,14 @@ class TelemetriaState:
 
     def __init__(self):
         self.velocidade: float = 0.0
-        self.rpm: int = 0
+        self.rpm: float = 0.0
         self.temp_motor: float = 70.0
         self.voltagem: float = VOLTAGEM_NOMINAL
         self.roll: float = 0.0
         self.pitch: float = 0.0
         self.yaw: float = 0.0
         self.g_force: float = 0.0
+        self.accel_g: float = 0.0
         self.lat: float = 0.0
         self.lng: float = 0.0
 
@@ -213,8 +214,8 @@ class HeadlessSimulator:
         self.lerp_rpm   = 1.0 - (1.0 - BASE_LERP_RPM)   ** self.dt
         self.lerp_roll  = 1.0 - (1.0 - BASE_LERP_ROLL)  ** self.dt
         self.lerp_pitch = 1.0 - (1.0 - BASE_LERP_PITCH) ** self.dt
-        self.lerp_temp  = 1.0 - (1.0 - BASE_LERP_TEMP)  ** self.dt
-        self.lerp_volt  = 1.0 - (1.0 - BASE_LERP_VOLT)  ** self.dt
+        self.lerp_temp  = 1.0 - (1.0 - BASE_LERP_TEMP)  ** self.dt  # (reservado para uso futuro)
+        self.lerp_volt  = 1.0 - (1.0 - BASE_LERP_VOLT)  ** self.dt  # (reservado para uso futuro)
 
         # Graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -255,6 +256,8 @@ class HeadlessSimulator:
         self.throttle_resp   = p.get("throttle_response", 0.35) # LERP do acelerador
         self.temp_idle_off   = p.get("temp_idle_offset", 8.0)   # °C acima de temp_min em marcha lenta
 
+        self.accel_max       = p.get("accel_max_kmhs", 12.0)    # garantir inicialização (fallback)
+        self.brake_max       = p.get("brake_max_kmhs", 18.0)
         self.th_roll         = p.get("queda_roll_threshold", QUEDA_ROLL_THRESHOLD)
         self.th_pitch        = p.get("queda_pitch_threshold", QUEDA_PITCH_THRESHOLD)
         self.th_g_force      = p.get("queda_g_force", QUEDA_G_FORCE)
@@ -387,7 +390,6 @@ class HeadlessSimulator:
                 self.tele._override_brake = active
                 if active: self.tele._override_throttle = False
                 log(f"Override Brake: {active}")
-                log(f"Geração retomada após reset_eventos — modelo '{self.perfil_nome}'.")
         elif acao == "arrancar":
             log("Comando: arrancar")
             if self.perfil_nome and self._generation_paused:
@@ -585,6 +587,12 @@ class HeadlessSimulator:
         self._tick_count += 1
         s = self.tele
 
+        # ── 0a. Validar perfil — sem perfil não há simulação ─────────────
+        perfil = PERFIS_MOTO.get(self.perfil_nome)
+        if perfil is None:
+            log(f"_sim_tick #{self._tick_count}: perfil_nome='{self.perfil_nome}' inválido — tick ignorado")
+            return None
+
         # ── 0. Fase de arranque — aceleração orgânica desde 0 ────────────
         # Simula: marcha lenta → embraiagem → 1ª mudança → aceleração suave
         # Fase 1 (ticks 1-3):   mota parada, motor a aquecer em marcha lenta
@@ -719,7 +727,7 @@ class HeadlessSimulator:
         speed_factor = clamp(s.velocidade / 60.0, 0.1, 2.0)
         
         t_roll, t_pitch = moto_physics.calculate_roll_pitch(
-            s.velocidade, s._acceleration, yaw_diff, PERFIS_MOTO[self.perfil_nome]
+            s.velocidade, s._acceleration, yaw_diff, perfil
         )
         s.roll = moto_physics.lerp(s.roll, t_roll, self.lerp_roll)
         s.pitch = moto_physics.lerp(s.pitch, t_pitch, self.lerp_pitch)
@@ -746,18 +754,18 @@ class HeadlessSimulator:
 
         # ── 7. Temperatura ───────────────────────────────────────────
         s.temp_motor = moto_physics.simulate_temperature(
-            s.temp_motor, s.velocidade, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt
+            s.temp_motor, s.velocidade, s.rpm, perfil, self.dt
         )
 
         # ── 8. Voltagem ──────────────────────────────────────────────
         s.voltagem = moto_physics.simulate_voltage(
-            s.voltagem, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt, s.flag_alternador
+            s.voltagem, s.rpm, perfil, self.dt, s.flag_alternador
         )
 
         # ── 9. Gear e Clutch ─────────────────────────────────────────
         s._prev_gear = s.gear
         s.gear = moto_physics.estimate_gear(
-            s.velocidade, PERFIS_MOTO[self.perfil_nome], s.gear, self.dt, s.gear_hold_time, s.throttle_pct
+            s.velocidade, perfil, s.gear, self.dt, s.gear_hold_time, s.throttle_pct
         )
         
         if s.gear == s._prev_gear:
@@ -774,9 +782,9 @@ class HeadlessSimulator:
 
         # ── 9b. RPM ──────────────────────────────────────────────────
         target_rpm = moto_physics.calculate_rpm(
-            s.velocidade, s.gear, PERFIS_MOTO[self.perfil_nome], s.clutch_engaged, s.throttle_pct
+            s.velocidade, s.gear, perfil, s.clutch_engaged, s.throttle_pct
         )
-        s.rpm = int(moto_physics.lerp(float(s.rpm), float(target_rpm), self.lerp_rpm))
+        s.rpm = moto_physics.lerp(float(s.rpm), float(target_rpm), self.lerp_rpm)
 
         if s._forced_ticks > 0 and s._forced_rpm is not None:
             s.rpm = s._forced_rpm
@@ -796,7 +804,7 @@ class HeadlessSimulator:
 
         # ── 12. Pressões ──────────────────────────────────────────────
         s.oil_pressure_bar, s.tire_pressure_front, s.tire_pressure_rear = moto_physics.simulate_pressures(
-            s.rpm, s.temp_motor, PERFIS_MOTO[self.perfil_nome]
+            s.rpm, s.temp_motor, perfil
         )
 
         if not s.flag_queda:
@@ -856,7 +864,7 @@ class HeadlessSimulator:
 
         if s.flag_alternador:
             s.voltagem = moto_physics.simulate_voltage(
-                s.voltagem, s.rpm, PERFIS_MOTO[self.perfil_nome], self.dt, alternator_fail=True
+                s.voltagem, s.rpm, perfil, self.dt, alternator_fail=True
             )
 
         if s.flag_sobreaquecimento:
@@ -988,6 +996,8 @@ class HeadlessSimulator:
         while self.running:
             if self.connected and self.perfil_nome and (self.route_cursor is not None) and not self._generation_paused:
                 payload = self._sim_tick()
+                if payload is None:
+                    continue
                 self._publicar(payload)
 
                 # Detectar queda confirmada — parar geração e aguardar reset explícito
@@ -1019,6 +1029,8 @@ class HeadlessSimulator:
                             # Publicar TRIP_ENDED imediatamente (antes do stationary detection do backend)
                             try:
                                 final_payload = self._sim_tick()
+                                if final_payload is None:
+                                    continue
                                 final_payload["system"]["event_status"] = "TRIP_ENDED"
                                 self._publicar(final_payload)
                                 log("Payload TRIP_ENDED publicado — backend vai finalizar viagem.")
@@ -1036,16 +1048,15 @@ class HeadlessSimulator:
                                         delattr(self, attr)
                                 log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
 
-                # Log a cada tick para verificação de 10Hz
-                if self._tick_count % 1 == 0:
-                    s = self.tele
-                    log(f"tick #{self._tick_count:>5} | "
-                        f"{round(s.velocidade)}km/h | "
-                        f"{int(s.rpm)}rpm | "
-                        f"{round(s.temp_motor,1)}°C | "
-                        f"{round(s.voltagem,1)}V | "
-                        f"roll {round(s.roll,1)}° | "
-                        f"{s.evento_activo()}")
+                # Log a cada tick
+                s = self.tele
+                log(f"tick #{self._tick_count:>5} | "
+                    f"{round(s.velocidade)}km/h | "
+                    f"{int(s.rpm)}rpm | "
+                    f"{round(s.temp_motor,1)}°C | "
+                    f"{round(s.voltagem,1)}V | "
+                    f"roll {round(s.roll,1)}° | "
+                    f"{s.evento_activo()}")
 
             time.sleep(self._tick_interval)
 

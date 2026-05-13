@@ -89,9 +89,8 @@ def _duration_seconds(trip: dict[str, Any]) -> float:
         ended = trip.get("endedAt") or trip.get("ended_at")
         if not started or not ended:
             return 0.0
-        fmt = "%Y-%m-%dT%H:%M:%SZ"
-        t0 = datetime.strptime(started[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
-        t1 = datetime.strptime(ended[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+        t0 = datetime.fromisoformat(started.replace("Z", "+00:00"))
+        t1 = datetime.fromisoformat(ended.replace("Z", "+00:00"))
         return max(0.0, (t1 - t0).total_seconds())
     except Exception:
         return 0.0

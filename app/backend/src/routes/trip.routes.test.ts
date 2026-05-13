@@ -31,7 +31,24 @@ describe('Trip Routes', () => {
 
   it('should list trips for a user', async () => {
     (prisma.trip.findMany as any).mockResolvedValue([
-      { id: 'trip-1', status: 'COMPLETED', startedAt: new Date() },
+      {
+        id: 'trip-1',
+        status: 'COMPLETED',
+        source: 'SIMULATOR',
+        startedAt: new Date(),
+        endedAt: new Date(),
+        distanceKm: 10,
+        avgSpeedKmh: 50,
+        maxSpeedKmh: 80,
+        maxRollDeg: 20,
+        maxGForce: 1.5,
+        category: null,
+        categoryConfidence: null,
+        drivingStyle: null,
+        motorcycle: { id: 'm1', name: 'Test', brand: 'Test', category: 'Sport', profile: null },
+        events: [],
+        _count: { events: 0 },
+      },
     ]);
 
     const response = await request(app).get('/api/trips');

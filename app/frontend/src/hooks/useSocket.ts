@@ -311,5 +311,7 @@ export function useSocket() {
     };
   }, [addLog, isDemoMode, registerEmitter]);
 
-  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, sendStopCommand, addLog, resetSimulationView, crashAlert, cancelEmergency, realtimeAnomaly };
+  const getLastKnownDeviceId = useCallback(() => lastKnownDeviceIdRef.current, []);
+
+  return { telemetry, telemetryByDevice, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, msgCount, logs, status, sendCommand, sendStopCommand, addLog, resetSimulationView, crashAlert, cancelEmergency, realtimeAnomaly, getLastKnownDeviceId };
 }

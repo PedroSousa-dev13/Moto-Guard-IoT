@@ -215,7 +215,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
 
     if (hasLiveLocation) {
       trailPointsRef.current.push([lat, lng]);
-      if (trailPointsRef.current.length > 500) trailPointsRef.current.shift();
+      if (trailPointsRef.current.length > 10000) trailPointsRef.current.shift();
       trailRef.current.setLatLngs(trailPointsRef.current);
     }
 

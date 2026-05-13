@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import * as path from "path";
 import { prisma } from "./prisma.service";
 
-const CLUSTERING_SCRIPT = path.resolve(process.cwd(), "..", "ml", "clustering.py");
+const CLUSTERING_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "clustering.py");
 
 export interface ClusteringResult {
   tripId: string;
@@ -74,7 +74,7 @@ class TripClusteringService {
       const proc = spawn("python", [CLUSTERING_SCRIPT], {
         env: {
           ...process.env,
-          PYTHONPATH: path.resolve(process.cwd(), "..", "ml"),
+          PYTHONPATH: path.resolve(__dirname, "..", "..", "..", "..", "ml"),
         },
       });
 

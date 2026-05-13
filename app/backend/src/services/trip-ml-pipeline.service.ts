@@ -51,8 +51,8 @@ interface MlInferenceResult {
 
 // ── Caminhos ──────────────────────────────────────────────────────────────────
 
-const ML_INFER_SCRIPT = path.resolve(process.cwd(), "..", "ml", "infer.py");
-const ML_MODEL_PATH = path.resolve(process.cwd(), "..", env.ML_MODEL_PATH);
+const ML_INFER_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "infer.py");
+const ML_MODEL_PATH = path.resolve(__dirname, "..", "..", "..", "..", env.ML_MODEL_PATH);
 
 // ── Inferência via child_process ──────────────────────────────────────────────
 
@@ -64,7 +64,7 @@ function runMlInference(tripData: object): Promise<MlInferenceResult> {
       env: {
         ...process.env,
         ML_MODEL_PATH: ML_MODEL_PATH,
-        PYTHONPATH: path.resolve(process.cwd(), "..", "ml"),
+        PYTHONPATH: path.resolve(__dirname, "..", "..", "..", "..", "ml"),
       },
     });
 

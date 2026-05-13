@@ -56,6 +56,7 @@ def main():
     try:
         raw_input = sys.stdin.read()
         if not raw_input.strip():
+            print(json.dumps({"isAnomaly": False, "anomalyScore": 0.0, "reason": "input vazio"}))
             return
             
         points = json.loads(raw_input)
