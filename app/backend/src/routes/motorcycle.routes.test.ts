@@ -15,6 +15,7 @@ vi.mock('../services/prisma.service', () => ({
     },
     motorcycleProfile: {
       findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     $connect: vi.fn().mockResolvedValue(undefined),
     $disconnect: vi.fn().mockResolvedValue(undefined),

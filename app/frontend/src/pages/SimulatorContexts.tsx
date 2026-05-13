@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
-import { motorcyclesAPI } from "../services/api";
+import { motorcyclesAPI, getStoredToken } from "../services/api";
 import { CATEGORY_DEVICE_MAP } from "../utils/categoryDeviceMap";
 import type { Motorcycle } from "../types";
 import GaugeCard from "../components/GaugeCard";
@@ -24,7 +24,7 @@ const ADMIN_EMAIL = 'admin@admin.com';
 
 export default function SimulatorContexts() {
   const { user } = useAuth();
-  const { telemetry, msgCount, logs, status, sendCommand, sendStopCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
+  const { telemetry, msgCount, logs, status, sendCommand, sendStopCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView, getLastKnownDeviceId } = useSocket();
   const lastUpdate = telemetry?.system?.timestamp
     ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
@@ -158,8 +158,33 @@ export default function SimulatorContexts() {
   // Cleanup: ao sair da página do simulador, parar o motor Python
   useEffect(() => {
     return () => {
-      console.log('[SimulatorContexts] Unmounting — sending stop command to simulator');
+      const deviceId = getLastKnownDeviceId();
+      if (!deviceId) return;
+
+      console.log('[SimulatorContexts] Unmounting — parando simulador', deviceId);
+
+      // 1. Via WebSocket (rápido, funciona na maioria dos casos)
       sendStopCommand();
+
+      // 2. Via HTTP fetch com keepalive (fallback fiável mesmo durante
+      //    navegação entre páginas — o browser garante que o pedido
+      //    completo mesmo que o componente seja desmontado).
+      try {
+        const token = getStoredToken();
+        if (token) {
+          fetch("/api/command", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ acao: "parar", device_id: deviceId }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Ignorar erros — o WebSocket já tratou do caso normal
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

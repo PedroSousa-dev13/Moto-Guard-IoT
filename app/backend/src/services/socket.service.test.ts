@@ -135,6 +135,7 @@ describe('SocketService', () => {
   });
 
   it('should trigger automatic email on CRASH_DETECTED event', async () => {
+    vi.useFakeTimers();
     socketService.init(mockHttpServer);
     const io: any = (Server as any).mock.results[0].value;
     
@@ -180,13 +181,17 @@ describe('SocketService', () => {
     
     await telemetryCallback(payload);
     
-    // Wait for the async "fire and forget" email trigger
-    await new Promise(resolve => setTimeout(resolve, 50));
-
+    // Fast-forward 20 seconds to trigger the SOS email timeout
+    vi.advanceTimersByTime(20000);
+    // Flush microtasks so the async timeout callback completes past its awaits
+    await Promise.resolve();
+    
     expect(sendCrashAlert).toHaveBeenCalledWith(expect.objectContaining({
       toEmail: 'emergency@example.com',
       riderName: 'John Doe',
       tripId: 't1'
     }));
+
+    vi.useRealTimers();
   });
 });

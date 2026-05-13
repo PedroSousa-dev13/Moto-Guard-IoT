@@ -83,5 +83,11 @@ export function validateTelemetryPayload(data: unknown): ValidationResult {
     return { valid: false, error: `Campo 'system.${sysMissing}' em falta` };
   }
 
+  // Validar que o timestamp é uma data ISO 8601 válida
+  const ts = system.timestamp;
+  if (typeof ts !== "string" || Number.isNaN(new Date(ts).getTime())) {
+    return { valid: false, error: "Campo 'system.timestamp' não é uma data ISO 8601 válida" };
+  }
+
   return { valid: true };
 }

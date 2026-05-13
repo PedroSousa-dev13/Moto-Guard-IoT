@@ -3,7 +3,7 @@ import * as path from "path";
 import { socketService } from "./socket.service";
 import type { TelemetryPayload } from "../models/telemetry.model";
 
-const ANOMALY_SCRIPT = path.resolve(process.cwd(), "..", "ml", "online_detector.py");
+const ANOMALY_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "online_detector.py");
 
 class RealtimeAnomalyService {
   private buffers = new Map<string, any[]>();
@@ -66,7 +66,7 @@ class RealtimeAnomalyService {
       const proc = spawn("python", [ANOMALY_SCRIPT], {
         env: {
           ...process.env,
-          PYTHONPATH: path.resolve(process.cwd(), "..", "ml"),
+          PYTHONPATH: path.resolve(__dirname, "..", "..", "..", "..", "ml"),
         },
       });
 

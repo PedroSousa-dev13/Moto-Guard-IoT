@@ -53,6 +53,10 @@ export class SocketService {
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
   private lastStopHandledAtByDevice = new Map<string, number>();
   private lastTripEndedAtByDevice = new Map<string, number>();
+  // Timestamps de paragens recentes — usados para evitar que pacotes
+  // de telemetria "fantasma" (em trânsito no MQTT) recriem uma viagem
+  // depois do utilizador carregar em "Parar".
+  private recentStopByDevice = new Map<string, number>();
   private lastUserIdByDevice = new Map<string, string>();
   private lastMotoModelByDevice = new Map<string, string>();
   private lastSourceByDevice = new Map<string, string>();
@@ -146,6 +150,24 @@ export class SocketService {
 
         if (["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction)) {
           try {
+            // ── Registar paragem recente (anti-pacote-fantasma) ─────────────
+            // Guardamos o timestamp para que o handleTripLifecycle ignore
+            // pacotes de telemetria que ainda estejam em trânsito no MQTT.
+            // NOTA: Isto NÃO interfere com o fluxo normal do TRIP_ENDED vindo
+            // do Python via MQTT — apenas impede que pacotes normais (speed>5)
+            // que cheguem atrasados recriem a viagem.
+            if (transportDeviceId) {
+              this.recentStopByDevice.set(transportDeviceId, Date.now());
+              setTimeout(() => {
+                this.recentStopByDevice.delete(transportDeviceId);
+              }, 5000);
+            }
+
+            // ── Lógica original preservada (não mexer) ─────────────────────
+            // Para fontes simulador (SIMULATOR, GPX_IMPORTED, DEVICE_REAL),
+            // o estado runtime NÃO é limpo aqui — o Python publica o seu
+            // próprio TRIP_ENDED via MQTT, e o handleTripLifecycle() trata
+            // de finalizar a viagem (endTrip()) com todos os dados.
             const stopSource = command?.source?.toUpperCase() ?? "";
             const simulatorStopSources = new Set(["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"]);
             const lastStatus = transportDeviceId
@@ -162,6 +184,7 @@ export class SocketService {
               await this.forceEndTripsOnStopCommand(transportDeviceId ?? null);
               this.clearRuntimeStateAfterStop(transportDeviceId ?? null);
             } else if (transportDeviceId && !(this.tripActiveByDevice.get(transportDeviceId) ?? false) && !recentTripEnded) {
+              // Caso de segurança: fonte simulador sem viagem ativa → limpar
               this.clearRuntimeStateAfterStop(transportDeviceId);
             }
 
@@ -404,6 +427,14 @@ export class SocketService {
     }
 
     if (!tripActive && (speed >= SocketService.TRIP_START_SPEED_KMH || status === "TRIP_STARTED")) {
+      // ── Proteção anti-pacote-fantasma ────────────────────────────────────
+      // Quando o utilizador carrega em "Parar", o simulador Python deixa de
+      // gerar dados, mas podem chegar ao backend pacotes que já estavam em
+      // trânsito no MQTT. Estes pacotes "fantasma" não devem recriar a viagem.
+      const recentStop = this.recentStopByDevice.get(deviceId);
+      if (recentStop !== undefined && Date.now() - recentStop < 5000) {
+        return;
+      }
       this.startTrip(payload);
       return;
     }
@@ -1065,7 +1096,7 @@ export class SocketService {
     if (s.includes("ACCEL") || s.includes("ACELERAÇÃO")) return "RAPID_ACCELERATION";
     if (s.includes("TIRE") || s.includes("PNEU")) return "TIRE_PRESSURE_LOW";
     if (s.includes("OIL") || s.includes("ÓLEO")) return "OIL_PRESSURE_LOW";
-    return "HIGH_VIBRATION";
+    return "UNKNOWN_EVENT";
   }
 
   /** Persiste evento de risco na base de dados (etapa 1.12) */

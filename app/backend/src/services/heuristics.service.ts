@@ -248,7 +248,7 @@ export function evaluateTelemetryRisk(
 
   const voltSlope = slopePerSecond(state.volts, dtSec);
   if (voltSlope < -0.01 && volt > profile.criticalVoltage && shouldEmit(EventType.LOW_VOLTAGE, 25000)) {
-    const secondsToCritical = (profile.criticalVoltage - volt) / Math.min(voltSlope, -0.0001);
+    const secondsToCritical = (profile.criticalVoltage - volt) / Math.max(voltSlope, -0.0001);
     if (Number.isFinite(secondsToCritical) && secondsToCritical < 900) {
       const minutes = clamp(secondsToCritical / 60, 1, 999);
       events.push({

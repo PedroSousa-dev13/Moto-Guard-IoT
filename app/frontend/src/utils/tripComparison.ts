@@ -88,6 +88,16 @@ export function compareValues(
 }
 
 /**
+ * Retorna o índice do maior valor num array, ou -1 se todos forem null.
+ * Usado para determinar o vencedor entre N viagens.
+ */
+export function findWinnerIndex(values: (number | null)[]): number {
+  const max = Math.max(...values.map((v) => v ?? -Infinity));
+  if (max === -Infinity) return -1;
+  return values.findIndex((v) => v === max);
+}
+
+/**
  * Formata a diferença absoluta entre dois valores com unidade.
  * Retorna "—" se algum dos valores for null.
  */

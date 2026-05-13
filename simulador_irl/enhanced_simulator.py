@@ -148,6 +148,7 @@ class IRLSimulator:
                     voltage = simulate_voltage(rpm, self.profile)
 
                     # Calcular G-force aproximado
+                    # Assumindo que ACEL está em m/s² (se o IMU já reportar em g's, remover a divisão por 9.81)
                     g_force = math.sqrt(combined_row['accel_x']**2 +
                                       combined_row['accel_y']**2 +
                                       combined_row['accel_z']**2) / 9.81

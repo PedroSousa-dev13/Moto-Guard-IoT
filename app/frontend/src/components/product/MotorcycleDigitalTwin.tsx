@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import type { TelemetryPayload, SimulatorCommand } from '../../types/telemetry';
 import { Shield, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import Motorcycle3DView from './Motorcycle3DView';
@@ -32,6 +32,13 @@ function getModelColor(model: string): string {
 
 export default function MotorcycleDigitalTwin({ data, sendCommand, running, routeStart }: DigitalTwinProps) {
   const [speedingActive, setSpeedingActive] = useState(false);
+  const firstLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (data?.location?.latitude != null && data?.location?.longitude != null && !firstLocationRef.current) {
+      firstLocationRef.current = { lat: data.location.latitude, lng: data.location.longitude };
+    }
+  }, [data?.location?.latitude, data?.location?.longitude]);
 
   function handleSpeedPress(multiplier: number) {
     if (!running || !sendCommand) return;
@@ -129,9 +136,9 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
                 engineTempStatus={engineTempStatus}
                 lat={location?.latitude}
                 lng={location?.longitude}
-                originLat={routeStart?.lat}
-                originLng={routeStart?.lng}
-                hasMapOrigin={!!(routeStart || (location?.latitude != null && location?.longitude != null))}
+                originLat={routeStart?.lat ?? firstLocationRef.current?.lat}
+                originLng={routeStart?.lng ?? firstLocationRef.current?.lng}
+                hasMapOrigin={!!(routeStart || firstLocationRef.current || (location?.latitude != null && location?.longitude != null))}
                 modelColor={modelColor}
               />
             </Suspense>

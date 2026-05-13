@@ -1,59 +1,29 @@
-// =============================================================================
-// MotoGuard — CompareBar
-// =============================================================================
-
 export interface CompareBarProps {
   selectedCount: number;
   onClear: () => void;
-  onCompare: () => void;
 }
 
-export function CompareBar({ selectedCount, onClear, onCompare }: CompareBarProps) {
-  if (selectedCount < 1) return null;
-
-  const canCompare = selectedCount === 2;
-
+export function CompareBar({ selectedCount, onClear }: CompareBarProps) {
   return (
-    <div className="compare-bar" role="region" aria-label="Barra de comparação de viagens" aria-live="polite">
-      <div className="compare-bar-inner">
-        {/* Slots visuais */}
-        <div className="compare-bar-slots">
-          <div className={`compare-bar-slot ${selectedCount >= 1 ? "compare-bar-slot--filled compare-bar-slot--a" : ""}`}>
-            {selectedCount >= 1 ? "A" : "—"}
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-surface/80 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-6 animate-fade-in">
+      <div className="flex items-center gap-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center font-black text-xs transition-all ${i < selectedCount ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'border-white/10 text-muted opacity-30'}`}>
+            {i < selectedCount ? String.fromCharCode(65 + i) : (i + 1)}
           </div>
-          <div className="compare-bar-slot-sep">vs</div>
-          <div className={`compare-bar-slot ${selectedCount >= 2 ? "compare-bar-slot--filled compare-bar-slot--b" : ""}`}>
-            {selectedCount >= 2 ? "B" : "—"}
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="compare-bar-info">
-          <span className="compare-bar-count">
-            <span className="compare-bar-count-num">{selectedCount}</span>
-            <span className="compare-bar-count-of"> / 2</span>
-          </span>
-          <span className="compare-bar-hint">
-            {canCompare ? "Pronto para comparar" : "Seleciona mais 1 viagem"}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="compare-bar-actions">
-          <button type="button" className="btn btn-ghost compare-bar-clear btn-sm" onClick={onClear}>
-            Limpar
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary compare-bar-compare"
-            onClick={onCompare}
-            disabled={!canCompare}
-            aria-disabled={!canCompare}
-          >
-            ⚡ Comparar
-          </button>
-        </div>
+        ))}
       </div>
+      <div className="flex flex-col">
+        <span className="text-[0.6rem] font-black uppercase tracking-widest text-text">
+          {selectedCount} / 4 selecionadas
+        </span>
+        <span className="text-[0.55rem] font-bold text-muted uppercase tracking-widest opacity-60">
+          {selectedCount < 2 ? "Seleciona pelo menos 2 viagens" : "A comparação é exibida abaixo"}
+        </span>
+      </div>
+      <button type="button" className="btn btn-ghost btn-sm text-muted hover:text-red" onClick={onClear}>
+        Limpar
+      </button>
     </div>
   );
 }

@@ -8,13 +8,11 @@ import { imageFromCategory } from "../utils/categoryImageMap";
 import {
   Route, Calendar, Bike, ChevronDown, AlertCircle, Clock,
   Zap, ArrowRight, ChevronLeft, ChevronRight, Database,
-  Cpu, Monitor, Info, ChevronUp, History, Activity, Check, AlertTriangle
+  Cpu, Monitor, Info, ChevronUp, History, Activity, Check, AlertTriangle, GitCompare
 } from "lucide-react";
-import Card from "../components/ui/Card";
-import { SkeletonRow, SkeletonCard } from "../components/ui/Skeleton";
+import { SkeletonRow } from "../components/ui/Skeleton";
 import CompareBar from "../components/trips/CompareBar";
 import ComparisonView from "../components/trips/ComparisonView";
-import { ListStateSnapshot } from "../utils/tripComparison";
 import TripCategoryBadge from "../components/trips/TripCategoryBadge";
 
 type TripSourceFilter = "ALL" | TripSource;
@@ -127,7 +125,7 @@ export default function Trips() {
   const [motosLoading, setMotosLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
-  const [view, setView] = useState<"FEED" | "LIST">("FEED");
+  const [view, setView] = useState<"FEED" | "LIST" | "COMPARE">("FEED");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<TripSourceFilter>("ALL");
   const [statusFilter, setStatusFilter] = useState<TripStatusFilter>("ALL");
@@ -141,8 +139,6 @@ export default function Trips() {
 
   // ── Comparison state ─────────────────────────────────────────────────────
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
-  const [comparisonOpen, setComparisonOpen] = useState(false);
-  const [listStateSnapshot, setListStateSnapshot] = useState<ListStateSnapshot | null>(null);
 
   useEffect(() => {
     document.title = "Viagens — MotoGuard";
@@ -210,40 +206,9 @@ export default function Trips() {
   function handleCompareToggle(tripId: string) {
     setSelectedForComparison((prev) => {
       if (prev.includes(tripId)) return prev.filter((id) => id !== tripId);
-      if (prev.length >= 2) return prev; // ignore if already 2 and this isn't one of them
+      if (prev.length >= 4) return prev;
       return [...prev, tripId];
     });
-  }
-
-  function handleOpenComparison() {
-    setListStateSnapshot({
-      page,
-      pageSize,
-      statusFilter,
-      sourceFilter,
-      selectedMotoId,
-      fromDate,
-      toDate,
-      onlyWithEvents,
-      expandedId,
-    });
-    setComparisonOpen(true);
-  }
-
-  function handleCloseComparison() {
-    if (listStateSnapshot) {
-      setPage(listStateSnapshot.page);
-      setPageSize(listStateSnapshot.pageSize);
-      setStatusFilter(listStateSnapshot.statusFilter);
-      setSourceFilter(listStateSnapshot.sourceFilter);
-      setSelectedMotoId(listStateSnapshot.selectedMotoId);
-      setFromDate(listStateSnapshot.fromDate);
-      setToDate(listStateSnapshot.toDate);
-      setOnlyWithEvents(listStateSnapshot.onlyWithEvents);
-      setExpandedId(listStateSnapshot.expandedId);
-    }
-    setComparisonOpen(false);
-    setListStateSnapshot(null);
   }
 
   // ── Filtering ────────────────────────────────────────────────────────────
@@ -341,6 +306,10 @@ export default function Trips() {
           <button className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${view === "LIST" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => { setView("LIST"); setExpandedId(null); setPage(1); }}>
             <History size={18} /> Lista
+          </button>
+          <button className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${view === "COMPARE" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
+            onClick={() => { setView("COMPARE"); setExpandedId(null); setPage(1); setSelectedForComparison([]); }}>
+            <GitCompare size={18} /> Comparação
           </button>
         </div>
       </div>
@@ -489,7 +458,7 @@ export default function Trips() {
           <div className="grid grid-cols-1 gap-8">
             {pagedFeed.map((item) => <TripFeedCard key={item.id} item={item} />)}
           </div>
-        ) : (
+        ) : view === "LIST" ? (
           <div className="grid grid-cols-1 gap-6">
             {pagedTrips.map((trip) => (
               <TripListCard
@@ -506,14 +475,63 @@ export default function Trips() {
               />
             ))}
           </div>
+        ) : (
+          <div className="flex flex-col gap-8">
+            <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 flex flex-col gap-4 shadow-xl">
+              <div className="flex items-center gap-3 text-[0.65rem] font-black uppercase tracking-widest text-text opacity-80">
+                <GitCompare size={16} className="text-accent" /> Seleciona Viagens para Comparar
+              </div>
+              <p className="text-[0.7rem] font-medium text-muted opacity-60 m-0 pb-2">
+                Escolhe entre 2 a 4 viagens para comparar métricas, scores e eventos lado a lado.
+              </p>
+              {filteredTrips.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
+                  <GitCompare size={40} className="text-muted/20" />
+                  <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-40">Sem viagens disponíveis</span>
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-4">
+                {filteredTrips.map((trip) => {
+                  const isSelected = selectedForComparison.includes(trip.id);
+                  const isDisabled = selectedForComparison.length >= 4 && !isSelected;
+                  return (
+                    <div key={trip.id}
+                      className={`flex items-center justify-between p-5 rounded-2xl border transition-all cursor-pointer ${isSelected ? 'bg-accent/10 border-accent/40 shadow-lg shadow-accent/5' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'} ${isDisabled ? 'opacity-30 pointer-events-none' : ''}`}
+                      onClick={() => { if (!isDisabled) handleCompareToggle(trip.id); }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center font-black text-sm transition-all ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'border-white/10 text-muted'}`}>
+                          {isSelected ? <Check size={18} strokeWidth={4} /> : selectedForComparison.indexOf(trip.id) + 1}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-black text-sm text-text">{trip.motorcycle?.name}</span>
+                          <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-60">{formatDate(trip.startedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <span className="text-[0.65rem] font-black text-text tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"} <span className="text-muted opacity-40 font-bold">KM</span></span>
+                        <span className={`text-[0.65rem] font-black ${trip.safetyScore != null ? scoreStyle(trip.safetyScore).className : 'text-muted'}`}>{trip.safetyScore ?? "—"}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {selectedForComparison.length >= 2 && (
+              <ComparisonView
+                tripIds={selectedForComparison}
+                trips={trips}
+              />
+            )}
+          </div>
         )}
       </div>
 
-      {view === "LIST" && (
+      {view === "COMPARE" && selectedForComparison.length > 0 && selectedForComparison.length < 2 && (
         <CompareBar
           selectedCount={selectedForComparison.length}
           onClear={() => setSelectedForComparison([])}
-          onCompare={handleOpenComparison}
         />
       )}
 
@@ -543,13 +561,6 @@ export default function Trips() {
         </div>
       )}
 
-      {comparisonOpen && selectedForComparison.length === 2 && (
-        <ComparisonView
-          tripIds={selectedForComparison as [string, string]}
-          trips={trips}
-          onClose={handleCloseComparison}
-        />
-      )}
     </div>
   );
 }
