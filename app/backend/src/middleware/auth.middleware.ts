@@ -18,21 +18,34 @@ interface JwtPayload {
   sub: string;
 }
 
+function extractToken(req: AuthRequest): string | null {
+  // 1. Check Authorization header
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    return header.slice(7);
+  }
+  // 2. Check httpOnly cookie
+  const cookie = req.headers.cookie;
+  if (cookie) {
+    const match = cookie.match(/(?:^|;\s*)token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return null;
+}
+
 export function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> {
-  const header = req.headers.authorization;
+): void {
+  const token = extractToken(req);
 
-  if (!header || !header.startsWith("Bearer ")) {
+  if (!token) {
     res.status(401).json({ error: "Token não fornecido" });
-    return Promise.resolve();
+    return;
   }
 
-  const token = header.slice(7);
-
-  return (async () => {
+  (async () => {
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
       const userId = decoded.sub;
@@ -49,7 +62,11 @@ export function authMiddleware(
 
       req.userId = userId;
       next();
-    } catch {
+    } catch (err) {
+      if (res.headersSent) {
+        next(err);
+        return;
+      }
       res.status(401).json({ error: "Token inválido ou expirado" });
     }
   })();

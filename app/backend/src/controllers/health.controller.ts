@@ -11,8 +11,6 @@ export function getHealth(_req: Request, res: Response): void {
     timestamp: new Date().toISOString(),
     mqtt: {
       connected: mqttService.connected,
-      broker: env.MQTT_BROKER_URL,
-      topic: env.MQTT_TOPIC_TELEMETRIA,
     },
     stats: {
       telemetryCount: telemetryStore.count,
@@ -20,8 +18,8 @@ export function getHealth(_req: Request, res: Response): void {
       hasData: telemetryStore.hasData,
     },
     infrastructure: {
-      influxdb: env.INFLUXDB_URL,
-      postgres: env.DATABASE_URL ? "configured" : "not configured",
+      influxdb: "available",
+      postgres: "configured",
     },
   });
 }

@@ -96,13 +96,22 @@ class MqttService {
       return false;
     }
 
-    const acao = (command as any)?.acao;
+    const acao = (command as Record<string, unknown>)?.acao;
     this.client.publish(
       env.MQTT_TOPIC_COMANDO,
       JSON.stringify(command),
       { qos: 1 }
     );
     return true;
+  }
+
+  /** Desconecta o cliente MQTT. Chamado no shutdown graceful. */
+  async disconnect(): Promise<void> {
+    if (this.client) {
+      this.client.end(true);
+      this.client = null;
+      this._connected = false;
+    }
   }
 }
 

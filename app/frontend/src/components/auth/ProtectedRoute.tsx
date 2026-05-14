@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useDemoContext } from '../../demo/DemoContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,11 +8,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
-  const { isDemoMode } = useDemoContext();
   const location = useLocation();
-
-  // Em modo demo, bypass total da autenticação
-  if (isDemoMode) return <>{children}</>;
 
   // Enquanto está a carregar, mostrar loading
   if (isLoading) {

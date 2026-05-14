@@ -2,7 +2,7 @@
 // MotoGuard IoT — Utilitário: Encriptação AES-256-GCM
 // =============================================================================
 // Usado para guardar a Resend API key do utilizador de forma segura na BD.
-// A chave de encriptação vem de JWT_SECRET (nunca exposta ao frontend).
+// A chave de encriptação usa ENCRYPTION_KEY (variável independente de JWT).
 // =============================================================================
 
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
@@ -10,7 +10,6 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypt
 const ALGO = "aes-256-gcm";
 
 function getKey(secret: string): Buffer {
-  // Deriva 32 bytes a partir do JWT_SECRET via SHA-256
   return createHash("sha256").update(secret).digest();
 }
 

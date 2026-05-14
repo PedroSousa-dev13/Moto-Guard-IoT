@@ -1,19 +1,35 @@
 import { Router } from "express";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { randomUUID } from "crypto";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { exportTripGpx, importGpx, parseGpxFile, saveSimulatorGpxData } from "../controllers/gpx.controller";
+
+const TMP_DIR = path.resolve(__dirname, "..", "..", "..", "tmp", "uploads");
+if (!fs.existsSync(TMP_DIR)) {
+  fs.mkdirSync(TMP_DIR, { recursive: true });
+}
+
+const diskStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, TMP_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".gpx";
+    cb(null, `${randomUUID()}${ext}`);
+  },
+});
 
 const router = Router();
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: diskStorage,
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
 // Separate upload configuration for parse endpoint with 10MB limit
 const parseUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit as per requirements
+  storage: diskStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 const uploadSingle = upload.single("file");

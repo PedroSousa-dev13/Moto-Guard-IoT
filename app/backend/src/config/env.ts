@@ -33,9 +33,18 @@ export const env = {
   JWT_SECRET:
     process.env.JWT_SECRET || "motoguard-dev-secret-change-in-prod",
 
+  // ─── Encriptação AES (separado do JWT_SECRET!) ─────────────────────────
+  ENCRYPTION_KEY:
+    process.env.ENCRYPTION_KEY || "change-me-generate-random-32-bytes-hex",
+
   // ─── ML Pipeline ────────────────────────────────────────────────────────
   ML_ENABLED: process.env.ML_ENABLED === "true",
   ML_MODEL_PATH: process.env.ML_MODEL_PATH || "ml/models/isolation_forest.pkl",
+
+  // ─── Thresholds de Viagem ──────────────────────────────────────────────
+  TRIP_START_SPEED_KMH: parseFloat(process.env.TRIP_START_SPEED_KMH || "5"),
+  TRIP_END_SPEED_KMH: parseFloat(process.env.TRIP_END_SPEED_KMH || "2"),
+  TRIP_END_STATIONARY_SEC: parseInt(process.env.TRIP_END_STATIONARY_SEC || "10", 10),
 
   // ─── Email (Emergência via Resend) ──────────────────────────────────────
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",

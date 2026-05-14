@@ -14,11 +14,14 @@ import http from "http";
 import path from "path";
 import { setupStaticServing } from "./utils/setup-static-serving";
 import { env } from "./config/env";
+import { swaggerSpec } from "./config/swagger";
+import swaggerUi from "swagger-ui-express";
 import apiRoutes from "./routes";
 import { mqttService } from "./services/mqtt.service";
 import { socketService } from "./services/socket.service";
 import { prisma } from "./services/prisma.service";
 import { influxService } from "./services/influx.service";
+import { realtimeAnomalyService } from "./services/realtime-anomaly.service";
 import { perfLogger } from "./middleware/perf-logger.middleware";
 
 // ─── Handlers globais de erros não capturados ────────────────────────────────
@@ -36,9 +39,14 @@ process.on("unhandledRejection", (reason) => {
 export const app = express();
 export const server = http.createServer(app);
 
-app.use(cors());
+app.use(cors({
+  origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173', 'http://localhost:3000'],
+}));
 app.use(express.json({ limit: "10mb" }));
 app.use(perfLogger);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/api-docs.json", (_req, res) => res.json(swaggerSpec));
 
 app.use("/api", apiRoutes);
 
@@ -63,7 +71,7 @@ async function start() {
 
   server.listen(env.PORT, () => {
     console.log(`MotoGuard Backend a correr na porta ${env.PORT}`);
-    console.log(`Dashboard:    http://localhost:${env.PORT}`);
+    console.log(`Swagger UI:   http://localhost:${env.PORT}/api-docs`);
     console.log(`Health check: http://localhost:${env.PORT}/api/health`);
     console.log(
       `Telemetria:   http://localhost:${env.PORT}/api/telemetry/latest`,
@@ -76,12 +84,30 @@ if (env.NODE_ENV !== "test") {
   start();
 }
 
-process.on("SIGINT", async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+async function shutdown(signal: string): Promise<void> {
+  console.log(`[shutdown] ${signal} recebido — a encerrar gracefulmente...`);
 
-process.on("SIGTERM", async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+  const timeout = setTimeout(() => {
+    console.error("[shutdown] Timeout — a forçar saída.");
+    process.exit(1);
+  }, 15_000);
+
+  try {
+    await Promise.all([
+      socketService.stop(),
+      mqttService.disconnect(),
+      influxService.close(),
+      prisma.$disconnect(),
+      realtimeAnomalyService.dispose(),
+    ]);
+    console.log("[shutdown] Todos os serviços encerrados com sucesso.");
+  } catch (err) {
+    console.error("[shutdown] Erro ao encerrar serviços:", err);
+  } finally {
+    clearTimeout(timeout);
+    process.exit(0);
+  }
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

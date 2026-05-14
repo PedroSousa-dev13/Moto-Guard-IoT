@@ -11,6 +11,7 @@ import type { AuthRequest } from "../middleware/auth.middleware";
 import { runTripMlPipeline, getMlStatus } from "../services/trip-ml-pipeline.service";
 import { buildTripFeedItem } from "../services/trip-feed.service";
 import { categorizeTripById } from "../services/trip-categorization.service";
+import { EventSeverity, EventType } from "../generated/prisma/enums";
 
 const VALID_TRIP_SOURCES = ["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"] as const;
 type TripSourceFilter = (typeof VALID_TRIP_SOURCES)[number];
@@ -281,8 +282,8 @@ export async function listAlerts(req: AuthRequest, res: Response): Promise<void>
     const events = await prisma.tripEvent.findMany({
       where: {
         trip: { userId },
-        ...(severity ? { severity: severity as any } : {}),
-        ...(type ? { type: type as any } : {}),
+        ...(severity ? { severity: severity as EventSeverity } : {}),
+        ...(type ? { type: type as EventType } : {}),
         ...(tripId ? { tripId } : {}),
       },
       orderBy: { occurredAt: "desc" },

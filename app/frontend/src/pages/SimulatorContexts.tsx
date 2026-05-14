@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
-import { motorcyclesAPI, getStoredToken } from "../services/api";
+import { motorcyclesAPI } from "../services/api";
 import { CATEGORY_DEVICE_MAP } from "../utils/categoryDeviceMap";
 import type { Motorcycle } from "../types";
 import GaugeCard from "../components/GaugeCard";
@@ -170,18 +170,13 @@ export default function SimulatorContexts() {
       //    navegação entre páginas — o browser garante que o pedido
       //    completo mesmo que o componente seja desmontado).
       try {
-        const token = getStoredToken();
-        if (token) {
-          fetch("/api/command", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ acao: "parar", device_id: deviceId }),
-            keepalive: true,
-          }).catch(() => {});
-        }
+        fetch("/api/command", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ acao: "parar", device_id: deviceId }),
+          keepalive: true,
+        }).catch(() => {});
       } catch {
         // Ignorar erros — o WebSocket já tratou do caso normal
       }

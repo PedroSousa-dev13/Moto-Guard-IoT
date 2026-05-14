@@ -154,6 +154,9 @@ class TelemetriaState:
 # =============================================================================
 #  Simulador Headless
 # =============================================================================
+ODOMETER_FILE = os.path.join(os.path.dirname(__file__), "odometer_state.json")
+
+
 class HeadlessSimulator:
 
     def __init__(self, modelo: str = "Naked"):
@@ -162,6 +165,7 @@ class HeadlessSimulator:
         self.running = True
 
         self.tele = TelemetriaState()
+        self._load_odometer()
         self.perfil_nome: str | None = None
         self._tick_count = 0
         self._route_finished_ticks = 0
@@ -205,17 +209,32 @@ class HeadlessSimulator:
         self.moto_model_display: str | None = None
         self.current_device_id: str = DEVICE_ID
         self.dt: float = float(PUBLISH_INTERVAL)
-        self._tick_interval: float = self.dt  # pode ser alterado por set_speed
-        self._excesso_ticks: int = 0  # ticks restantes de excesso de velocidade forçado
+        self._tick_interval: float = self.dt
+        self._excesso_ticks: int = 0
 
-        # Factores LERP ajustados à frequência (dt)
-        # factor_dt = 1 - (1 - factor_base)^dt
         self.lerp_vel   = 1.0 - (1.0 - BASE_LERP_VEL)   ** self.dt
         self.lerp_rpm   = 1.0 - (1.0 - BASE_LERP_RPM)   ** self.dt
         self.lerp_roll  = 1.0 - (1.0 - BASE_LERP_ROLL)  ** self.dt
         self.lerp_pitch = 1.0 - (1.0 - BASE_LERP_PITCH) ** self.dt
-        self.lerp_temp  = 1.0 - (1.0 - BASE_LERP_TEMP)  ** self.dt  # (reservado para uso futuro)
-        self.lerp_volt  = 1.0 - (1.0 - BASE_LERP_VOLT)  ** self.dt  # (reservado para uso futuro)
+        self.lerp_temp  = 1.0 - (1.0 - BASE_LERP_TEMP)  ** self.dt
+        self.lerp_volt  = 1.0 - (1.0 - BASE_LERP_VOLT)  ** self.dt
+
+    def _load_odometer(self) -> None:
+        try:
+            if os.path.exists(ODOMETER_FILE):
+                with open(ODOMETER_FILE, "r") as f:
+                    data = json.load(f)
+                    self.tele.odometer_km = float(data.get("odometer_km", 0.0))
+                    log(f"Odómetro carregado: {self.tele.odometer_km:.1f} km")
+        except Exception as e:
+            log(f"Odómetro: erro ao carregar — {e}")
+
+    def _save_odometer(self) -> None:
+        try:
+            with open(ODOMETER_FILE, "w") as f:
+                json.dump({"odometer_km": self.tele.odometer_km}, f)
+        except Exception as e:
+            log(f"Odómetro: erro ao salvar — {e}")
 
         # Graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -791,6 +810,8 @@ class HeadlessSimulator:
 
         # ── 10. Odómetro ─────────────────────────────────────────────
         s.odometer_km += (s.velocidade / 3600.0) * self.dt
+        if self._tick_count % 600 == 0:  # persistir a cada ~60s a 10Hz
+            self._save_odometer()
 
         # ── 11. Segurança ativa ──────────────────────────────────────
         s.abs_active = (s.brake_front_pct > 60 and s.velocidade > 30
@@ -1048,19 +1069,21 @@ class HeadlessSimulator:
                                         delattr(self, attr)
                                 log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
 
-                # Log a cada tick
-                s = self.tele
-                log(f"tick #{self._tick_count:>5} | "
-                    f"{round(s.velocidade)}km/h | "
-                    f"{int(s.rpm)}rpm | "
-                    f"{round(s.temp_motor,1)}°C | "
-                    f"{round(s.voltagem,1)}V | "
-                    f"roll {round(s.roll,1)}° | "
-                    f"{s.evento_activo()}")
+                # Log a cada 10 ticks (~1Hz) para não inundar logs
+                if self._tick_count % 10 == 0:
+                    s = self.tele
+                    log(f"tick #{self._tick_count:>5} | "
+                        f"{round(s.velocidade)}km/h | "
+                        f"{int(s.rpm)}rpm | "
+                        f"{round(s.temp_motor,1)}°C | "
+                        f"{round(s.voltagem,1)}V | "
+                        f"roll {round(s.roll,1)}° | "
+                        f"{s.evento_activo()}")
 
             time.sleep(self._tick_interval)
 
         # Cleanup
+        self._save_odometer()
         log("A encerrar…")
         if self.mqtt_client:
             self.mqtt_client.disconnect()
@@ -1078,8 +1101,14 @@ if __name__ == "__main__":
         default=os.environ.get("SIM_MODELO", "Naked"),
         help="Modelo de mota inicial (default: Naked)"
     )
+    parser.add_argument(
+        "--auto-start", action=argparse.BooleanOptionalAction,
+        default=os.environ.get("SIM_AUTO_START", "false").lower() == "true",
+        help="Iniciar simulação automaticamente (default: false)"
+    )
     args = parser.parse_args()
 
-    sim = HeadlessSimulator(modelo=args.modelo)
+    modelo = args.modelo if args.auto_start else ""
+    sim = HeadlessSimulator(modelo=modelo)
     sim.run()
 

@@ -369,8 +369,6 @@ def get_route(name: str) -> list[tuple[float, float]]:
         return base
     osrm_url = os.environ.get("OSRM_URL", "https://router.project-osrm.org").strip().rstrip("/")
     snapped = _osrm_route(base, osrm_url, timeout_s=12)
-    if not snapped and osrm_url.startswith("https://"):
-        snapped = _osrm_route(base, "http://" + osrm_url[len("https://"):], timeout_s=12)
     return snapped if snapped else base
 
 
@@ -385,17 +383,11 @@ def get_route_between(
 
     start_snapped = _osrm_nearest(start, osrm_url, timeout_s=8)
     end_snapped = _osrm_nearest(end, osrm_url, timeout_s=8)
-    if not start_snapped and osrm_url.startswith("https://"):
-        start_snapped = _osrm_nearest(start, "http://" + osrm_url[len("https://"):], timeout_s=8)
-    if not end_snapped and osrm_url.startswith("https://"):
-        end_snapped = _osrm_nearest(end, "http://" + osrm_url[len("https://"):], timeout_s=8)
 
     s = start_snapped if start_snapped else start
     e = end_snapped if end_snapped else end
 
     snapped = _osrm_route([s, e], osrm_url, timeout_s=12)
-    if not snapped and osrm_url.startswith("https://"):
-        snapped = _osrm_route([s, e], "http://" + osrm_url[len("https://"):], timeout_s=12)
     return snapped if snapped else [s, e]
 
 

@@ -42,6 +42,21 @@ interface TripEvent {
   timestamp: string;
 }
 
+interface TripStats {
+  maxSpeed: number;
+  maxRoll: number;
+  maxGForce: number;
+  startLat: number;
+  startLon: number;
+  prevLat: number;
+  prevLon: number;
+  accumulatedDistance: number;
+  speedSum: number;
+  speedTicks: number;
+  startOdometer: number;
+  ticks: number;
+}
+
 export class SocketService {
   private io: Server | null = null;
   private _connectedClients = 0;
@@ -60,24 +75,11 @@ export class SocketService {
   private lastUserIdByDevice = new Map<string, string>();
   private lastMotoModelByDevice = new Map<string, string>();
   private lastSourceByDevice = new Map<string, string>();
-  private tripStatsByDevice = new Map<string, {
-    maxSpeed: number;
-    maxRoll: number;
-    maxGForce: number;
-    startLat: number;
-    startLon: number;
-    speedSum: number;   // para avgSpeedKmh
-    speedTicks: number; // número de ticks acumulados
-    startOdometer: number; // odómetro inicial para cálculo de distância precisa
-    ticks: number;      // contador para flush periódico
-  }>();
+  private tripStatsByDevice = new Map<string, TripStats>();
   private heuristicStateByDevice = new Map<string, HeuristicState>();
   private profileThresholdsCacheByDevice = new Map<string, { expiresAt: number; thresholds: MotorcycleProfileThresholds }>();
 
-  // Thresholds simples para ciclo de viagem em tempo real.
-  private static readonly TRIP_START_SPEED_KMH = 5;
-  private static readonly TRIP_END_SPEED_KMH = 2;
-  private static readonly TRIP_END_STATIONARY_TICKS = 100;
+  // Thresholds configuráveis via env.ts
 
   /** Emitir evento para todos os clientes ligados */
   emit(event: string, data: any): void {
@@ -92,7 +94,7 @@ export class SocketService {
   /** Inicializa o Socket.IO com o servidor HTTP */
   init(httpServer: http.Server): void {
     this.io = new Server(httpServer, {
-      cors: { origin: "*", methods: ["GET", "POST"] },
+      cors: { origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173', 'http://localhost:3000'], methods: ["GET", "POST"] },
     });
 
     this.io.on("connection", (socket: Socket) => {
@@ -233,8 +235,19 @@ export class SocketService {
       await this.handleHeuristicEvents(payload);
       
       // Deteção de anomalias ML em tempo real
-      void realtimeAnomalyService.processTelemetry(payload);
+      realtimeAnomalyService.processTelemetry(payload).catch((err) => {
+        console.error("[realtime-anomaly] Erro ao processar telemetria:", err);
+      });
     });
+  }
+
+  /** Fecha o servidor Socket.IO. Chamado no shutdown graceful. */
+  stop(): void {
+    if (this.io) {
+      this.io.close();
+      this.io = null;
+      this._connectedClients = 0;
+    }
   }
 
   private async getProfileThresholds(deviceId: string, motoModel: string): Promise<MotorcycleProfileThresholds> {
@@ -284,7 +297,7 @@ export class SocketService {
         crashGForce: profile.crashGForce,
         criticalTemp: profile.criticalTemp,
         criticalVoltage: profile.criticalVoltage,
-        criticalRpm: (profile as any).criticalRpm ?? (profile as any).rpm_max * 0.9,
+        criticalRpm: (profile as Record<string, unknown>).criticalRpm as number ?? (profile as Record<string, unknown>).rpm_max as number * 0.9,
       };
 
       this.profileThresholdsCacheByDevice.set(deviceId, {
@@ -341,8 +354,8 @@ export class SocketService {
         await prisma.tripEvent.create({
           data: {
             tripId,
-            type: ev.type as any,
-            severity: ev.severity as any,
+            type: ev.type,
+            severity: ev.severity,
             message: ev.message,
             latitude: payload.location.latitude,
             longitude: payload.location.longitude,
@@ -356,7 +369,9 @@ export class SocketService {
         });
 
         if (ev.type === EventType.CRASH_DETECTED) {
-          void this.sendEmergencyEmail(tripId, payload);
+          this.sendEmergencyEmail(tripId, payload).catch((err) => {
+            console.error("[email] Erro ao enviar email de emergência:", err);
+          });
         }
 
         // Emitir alerta para o frontend em tempo real
@@ -426,7 +441,7 @@ export class SocketService {
       return;
     }
 
-    if (!tripActive && (speed >= SocketService.TRIP_START_SPEED_KMH || status === "TRIP_STARTED")) {
+    if (!tripActive && (speed >= env.TRIP_START_SPEED_KMH || status === "TRIP_STARTED")) {
       // ── Proteção anti-pacote-fantasma ────────────────────────────────────
       // Quando o utilizador carrega em "Parar", o simulador Python deixa de
       // gerar dados, mas podem chegar ao backend pacotes que já estavam em
@@ -443,12 +458,12 @@ export class SocketService {
       return;
     }
 
-    if (speed <= SocketService.TRIP_END_SPEED_KMH) {
+    if (speed <= env.TRIP_END_SPEED_KMH) {
       const stationaryTicks =
         (this.stationaryTicksByDevice.get(deviceId) ?? 0) + 1;
       this.stationaryTicksByDevice.set(deviceId, stationaryTicks);
 
-      if (stationaryTicks >= SocketService.TRIP_END_STATIONARY_TICKS) {
+      if (stationaryTicks >= env.TRIP_END_STATIONARY_SEC * 10) {
         console.log(`[SocketService] Fim de viagem automático (stationary) em ${deviceId} (${stationaryTicks} ticks)`);
         this.endTrip(payload);
       }
@@ -528,6 +543,9 @@ export class SocketService {
               maxGForce: payload.imu.g_force,
               startLat: payload.location.latitude,
               startLon: payload.location.longitude,
+              prevLat: payload.location.latitude,
+              prevLon: payload.location.longitude,
+              accumulatedDistance: 0,
               speedSum: payload.telemetry.speed_kmh,
               speedTicks: 1,
               startOdometer: payload.telemetry.odometer_km ?? 0,
@@ -565,6 +583,9 @@ export class SocketService {
         maxGForce: payload.imu.g_force,
         startLat: payload.location.latitude,
         startLon: payload.location.longitude,
+        prevLat: payload.location.latitude,
+        prevLon: payload.location.longitude,
+        accumulatedDistance: 0,
         speedSum: payload.telemetry.speed_kmh,
         speedTicks: 1,
         startOdometer: payload.telemetry.odometer_km ?? 0,
@@ -593,6 +614,16 @@ export class SocketService {
     stats.speedSum += payload.telemetry.speed_kmh;
     stats.speedTicks++;
     stats.ticks++;
+
+    // Distância incremental entre este ponto e o anterior
+    if (payload.location) {
+      stats.accumulatedDistance += this.haversineDistance(
+        stats.prevLat, stats.prevLon,
+        payload.location.latitude, payload.location.longitude
+      );
+      stats.prevLat = payload.location.latitude;
+      stats.prevLon = payload.location.longitude;
+    }
 
     // Flush parcial a cada 300 ticks (~30 segundos reais a 10Hz)
     if (stats.ticks % 300 === 0) {
@@ -629,14 +660,6 @@ export class SocketService {
     this.tripActiveByDevice.set(deviceId, false);
     this.stationaryTicksByDevice.set(deviceId, 0);
 
-    // Quando a viagem acaba automaticamente, enviamos o comando "stop_trip"
-    // para o simulador, tal como se o utilizador tivesse carregado no botão.
-    mqttService.publishCommand({
-      acao: "stop_trip",
-      device_id: deviceId,
-      source: "BACKEND",
-    });
-
     if (!tripId) {
       console.warn(`Nenhuma viagem ativa para deviceId: ${deviceId}`);
       this.io?.emit("trip_ended", {
@@ -647,110 +670,22 @@ export class SocketService {
       return;
     }
 
-    try {
-      // Forçar um flush final das estatísticas
-      await this.flushTripStats(deviceId);
+    // Só enviar stop_trip se houver uma viagem ativa
+    mqttService.publishCommand({
+      acao: "stop_trip",
+      device_id: deviceId,
+      source: "BACKEND",
+    });
 
-      let distanceKm = 0;
-      if (stats) {
-        const currentOdometer = payload.telemetry.odometer_km ?? 0;
-        if (currentOdometer > 0 && stats.startOdometer > 0) {
-          distanceKm = currentOdometer - stats.startOdometer;
-        } else {
-          // Fallback para Haversine se o odómetro falhar
-          distanceKm = this.haversineDistance(
-            stats.startLat, stats.startLon, 
-            payload.location.latitude, payload.location.longitude
-          );
-        }
-      }
-
-      const avgSpeedKmh = stats && stats.speedTicks > 0
-        ? stats.speedSum / stats.speedTicks
-        : null;
-
-      const trip = await prisma.trip.findUnique({
-        where: { id: tripId },
-        select: { userId: true }
-      });
-
-      // Se todos os stats são zeros, manter a viagem mas marcar como CANCELLED
-      const allZeros = (distanceKm === 0 || distanceKm === null) &&
-        (stats?.maxSpeed ?? 0) === 0 &&
-        (stats?.maxRoll ?? 0) === 0 &&
-        (stats?.maxGForce ?? 0) === 0;
-
-      if (allZeros) {
-        await prisma.trip.update({
-          where: { id: tripId },
-          data: {
-            endedAt: new Date(timestamp),
-            status: "CANCELLED",
-            distanceKm,
-            maxSpeedKmh: stats?.maxSpeed ?? 0,
-            maxRollDeg: stats?.maxRoll ?? 0,
-            maxGForce: stats?.maxGForce ?? 0,
-            avgSpeedKmh,
-          },
-        });
-        console.log(`Viagem cancelada (allZeros - dados insuficientes): ${tripId}`);
-        this.io?.emit("trip_ended", {
-          deviceId,
-          motoModel: payload.system.moto_model,
-          timestamp,
-          tripId,
-          status: "CANCELLED",
-          error: "Viagem sem dados suficientes para registo"
-        });
-        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
-      } else {
-        await prisma.trip.update({
-          where: { id: tripId },
-          data: {
-            endedAt: new Date(timestamp),
-            status: "COMPLETED",
-            distanceKm,
-            maxSpeedKmh: stats?.maxSpeed ?? 0,
-            maxRollDeg: stats?.maxRoll ?? 0,
-            maxGForce: stats?.maxGForce ?? 0,
-            avgSpeedKmh,
-          },
-        });
-
-        console.log(`Viagem finalizada com sucesso: ${tripId} (${distanceKm.toFixed(2)} km)`);
-
-        // Iniciar clustering para atualizar estilo de condução
-        if (trip?.userId) {
-          void tripClusteringService.clusterUserTrips(trip.userId);
-        }
-
-        this.io?.emit("trip_ended", {
-          deviceId,
-          motoModel: payload.system.moto_model,
-          timestamp,
-          tripId,
-          distanceKm,
-          maxSpeedKmh: stats?.maxSpeed ?? 0,
-          status: "COMPLETED"
-        });
-        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
-      }
-
-      this.activeTripIdByDevice.delete(deviceId);
-      this.tripStatsByDevice.delete(deviceId);
-      this.heuristicStateByDevice.delete(deviceId);
-    } catch (error) {
-      console.error("Erro ao finalizar viagem:", error);
-      // Notificamos o frontend de que "tentámos" terminar, mas o status na BD pode estar inconsistente.
-      // No entanto, é melhor não emitir nada ou emitir um erro.
-      // Aqui vamos emitir um sinal genérico para que o dashboard resete a vista.
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: payload.system.moto_model,
-        timestamp,
-        error: "Falha ao persistir fim da viagem no servidor"
-      });
-    }
+    await this.flushTripStats(deviceId);
+    await this.finalizeTrip({
+      deviceId,
+      tripId,
+      stats,
+      payload,
+      endedAt: new Date(timestamp),
+      doClustering: true,
+    });
   }
 
   private async forceEndTripsOnStopCommand(deviceId: string | null): Promise<void> {
@@ -830,26 +765,44 @@ export class SocketService {
       return;
     }
 
+    await this.flushTripStats(deviceId);
+    await this.finalizeTrip({
+      deviceId,
+      tripId,
+      stats,
+      payload: lastPayload ?? null,
+      endedAt,
+      doClustering: false,
+    });
+  }
+
+  private async finalizeTrip(params: {
+    deviceId: string;
+    tripId: string;
+    stats: TripStats | undefined | null;
+    payload: TelemetryPayload | null;
+    endedAt: Date;
+    doClustering: boolean;
+  }): Promise<void> {
+    const { deviceId, tripId, stats, payload, endedAt, doClustering } = params;
+
     let distanceKm = 0;
-    if (stats && lastPayload) {
-      const currentOdometer = lastPayload.telemetry.odometer_km ?? 0;
+    if (stats) {
+      const currentOdometer = payload?.telemetry?.odometer_km ?? 0;
       if (currentOdometer > 0 && stats.startOdometer > 0) {
         distanceKm = currentOdometer - stats.startOdometer;
       } else {
-        distanceKm = this.haversineDistance(
-          stats.startLat,
-          stats.startLon,
-          lastPayload.location.latitude,
-          lastPayload.location.longitude,
-        );
+        distanceKm = stats.accumulatedDistance;
       }
     }
 
-    const avgSpeedKmh =
-      stats && stats.speedTicks > 0 ? stats.speedSum / stats.speedTicks : null;
+    const avgSpeedKmh = stats && stats.speedTicks > 0
+      ? stats.speedSum / stats.speedTicks
+      : null;
+
+    const motoModel = payload?.system?.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—";
 
     try {
-      // Se todos os stats são zeros, manter a viagem mas marcar como CANCELLED
       const allZeros = (distanceKm === 0 || distanceKm === null) &&
         (stats?.maxSpeed ?? 0) === 0 &&
         (stats?.maxRoll ?? 0) === 0 &&
@@ -868,18 +821,13 @@ export class SocketService {
             avgSpeedKmh,
           },
         });
-        console.log(`[SocketService] Viagem cancelada (dados insuficientes): ${tripId}`);
+        console.log(`Viagem cancelada (allZeros): ${tripId}`);
         this.io?.emit("trip_ended", {
-          deviceId,
-          motoModel: lastPayload?.system.moto_model ?? "—",
-          timestamp: endedAt.toISOString(),
-          tripId,
-          status: "CANCELLED",
-          error: "Viagem sem dados suficientes para registo"
+          deviceId, motoModel, timestamp: endedAt.toISOString(),
+          tripId, status: "CANCELLED", error: "Viagem sem dados suficientes",
         });
-        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
       } else {
-        await prisma.trip.update({
+        const trip = await prisma.trip.update({
           where: { id: tripId },
           data: {
             endedAt,
@@ -892,30 +840,31 @@ export class SocketService {
           },
         });
 
-        console.log(`Viagem finalizada com sucesso (forceEndTrip): ${tripId}`);
+        console.log(`Viagem finalizada: ${tripId} (${distanceKm.toFixed(2)} km)`);
 
         this.io?.emit("trip_ended", {
-          deviceId,
-          motoModel: lastPayload?.system.moto_model ?? "—",
-          timestamp: endedAt.toISOString(),
-          tripId,
-          distanceKm,
-          maxSpeedKmh: stats?.maxSpeed ?? 0,
-          status: "COMPLETED"
+          deviceId, motoModel, timestamp: endedAt.toISOString(),
+          tripId, distanceKm, maxSpeedKmh: stats?.maxSpeed ?? 0, status: "COMPLETED",
         });
-        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
+
+        if (doClustering && trip?.userId) {
+          tripClusteringService.clusterUserTrips(trip.userId).catch((err) => {
+            console.error("[clustering] Erro ao clusterizar:", err);
+          });
+        }
       }
+
+      this.lastTripEndedAtByDevice.set(deviceId, Date.now());
     } catch (error) {
-      console.error("Erro ao finalizar viagem (forceEndTrip):", error);
+      console.error("Erro ao finalizar viagem:", error);
       this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: lastPayload?.system.moto_model ?? "—",
-        timestamp: endedAt.toISOString(),
-        error: "Falha ao forçar fim de viagem"
+        deviceId, motoModel, timestamp: endedAt.toISOString(),
+        error: "Falha ao persistir fim da viagem",
       });
     } finally {
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
+      this.heuristicStateByDevice.delete(deviceId);
     }
   }
 
@@ -1143,7 +1092,9 @@ export class SocketService {
       console.log(`Evento ${eventType} persistido na viagem ${tripId}`);
 
       if (eventType === "CRASH_DETECTED") {
-        void this.sendEmergencyEmail(tripId, payload);
+        this.sendEmergencyEmail(tripId, payload).catch((err) => {
+          console.error("[email] Erro ao enviar email de emergência (forceEnd):", err);
+        });
       }
     } catch (error) {
       console.error("Erro ao persistir evento de risco:", error);
@@ -1178,7 +1129,7 @@ export class SocketService {
           let decryptedApiKey: string | null = null;
           if (trip.user.resendApiKey) {
             try {
-              decryptedApiKey = decrypt(trip.user.resendApiKey, env.JWT_SECRET);
+              decryptedApiKey = decrypt(trip.user.resendApiKey, env.ENCRYPTION_KEY);
             } catch (err) {
               console.error("[SocketService] Erro ao desencriptar Resend API Key:", err);
             }
@@ -1258,22 +1209,19 @@ export class SocketService {
    * 3. Final fallback: SIMULATOR
    */
   private resolveSourceForDevice(deviceId: string): "SIMULATOR" | "GPX_IMPORTED" | "DEVICE_REAL" {
-    // 1. Check explicit source from frontend commands or telemetry payloads
     const explicit = this.lastSourceByDevice.get(deviceId);
     if (explicit === "GPX_IMPORTED" || explicit === "DEVICE_REAL" || explicit === "SIMULATOR") {
       return explicit;
     }
 
-    // 2. Resolve from device ID prefix pattern
     const id = deviceId.toUpperCase();
-    if (id.startsWith("MOTOGUARD-GPX") || id.includes("-GPX-") || id.includes("GPX")) {
+    if (/^MOTOGUARD-GPX/i.test(deviceId) || /-GPX-/i.test(deviceId)) {
       return "GPX_IMPORTED";
     }
-    if (id.startsWith("MOTOGUARD-IRL") || id.includes("-IRL-") || id.includes("IRL")) {
+    if (/^MOTOGUARD-IRL/i.test(deviceId) || /-IRL-/i.test(deviceId)) {
       return "DEVICE_REAL";
     }
 
-    // 3. Final fallback: SIMULATOR (headless simulator, MOTOGUARD-SIM-*, etc.)
     return "SIMULATOR";
   }
 }

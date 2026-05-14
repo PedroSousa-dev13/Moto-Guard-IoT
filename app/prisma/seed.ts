@@ -180,19 +180,17 @@ const profiles = [
 ];
 
 async function seed() {
-  console.log("\n🏍️  MotoGuard — Seed: Perfis de Motas\n");
+  console.log("\nMotoGuard — Seed: Perfis de Motas\n");
 
-  for (const profile of profiles) {
-    const result = await prisma.motorcycleProfile.upsert({
-      where: { name: profile.name },
-      update: profile,
-      create: profile,
-    });
-    console.log(`  ✅ ${result.name} (${result.example})`);
-  }
+  const { count } = await prisma.motorcycleProfile.createMany({
+    data: profiles,
+    skipDuplicates: true,
+  });
+
+  console.log(`  ${count} perfis inseridos (${profiles.length - count} já existiam)`);
 
   const total = await prisma.motorcycleProfile.count();
-  console.log(`\n  📊 Total de perfis na BD: ${total}\n`);
+  console.log(`\n  Total de perfis na BD: ${total}\n`);
 
   await prisma.$disconnect();
 }
