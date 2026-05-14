@@ -1,4 +1,6 @@
 import { Response } from "express";
+import { randomUUID } from "crypto";
+import fs from "fs";
 import { prisma } from "../services/prisma.service";
 import { Prisma } from "../generated/prisma/client";
 import type { AuthRequest } from "../middleware/auth.middleware";
@@ -109,9 +111,7 @@ export async function saveSimulatorGpxData(req: AuthRequest, res: Response): Pro
       ? payload.bounds
       : computeBounds(waypoints);
 
-    const filename = typeof payload.filename === "string" && payload.filename.trim()
-      ? payload.filename.trim()
-      : "gpx-simulator.gpx";
+    const filename = `gpx-${randomUUID()}.gpx`;
     const fileSize = Number.isFinite(Number(payload.fileSize)) ? Number(payload.fileSize) : 0;
     const totalTime = Number.isFinite(Number(payload.totalTime)) ? Number(payload.totalTime) : null;
 
@@ -167,7 +167,12 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
       return;
     }
 
-    const xml = file.buffer.toString("utf8");
+    let xml: string;
+    try {
+      xml = fs.readFileSync(file.path, "utf8");
+    } finally {
+      fs.unlink(file.path, () => {}); // cleanup async
+    }
     const parsed = parseGpx(xml);
 
     if (parsed.waypoints.length === 0) {
@@ -218,7 +223,7 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
       const gpxData = await tx.gpxData.create({
         data: {
           tripId: trip.id,
-          filename: file.originalname || "import.gpx",
+          filename: `gpx-${randomUUID()}.gpx`,
           fileSize: file.size,
           waypoints: parsed.waypoints,
           bounds: parsed.bounds,
@@ -246,7 +251,7 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
       console.error(`[trip-categorization] Erro ao categorizar viagem ${result.tripId}:`, err);
     });
   } catch (err) {
-    const statusCode = typeof (err as any)?.statusCode === "number" ? (err as any).statusCode : null;
+    const statusCode = typeof (err as Error & { statusCode?: number })?.statusCode === "number" ? (err as Error & { statusCode?: number }).statusCode : null;
     if (statusCode) {
       res.status(statusCode).json({ error: (err as Error).message });
       return;
@@ -291,7 +296,12 @@ export async function parseGpxFile(req: GpxImportRequest, res: Response): Promis
   }
 
   try {
-    const xml = file.buffer.toString("utf8");
+    let xml: string;
+    try {
+      xml = fs.readFileSync(file.path, "utf8");
+    } finally {
+      fs.unlink(file.path, () => {}); // cleanup async
+    }
     const parsed = parseGpx(xml);
 
     if (parsed.waypoints.length === 0) {
@@ -441,7 +451,7 @@ export async function exportTripGpx(req: AuthRequest, res: Response): Promise<vo
           ele: typeof p?.ele === "number" ? p.ele : null,
           time: toIsoTime(p?.time),
         }))
-        .filter((p) => typeof p.lat === "number" && typeof p.lon === "number") as any;
+        .filter((p): p is { lat: number; lon: number; ele: number | null; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
     }
   } else {
     const points = await influxService.queryTripTelemetry(
@@ -456,7 +466,7 @@ export async function exportTripGpx(req: AuthRequest, res: Response): Promise<vo
         lon: typeof p?.longitude === "number" ? (p.longitude as number) : null,
         time: toIsoTime(p?.time),
       }))
-      .filter((p) => typeof p.lat === "number" && typeof p.lon === "number") as any;
+      .filter((p): p is { lat: number; lon: number; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
 
     filename = `motoguard-trip-${trip.id}.gpx`;
   }
@@ -473,6 +483,6 @@ export async function exportTripGpx(req: AuthRequest, res: Response): Promise<vo
   });
 
   res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="${safeFilename(filename)}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="motoguard-trip-${trip.id}.gpx"`);
   res.status(200).send(gpx);
 }

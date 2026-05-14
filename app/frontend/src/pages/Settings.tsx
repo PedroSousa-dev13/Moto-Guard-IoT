@@ -456,8 +456,14 @@ export default function Settings() {
                 </div>
                 <button className="flex items-center gap-2 bg-red/20 text-red px-5 py-2.5 rounded-xl font-bold hover:bg-red/30 transition-all active:scale-95 text-sm"
                   onClick={() => {
-                    if (window.confirm("Apagar todos os dados locais? Esta ação é irreversível.")) {
-                      localStorage.clear();
+                    if (window.confirm("Apagar dados da aplicação? As preferências serão perdidas.")) {
+                      const appKeys = [
+                        "motoguard_settings", "motoguard_alerts",
+                        "rememberMe", "user", "session_user",
+                      ];
+                      appKeys.forEach((k) => {
+                        try { localStorage.removeItem(k); } catch { /* ignore */ }
+                      });
                       window.location.reload();
                     }
                   }}>

@@ -423,5 +423,14 @@ FodyWeavers.xsd
 docker/mosquitto/data/
 docker/mosquitto/log/
 
+# ─── MotoGuard: env file ────────────────────────────────────────────────────
+app/.env
+
+# ─── MotoGuard: Prisma generated code ──────────────────────────────────────
+app/backend/src/generated/prisma/
+
+# ─── MotoGuard: orphaned 3D model ──────────────────────────────────────────
+app/models/VR-Mobil.glb
+
 # ─── MotoGuard: app backend node_modules ────────────────────────────────────
 app/node_modules/

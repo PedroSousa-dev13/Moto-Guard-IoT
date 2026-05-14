@@ -53,13 +53,20 @@ class InfluxService {
       {
         batchSize: 20,
         flushInterval: 5000,
-        writeFailed: (_error, _lines, _attempt, expires) => {
-          // Se o bucket não existe (404) ou token inválido (401/403), desativa writes
+        writeFailed: (_error, _lines, attempt, _expires) => {
           const msg = (_error as any)?.statusCode;
-          if (msg === 404 || msg === 401 || msg === 403) {
-            if (this._available) {
-              console.warn(`[InfluxDB] Indisponível (${msg}) — writes desativados. Cria o bucket "${env.INFLUXDB_BUCKET}" para ativar.`);
+          if (msg === 401 || msg === 403) {
+            if (attempt === 1) {
+              console.warn(`[InfluxDB] Auth error ${msg} — tentativa ${attempt}.`);
+            }
+          } else if (msg === 404) {
+            if (attempt === 1) {
+              console.warn(`[InfluxDB] Bucket "${env.INFLUXDB_BUCKET}" não encontrado.`);
               this._available = false;
+            }
+          } else if (msg != null) {
+            if (attempt === 1) {
+              console.warn(`[InfluxDB] Write error ${msg} — retentativa automática.`);
             }
           }
           return Promise.resolve();

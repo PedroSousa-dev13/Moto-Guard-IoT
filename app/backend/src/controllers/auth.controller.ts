@@ -5,13 +5,26 @@
 // POST /api/auth/login    — Autenticar e obter JWT
 // =============================================================================
 
-import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../services/prisma.service";
 import { env } from "../config/env";
 import { encrypt } from "../utils/crypto";
 import type { AuthRequest } from "../middleware/auth.middleware";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+function setAuthCookie(res: Response, token: string): void {
+  res.cookie('token', token, COOKIE_OPTIONS);
+}
 
 // ─── Registo ────────────────────────────────────────────────────────────────
 export async function register(req: Request, res: Response): Promise<void> {
@@ -43,8 +56,13 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
 
+    setAuthCookie(res, token);
     res.status(201).json({ user, token });
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(409).json({ error: "Email já registado" });
+      return;
+    }
     console.error("[register] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
   }
@@ -74,6 +92,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
 
+    setAuthCookie(res, token);
     res.json({
       user: { id: user.id, email: user.email, name: user.name },
       token,
@@ -176,7 +195,7 @@ export async function saveResendApiKey(req: AuthRequest, res: Response): Promise
   const { apiKey } = req.body as { apiKey?: string | null };
 
   try {
-    const encrypted = apiKey ? encrypt(apiKey.trim(), env.JWT_SECRET) : null;
+    const encrypted = apiKey ? encrypt(apiKey.trim(), env.ENCRYPTION_KEY) : null;
     await prisma.user.update({
       where: { id: userId },
       data: { resendApiKey: encrypted },

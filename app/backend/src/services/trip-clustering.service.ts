@@ -17,7 +17,16 @@ class TripClusteringService {
    */
   async clusterUserTrips(userId: string): Promise<void> {
     try {
-      // 1. Procurar viagens com dados suficientes
+      // 1. Verificar rapidamente se há pelo menos 3 viagens antes de carregar tudo
+      const tripCount = await prisma.trip.count({
+        where: { userId, status: "COMPLETED" },
+      });
+      if (tripCount < 3) {
+        console.log(`[clustering] Utilizador ${userId} tem apenas ${tripCount} viagens. Aguardando mais dados.`);
+        return;
+      }
+
+      // 2. Carregar viagens com dados suficientes
       const trips = await prisma.trip.findMany({
         where: { userId, status: "COMPLETED" },
         include: {
@@ -25,11 +34,6 @@ class TripClusteringService {
           events: true,
         },
       });
-
-      if (trips.length < 3) {
-        console.log(`[clustering] Utilizador ${userId} tem apenas ${trips.length} viagens. Aguardando mais dados.`);
-        return;
-      }
 
       // 2. Preparar payload para o Python
       const payload = trips.map((t) => ({
@@ -78,6 +82,11 @@ class TripClusteringService {
         },
       });
 
+      const timer = setTimeout(() => {
+        proc.kill("SIGKILL");
+        reject(new Error("Timeout: clustering excedeu 30s"));
+      }, 30_000);
+
       let stdout = "";
       let stderr = "";
 
@@ -85,6 +94,7 @@ class TripClusteringService {
       proc.stderr.on("data", (data) => { stderr += data.toString(); });
 
       proc.on("close", (code) => {
+        clearTimeout(timer);
         if (code !== 0) {
           return reject(new Error(`Clustering script falhou (code ${code}): ${stderr}`));
         }
@@ -93,6 +103,11 @@ class TripClusteringService {
         } catch (err) {
           reject(new Error("Falha ao parsear output do clustering"));
         }
+      });
+
+      proc.on("error", (err) => {
+        clearTimeout(timer);
+        reject(err);
       });
 
       proc.stdin.write(JSON.stringify(payload));

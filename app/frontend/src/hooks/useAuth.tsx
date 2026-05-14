@@ -30,30 +30,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Storage key baseado em remember me
-  const getStorageKey = (key: string) => {
-    const useLocalStorage = localStorage.getItem('rememberMe') === 'true';
-    return useLocalStorage ? key : `session_${key}`;
-  };
-
-  // Carregar token e user do storage
+  // Carregar user do token via /me
   useEffect(() => {
-    const storageKey = getStorageKey('token');
-    const userKey = getStorageKey('user');
-    
-    const storedToken = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
-    const storedUser = localStorage.getItem(userKey) || sessionStorage.getItem(userKey);
-    
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (err) {
-        console.error('Failed to parse stored user:', err);
-        clearAuth();
-      }
-    }
-    setIsLoading(false);
+    authAPI
+      .me()
+      .then((res) => {
+        setUser(res.data);
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -64,39 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener("auth:unauthorized", handler);
   }, []);
 
-  useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
-
-    authAPI
-      .me()
-      .then((res) => {
-        if (cancelled) return;
-        const userData = res.data;
-        setUser(userData);
-
-        const storageKey = getStorageKey("user");
-        const storage =
-          storageKey.startsWith("session_") ? sessionStorage : localStorage;
-        storage.setItem(storageKey, JSON.stringify(userData));
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
-
   const clearAuth = () => {
     setUser(null);
     setToken(null);
     setError(null);
-    
-    // Limpar ambos os storages
-    ['token', 'session_token', 'user', 'session_user', 'rememberMe'].forEach(key => {
-      localStorage.removeItem(key);
-      sessionStorage.removeItem(key);
-    });
   };
 
   const clearError = () => setError(null);
@@ -108,16 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authAPI.login(email, password);
       const { user: userData, token: newToken } = response.data;
-
-      // Guardar preferência remember me
-      localStorage.setItem('rememberMe', rememberMe.toString());
-
-      // Escolher storage baseado em remember me
-      const storage = rememberMe ? localStorage : sessionStorage;
-      const keyPrefix = rememberMe ? '' : 'session_';
-
-      storage.setItem(`${keyPrefix}token`, newToken);
-      storage.setItem(`${keyPrefix}user`, JSON.stringify(userData));
 
       setUser(userData);
       setToken(newToken);
@@ -137,12 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authAPI.register(email, password, name);
       const { user: userData, token: newToken } = response.data;
-
-      // Por defeito, usar remember me = true para novos registos
-      const storage = localStorage;
-      storage.setItem('rememberMe', 'true');
-      storage.setItem('token', newToken);
-      storage.setItem('user', JSON.stringify(userData));
 
       setUser(userData);
       setToken(newToken);

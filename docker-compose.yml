@@ -102,6 +102,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-motoguard}:${POSTGRES_PASSWORD:-motoguard123}@postgres:5432/${POSTGRES_DB:-motoguard}
       # JWT
       JWT_SECRET: ${JWT_SECRET:-motoguard-dev-secret-change-in-prod}
+      # Encryption (separate from JWT_SECRET!)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-generate-32-byte-random-hex-string}
+      # App URL & Email (Resend)
+      APP_URL: ${APP_URL:-http://localhost:5173}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       # ML Pipeline
       ML_ENABLED: ${ML_ENABLED:-true}
       ML_MODEL_PATH: ${ML_MODEL_PATH:-ml/models/isolation_forest.pkl}
@@ -118,6 +123,9 @@ services:
       postgres:
         condition: service_healthy
     volumes:
+      # NOTA: Montar o source em cima do container faz override do dist/ compilado.
+      # Em ambiente de desenvolvimento é útil para hot-reload, mas em produção
+      # deve ser removido para usar o código compilado no container.
       - ./app/backend:/app/backend
       - ./ml:/ml
     networks:
@@ -154,6 +162,7 @@ services:
       MQTT_USER: ${MQTT_SIM_USER:-simulator}
       MQTT_PASS: ${MQTT_SIM_PASS:-simulator123}
       SIM_MODELO: ${SIM_MODELO:-Naked}
+      SIM_AUTO_START: "${SIM_AUTO_START:-false}"
       ROUTE_NAME: ${ROUTE_NAME:-vila_real_estrada}
       ROUTE_SNAP_TO_ROADS: ${ROUTE_SNAP_TO_ROADS:-true}
       OSRM_URL: ${OSRM_URL:-https://router.project-osrm.org}

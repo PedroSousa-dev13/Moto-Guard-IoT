@@ -39,7 +39,7 @@ describe('Telemetry Routes', () => {
 
   it('should get latest telemetry', async () => {
     // Mock do store
-    telemetryStore.update({ system: { device_id: 'd1' } } as any);
+    telemetryStore.update({ system: { device_id: 'd1', timestamp: new Date().toISOString() } } as any);
 
     const response = await request(app).get('/api/telemetry/latest');
     

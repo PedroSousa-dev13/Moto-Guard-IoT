@@ -1,8 +1,6 @@
-import { getStoredToken } from "../services/api";
-
 /**
  * Client for POST /api/gpx/parse with optional upload progress (XHR).
- * Envia Bearer JWT como o axios (authMiddleware no backend).
+ * O JWT é enviado automaticamente via cookie httpOnly (withCredentials: true).
  */
 
 export interface GpxParseApiRoute {
@@ -34,8 +32,6 @@ export interface PostGpxForParseOptions {
   url?: string;
   signal?: AbortSignal;
   timeoutMs?: number;
-  /** JWT; se omitido, usa o mesmo token que o cliente API (local/session storage). */
-  token?: string | null;
   onUploadProgress?: (percent: number) => void;
   onUploadFinished?: () => void;
 }
@@ -65,7 +61,6 @@ export function postGpxForParse(
     timeoutMs = 30000,
     onUploadProgress,
     onUploadFinished,
-    token: tokenOption,
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -73,11 +68,6 @@ export function postGpxForParse(
     xhr.open("POST", url);
     xhr.withCredentials = true;
     xhr.timeout = timeoutMs;
-
-    const authToken = tokenOption ?? getStoredToken();
-    if (authToken) {
-      xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
-    }
 
     let uploadHadComputableProgress = false;
 

@@ -8,13 +8,34 @@
 
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import { Resend } from "resend";
 import { prisma } from "../services/prisma.service";
 import { env } from "../config/env";
 
 // Gerar token de reset (24h de validade)
 function generateResetToken(email: string): string {
   return jwt.sign({ email, type: 'reset' }, env.JWT_SECRET, { expiresIn: '24h' });
+}
+
+function buildResetEmailHtml(resetLink: string): string {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;border:2px solid #3b82f6;border-radius:12px">
+      <h2 style="color:#1e40af;margin:0 0 16px">MotoGuard — Recuperação de Senha</h2>
+      <p style="margin:0 0 12px;font-size:15px">
+        Recebemos um pedido de redefinição de senha para a sua conta MotoGuard.
+      </p>
+      <p style="margin:0 0 20px;font-size:15px">
+        Clique no botão abaixo para definir uma nova senha. Este link é válido por <strong>24 horas</strong>.
+      </p>
+      <p style="margin:0 0 8px;text-align:center">
+        <a href="${resetLink}" style="background:#3b82f6;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">Redefinir Senha</a>
+      </p>
+      <p style="margin:20px 0 0;font-size:12px;color:#999">
+        Se não pediu a redefinição, ignore este email.
+      </p>
+    </div>
+  `;
 }
 
 // ─── Esqueci a Senha ───────────────────────────────────────────────────────
@@ -36,9 +57,21 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
     // Gerar token de reset
     const resetToken = generateResetToken(email);
+    const resetLink = `${env.APP_URL}/reset-password?token=${resetToken}`;
 
-    // Email de reset não implementado — token gerado mas não enviado
-    void resetToken;
+    // Enviar email com o link de reset
+    if (env.RESEND_API_KEY) {
+      const resend = new Resend(env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: env.RESEND_FROM,
+        to: email,
+        subject: "MotoGuard — Recuperação de Senha",
+        html: buildResetEmailHtml(resetLink),
+      });
+    } else {
+      console.warn("[auth-reset] RESEND_API_KEY não configurada. Email de reset não enviado.");
+      console.warn(`[auth-reset] Link de reset (dev): ${resetLink}`);
+    }
 
     res.json({ message: "Se o email existir, receberá instruções de recuperação" });
   } catch (err) {
@@ -58,7 +91,7 @@ export async function verifyResetToken(req: Request, res: Response): Promise<voi
   }
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     if (decoded.type !== 'reset') {
       res.status(400).json({ valid: false });
@@ -66,7 +99,7 @@ export async function verifyResetToken(req: Request, res: Response): Promise<voi
     }
 
     // Verificar se user ainda existe
-    const user = await prisma.user.findUnique({ where: { email: decoded.email } });
+    const user = await prisma.user.findUnique({ where: { email: decoded.email as string } });
     if (!user) {
       res.status(400).json({ valid: false });
       return;
@@ -95,7 +128,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   }
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
     if (decoded.type !== 'reset') {
       res.status(400).json({ error: "Token inválido" });
@@ -103,7 +136,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     }
 
     // Encontrar user pelo email no token
-    const user = await prisma.user.findUnique({ where: { email: decoded.email } });
+    const user = await prisma.user.findUnique({ where: { email: decoded.email as string } });
     if (!user) {
       res.status(400).json({ error: "Token inválido" });
       return;

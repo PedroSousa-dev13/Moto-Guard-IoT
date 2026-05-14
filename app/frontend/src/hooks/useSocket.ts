@@ -20,6 +20,9 @@ import { loadSettings } from "../utils/settings";
 import { useDemoContext } from "../demo/DemoContext";
 import { DemoSocketEmitter } from "../demo/demoSocketEmitter";
 
+/** @deprecated Prefer passar userId explicitamente vindo do useAuth().
+ *  O userId em localStorage/sessionStorage é injectável pelo cliente.
+ *  O backend deve SEMPRE verificar a autenticação real via JWT. */
 function getStoredUserId(): string | null {
   const rememberMe = localStorage.getItem("rememberMe") === "true";
   const storage = rememberMe ? localStorage : sessionStorage;
@@ -27,8 +30,9 @@ function getStoredUserId(): string | null {
   const raw = storage.getItem(key) || localStorage.getItem(key) || sessionStorage.getItem(key);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as { id?: string };
-    return parsed?.id ?? null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.id === "string") return parsed.id;
+    return null;
   } catch {
     return null;
   }
@@ -283,7 +287,7 @@ export function useSocket() {
       addLog(`SOS Countdown cancelado para ${data.deviceId}`, "#22c55e");
     });
 
-    socket.on("realtime_anomaly", (data: any) => {
+    socket.on("realtime_anomaly", (data: { deviceId: string; reason: string; score?: number; timestamp?: string }) => {
       setRealtimeAnomaly(data);
       addLog(`🚨 ANOMALIA ML em ${data.deviceId}: ${data.reason}`, "#ef4444");
       // Limpar após 5 segundos

@@ -80,6 +80,6 @@ export async function getTripTelemetry(
     res.json({ trip, total_points: points.length, data: points });
   } catch (err) {
     console.warn(`[TELEMETRY] InfluxDB indisponível para ${tripId} (${Date.now() - t0}ms):`, (err as Error).message);
-    res.json({ trip, total_points: 0, data: [] });
+    res.status(503).json({ error: "Base de dados de telemetria temporariamente indisponível", trip, total_points: 0, data: [] });
   }
 }

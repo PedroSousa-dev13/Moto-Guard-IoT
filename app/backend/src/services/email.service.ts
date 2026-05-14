@@ -55,6 +55,13 @@ function buildHtml(payload: CrashEmailPayload): string {
 }
 
 export async function sendCrashAlert(payload: CrashEmailPayload): Promise<void> {
+  // Validação redundante do email (defense in depth)
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(payload.toEmail)) {
+    console.warn(`[email.service] Email de emergência inválido: "${payload.toEmail}". Email NÃO enviado.`);
+    return;
+  }
+
   // Prioridade: key do utilizador → fallback para variável de ambiente
   const apiKey = payload.resendApiKey || env.RESEND_API_KEY;
 

@@ -155,7 +155,7 @@ graph TB
 ### Frontend
 | Tecnologia | Versão | Propósito |
 |-----------|--------|-----------|
-| React | 18.x | Framework UI |
+| React | 19.x | Framework UI |
 | TypeScript | 5.x | Tipagem estática |
 | Vite | 5.x | Build tool |
 | Socket.IO Client | 4.x | WebSocket em tempo real |
@@ -169,7 +169,7 @@ graph TB
 | Node.js | 20.x | Runtime JavaScript |
 | TypeScript | 5.x | Tipagem estática |
 | Express | 4.x | Framework web |
-| Prisma | 5.x | ORM |
+| Prisma | 7.x (via @prisma/client) | ORM |
 | Socket.IO | 4.x | WebSocket server |
 | MQTT.js | 5.x | Cliente MQTT |
 | JWT | 9.x | Autenticação |
@@ -270,6 +270,18 @@ Moto-Guard-IoT/
 
 ## 🚀 Instalação e Configuração
 
+### Setup Rápido (Desenvolvimento Local)
+
+```bash
+# Windows:
+setup.bat
+
+# Linux / macOS:
+chmod +x setup.sh && ./setup.sh
+```
+
+O script copia o `.env.example`, instala dependências, gera o Prisma client e faz seed.
+
 ### Pré-requisitos
 
 - **Docker** e **Docker Compose** instalados
@@ -352,6 +364,7 @@ docker compose exec backend npx tsx prisma/seed.ts
 
 - **Frontend:** http://localhost:5173 (modo dev) ou http://localhost (se usar nginx)
 - **Backend API:** http://localhost:3000
+- **Swagger UI:** http://localhost:3000/api-docs
 - **InfluxDB UI:** http://localhost:8086
 - **MQTT Broker:** localhost:1883 (WebSocket: 9001)
 
@@ -408,43 +421,15 @@ mosquitto_pub -h localhost -t motoguard/comando \
 
 ## 📸 Screenshots
 
-<!-- ADICIONAR SCREENSHOTS REAIS DO PROJETO AQUI -->
-
-### Dashboard em Tempo Real
-<!-- ![Dashboard](imagens/screenshots/dashboard.png) -->
-*Placeholder: Adicionar screenshot do Dashboard com gauges e telemetria ao vivo*
-
-### Mapa com Rota e Eventos
-<!-- ![Mapa](imagens/screenshots/mapa.png) -->
-*Placeholder: Adicionar screenshot do mapa Leaflet com rota GPX e eventos marcados*
-
-### Análise de Viagem (Trip Detail)
-<!-- ![Trip Detail](imagens/screenshots/trip-detail.png) -->
-*Placeholder: Adicionar screenshot da análise pós-viagem com gráficos*
-
-### Gestão de Motas (Garagem)
-<!-- ![Garagem](imagens/screenshots/garagem.png) -->
-*Placeholder: Adicionar screenshot da página de gestão de motas*
-
-### Analytics e Heatmap
-<!-- ![Analytics](imagens/screenshots/analytics.png) -->
-*Placeholder: Adicionar screenshot dos analytics com heatmap*
-
-### Simulador e Controlo
-<!-- ![Simulador](imagens/screenshots/simulador.png) -->
-*Placeholder: Adicionar screenshot da página do simulador*
-
-### Modo Demo
-<!-- ![Demo Mode](imagens/screenshots/demo-mode.png) -->
-*Placeholder: Adicionar screenshot do banner do modo demo*
-
-### Mobile Responsivo
-<!-- ![Mobile](imagens/screenshots/mobile.png) -->
-*Placeholder: Adicionar screenshot em dispositivo móvel*
+> **Nota:** Screenshots reais devem ser adicionados em `imagens/screenshots/` e referenciados aqui quando disponíveis.
 
 ---
 
 ## 🔌 API Documentation
+
+A documentação interativa está disponível via **Swagger UI** em [`/api-docs`](http://localhost:3000/api-docs) quando o backend estiver a correr.
+
+Esquema OpenAPI também disponível em `/api-docs.json`.
 
 ### Endpoints Principais
 

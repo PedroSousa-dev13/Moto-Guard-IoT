@@ -8,18 +8,31 @@
 import type { TelemetryPayload, BackendStatus } from "../models/telemetry.model";
 
 class TelemetryStore {
-  private _latest: TelemetryPayload | null = null;
+  private _latestByDevice = new Map<string, TelemetryPayload>();
   private _count = 0;
 
   /** Atualiza com novo payload recebido do MQTT */
   update(payload: TelemetryPayload): void {
-    this._latest = payload;
+    const deviceId = payload.system?.device_id;
+    if (deviceId) {
+      this._latestByDevice.set(deviceId, payload);
+    }
     this._count++;
   }
 
-  /** Último payload recebido */
+  /** Último payload recebido (qualquer device) */
   get latest(): TelemetryPayload | null {
-    return this._latest;
+    if (this._latestByDevice.size === 0) return null;
+    let latest: TelemetryPayload | null = null;
+    let latestTime = 0;
+    for (const payload of this._latestByDevice.values()) {
+      const t = new Date(payload.system?.timestamp || 0).getTime();
+      if (t > latestTime) {
+        latestTime = t;
+        latest = payload;
+      }
+    }
+    return latest;
   }
 
   /** Total de mensagens recebidas desde o arranque */
@@ -29,7 +42,7 @@ class TelemetryStore {
 
   /** Indica se já existe pelo menos um payload recebido */
   get hasData(): boolean {
-    return this._latest !== null;
+    return this._latestByDevice.size > 0;
   }
 
   /** Estado resumido para enviar ao frontend */
@@ -42,15 +55,12 @@ class TelemetryStore {
   }
 
   clearLatest(): void {
-    this._latest = null;
+    this._latestByDevice.clear();
   }
 
   clearLatestIfDevice(deviceId: string | null): void {
     if (!deviceId) return;
-    const latestDeviceId = this._latest?.system?.device_id ?? null;
-    if (latestDeviceId === deviceId) {
-      this._latest = null;
-    }
+    this._latestByDevice.delete(deviceId);
   }
 }
 

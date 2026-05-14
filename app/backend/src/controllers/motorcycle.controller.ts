@@ -8,6 +8,7 @@
 
 import { Response } from "express";
 import { prisma } from "../services/prisma.service";
+import { deviceAssociationService } from "../services/device-association.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
 
 // ─── Criar mota ─────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ export async function createMotorcycle(
       include: { profile: true },
     });
 
+    deviceAssociationService.clearCache();
     res.status(201).json(motorcycle);
   } catch (err) {
     console.error("[createMotorcycle] Erro interno:", err);
@@ -148,6 +150,7 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
       include: { profile: true },
     });
 
+    deviceAssociationService.clearCache();
     res.json(motorcycle);
   } catch (err) {
     console.error("[updateMotorcycle] Erro interno:", err);
@@ -167,6 +170,7 @@ export async function deleteMotorcycle(req: AuthRequest, res: Response): Promise
     }
 
     await prisma.motorcycle.delete({ where: { id } });
+    deviceAssociationService.clearCache();
     res.json({ success: true });
   } catch (err) {
     console.error("[deleteMotorcycle] Erro interno:", err);

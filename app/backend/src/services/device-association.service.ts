@@ -191,6 +191,7 @@ class DeviceAssociationService {
     this.cacheTimestamps.set(deviceId, Date.now());
   }
 
+  /** Invalida o cache. Chamar sempre que uma mota é criada/atualizada/removida. */
   clearCache(): void {
     this.cache.clear();
     this.cacheTimestamps.clear();
