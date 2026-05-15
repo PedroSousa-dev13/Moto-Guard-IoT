@@ -41,7 +41,7 @@ export default function Profile() {
   useEffect(() => {
     document.title = "Perfil — MotoGuard";
     void loadData();
-    void authAPI.getResendApiKeyStatus().then((r) => setResendConfigured(r.data.configured)).catch(() => {});
+    void authAPI.getResendApiKeyStatus().then((r) => setResendConfigured(r.data.configured)).catch(() => console.warn("[Profile] Falha ao obter status Resend API Key"));
   }, []);
 
   useEffect(() => { if (user?.name) setProfileName(user.name); }, [user]);
@@ -97,8 +97,8 @@ export default function Profile() {
         setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
       }
       setProfileMsg({ type: "success", text: "Perfil atualizado com sucesso." });
-    } catch (err: any) {
-      setProfileMsg({ type: "error", text: err?.response?.data?.error ?? "Erro ao atualizar perfil." });
+    } catch (err: unknown) {
+      setProfileMsg({ type: "error", text: (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erro ao atualizar perfil." });
     } finally {
       setIsSavingProfile(false);
     }
@@ -109,7 +109,7 @@ export default function Profile() {
     setAddError(null);
     setIsSubmitting(true);
     try {
-      const payload: any = { name: form.name };
+      const payload: Record<string, unknown> = { name: form.name };
       if (form.brand) payload.brand = form.brand;
       if (form.year) payload.year = parseInt(form.year, 10);
       if (form.deviceId) payload.deviceId = form.deviceId;
@@ -118,8 +118,8 @@ export default function Profile() {
       setMotorcycles((prev) => [res.data, ...prev]);
       setIsAdding(false);
       setForm({ name: "", brand: "", year: "", deviceId: "", profileId: "" });
-    } catch (err: any) {
-      setAddError(err.response?.data?.error ?? "Erro ao adicionar mota");
+    } catch (err: unknown) {
+      setAddError((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? "Erro ao adicionar mota");
     } finally {
       setIsSubmitting(false);
     }
@@ -442,8 +442,8 @@ function MotoRow({ moto, profiles, onUpdated, onDeleted }: {
       payload.profileId = edit.profileId || null;
       const res = await motorcyclesAPI.update(moto.id, payload);
       onUpdated(res.data); setIsEditing(false);
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? "Erro ao guardar");
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? "Erro ao guardar");
     } finally { setIsSaving(false); }
   }
 
@@ -453,8 +453,8 @@ function MotoRow({ moto, profiles, onUpdated, onDeleted }: {
     try {
       await motorcyclesAPI.remove(moto.id);
       onDeleted(moto.id);
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? "Erro ao apagar");
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? "Erro ao apagar");
     } finally { setIsDeleting(false); }
   }
 

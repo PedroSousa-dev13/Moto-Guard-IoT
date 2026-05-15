@@ -20,28 +20,17 @@ import { loadSettings } from "../utils/settings";
 import { useDemoContext } from "../demo/DemoContext";
 import { DemoSocketEmitter } from "../demo/demoSocketEmitter";
 
-/** @deprecated Prefer passar userId explicitamente vindo do useAuth().
- *  O userId em localStorage/sessionStorage é injectável pelo cliente.
- *  O backend deve SEMPRE verificar a autenticação real via JWT. */
+/** @deprecated O userId não deve ser lido do localStorage por razões de segurança.
+ *  O backend obtém o utilizador autenticado via JWT na ligação WebSocket. */
 function getStoredUserId(): string | null {
-  const rememberMe = localStorage.getItem("rememberMe") === "true";
-  const storage = rememberMe ? localStorage : sessionStorage;
-  const key = rememberMe ? "user" : "session_user";
-  const raw = storage.getItem(key) || localStorage.getItem(key) || sessionStorage.getItem(key);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.id === "string") return parsed.id;
-    return null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function useSocket() {
   const { isDemoMode, registerEmitter } = useDemoContext();
   const socketRef = useRef<Socket | null>(null);
   const lastKnownDeviceIdRef = useRef<string | null>(null);
+  const anomalyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
   const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
@@ -61,15 +50,13 @@ export function useSocket() {
     if (isDemoMode || !socketRef.current) return;
     // Determinar o device_id a partir de refs e state snapshot
     const deviceId =
-      lastKnownDeviceIdRef.current ?? "MOTOGUARD-SIM-01";
-    const userId = getStoredUserId() ?? undefined;
+      lastKnownDeviceIdRef.current ?? undefined;
     const payload = {
       acao: "parar" as const,
       device_id: deviceId,
-      ...(userId ? { userId } : {}),
     };
     socketRef.current.emit("send_command", payload);
-    console.log(`[useSocket] Stop command sent to ${deviceId}`);
+    console.debug(`[useSocket] Stop command sent to ${deviceId}`);
   }, [isDemoMode]);
 
   const resetSimulationView = useCallback((sendStop = false) => {
@@ -111,13 +98,12 @@ export function useSocket() {
           ?? activeDeviceId
           ?? lastDeviceId
           ?? lastKnownDeviceIdRef.current
-          ?? (shouldDefaultToSimulatorDevice ? "MOTOGUARD-SIM-01" : undefined);
+          ?? undefined;
         if (cmd.acao === "override" && !device_id) {
           addLog("Comando override ignorado: sem device_id ativo", "#eab308");
           return;
         }
-        const userId = cmd.userId ?? getStoredUserId() ?? undefined;
-        const payload = { ...cmd, ...(device_id ? { device_id } : {}), ...(userId ? { userId } : {}) };
+        const payload = { ...cmd, ...(device_id ? { device_id } : {}) };
         socketRef.current.emit("send_command", payload);
         addLog(`Comando enviado: ${JSON.stringify(payload)}`, "#3b82f6");
       }
@@ -290,8 +276,8 @@ export function useSocket() {
     socket.on("realtime_anomaly", (data: { deviceId: string; reason: string; score?: number; timestamp?: string }) => {
       setRealtimeAnomaly(data);
       addLog(`🚨 ANOMALIA ML em ${data.deviceId}: ${data.reason}`, "#ef4444");
-      // Limpar após 5 segundos
-      setTimeout(() => setRealtimeAnomaly(null), 5000);
+      if (anomalyTimerRef.current) clearTimeout(anomalyTimerRef.current);
+      anomalyTimerRef.current = setTimeout(() => setRealtimeAnomaly(null), 5000);
     });
 
     // Verificar estado do backend ao montar
@@ -311,6 +297,7 @@ export function useSocket() {
     addLog("Dashboard MotoGuard iniciado — à espera de dados...", "#71717a");
 
     return () => {
+      if (anomalyTimerRef.current) clearTimeout(anomalyTimerRef.current);
       socket.disconnect();
     };
   }, [addLog, isDemoMode, registerEmitter]);

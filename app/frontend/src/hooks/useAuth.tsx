@@ -12,6 +12,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
+  getToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,8 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(userData);
       setToken(newToken);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || 'Erro ao fazer login';
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Erro ao fazer login';
       setError(errorMessage);
       throw err;
     } finally {
@@ -90,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(userData);
       setToken(newToken);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || 'Erro ao criar conta';
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Erro ao criar conta';
       setError(errorMessage);
       throw err;
     } finally {
@@ -103,7 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearAuth();
   };
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!user;
+  const getToken = (): string | null => token;
 
   return (
     <AuthContext.Provider value={{ 
@@ -115,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated, 
       isLoading,
       error,
-      clearError
+      clearError,
+      getToken
     }}>
       {children}
     </AuthContext.Provider>

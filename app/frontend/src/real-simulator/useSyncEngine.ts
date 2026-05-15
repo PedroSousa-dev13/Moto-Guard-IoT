@@ -106,9 +106,8 @@ export function useSyncEngine(options: SyncEngineOptions): SyncEngineControls {
 
   // Efeito que controla o ciclo de vida do loop (Substituído rAF por setInterval para estabilidade absoluta)
   useEffect(() => {
-    let intervalId: any;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
     if (isPlaying) {
-      console.log("[SyncEngine] Starting autonomous 10Hz interval loop");
       intervalId = setInterval(() => {
         try {
           const currentRows = rowsRef.current;

@@ -25,6 +25,8 @@ model User {
   passwordHash        String       @map("password_hash")
   name                String
   resetToken          String?      @map("reset_token")
+  emailVerified       Boolean      @default(false) @map("email_verified")
+  emailVerificationToken String?   @map("email_verification_token")
   emergencyContact    String?      @map("emergency_contact") // Email de contacto de emergência
   resendApiKey        String?      @map("resend_api_key")    // API key Resend (encriptada, AES-256)
   createdAt           DateTime     @default(now()) @map("created_at")
@@ -99,6 +101,7 @@ model Trip {
   source          TripSource  @default(SIMULATOR)
   startedAt       DateTime    @map("started_at")
   endedAt         DateTime?   @map("ended_at")
+  stoppedAt       DateTime?   @map("stopped_at")     // Momento em que o utilizador pediu a paragem
   distanceKm      Float?      @map("distance_km")
   maxSpeedKmh     Float?      @map("max_speed_kmh")
   avgSpeedKmh     Float?      @map("avg_speed_kmh")

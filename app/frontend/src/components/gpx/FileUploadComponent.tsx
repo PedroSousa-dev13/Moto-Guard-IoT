@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 
 interface FileUploadComponentProps {

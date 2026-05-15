@@ -29,6 +29,12 @@ vi.mock('../middleware/auth.middleware', () => ({
   },
 }));
 
+vi.mock('../middleware/csrf.middleware', () => ({
+  csrfMiddleware: (req, res, next) => {
+    next();
+  },
+}));
+
 describe('Motorcycle Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();

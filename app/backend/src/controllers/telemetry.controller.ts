@@ -14,7 +14,7 @@ import type { AuthRequest } from "../middleware/auth.middleware";
 
 export function getLatestTelemetry(_req: Request, res: Response): void {
   if (!telemetryStore.latest) {
-    res.status(204).json({ message: "Sem dados de telemetria ainda" });
+    res.status(204).end();
     return;
   }
 

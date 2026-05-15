@@ -32,9 +32,9 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
     try {
       await authAPI.forgotPassword(forgotEmail);
       setForgotSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setForgotError(
-        err.response?.data?.error ?? "Erro ao enviar email de recuperação",
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error ?? "Erro ao enviar email de recuperação",
       );
     } finally {
       setForgotLoading(false);

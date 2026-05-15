@@ -103,7 +103,7 @@ export default function TripDetail() {
 
         const tripRes = await tripsAPI.getById(id);
         if (cancelled) return;
-        console.log("[TripDetail] Trip loaded:", tripRes.data);
+        console.debug("[TripDetail] Trip loaded:", tripRes.data);
         setTrip(tripRes.data);
 
         // Carregar telemetria InfluxDB para TODOS os tipos de viagem
@@ -111,16 +111,16 @@ export default function TripDetail() {
         try {
           const telem = await tripsAPI.getTelemetry(id);
           if (cancelled) return;
-          console.log("[TripDetail] Telemetry loaded:", telem.data);
+          console.debug("[TripDetail] Telemetry loaded:", telem.data);
           setTelemetryRes(telem.data);
         } catch {
           if (cancelled) return;
           console.warn("[TripDetail] Could not load telemetry, using GPX waypoints only.");
           setTelemetryRes(null);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        setError(err?.response?.data?.error ?? "Não foi possível carregar a viagem.");
+        setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Não foi possível carregar a viagem.");
       } finally {
         if (!cancelled) setIsLoading(false);
       }

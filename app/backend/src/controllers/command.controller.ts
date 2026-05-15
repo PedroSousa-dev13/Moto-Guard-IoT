@@ -21,7 +21,12 @@ export function sendCommand(req: Request, res: Response): void {
     return;
   }
 
-  mqttService.publishCommand(command);
+  const sent = mqttService.publishCommand(command);
+  if (!sent) {
+    res.status(503).json({ error: "Falha ao publicar comando no MQTT" });
+    return;
+  }
+
   console.log("Comando enviado via REST:", JSON.stringify(command));
   res.json({ status: "sent", command });
 }

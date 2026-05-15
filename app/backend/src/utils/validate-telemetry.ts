@@ -51,6 +51,13 @@ export function validateTelemetryPayload(data: unknown): ValidationResult {
     }
   }
 
+  // ─── active_safety fields ────────────────────────────────────────────
+  const activeSafety = data.active_safety as Record<string, unknown>;
+  const safetyMissing = hasFields(activeSafety, ["abs_active", "tc_active"]);
+  if (safetyMissing) {
+    return { valid: false, error: `Campo 'active_safety.${safetyMissing}' em falta` };
+  }
+
   // ─── Campos dentro de cada bloco ──────────────────────────────────────
   const telemetry = data.telemetry as Record<string, unknown>;
   const missing = hasFields(telemetry, [

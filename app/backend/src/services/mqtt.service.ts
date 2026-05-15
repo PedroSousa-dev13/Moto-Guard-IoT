@@ -96,7 +96,6 @@ class MqttService {
       return false;
     }
 
-    const acao = (command as Record<string, unknown>)?.acao;
     this.client.publish(
       env.MQTT_TOPIC_COMANDO,
       JSON.stringify(command),

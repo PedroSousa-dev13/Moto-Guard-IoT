@@ -7,6 +7,7 @@
 # =============================================================================
 
 import os
+import socket
 
 # ─────────────────────────────────────────────
 #  MQTT
@@ -26,7 +27,7 @@ MQTT_PASS = os.environ.get("MQTT_PASS", "motoguard123")
 # ─────────────────────────────────────────────
 #  DISPOSITIVO
 # ─────────────────────────────────────────────
-DEVICE_ID = os.environ.get("DEVICE_ID", "MOTOGUARD-SIM-01")
+DEVICE_ID = os.environ.get("DEVICE_ID", f"MOTOGUARD-SIM-{socket.gethostname().upper()}")
 PUBLISH_INTERVAL = 0.1          # segundos entre cada payload
 
 # ─────────────────────────────────────────────

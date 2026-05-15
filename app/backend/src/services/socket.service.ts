@@ -26,6 +26,7 @@ import { EventType } from "../generated/prisma/enums";
 import { sendCrashAlert } from "./email.service";
 import { decrypt } from "../utils/crypto";
 import { env } from "../config/env";
+import jwt from "jsonwebtoken";
 import { realtimeAnomalyService } from "./realtime-anomaly.service";
 import { tripClusteringService } from "./trip-clustering.service";
 
@@ -82,7 +83,7 @@ export class SocketService {
   // Thresholds configuráveis via env.ts
 
   /** Emitir evento para todos os clientes ligados */
-  emit(event: string, data: any): void {
+  emit(event: string, data: unknown): void {
     this.io?.emit(event, data);
   }
 
@@ -95,6 +96,45 @@ export class SocketService {
   init(httpServer: http.Server): void {
     this.io = new Server(httpServer, {
       cors: { origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173', 'http://localhost:3000'], methods: ["GET", "POST"] },
+    });
+
+    // Registrar callback para anomalias ML (quebra dependência circular)
+    realtimeAnomalyService.onAnomaly = (event) => {
+      this.io?.emit("realtime_anomaly", event);
+    };
+
+    // Autenticação JWT para WebSocket
+    this.io.use((socket, next) => {
+      function extractWsToken(): string | null {
+        // 1. Auth handshake explícito
+        if (socket.handshake.auth?.token) return socket.handshake.auth.token as string;
+        // 2. Authorization header
+        const authHeader = socket.handshake.headers?.authorization;
+        if (authHeader && typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+          return authHeader.slice(7);
+        }
+        // 3. Cookie httpOnly (token JWT)
+        const cookieHeader = socket.handshake.headers?.cookie;
+        if (cookieHeader && typeof cookieHeader === "string") {
+          const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+          if (match) return match[1];
+        }
+        return null;
+      }
+
+      const token = extractWsToken();
+
+      if (!token) {
+        return next(new Error("Autenticação necessária"));
+      }
+
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as { sub: string };
+        (socket as import("socket.io").Socket & { userId: string }).userId = decoded.sub;
+        next();
+      } catch {
+        next(new Error("Token inválido ou expirado"));
+      }
     });
 
     this.io.on("connection", (socket: Socket) => {
@@ -751,8 +791,8 @@ export class SocketService {
       }
 
       const created = lastPayload
-        ? await this.createCompletedTripFromLastPayload(deviceId, endedAt)
-        : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt);
+        ? await this.createCompletedTripFromLastPayload(deviceId, endedAt, endedAt)
+        : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt, endedAt);
       this.io?.emit("trip_ended", {
         deviceId,
         motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
@@ -773,6 +813,7 @@ export class SocketService {
       payload: lastPayload ?? null,
       endedAt,
       doClustering: false,
+      stoppedAt: endedAt,
     });
   }
 
@@ -783,8 +824,9 @@ export class SocketService {
     payload: TelemetryPayload | null;
     endedAt: Date;
     doClustering: boolean;
+    stoppedAt?: Date;
   }): Promise<void> {
-    const { deviceId, tripId, stats, payload, endedAt, doClustering } = params;
+    const { deviceId, tripId, stats, payload, endedAt, doClustering, stoppedAt } = params;
 
     let distanceKm = 0;
     if (stats) {
@@ -819,6 +861,7 @@ export class SocketService {
             maxRollDeg: stats?.maxRoll ?? 0,
             maxGForce: stats?.maxGForce ?? 0,
             avgSpeedKmh,
+            ...(stoppedAt ? { stoppedAt } : {}),
           },
         });
         console.log(`Viagem cancelada (allZeros): ${tripId}`);
@@ -837,6 +880,7 @@ export class SocketService {
             maxRollDeg: stats?.maxRoll ?? 0,
             maxGForce: stats?.maxGForce ?? 0,
             avgSpeedKmh,
+            ...(stoppedAt ? { stoppedAt } : {}),
           },
         });
 
@@ -908,11 +952,19 @@ export class SocketService {
     this.lastStopHandledAtByDevice.delete(deviceId);
     this.heuristicStateByDevice.delete(deviceId);
     this.profileThresholdsCacheByDevice.delete(deviceId);
+    this.pendingEmergenciesByDevice.delete(deviceId);
+    this.recentStopByDevice.delete(deviceId);
+    this.lastUserIdByDevice.delete(deviceId);
+    this.lastMotoModelByDevice.delete(deviceId);
+    this.lastSourceByDevice.delete(deviceId);
+    this.lastTripEndedAtByDevice.delete(deviceId);
+    realtimeAnomalyService.clearDevice(deviceId);
   }
 
   private async createCompletedTripFromLastPayload(
     deviceId: string,
     endedAt: Date,
+    stoppedAt?: Date,
   ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
     const lastPayload = this.lastTelemetryByDevice.get(deviceId);
     if (!lastPayload) return null;
@@ -947,6 +999,7 @@ export class SocketService {
         source: this.resolveSourceForDevice(deviceId),
         startedAt,
         endedAt,
+        ...(stoppedAt ? { stoppedAt } : {}),
         status: "COMPLETED",
         distanceKm,
         maxSpeedKmh,
@@ -962,6 +1015,7 @@ export class SocketService {
   private async createCompletedTripWithoutTelemetry(
     deviceId: string,
     endedAt: Date,
+    stoppedAt?: Date,
   ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
     const userId = this.lastUserIdByDevice.get(deviceId) || undefined;
     const motoModel = this.lastMotoModelByDevice.get(deviceId);
@@ -987,6 +1041,7 @@ export class SocketService {
         source: this.resolveSourceForDevice(deviceId),
         startedAt: endedAt,
         endedAt,
+        ...(stoppedAt ? { stoppedAt } : {}),
         status: "COMPLETED",
         distanceKm,
         maxSpeedKmh,
@@ -1156,7 +1211,7 @@ export class SocketService {
     this.pendingEmergenciesByDevice.set(deviceId, timeout);
   }
 
-  private handleCancelEmergency(socket: any, deviceId: string): void {
+  private handleCancelEmergency(socket: import("socket.io").Socket, deviceId: string): void {
     const timeout = this.pendingEmergenciesByDevice.get(deviceId);
     if (timeout) {
       clearTimeout(timeout);

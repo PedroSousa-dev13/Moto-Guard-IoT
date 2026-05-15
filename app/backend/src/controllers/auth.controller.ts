@@ -7,6 +7,7 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { Request, Response } from "express";
 import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../services/prisma.service";
@@ -48,11 +49,16 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const emailVerificationToken = crypto.randomUUID();
 
     const user = await prisma.user.create({
-      data: { email, passwordHash, name },
-      select: { id: true, email: true, name: true, createdAt: true },
+      data: { email, passwordHash, name, emailVerificationToken },
+      select: { id: true, email: true, name: true, createdAt: true, emailVerified: true },
     });
+
+    if (env.NODE_ENV !== "production") {
+      console.log(`[auth] Link de verificação (dev): ${env.APP_URL}/verify-email?token=${emailVerificationToken}`);
+    }
 
     const token = jwt.sign({ sub: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
 
@@ -109,7 +115,7 @@ export async function me(req: AuthRequest, res: Response): Promise<void> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true, emergencyContact: true },
+      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true, emergencyContact: true, emailVerified: true },
     });
 
     if (!user) {
@@ -219,5 +225,72 @@ export async function getResendApiKeyStatus(req: AuthRequest, res: Response): Pr
   } catch (err) {
     console.error("[getResendApiKeyStatus] Erro:", err);
     res.status(500).json({ error: "Erro interno." });
+  }
+}
+
+// ─── Verificar Email ────────────────────────────────────────────────────────
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400).json({ error: "Token é obrigatório" });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      res.status(400).json({ error: "Token de verificação inválido" });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true, emailVerificationToken: null },
+    });
+
+    res.json({ message: "Email verificado com sucesso" });
+  } catch (err) {
+    console.error("[verifyEmail] Erro:", err);
+    res.status(500).json({ error: "Erro interno do servidor." });
+  }
+}
+
+// ─── Reenviar Verificação de Email ──────────────────────────────────────────
+export async function resendVerification(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.userId!;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, emailVerified: true, emailVerificationToken: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "Utilizador não encontrado" });
+      return;
+    }
+
+    if (user.emailVerified) {
+      res.json({ message: "Email já verificado" });
+      return;
+    }
+
+    const newToken = crypto.randomUUID();
+    await prisma.user.update({
+      where: { id: userId },
+      data: { emailVerificationToken: newToken },
+    });
+
+    if (env.NODE_ENV !== "production") {
+      console.log(`[auth] Link de verificação (dev): ${env.APP_URL}/verify-email?token=${newToken}`);
+    }
+    res.json({ message: "Email de verificação reenviado" });
+  } catch (err) {
+    console.error("[resendVerification] Erro:", err);
+    res.status(500).json({ error: "Erro interno do servidor." });
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { tripsAPI, motorcyclesAPI, gpxAPI } from "../services/api";
 import { Motorcycle } from "../types";
@@ -51,8 +51,8 @@ export default function Gpx() {
       const res = await gpxAPI.import(file, selectedMotorcycleId);
       setImportSuccess(res.data);
       await loadTrips();
-    } catch (err: any) {
-      setImportError(err.response?.data?.error ?? "Erro ao importar ficheiro GPX");
+    } catch (err: unknown) {
+      setImportError((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? "Erro ao importar ficheiro GPX");
     } finally {
       setImporting(false);
     }

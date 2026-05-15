@@ -10,6 +10,7 @@ vi.mock('../services/prisma.service', () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      count: vi.fn(),
     },
     $connect: vi.fn().mockResolvedValue(undefined),
     $disconnect: vi.fn().mockResolvedValue(undefined),
@@ -54,14 +55,14 @@ describe('Trip Routes', () => {
     const response = await request(app).get('/api/trips');
     
     expect(response.status).toBe(200);
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body[0].id).toBe('trip-1');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data[0].id).toBe('trip-1');
   });
 
   it('should return 404 for non-existent trip', async () => {
     (prisma.trip.findFirst as any).mockResolvedValue(null);
 
-    const response = await request(app).get('/api/trips/non-existent');
+    const response = await request(app).get('/api/trips/00000000-0000-0000-0000-000000000000');
     
     expect(response.status).toBe(404);
   });

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigation } from 'lucide-react';
 import FileUploadComponent from './FileUploadComponent';
 import RoutePreviewComponent from './RoutePreviewComponent';

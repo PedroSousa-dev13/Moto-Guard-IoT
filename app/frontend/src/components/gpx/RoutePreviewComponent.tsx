@@ -1,4 +1,3 @@
-import React from 'react';
 import { MapPin, Clock, Route, TrendingUp } from 'lucide-react';
 
 interface GpxWaypoint {

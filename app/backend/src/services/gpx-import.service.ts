@@ -2,6 +2,7 @@ import { XMLParser } from "fast-xml-parser";
 
 export type GpxWaypoint = { lat: number; lon: number; ele?: number; time?: string };
 export type GpxBounds = { minLat: number; maxLat: number; minLon: number; maxLon: number };
+const MAX_WAYPOINTS = 100_000;
 
 export type ParsedGpx = {
   waypoints: GpxWaypoint[];
@@ -66,6 +67,10 @@ function computeBoundsFromWaypoints(waypoints: GpxWaypoint[]): GpxBounds | null 
   return { minLat, maxLat, minLon, maxLon };
 }
 
+function isValidLatLon(lat: number, lon: number): boolean {
+  return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
+
 function waypointsFromRawPoints(raw: unknown[]): GpxWaypoint[] {
   const waypoints: GpxWaypoint[] = [];
   for (const pt of raw) {
@@ -74,7 +79,9 @@ function waypointsFromRawPoints(raw: unknown[]): GpxWaypoint[] {
     const lat = toNumber(p["@_lat"]);
     const lon = toNumber(p["@_lon"]);
     if (lat === null || lon === null) continue;
+    if (!isValidLatLon(lat, lon)) continue;
     const ele = toNumber(p.ele ?? null) ?? undefined;
+    if (ele !== undefined && (ele < -500 || ele > 9000)) continue;
     const timeStr = typeof p.time === "string" ? p.time : undefined;
     waypoints.push({ lat, lon, ele, time: timeStr });
   }
@@ -131,19 +138,24 @@ export function parseGpx(xml: string): ParsedGpx {
     trimValues: true,
   });
 
-  const parsed = parser.parse(xml) as any;
+  const parsed = parser.parse(xml) as { gpx?: Record<string, unknown> };
   const gpx = parsed?.gpx;
 
   const waypoints = pickBestWaypointSource(gpx);
 
-  const metaBounds = gpx?.metadata?.bounds;
+  if (waypoints.length > MAX_WAYPOINTS) {
+    waypoints.length = MAX_WAYPOINTS;
+  }
+
+  const metaBounds = (gpx?.metadata as Record<string, unknown> | undefined)?.bounds;
   const boundsFromMeta: GpxBounds | null =
     metaBounds && typeof metaBounds === "object"
       ? (() => {
-          const maxLat = toNumber(metaBounds["@_maxlat"]);
-          const maxLon = toNumber(metaBounds["@_maxlon"]);
-          const minLat = toNumber(metaBounds["@_minlat"]);
-          const minLon = toNumber(metaBounds["@_minlon"]);
+          const b = metaBounds as Record<string, unknown>;
+          const maxLat = toNumber(b["@_maxlat"]);
+          const maxLon = toNumber(b["@_maxlon"]);
+          const minLat = toNumber(b["@_minlat"]);
+          const minLon = toNumber(b["@_minlon"]);
           if (maxLat === null || maxLon === null || minLat === null || minLon === null) {
             return null;
           }
@@ -169,7 +181,7 @@ export function parseGpx(xml: string): ParsedGpx {
     if (!endedAt || d > endedAt) endedAt = d;
   }
 
-  const metaTime = toDate(gpx?.metadata?.time);
+  const metaTime = toDate((gpx?.metadata as Record<string, unknown> | undefined)?.time);
   if (!startedAt) startedAt = metaTime;
   if (!endedAt) endedAt = metaTime;
 
