@@ -74,8 +74,8 @@ def main():
             results = []
             for t in trips_data:
                 results.append({
-                    "tripId": t.get("trip", {}).get("id"),
-                    "drivingStyle": "DEFENSIVE", # Fallback default
+                    "tripId": t.get("trip", {}).get("id") or t.get("id"),
+                    "drivingStyle": "DEFENSIVE",
                     "clusterId": -1
                 })
             print(json.dumps(results))
@@ -101,7 +101,7 @@ def main():
         for i, trip_data in enumerate(trips_data):
             c_id = int(cluster_ids[i])
             results.append({
-                "tripId": trip_data.get("trip", {}).get("id"),
+                "tripId": trip_data.get("trip", {}).get("id") or trip_data.get("id"),
                 "drivingStyle": cluster_mapping[c_id],
                 "clusterId": c_id
             })

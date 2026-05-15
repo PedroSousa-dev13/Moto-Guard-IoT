@@ -95,7 +95,7 @@ describe('TripMlPipelineService', () => {
     setTimeout(() => {
       mockStdout.emit('data', Buffer.from(JSON.stringify({
         mlScore: 85,
-        anomalyScore: 0.1,
+        anomalyScore: 0.15,
         feedbackLabel: 'Boa condução',
         dominantFeatures: [],
         modelVersion: 'v1',

@@ -1,0 +1,29 @@
+✅ Todos os problemas resolvidos — 37/37 testes a passar.
+
+### 1. Código morto: `_raw_score_to_ml_score`
+✅ Removida. Substituída por `_sigmoid_score_to_ml()` testável em `infer.py:95-103`.
+
+### 2. `import math` dentro da função
+✅ Movido para o topo de `infer.py:20`.
+
+### 3. `anomalyScore` raw score não normalizado
+✅ Agora normalizado para [0,1]: `1 - mlScore/100` (`infer.py:202`).
+
+### 4. Midpoint da sigmoid hardcoded
+✅ Parâmetros `sigmoid_midpoint` e `sigmoid_k` guardados nos metadados do modelo (`train.py:198-199`, `train_gpx.py:146-147`, `retrain_gpx_with_real_data.py:142-143`) e lidos em `infer.py:191-193`.
+
+### 5. `model_version` nunca muda
+✅ Agora inclui timestamp: `"isolation-forest-v1-20260515123456"` (`train.py`, `train_gpx.py`, `retrain_gpx_with_real_data.py`).
+
+### 6. Sem testes GPX
+✅ Adicionada classe `TestGpxInfer` com 7 testes em `ml/tests/test_infer.py`.
+
+### 7. Sem testes para `online_detector.py` e `clustering.py`
+✅ `ml/tests/test_online_detector.py` — 10 testes
+✅ `ml/tests/test_clustering.py` — 4 testes
+
+### 8. `tripId` pode ser `None` em `clustering.py`
+✅ Fallback adicionado: `t.get("trip", {}).get("id") or t.get("id")` (`clustering.py:77,105`).
+
+### 9. Divisão por perfil frágil
+✅ Guardas `if p_* > 0` em `features.py:141-143` para evitar divisão por zero.
