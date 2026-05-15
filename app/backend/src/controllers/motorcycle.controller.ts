@@ -11,6 +11,9 @@ import { prisma } from "../services/prisma.service";
 import { deviceAssociationService } from "../services/device-association.service";
 import type { AuthRequest } from "../middleware/auth.middleware";
 
+const CURRENT_YEAR = new Date().getFullYear();
+const MAX_YEAR = CURRENT_YEAR + 1;
+
 // ─── Criar mota ─────────────────────────────────────────────────────────────
 export async function createMotorcycle(
   req: AuthRequest,
@@ -29,8 +32,8 @@ export async function createMotorcycle(
   }
   if (year !== undefined && year !== null && year !== "") {
     const yearNum = parseInt(year, 10);
-    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
-      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > MAX_YEAR) {
+      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${MAX_YEAR}` });
       return;
     }
   }
@@ -79,15 +82,26 @@ export async function listMotorcycles(
   res: Response
 ): Promise<void> {
   const userId = req.userId!;
+  const page = Math.max(1, parseInt(req.query.page as string || "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string || "50", 10)));
+  const skip = (page - 1) * limit;
 
   try {
-    const motorcycles = await prisma.motorcycle.findMany({
-      where: { userId },
-      include: { profile: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const [motorcycles, total] = await Promise.all([
+      prisma.motorcycle.findMany({
+        where: { userId },
+        include: { profile: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.motorcycle.count({ where: { userId } }),
+    ]);
 
-    res.json(motorcycles);
+    res.json({
+      data: motorcycles,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (err) {
     console.error("[listMotorcycles] Erro interno:", err);
     res.status(500).json({ error: "Erro interno do servidor. Tente novamente mais tarde." });
@@ -122,8 +136,8 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
   }
   if (year !== undefined && year !== null && year !== "") {
     const yearNum = parseInt(year, 10);
-    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
-      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > MAX_YEAR) {
+      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${MAX_YEAR}` });
       return;
     }
   }

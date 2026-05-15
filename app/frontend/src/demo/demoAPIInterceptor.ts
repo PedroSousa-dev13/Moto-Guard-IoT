@@ -63,6 +63,15 @@ export function setupDemoInterceptor(isDemoMode: () => boolean): () => void {
 
     // GET routes — order matters (more specific first)
 
+    // Auth endpoints — return demo user so ProtectedRoute works
+    if (url === '/auth/me' || url === '/auth/profile') {
+      config.adapter = createDemoAdapter({
+        user: { id: 'demo-user-001', name: 'Demo User', email: 'demo@motoguard.demo', createdAt: new Date().toISOString() },
+        token: 'demo-token',
+      });
+      return config;
+    }
+
     // Task 3.2 — GET /motorcycles
     if (url === '/motorcycles') {
       config.adapter = createDemoAdapter(demoMotorcycles);

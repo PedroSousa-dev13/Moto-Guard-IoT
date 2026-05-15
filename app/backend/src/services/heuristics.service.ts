@@ -1,6 +1,89 @@
 import type { TelemetryPayload } from "../models/telemetry.model";
 import { EventSeverity, EventType } from "../generated/prisma/enums";
 
+// ─── Constantes de Detecção de Eventos ───────────────────────────────────────
+// Estes valores definem os limiares e cooldowns para deteção de eventos.
+// São calibrados para evitar falsos positivos a 10Hz (1 tick = 100ms).
+
+// Cooldowns (ms) entre emissões do mesmo tipo de evento
+const COOLDOWN_HARD_BRAKING = 6500;       // ~6.5s — evita spam em travagens consecutivas
+const COOLDOWN_RAPID_ACCEL = 6500;        // ~6.5s
+const COOLDOWN_EXCESSIVE_LEAN = 9000;     // ~9s — curvas consecutivas
+const COOLDOWN_HIGH_VIBRATION = 8000;     // ~8s
+const COOLDOWN_OVERHEAT = 12000;          // ~12s — sobreaquecimento persistente
+const COOLDOWN_LOW_VOLTAGE = 12000;       // ~12s
+const COOLDOWN_OIL_PRESSURE = 15000;      // ~15s
+const COOLDOWN_TIRE_PRESSURE = 20000;     // ~20s
+const COOLDOWN_TEMP_TREND = 25000;        // ~25s — tendência de temperatura
+const COOLDOWN_VOLT_TREND = 25000;        // ~25s — tendência de voltagem
+const COOLDOWN_TIRE_TREND = 30000;        // ~30s — tendência de pressão
+const COOLDOWN_OVERREV = 10000;           // ~10s
+const COOLDOWN_WHEELIE_STOPPIE = 8000;    // ~8s
+const COOLDOWN_SAFETY_SYSTEM = 5000;      // ~5s
+const COOLDOWN_SPEEDING = 8000;           // ~8s
+
+// Duração de confirmação (ticks a 10Hz)
+const TICKS_OVERHEAT_WARN = 30;           // 3s de temp acima do limiar → warning
+const TICKS_OVERHEAT_CRIT = 80;           // 8s de temp acima do limiar → critical
+const TICKS_VOLTAGE_WARN = 30;            // 3s de voltagem baixa → warning
+const TICKS_VOLTAGE_CRIT = 80;            // 8s de voltagem baixa → critical
+const TICKS_OVERREV_WARN = 15;            // 1.5s acima do redline → warning
+const TICKS_SPEEDING = 30;                // 3s acima do limite → warning
+
+// Limiares de G-force para classificação de eventos
+const G_BRAKE_WARN = 0.35;                // Travagem brusca mínima
+const G_BRAKE_WARNING = 0.55;             // Travagem severa
+const G_BRAKE_CRITICAL = 0.75;            // Travagem perigosa
+const G_ACCEL_WARN = 0.30;                // Aceleração brusca mínima
+const G_ACCEL_WARNING = 0.50;             // Aceleração severa
+const G_ACCEL_CRITICAL = 0.70;            // Aceleração perigosa
+const G_VIBRATION_MIN = 1.9;              // G mínimo para vibração anómala
+const G_VIBRATION_WARNING = 2.3;          // Vibração severa
+const G_VIBRATION_CRITICAL = 3.0;         // Vibração perigosa
+
+// Velocidades mínimas para deteção de eventos (km/h)
+const SPEED_BRAKE_MIN = 15;               // Travagem brusca só acima de 15 km/h
+const SPEED_ACCEL_MIN = 10;               // Aceleração brusca só acima de 10 km/h
+const SPEED_LEAN_MIN = 25;                // Inclinação excessiva só acima de 25 km/h
+const SPEED_VIBRATION_MIN = 8;            // Vibração só acima de 8 km/h
+const SPEED_OIL_MIN = 25;                 // Pressão de óleo só acima de 25 km/h
+const SPEED_WHEELIE_MIN = 10;             // Wheelie/stoppie só acima de 10 km/h
+
+// Limiares de pressão de pneus (bar)
+const TIRE_PRESSURE_WARN = 1.3;           // Aviso abaixo de 1.3 bar
+const TIRE_PRESSURE_CRITICAL = 1.05;      // Crítico abaixo de 1.05 bar
+
+// Limiares de pressão de óleo (bar)
+const OIL_PRESSURE_WARN = 0.9;            // Aviso abaixo de 0.9 bar
+const OIL_PRESSURE_CRITICAL = 0.6;        // Crítico abaixo de 0.6 bar
+
+// Limiares de pitch (graus) para wheelie/stoppie
+const PITCH_WHEELIE_WARN = 15;            // Wheelie detetado acima de 15°
+const PITCH_WHEELIE_CRITICAL = 25;        // Wheelie perigoso acima de 25°
+const PITCH_STOPPIE_WARN = -15;           // Stoppie detetado abaixo de -15°
+const PITCH_STOPPIE_CRITICAL = -25;       // Stoppie perigoso abaixo de -25°
+
+// Tendências de temperatura/voltagem/pneus
+const TEMP_TREND_SLOPE_MIN = 0.02;        // °C/s — tendência de aquecimento
+const VOLT_TREND_SLOPE_MIN = -0.01;       // V/s — tendência de queda de voltagem
+const TIRE_TREND_SLOPE_MIN = -0.0003;     // bar/s — perda lenta de pressão
+const TREND_TIME_TO_CRITICAL_SEC = 900;   // 15 min — tempo máx até limiar crítico
+
+// Janelas de dados para análise de tendências (número de pontos a 10Hz)
+const WINDOW_GFORCE = 120;                // ~12s de G-force
+const WINDOW_TEMP = 180;                  // ~18s de temperatura
+const WINDOW_VOLTAGE = 180;               // ~18s de voltagem
+const WINDOW_TIRE = 300;                  // ~30s de pressão de pneus
+
+// Fatores de inclinação para classificação de eventos
+const LEAN_WARN_FACTOR = 1.1;             // 110% do típico → warning
+const LEAN_CRITICAL_FACTOR = 1.35;        // 135% do típico → critical
+const LEAN_CRITICAL_MIN_FACTOR = 0.9;     // 90% do crash threshold → critical
+
+// Fatores de excesso de velocidade
+const SPEEDING_EXCESS_FACTOR = 1.10;      // 10% acima do limite → deteção
+const SPEEDING_CRITICAL_FACTOR = 1.25;    // 25% acima do limite → critical
+
 export interface MotorcycleProfileThresholds {
   maxSpeedKmh: number;
   typicalMaxRollDeg: number;
@@ -104,11 +187,11 @@ export function evaluateTelemetryRisk(
   const accelMs2 = ((speed - prevSpeed) / 3.6) / Math.max(dtSec, 0.001);
   const accelG = accelMs2 / 9.81;
 
-  pushLimited(state.gForceWindow, gForce, 120);
-  pushLimited(state.temps, temp, 180);
-  pushLimited(state.volts, volt, 180);
-  pushLimited(state.tiresFront, tireFront, 300);
-  pushLimited(state.tiresRear, tireRear, 300);
+  pushLimited(state.gForceWindow, gForce, WINDOW_GFORCE);
+  pushLimited(state.temps, temp, WINDOW_TEMP);
+  pushLimited(state.volts, volt, WINDOW_VOLTAGE);
+  pushLimited(state.tiresFront, tireFront, WINDOW_TIRE);
+  pushLimited(state.tiresRear, tireRear, WINDOW_TIRE);
 
   const gAvg = mean(state.gForceWindow);
   const rollAbs = Math.abs(roll);
@@ -121,13 +204,13 @@ export function evaluateTelemetryRisk(
   };
 
   if (
-    speed > 15 &&
+    speed > SPEED_BRAKE_MIN &&
     (brakeFront > 60 || brakeRear > 50) &&
-    accelG < -0.35 &&
-    shouldEmit(EventType.HARD_BRAKING, 6500)
+    accelG < -G_BRAKE_WARN &&
+    shouldEmit(EventType.HARD_BRAKING, COOLDOWN_HARD_BRAKING)
   ) {
     const severity =
-      accelG < -0.75 ? EventSeverity.CRITICAL : accelG < -0.55 ? EventSeverity.WARNING : EventSeverity.INFO;
+      accelG < -G_BRAKE_CRITICAL ? EventSeverity.CRITICAL : accelG < -G_BRAKE_WARNING ? EventSeverity.WARNING : EventSeverity.INFO;
     events.push({
       type: EventType.HARD_BRAKING,
       severity,
@@ -136,14 +219,14 @@ export function evaluateTelemetryRisk(
   }
 
   if (
-    speed > 10 &&
+    speed > SPEED_ACCEL_MIN &&
     throttle > 70 &&
-    accelG > 0.30 &&
+    accelG > G_ACCEL_WARN &&
     speed < profile.maxSpeedKmh * 1.05 &&
-    shouldEmit(EventType.RAPID_ACCELERATION, 6500)
+    shouldEmit(EventType.RAPID_ACCELERATION, COOLDOWN_RAPID_ACCEL)
   ) {
     const severity =
-      accelG > 0.70 ? EventSeverity.CRITICAL : accelG > 0.50 ? EventSeverity.WARNING : EventSeverity.INFO;
+      accelG > G_ACCEL_CRITICAL ? EventSeverity.CRITICAL : accelG > G_ACCEL_WARNING ? EventSeverity.WARNING : EventSeverity.INFO;
     events.push({
       type: EventType.RAPID_ACCELERATION,
       severity,
@@ -151,9 +234,9 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  const leanWarn = profile.typicalMaxRollDeg * 1.1;
-  const leanCritical = Math.max(profile.crashRollThreshold * 0.9, profile.typicalMaxRollDeg * 1.35);
-  if (speed > 25 && rollAbs > leanWarn && shouldEmit(EventType.EXCESSIVE_LEAN, 9000)) {
+  const leanWarn = profile.typicalMaxRollDeg * LEAN_WARN_FACTOR;
+  const leanCritical = Math.max(profile.crashRollThreshold * LEAN_CRITICAL_MIN_FACTOR, profile.typicalMaxRollDeg * LEAN_CRITICAL_FACTOR);
+  if (speed > SPEED_LEAN_MIN && rollAbs > leanWarn && shouldEmit(EventType.EXCESSIVE_LEAN, COOLDOWN_EXCESSIVE_LEAN)) {
     const severity = rollAbs > leanCritical ? EventSeverity.CRITICAL : EventSeverity.WARNING;
     events.push({
       type: EventType.EXCESSIVE_LEAN,
@@ -162,8 +245,8 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (gForce > Math.max(1.9, gAvg + 0.65) && speed > 8 && rollAbs < 20 && shouldEmit(EventType.HIGH_VIBRATION, 8000)) {
-    const severity = gForce > 3.0 ? EventSeverity.CRITICAL : gForce > 2.3 ? EventSeverity.WARNING : EventSeverity.INFO;
+  if (gForce > Math.max(G_VIBRATION_MIN, gAvg + 0.65) && speed > SPEED_VIBRATION_MIN && rollAbs < 20 && shouldEmit(EventType.HIGH_VIBRATION, COOLDOWN_HIGH_VIBRATION)) {
+    const severity = gForce > G_VIBRATION_CRITICAL ? EventSeverity.CRITICAL : gForce > G_VIBRATION_WARNING ? EventSeverity.WARNING : EventSeverity.INFO;
     events.push({
       type: EventType.HIGH_VIBRATION,
       severity,
@@ -174,7 +257,7 @@ export function evaluateTelemetryRisk(
   if (temp >= profile.criticalTemp) state.overheatTicks += 1;
   else state.overheatTicks = 0;
 
-  if (state.overheatTicks === 30 && shouldEmit(EventType.OVERHEAT, 12000)) {
+  if (state.overheatTicks === TICKS_OVERHEAT_WARN && shouldEmit(EventType.OVERHEAT, COOLDOWN_OVERHEAT)) {
     events.push({
       type: EventType.OVERHEAT,
       severity: EventSeverity.WARNING,
@@ -182,7 +265,7 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (state.overheatTicks >= 80 && shouldEmit(EventType.OVERHEAT, 12000)) {
+  if (state.overheatTicks >= TICKS_OVERHEAT_CRIT && shouldEmit(EventType.OVERHEAT, COOLDOWN_OVERHEAT)) {
     events.push({
       type: EventType.OVERHEAT,
       severity: EventSeverity.CRITICAL,
@@ -193,7 +276,7 @@ export function evaluateTelemetryRisk(
   if (volt <= profile.criticalVoltage) state.lowVoltageTicks += 1;
   else state.lowVoltageTicks = 0;
 
-  if (state.lowVoltageTicks === 30 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
+  if (state.lowVoltageTicks === TICKS_VOLTAGE_WARN && shouldEmit(EventType.LOW_VOLTAGE, COOLDOWN_LOW_VOLTAGE)) {
     events.push({
       type: EventType.LOW_VOLTAGE,
       severity: EventSeverity.WARNING,
@@ -201,7 +284,7 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (state.lowVoltageTicks >= 80 && shouldEmit(EventType.LOW_VOLTAGE, 12000)) {
+  if (state.lowVoltageTicks >= TICKS_VOLTAGE_CRIT && shouldEmit(EventType.LOW_VOLTAGE, COOLDOWN_LOW_VOLTAGE)) {
     events.push({
       type: EventType.LOW_VOLTAGE,
       severity: EventSeverity.CRITICAL,
@@ -209,8 +292,8 @@ export function evaluateTelemetryRisk(
     });
   }
 
-  if (oil > 0 && speed > 25 && oil < 0.9 && shouldEmit(EventType.OIL_PRESSURE_LOW, 15000)) {
-    const severity = oil < 0.6 ? EventSeverity.CRITICAL : EventSeverity.WARNING;
+  if (oil > 0 && speed > SPEED_OIL_MIN && oil < OIL_PRESSURE_WARN && shouldEmit(EventType.OIL_PRESSURE_LOW, COOLDOWN_OIL_PRESSURE)) {
+    const severity = oil < OIL_PRESSURE_CRITICAL ? EventSeverity.CRITICAL : EventSeverity.WARNING;
     events.push({
       type: EventType.OIL_PRESSURE_LOW,
       severity,
@@ -219,12 +302,12 @@ export function evaluateTelemetryRisk(
   }
 
   if (
-    (tireFront > 0 && tireFront < 1.3) ||
-    (tireRear > 0 && tireRear < 1.3)
+    (tireFront > 0 && tireFront < TIRE_PRESSURE_WARN) ||
+    (tireRear > 0 && tireRear < TIRE_PRESSURE_WARN)
   ) {
-    if (shouldEmit(EventType.TIRE_PRESSURE_LOW, 20000)) {
+    if (shouldEmit(EventType.TIRE_PRESSURE_LOW, COOLDOWN_TIRE_PRESSURE)) {
       const minTire = Math.min(tireFront || 99, tireRear || 99);
-      const severity = minTire < 1.05 ? EventSeverity.CRITICAL : EventSeverity.WARNING;
+      const severity = minTire < TIRE_PRESSURE_CRITICAL ? EventSeverity.CRITICAL : EventSeverity.WARNING;
       events.push({
         type: EventType.TIRE_PRESSURE_LOW,
         severity,
@@ -234,9 +317,9 @@ export function evaluateTelemetryRisk(
   }
 
   const tempSlope = slopePerSecond(state.temps, dtSec);
-  if (tempSlope > 0.02 && temp < profile.criticalTemp && shouldEmit(EventType.OVERHEAT, 25000)) {
+  if (tempSlope > TEMP_TREND_SLOPE_MIN && temp < profile.criticalTemp && shouldEmit(EventType.OVERHEAT, COOLDOWN_TEMP_TREND)) {
     const secondsToCritical = (profile.criticalTemp - temp) / Math.max(tempSlope, 0.0001);
-    if (Number.isFinite(secondsToCritical) && secondsToCritical < 900) {
+    if (Number.isFinite(secondsToCritical) && secondsToCritical < TREND_TIME_TO_CRITICAL_SEC) {
       const minutes = clamp(secondsToCritical / 60, 1, 999);
       events.push({
         type: EventType.OVERHEAT,
@@ -247,9 +330,9 @@ export function evaluateTelemetryRisk(
   }
 
   const voltSlope = slopePerSecond(state.volts, dtSec);
-  if (voltSlope < -0.01 && volt > profile.criticalVoltage && shouldEmit(EventType.LOW_VOLTAGE, 25000)) {
+  if (voltSlope < VOLT_TREND_SLOPE_MIN && volt > profile.criticalVoltage && shouldEmit(EventType.LOW_VOLTAGE, COOLDOWN_VOLT_TREND)) {
     const secondsToCritical = (profile.criticalVoltage - volt) / Math.max(voltSlope, -0.0001);
-    if (Number.isFinite(secondsToCritical) && secondsToCritical < 900) {
+    if (Number.isFinite(secondsToCritical) && secondsToCritical < TREND_TIME_TO_CRITICAL_SEC) {
       const minutes = clamp(secondsToCritical / 60, 1, 999);
       events.push({
         type: EventType.LOW_VOLTAGE,
@@ -261,7 +344,7 @@ export function evaluateTelemetryRisk(
 
   const frontSlope = slopePerSecond(state.tiresFront, dtSec);
   const rearSlope = slopePerSecond(state.tiresRear, dtSec);
-  if ((frontSlope < -0.0003 || rearSlope < -0.0003) && shouldEmit(EventType.TIRE_PRESSURE_LOW, 30000)) {
+  if ((frontSlope < TIRE_TREND_SLOPE_MIN || rearSlope < TIRE_TREND_SLOPE_MIN) && shouldEmit(EventType.TIRE_PRESSURE_LOW, COOLDOWN_TIRE_TREND)) {
     events.push({
       type: EventType.TIRE_PRESSURE_LOW,
       severity: EventSeverity.INFO,
@@ -273,7 +356,7 @@ export function evaluateTelemetryRisk(
   if (rpm >= profile.criticalRpm) state.overrevTicks += 1;
   else state.overrevTicks = 0;
 
-  if (state.overrevTicks >= 15 && shouldEmit(EventType.ENGINE_OVERREV, 10000)) {
+  if (state.overrevTicks >= TICKS_OVERREV_WARN && shouldEmit(EventType.ENGINE_OVERREV, COOLDOWN_OVERREV)) {
     events.push({
       type: EventType.ENGINE_OVERREV,
       severity: EventSeverity.WARNING,
@@ -282,24 +365,24 @@ export function evaluateTelemetryRisk(
   }
 
   // ── Manobras de Pitch (Wheelie / Stoppie) ──────────────────────────────
-  if (speed > 10) {
-    if (pitch > 15 && shouldEmit(EventType.WHEELIE_DETECTED, 8000)) {
+  if (speed > SPEED_WHEELIE_MIN) {
+    if (pitch > PITCH_WHEELIE_WARN && shouldEmit(EventType.WHEELIE_DETECTED, COOLDOWN_WHEELIE_STOPPIE)) {
       events.push({
         type: EventType.WHEELIE_DETECTED,
-        severity: pitch > 25 ? EventSeverity.CRITICAL : EventSeverity.WARNING,
+        severity: pitch > PITCH_WHEELIE_CRITICAL ? EventSeverity.CRITICAL : EventSeverity.WARNING,
         message: `Roda frontal levantada (Wheelie: ${pitch.toFixed(1)}°)`,
       });
-    } else if (pitch < -15 && shouldEmit(EventType.STOPPIE_DETECTED, 8000)) {
+    } else if (pitch < PITCH_STOPPIE_WARN && shouldEmit(EventType.STOPPIE_DETECTED, COOLDOWN_WHEELIE_STOPPIE)) {
       events.push({
         type: EventType.STOPPIE_DETECTED,
-        severity: pitch < -25 ? EventSeverity.CRITICAL : EventSeverity.WARNING,
+        severity: pitch < PITCH_STOPPIE_CRITICAL ? EventSeverity.CRITICAL : EventSeverity.WARNING,
         message: `Roda traseira levantada (Stoppie: ${pitch.toFixed(1)}°)`,
       });
     }
   }
 
   // ── Sistemas de Segurança Ativos (ABS / TC) ────────────────────────────
-  if ((absActive || tcActive) && shouldEmit(EventType.SAFETY_SYSTEM_ACTIVE, 5000)) {
+  if ((absActive || tcActive) && shouldEmit(EventType.SAFETY_SYSTEM_ACTIVE, COOLDOWN_SAFETY_SYSTEM)) {
     const system = absActive && tcActive ? "ABS & TC" : absActive ? "ABS" : "TC";
     events.push({
       type: EventType.SAFETY_SYSTEM_ACTIVE,
@@ -311,16 +394,16 @@ export function evaluateTelemetryRisk(
   // ── Excesso de velocidade ──────────────────────────────────────────────
   const legalLimit = payload.system?.speed_limit_kmh ?? 0;
   if (legalLimit > 0 && speed > 0) {
-    if (speed > legalLimit * 1.10) {
+    if (speed > legalLimit * SPEEDING_EXCESS_FACTOR) {
       state.speedingTicks += 1;
     } else {
       state.speedingTicks = 0;
     }
 
-    if (state.speedingTicks >= 30) {
+    if (state.speedingTicks >= TICKS_SPEEDING) {
       const excess = speed - legalLimit;
-      const isCritical = speed > legalLimit * 1.25;
-      if (shouldEmit(EventType.SPEEDING, 8000)) {
+      const isCritical = speed > legalLimit * SPEEDING_CRITICAL_FACTOR;
+      if (shouldEmit(EventType.SPEEDING, COOLDOWN_SPEEDING)) {
         events.push({
           type: EventType.SPEEDING,
           severity: isCritical ? EventSeverity.CRITICAL : EventSeverity.WARNING,

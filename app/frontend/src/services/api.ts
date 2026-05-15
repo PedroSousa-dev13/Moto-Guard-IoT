@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse, TripEvaluationResponse } from '../types/index';
+import type { User, Motorcycle, MotorcycleProfile, Trip, TripFeedItem, TripTelemetryResponse, GpxImportResponse, TripEvaluationResponse, PaginatedResponse, AlertListResponse, TelemetryLatestResponse } from '../types/index';
 
 const API_BASE = '/api';
 
@@ -75,7 +75,7 @@ export const authAPI = {
 // Trips endpoints
 export const tripsAPI = {
   getAll: (source?: Trip['source'], status?: Trip['status']) =>
-    api.get<any>('/trips', {
+    api.get<PaginatedResponse<Trip>>('/trips', {
       params: {
         ...(source ? { source } : {}),
         ...(status ? { status } : {}),
@@ -83,7 +83,7 @@ export const tripsAPI = {
     }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
 
   getFeed: (source?: Trip["source"], status?: Trip["status"], limit?: number) =>
-    api.get<any>("/trips/feed", {
+    api.get<PaginatedResponse<TripFeedItem>>("/trips/feed", {
       params: {
         ...(source ? { source } : {}),
         ...(status ? { status } : {}),
@@ -103,8 +103,10 @@ export const tripsAPI = {
 
 // Motorcycles endpoints
 export const motorcyclesAPI = {
-  getAll: () =>
-    api.get<Motorcycle[]>('/motorcycles'),
+  getAll: (page?: number, limit?: number) =>
+    api.get<PaginatedResponse<Motorcycle>>('/motorcycles', {
+      params: { ...(page ? { page } : {}), ...(limit ? { limit } : {}) },
+    }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
   
   create: (data: Partial<Motorcycle>) =>
     api.post<Motorcycle>('/motorcycles', data),
@@ -116,13 +118,13 @@ export const motorcyclesAPI = {
     api.delete<{ success: true }>(`/motorcycles/${id}`),
   
   getProfiles: () =>
-    api.get<any[]>('/motorcycle-profiles'),
+    api.get<MotorcycleProfile[]>('/motorcycle-profiles'),
 };
 
 // Telemetry endpoints
 export const telemetryAPI = {
   getLatest: () =>
-    api.get<any>('/telemetry/latest'),
+    api.get<TelemetryLatestResponse>('/telemetry/latest'),
 };
 
 export const gpxAPI = {
@@ -175,5 +177,5 @@ export interface BackendAlertEventDTO {
 
 export const alertsAPI = {
   getAll: (params?: { severity?: string; type?: string; tripId?: string; limit?: number }) =>
-    api.get<any>("/alerts", { params }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
+    api.get<AlertListResponse>("/alerts", { params }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
 };

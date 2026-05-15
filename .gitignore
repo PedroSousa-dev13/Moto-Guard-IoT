@@ -441,3 +441,6 @@ app/node_modules/
 
 # MotoGuard: uploads temporarios de GPX (testes)
 app/tmp/uploads/
+
+# MotoGuard: simulator runtime state
+simulador/odometer_state.json

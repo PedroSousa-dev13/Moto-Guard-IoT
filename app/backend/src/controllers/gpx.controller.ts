@@ -193,6 +193,15 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
       res.status(400).json({ error: "Erro ao ler o ficheiro GPX" });
       return;
     }
+
+    // Validação básica: o ficheiro deve começar com <?xml ou <gpx
+    const trimmed = xml.trimStart();
+    if (!trimmed.startsWith("<?xml") && !trimmed.startsWith("<gpx") && !trimmed.startsWith("<")) {
+      fs.unlink(file.path, () => {});
+      res.status(400).json({ error: "Ficheiro inválido: não é um documento XML/GPX" });
+      return;
+    }
+
     const parsed = parseGpx(xml);
 
     if (parsed.waypoints.length === 0) {

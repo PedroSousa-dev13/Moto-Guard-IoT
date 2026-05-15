@@ -81,8 +81,8 @@ router.post("/gpx/parse", authMiddleware, (req, res, next) => {
     if (err instanceof multer.MulterError) {
       const message =
         err.code === "LIMIT_FILE_SIZE"
-          ? "File size exceeds 10MB limit"
-          : `Upload error: ${err.code}`;
+          ? "Ficheiro demasiado grande (limite 10 MB)"
+          : `Erro no upload: ${err.code}`;
       res.status(413).json({ 
         success: false, 
         error: message,
@@ -93,8 +93,8 @@ router.post("/gpx/parse", authMiddleware, (req, res, next) => {
 
     res.status(400).json({ 
       success: false, 
-      error: "File upload error",
-      validationErrors: ["Failed to process uploaded file"]
+      error: "Erro no upload do ficheiro",
+      validationErrors: ["Falha ao processar ficheiro enviado"]
     });
   });
 }, parseGpxFile, cleanupTempFile);

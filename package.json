@@ -9,9 +9,5 @@
     "prisma:deploy": "cd app && npm run prisma:deploy",
     "prisma:seed": "cd app && npm run prisma:seed",
     "test:db": "cd app && npx tsx scripts/test-database.ts"
-  },
-  "dependencies": {
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
   }
 }

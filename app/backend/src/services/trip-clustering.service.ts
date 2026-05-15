@@ -65,7 +65,7 @@ class TripClusteringService {
         })
       );
 
-      await Promise.all(updates);
+      await prisma.$transaction(updates);
       console.log(`[clustering] Atualizados estilos de condução para ${updates.length} viagens do utilizador ${userId}`);
 
     } catch (err) {

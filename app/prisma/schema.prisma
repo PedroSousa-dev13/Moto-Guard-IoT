@@ -35,6 +35,7 @@ model User {
   motorcycles   Motorcycle[]
   trips         Trip[]
 
+  @@index([emailVerificationToken])
   @@map("users")
 }
 
@@ -90,6 +91,7 @@ model Motorcycle {
   profile       MotorcycleProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
   trips         Trip[]
 
+  @@index([deviceId])
   @@map("motorcycles")
 }
 
@@ -171,6 +173,7 @@ model TripEvent {
   trip          Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
+  @@index([tripId, occurredAt])
   @@index([type])
   @@index([severity])
   @@index([occurredAt])

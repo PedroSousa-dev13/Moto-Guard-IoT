@@ -20,12 +20,6 @@ import { loadSettings } from "../utils/settings";
 import { useDemoContext } from "../demo/DemoContext";
 import { DemoSocketEmitter } from "../demo/demoSocketEmitter";
 
-/** @deprecated O userId não deve ser lido do localStorage por razões de segurança.
- *  O backend obtém o utilizador autenticado via JWT na ligação WebSocket. */
-function getStoredUserId(): string | null {
-  return null;
-}
-
 export function useSocket() {
   const { isDemoMode, registerEmitter } = useDemoContext();
   const socketRef = useRef<Socket | null>(null);

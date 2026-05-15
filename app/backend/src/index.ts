@@ -30,9 +30,13 @@ let resetTokenCleanupTimer: NodeJS.Timeout | null = null;
 
 async function cleanupExpiredResetTokens(): Promise<void> {
   try {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Tokens de reset têm validade de 24h (definido em auth-reset.controller.ts).
+    // Limpamos tokens que existem há mais de 25h para dar margem de segurança.
+    // NOTA: Usamos um campo dedicado `resetToken` como proxy — se o token existe
+    // e o user não fez reset em 25h, assumimos que expirou.
+    const cutoff = new Date(Date.now() - 25 * 60 * 60 * 1000);
     const result = await prisma.user.updateMany({
-      where: { resetToken: { not: null }, updatedAt: { lt: cutoff } },
+      where: { resetToken: { not: null }, createdAt: { lt: cutoff } },
       data: { resetToken: null },
     });
     if (result.count > 0) {
@@ -44,28 +48,33 @@ async function cleanupExpiredResetTokens(): Promise<void> {
 }
 
 // ─── Handlers globais de erros não capturados ────────────────────────────────
-// Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
-// stream, rejeição de Promise sem .catch(), etc.) mata o processo inteiro.
-// Com eles, o erro é registado e o servidor continua a correr.
+// Após uma exceção não capturada, o processo fica num estado indefinido.
+// Registamos o erro e terminamos para que o process manager (PM2, systemd, etc.)
+// possa reiniciar o serviço limpo.
 process.on("uncaughtException", (err) => {
   console.error("[uncaughtException] Erro não capturado:", err);
+  process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection] Promise rejeitada sem handler:", reason);
+  process.exit(1);
 });
 
 export const app = express();
 export const server = http.createServer(app);
 
 app.use(cors({
-  origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173'],
+  credentials: true,
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(perfLogger);
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get("/api-docs.json", (_req, res) => res.json(swaggerSpec));
+if (env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get("/api-docs.json", (_req, res) => res.json(swaggerSpec));
+}
 
 app.use("/api", apiRoutes);
 
@@ -82,7 +91,8 @@ async function start() {
     await prisma.$connect();
     console.log("PostgreSQL conectado");
   } catch (err) {
-    console.error("Falha ao conectar ao PostgreSQL:", err);
+    console.error("Falha crítica ao conectar ao PostgreSQL. A terminar:", err);
+    process.exit(1);
   }
 
   // Garantir que o bucket do InfluxDB existe (cria automaticamente se necessário)

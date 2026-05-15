@@ -20,6 +20,7 @@ interface InferenceResult {
 const ANOMALY_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "online_detector.py");
 const STALE_TTL_MS = 5 * 60 * 1000; // 5 min sem dados → buffer removido
 const INFERENCE_TIMEOUT_MS = 10_000;
+const MAX_INPUT_BYTES = 1024 * 1024; // 1 MB — buffer de 100 pontos é ~10KB
 
 interface AnomalyEvent {
   deviceId: string;
@@ -172,7 +173,12 @@ class RealtimeAnomalyService {
         reject(err);
       });
 
-      proc.stdin.write(JSON.stringify(points));
+      const payload = JSON.stringify(points);
+      if (payload.length > MAX_INPUT_BYTES) {
+        clearTimeout(timer);
+        return reject(new Error("Input data exceeds size limit"));
+      }
+      proc.stdin.write(payload);
       proc.stdin.end();
     });
   }

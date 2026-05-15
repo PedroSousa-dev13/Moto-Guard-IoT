@@ -22,7 +22,7 @@ import {
   type HeuristicState,
   type MotorcycleProfileThresholds,
 } from "./heuristics.service";
-import { EventType } from "../generated/prisma/enums";
+import { EventType, EventSeverity } from "../generated/prisma/enums";
 import { sendCrashAlert } from "./email.service";
 import { decrypt } from "../utils/crypto";
 import { env } from "../config/env";
@@ -95,7 +95,7 @@ export class SocketService {
   /** Inicializa o Socket.IO com o servidor HTTP */
   init(httpServer: http.Server): void {
     this.io = new Server(httpServer, {
-      cors: { origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173', 'http://localhost:3000'], methods: ["GET", "POST"] },
+      cors: { origin: env.NODE_ENV === 'production' ? env.APP_URL : ['http://localhost:5173'], methods: ["GET", "POST"], credentials: true },
     });
 
     // Registrar callback para anomalias ML (quebra dependência circular)
@@ -1223,19 +1223,19 @@ export class SocketService {
     }
   }
 
-  private mapStatusToEventType(status: string): { eventType: string; severity: string; message: string } {
+  private mapStatusToEventType(status: string): { eventType: EventType; severity: EventSeverity; message: string } {
     const eventType = this.getEventTypeFromStatus(status);
-    
-    const severityMap: Record<string, string> = {
-      "CRASH_DETECTED": "CRITICAL",
-      "OIL_PRESSURE_LOW": "CRITICAL",
-      "OVERHEAT": "WARNING",
-      "LOW_VOLTAGE": "WARNING",
-      "EXCESSIVE_LEAN": "WARNING",
-      "HIGH_VIBRATION": "WARNING",
-      "TIRE_PRESSURE_LOW": "WARNING",
-      "HARD_BRAKING": "INFO",
-      "RAPID_ACCELERATION": "INFO",
+
+    const severityMap: Record<string, EventSeverity> = {
+      "CRASH_DETECTED": EventSeverity.CRITICAL,
+      "OIL_PRESSURE_LOW": EventSeverity.CRITICAL,
+      "OVERHEAT": EventSeverity.WARNING,
+      "LOW_VOLTAGE": EventSeverity.WARNING,
+      "EXCESSIVE_LEAN": EventSeverity.WARNING,
+      "HIGH_VIBRATION": EventSeverity.WARNING,
+      "TIRE_PRESSURE_LOW": EventSeverity.WARNING,
+      "HARD_BRAKING": EventSeverity.INFO,
+      "RAPID_ACCELERATION": EventSeverity.INFO,
     };
 
     const messageMap: Record<string, string> = {
@@ -1250,10 +1250,10 @@ export class SocketService {
       "OIL_PRESSURE_LOW": "Pressão de óleo crítica",
     };
 
-    return { 
-      eventType, 
-      severity: severityMap[eventType] || "INFO", 
-      message: messageMap[eventType] || `Evento: ${status}` 
+    return {
+      eventType: eventType as EventType,
+      severity: severityMap[eventType] ?? EventSeverity.INFO,
+      message: messageMap[eventType] || `Evento: ${status}`,
     };
   }
 

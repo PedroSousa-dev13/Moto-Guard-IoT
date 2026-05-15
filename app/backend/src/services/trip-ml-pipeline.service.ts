@@ -53,6 +53,7 @@ interface MlInferenceResult {
 
 const ML_INFER_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "infer.py");
 const ML_MODEL_PATH = path.resolve(__dirname, "..", "..", "..", "..", env.ML_MODEL_PATH);
+const MAX_ML_INPUT_BYTES = 10 * 1024 * 1024; // 10 MB — previne OOM no processo Python
 
 // ── Inferência via child_process ──────────────────────────────────────────────
 
@@ -107,7 +108,12 @@ function runMlInference(tripData: object): Promise<MlInferenceResult> {
     });
 
     // Enviar dados da viagem via stdin
-    proc.stdin.write(JSON.stringify(tripData));
+    const payload = JSON.stringify(tripData);
+    if (payload.length > MAX_ML_INPUT_BYTES) {
+      reject(new Error(`Dados da viagem excedem limite de ${MAX_ML_INPUT_BYTES / 1024 / 1024}MB`));
+      return;
+    }
+    proc.stdin.write(payload);
     proc.stdin.end();
   });
 }

@@ -36,7 +36,7 @@ export const env = {
   // ─── Encriptação AES (separado do JWT_SECRET!) ─────────────────────────
   // Deve ser uma string hex de 64 caracteres (32 bytes).
   ENCRYPTION_KEY:
-    process.env.ENCRYPTION_KEY || "change-me-generate-64-char-hex-string-for-aes-256-encryption-key-!",
+    process.env.ENCRYPTION_KEY || "change-me-generate-32-byte-random-hex-string",
 
   // ─── ML Pipeline ────────────────────────────────────────────────────────
   ML_ENABLED: process.env.ML_ENABLED === "true",
@@ -55,13 +55,21 @@ export const env = {
 
 // Avisos de segurança em produção quando defaults inseguros são usados
 if (env.NODE_ENV === "production") {
-  const defaults = [
-    ["MQTT_PASS", env.MQTT_PASS, "backend123"],
+  const fatalDefaults = [
     ["JWT_SECRET", env.JWT_SECRET, "motoguard-dev-secret-change-in-prod"],
+  ] as const;
+  for (const [name, value, prefix] of fatalDefaults) {
+    if (value.startsWith(prefix)) {
+      throw new Error(`[ENV] SECURITY: ${name} não pode usar o valor por defeito em produção! Defina uma variável de ambiente segura.`);
+    }
+  }
+
+  const warnDefaults = [
+    ["MQTT_PASS", env.MQTT_PASS, "backend123"],
     ["ENCRYPTION_KEY", env.ENCRYPTION_KEY, "change-me-"],
     ["INFLUXDB_TOKEN", env.INFLUXDB_TOKEN, "motoguard-dev-token"],
   ] as const;
-  for (const [name, value, prefix] of defaults) {
+  for (const [name, value, prefix] of warnDefaults) {
     if (value.startsWith(prefix)) {
       console.warn(`[ENV] SECURITY: ${name} está a usar o valor por defeito em produção!`);
     }

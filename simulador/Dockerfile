@@ -16,8 +16,6 @@ COPY config.py headless_simulator.py routes.py moto_physics.py ./
 # Variáveis externas por defeito
 ENV MQTT_BROKER=mosquitto
 ENV MQTT_PORT=1883
-ENV MQTT_USER=motoguard
-ENV MQTT_PASS=motoguard123
 ENV SIM_MODELO=Naked
 ENV PYTHONUNBUFFERED=1
 

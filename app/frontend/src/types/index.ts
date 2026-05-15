@@ -192,3 +192,22 @@ export interface TripEvaluationResponse {
   typeCounts: Partial<Record<string, number>>;
   penalties: Array<{ reason: string; points: number }>;
 }
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AlertListResponse {
+  data: TripEvent[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface TelemetryLatestResponse {
+  device_id?: string;
+  moto_model?: string;
+  telemetry: Record<string, unknown>;
+  imu: Record<string, unknown>;
+  location: Record<string, unknown>;
+  system: Record<string, unknown>;
+}
