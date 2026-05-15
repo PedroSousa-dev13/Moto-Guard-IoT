@@ -127,6 +127,7 @@ services:
       # Em ambiente de desenvolvimento é útil para hot-reload, mas em produção
       # deve ser removido para usar o código compilado no container.
       - ./app/backend:/app/backend
+      - ./app/frontend/dist:/app/frontend/dist
       - ./ml:/ml
     networks:
       - motoguard-net

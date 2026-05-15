@@ -8,6 +8,7 @@
 
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { Resend } from "resend";
 import { prisma } from "../services/prisma.service";
@@ -15,7 +16,7 @@ import { env } from "../config/env";
 
 // Gerar token de reset (24h de validade)
 function generateResetToken(email: string): string {
-  return jwt.sign({ email, type: 'reset' }, env.JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign({ email, type: 'reset', jti: crypto.randomUUID() }, env.JWT_SECRET, { expiresIn: '24h' });
 }
 
 function buildResetEmailHtml(resetLink: string): string {
@@ -50,13 +51,20 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      // Não revelar se email existe ou não por segurança
+      // Timing attack mitigation: delay constante para não revelar existência do email
+      await bcrypt.hash("dummy-timing-mitigation", 10);
       res.json({ message: "Se o email existir, receberá instruções de recuperação" });
       return;
     }
 
-    // Gerar token de reset
+    // Gerar token de reset e guardar hash na BD (one-time-use)
     const resetToken = generateResetToken(email);
+    const tokenHash = await bcrypt.hash(resetToken, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken: tokenHash },
+    });
+
     const resetLink = `${env.APP_URL}/reset-password?token=${resetToken}`;
 
     // Enviar email com o link de reset
@@ -98,9 +106,16 @@ export async function verifyResetToken(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Verificar se user ainda existe
+    // Verificar se user ainda existe e se o token já não foi usado
     const user = await prisma.user.findUnique({ where: { email: decoded.email as string } });
-    if (!user) {
+    if (!user || !user.resetToken || !token) {
+      res.status(400).json({ valid: false });
+      return;
+    }
+
+    // Verificar que o token corresponde ao hash guardado
+    const tokenValid = await bcrypt.compare(token, user.resetToken);
+    if (!tokenValid) {
       res.status(400).json({ valid: false });
       return;
     }
@@ -137,18 +152,25 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     // Encontrar user pelo email no token
     const user = await prisma.user.findUnique({ where: { email: decoded.email as string } });
-    if (!user) {
+    if (!user || !user.resetToken) {
       res.status(400).json({ error: "Token inválido" });
+      return;
+    }
+
+    // Verificar que o token corresponde ao hash guardado
+    const tokenValid = await bcrypt.compare(token, user.resetToken);
+    if (!tokenValid) {
+      res.status(400).json({ error: "Token inválido ou já utilizado" });
       return;
     }
 
     // Fazer hash da nova senha
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
-    // Atualizar senha
+    // Atualizar senha e limpar token (one-time-use enforcement)
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: { passwordHash, resetToken: null },
     });
 
     res.json({ message: "Senha redefinida com sucesso" });

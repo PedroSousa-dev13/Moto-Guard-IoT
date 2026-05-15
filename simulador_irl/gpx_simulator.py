@@ -19,10 +19,12 @@ import json
 import math
 from datetime import datetime
 from typing import Dict, List
+from pathlib import Path
 from xml.etree import ElementTree as ET
 
 # Carregar perfis de motocicleta (mesmo ficheiro do IRL simulator)
-with open('simulador_irl/motorcycle_profiles.json', 'r') as f:
+_PROFILES_PATH = Path(__file__).parent / 'motorcycle_profiles.json'
+with open(str(_PROFILES_PATH), 'r') as f:
     MOTORCYCLE_PROFILES = json.load(f)
 
 

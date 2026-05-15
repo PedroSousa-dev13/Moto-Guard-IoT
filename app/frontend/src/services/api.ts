@@ -3,6 +3,11 @@ import type { User, Motorcycle, Trip, TripFeedItem, TripTelemetryResponse, GpxIm
 
 const API_BASE = '/api';
 
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 export const api = axios.create({
   baseURL: API_BASE,
   headers: {
@@ -10,6 +15,19 @@ export const api = axios.create({
   },
   withCredentials: true,
 });
+
+api.interceptors.request.use(
+  (config) => {
+    if (config.method && !['get', 'head', 'options'].includes(config.method)) {
+      const token = getCsrfToken();
+      if (token) {
+        config.headers['X-CSRF-Token'] = token;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 api.interceptors.response.use(
   (response) => response,
@@ -56,18 +74,22 @@ export const authAPI = {
 
 // Trips endpoints
 export const tripsAPI = {
-  getAll: (source?: Trip['source']) =>
-    api.get<Trip[]>('/trips', {
-      params: source ? { source } : undefined,
-    }),
-  
-  getFeed: (source?: Trip["source"], limit?: number) =>
-    api.get<TripFeedItem[]>("/trips/feed", {
+  getAll: (source?: Trip['source'], status?: Trip['status']) =>
+    api.get<any>('/trips', {
       params: {
         ...(source ? { source } : {}),
+        ...(status ? { status } : {}),
+      },
+    }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
+
+  getFeed: (source?: Trip["source"], status?: Trip["status"], limit?: number) =>
+    api.get<any>("/trips/feed", {
+      params: {
+        ...(source ? { source } : {}),
+        ...(status ? { status } : {}),
         ...(limit ? { limit } : {}),
       },
-    }),
+    }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
 
   getById: (id: string) =>
     api.get<Trip>(`/trips/${id}`),
@@ -153,5 +175,5 @@ export interface BackendAlertEventDTO {
 
 export const alertsAPI = {
   getAll: (params?: { severity?: string; type?: string; tripId?: string; limit?: number }) =>
-    api.get<BackendAlertEventDTO[]>("/alerts", { params }),
+    api.get<any>("/alerts", { params }).then((res) => ({ ...res, data: res.data.data ?? res.data })),
 };

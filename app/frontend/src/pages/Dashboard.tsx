@@ -124,7 +124,7 @@ export default function Dashboard() {
   useEffect(() => { document.title = "Dashboard — MotoGuard"; }, []);
 
   useEffect(() => {
-    tripsAPI.getFeed(undefined, 1)
+    tripsAPI.getFeed(undefined, undefined, 1)
       .then((r) => setLastTrip(r.data[0] ?? null))
       .catch(() => {});
   }, [tripEndedSignal]);

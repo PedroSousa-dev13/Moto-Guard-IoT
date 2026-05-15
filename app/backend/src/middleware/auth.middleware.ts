@@ -18,6 +18,12 @@ interface JwtPayload {
   sub: string;
 }
 
+function ensureStringSub(sub: unknown): string {
+  if (typeof sub === "string") return sub;
+  if (typeof sub === "number") return String(sub);
+  throw new Error("JWT sub inválido");
+}
+
 function extractToken(req: AuthRequest): string | null {
   // 1. Check Authorization header
   const header = req.headers.authorization;
@@ -48,7 +54,7 @@ export function authMiddleware(
   (async () => {
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-      const userId = decoded.sub;
+      const userId = ensureStringSub(decoded.sub);
 
       const user = await prisma.user.findUnique({
         where: { id: userId },

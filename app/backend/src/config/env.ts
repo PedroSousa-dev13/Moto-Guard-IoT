@@ -34,8 +34,9 @@ export const env = {
     process.env.JWT_SECRET || "motoguard-dev-secret-change-in-prod",
 
   // ─── Encriptação AES (separado do JWT_SECRET!) ─────────────────────────
+  // Deve ser uma string hex de 64 caracteres (32 bytes).
   ENCRYPTION_KEY:
-    process.env.ENCRYPTION_KEY || "change-me-generate-random-32-bytes-hex",
+    process.env.ENCRYPTION_KEY || "change-me-generate-64-char-hex-string-for-aes-256-encryption-key-!",
 
   // ─── ML Pipeline ────────────────────────────────────────────────────────
   ML_ENABLED: process.env.ML_ENABLED === "true",
@@ -51,3 +52,18 @@ export const env = {
   RESEND_FROM: process.env.RESEND_FROM || "onboarding@resend.dev",
   APP_URL: process.env.APP_URL || "http://localhost:3000",
 } as const;
+
+// Avisos de segurança em produção quando defaults inseguros são usados
+if (env.NODE_ENV === "production") {
+  const defaults = [
+    ["MQTT_PASS", env.MQTT_PASS, "backend123"],
+    ["JWT_SECRET", env.JWT_SECRET, "motoguard-dev-secret-change-in-prod"],
+    ["ENCRYPTION_KEY", env.ENCRYPTION_KEY, "change-me-"],
+    ["INFLUXDB_TOKEN", env.INFLUXDB_TOKEN, "motoguard-dev-token"],
+  ] as const;
+  for (const [name, value, prefix] of defaults) {
+    if (value.startsWith(prefix)) {
+      console.warn(`[ENV] SECURITY: ${name} está a usar o valor por defeito em produção!`);
+    }
+  }
+}

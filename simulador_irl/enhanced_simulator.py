@@ -5,14 +5,15 @@ import random
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import sys
-import os
+from pathlib import Path
 
 # Adicionar root ao path para importar moto_physics
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_THIS_DIR = Path(__file__).parent.resolve()
+sys.path.append(str(_THIS_DIR.parent))
 from simulador import moto_physics
 
 # Carregar perfis de motocicleta
-with open('simulador_irl/motorcycle_profiles.json', 'r') as f:
+with open(str(_THIS_DIR / 'motorcycle_profiles.json'), 'r') as f:
     MOTORCYCLE_PROFILES = json.load(f)
 
 class EnhancedRow:

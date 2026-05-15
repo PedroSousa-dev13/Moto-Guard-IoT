@@ -135,7 +135,7 @@ export default function RealSimulator() {
     playbackSpeed: simSession.playbackSpeed,
     onRowChange: handleRowChange,
     onEnd: () => {
-      console.log("[RealSimulator] Playback finished.");
+      console.debug("[RealSimulator] Playback finished.");
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
@@ -178,7 +178,7 @@ export default function RealSimulator() {
   }, [simSession.videoFile, syncEngine]);
 
   const handleStop = useCallback(() => {
-    console.log("[RealSimulator] Stop clicked.");
+    console.debug("[RealSimulator] Stop clicked.");
     syncEngine.stop();
     if (videoRef.current) {
       videoRef.current.pause();
@@ -217,7 +217,7 @@ export default function RealSimulator() {
     } else {
       setSocketError(null);
       if (user?.id) {
-        console.log("[RealSimulator] Defining motorcycle model:", selectedProfile?.name || "Real Simulator");
+        console.debug("[RealSimulator] Defining motorcycle model:", selectedProfile?.name || "Real Simulator");
         socket.emit("send_command", {
           acao: "definir_modelo",
           modelo: selectedProfile?.name || "Real Simulator",
@@ -278,7 +278,7 @@ export default function RealSimulator() {
   // NÃO incluir syncEngine nas deps — muda a cada render e matava o loop!
   useEffect(() => {
     return () => {
-      console.log("[RealSimulator] Component unmounting — stopping engine");
+      console.debug("[RealSimulator] Component unmounting — stopping engine");
       syncEngine.stop();
       if (videoRef.current) {
         videoRef.current.pause();

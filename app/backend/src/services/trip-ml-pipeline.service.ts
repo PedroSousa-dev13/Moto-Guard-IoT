@@ -215,7 +215,7 @@ export async function runTripMlPipeline(
       : null,
     // Para viagens GPX, incluir waypoints
     gpx_waypoints: trip.source === "GPX_IMPORTED" && trip.gpxData
-      ? (trip.gpxData.waypoints as any) || []
+      ? (trip.gpxData.waypoints as { lat: number; lon: number; ele?: number; time?: string }[]) || []
       : undefined,
   };
 
@@ -275,15 +275,19 @@ m = a.get('metadata', {})
 print(json.dumps({'modelVersion': m.get('model_version'), 'trainedAt': m.get('trained_at'), 'nSamples': m.get('n_samples')}))
 `.trim();
 
+      const timeout = setTimeout(() => { proc.kill(); reject(new Error("timeout")); }, 3000);
       const proc = spawn("python", ["-c", script, ML_MODEL_PATH]);
       let out = "";
       proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });
       proc.on("close", () => {
+        clearTimeout(timeout);
         try { resolve(JSON.parse(out.trim())); }
         catch { resolve({}); }
       });
-      proc.on("error", reject);
-      setTimeout(() => { proc.kill(); reject(new Error("timeout")); }, 3000);
+      proc.on("error", (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
     });
 
     return {

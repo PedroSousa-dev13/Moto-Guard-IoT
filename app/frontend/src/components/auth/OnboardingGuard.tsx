@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { motorcyclesAPI } from '../../services/api';
@@ -28,6 +28,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
 
   async function check() {
     setStatus('loading');
+    setErrorMsg('');
     try {
       const res = await motorcyclesAPI.getAll();
       checkedRef.current = true;
@@ -41,7 +42,6 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
   useEffect(() => {
     if (isAdmin) return;
     if (isDemoMode) return;
-    // Re-check after visiting /garage (user may have added a moto)
     if (prevPathRef.current === '/garage' && location.pathname !== '/garage') {
       checkedRef.current = false;
     }

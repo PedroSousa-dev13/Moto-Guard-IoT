@@ -57,8 +57,8 @@ export default function ResetPassword() {
       const response = await authAPI.resetPassword(token!, newPassword);
       setSuccess(response.data.message);
       setTimeout(() => navigate('/login'), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao redefinir senha');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || 'Erro ao redefinir senha');
     } finally {
       setIsLoading(false);
     }

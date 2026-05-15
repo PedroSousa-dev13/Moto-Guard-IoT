@@ -16,6 +16,12 @@ vi.mock('../middleware/auth.middleware', () => ({
   },
 }));
 
+vi.mock('../middleware/csrf.middleware', () => ({
+  csrfMiddleware: (req: any, res: any, next: any) => {
+    next();
+  },
+}));
+
 describe('Gpx Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();

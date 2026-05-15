@@ -1,14 +1,37 @@
 import { spawn } from "child_process";
 import * as path from "path";
-import { socketService } from "./socket.service";
 import type { TelemetryPayload } from "../models/telemetry.model";
+
+interface TelemetryPoint {
+  speedKmh: number;
+  rpm: number;
+  rollDeg: number;
+  gForce: number;
+  temp: number;
+  voltage: number;
+}
+
+interface InferenceResult {
+  isAnomaly: boolean;
+  reason: string;
+  anomalyScore: number;
+}
 
 const ANOMALY_SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "ml", "online_detector.py");
 const STALE_TTL_MS = 5 * 60 * 1000; // 5 min sem dados → buffer removido
 const INFERENCE_TIMEOUT_MS = 10_000;
 
+interface AnomalyEvent {
+  deviceId: string;
+  reason: string;
+  score: number;
+  timestamp: string;
+}
+
 class RealtimeAnomalyService {
-  private buffers = new Map<string, { data: any[]; lastSeen: number }>();
+  onAnomaly: ((event: AnomalyEvent) => void) | null = null;
+
+  private buffers = new Map<string, { data: TelemetryPoint[]; lastSeen: number }>();
   private readonly BUFFER_SIZE = 100;
   private tickCounters = new Map<string, number>();
   private evictionTimer: NodeJS.Timeout | null = null;
@@ -21,17 +44,21 @@ class RealtimeAnomalyService {
    * Remove buffers de dispositivos que não enviam dados há 5+ minutos.
    */
   private evictStaleBuffers(): void {
-    const now = Date.now();
-    let evicted = 0;
-    for (const [deviceId, entry] of this.buffers) {
-      if (now - entry.lastSeen > STALE_TTL_MS) {
-        this.buffers.delete(deviceId);
-        this.tickCounters.delete(deviceId);
-        evicted++;
+    try {
+      const now = Date.now();
+      let evicted = 0;
+      for (const [deviceId, entry] of this.buffers) {
+        if (now - entry.lastSeen > STALE_TTL_MS) {
+          this.buffers.delete(deviceId);
+          this.tickCounters.delete(deviceId);
+          evicted++;
+        }
       }
-    }
-    if (evicted > 0) {
-      console.log(`[realtime-anomaly] Evicted ${evicted} stale buffer(s)`);
+      if (evicted > 0) {
+        console.log(`[realtime-anomaly] Evicted ${evicted} stale buffer(s)`);
+      }
+    } catch (err) {
+      console.error("[realtime-anomaly] Erro no evictStaleBuffers:", (err as Error).message);
     }
   }
 
@@ -99,7 +126,7 @@ class RealtimeAnomalyService {
       
       if (result.isAnomaly) {
         console.log(`[realtime-anomaly] ANOMALIA detetada em ${deviceId}: ${result.reason}`);
-        socketService.emit("realtime_anomaly", {
+        this.onAnomaly?.({
           deviceId,
           reason: result.reason,
           score: result.anomalyScore,
@@ -111,7 +138,7 @@ class RealtimeAnomalyService {
     }
   }
 
-  private runRealtimeInference(points: any[]): Promise<any> {
+  private runRealtimeInference(points: TelemetryPoint[]): Promise<InferenceResult> {
     return new Promise((resolve, reject) => {
       const proc = spawn("python", [ANOMALY_SCRIPT], {
         env: {
@@ -126,13 +153,15 @@ class RealtimeAnomalyService {
       }, INFERENCE_TIMEOUT_MS);
 
       let stdout = "";
-      proc.stdout.on("data", (data) => { stdout += data.toString(); });
+      let stderr = "";
+      proc.stdout.on("data", (data: Buffer) => { stdout += data.toString(); });
+      proc.stderr.on("data", (data: Buffer) => { stderr += data.toString(); });
       
       proc.on("close", (code) => {
         clearTimeout(timer);
-        if (code !== 0) return reject(new Error(`Script failed with code ${code}`));
+        if (code !== 0) return reject(new Error(`Script failed with code ${code}: ${stderr.trim()}`));
         try {
-          resolve(JSON.parse(stdout));
+          resolve(JSON.parse(stdout) as InferenceResult);
         } catch {
           reject(new Error("Parse failed"));
         }

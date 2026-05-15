@@ -24,6 +24,25 @@ import { influxService } from "./services/influx.service";
 import { realtimeAnomalyService } from "./services/realtime-anomaly.service";
 import { perfLogger } from "./middleware/perf-logger.middleware";
 
+// ─── Limpeza periódica de tokens de reset expirados ─────────────────────────
+const RESET_TOKEN_CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hora
+let resetTokenCleanupTimer: NodeJS.Timeout | null = null;
+
+async function cleanupExpiredResetTokens(): Promise<void> {
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result = await prisma.user.updateMany({
+      where: { resetToken: { not: null }, updatedAt: { lt: cutoff } },
+      data: { resetToken: null },
+    });
+    if (result.count > 0) {
+      console.log(`[cleanup] Limpos ${result.count} token(s) de reset expirados`);
+    }
+  } catch (err) {
+    console.error("[cleanup] Erro ao limpar tokens expirados:", err);
+  }
+}
+
 // ─── Handlers globais de erros não capturados ────────────────────────────────
 // Sem estes handlers, uma excepção não capturada (ex: evento 'error' num
 // stream, rejeição de Promise sem .catch(), etc.) mata o processo inteiro.
@@ -69,6 +88,10 @@ async function start() {
   // Garantir que o bucket do InfluxDB existe (cria automaticamente se necessário)
   await influxService.ensureBucket();
 
+  // Limpeza de tokens de reset expirados
+  await cleanupExpiredResetTokens();
+  resetTokenCleanupTimer = setInterval(cleanupExpiredResetTokens, RESET_TOKEN_CLEANUP_INTERVAL);
+
   server.listen(env.PORT, () => {
     console.log(`MotoGuard Backend a correr na porta ${env.PORT}`);
     console.log(`Swagger UI:   http://localhost:${env.PORT}/api-docs`);
@@ -93,6 +116,7 @@ async function shutdown(signal: string): Promise<void> {
   }, 15_000);
 
   try {
+    if (resetTokenCleanupTimer) clearInterval(resetTokenCleanupTimer);
     await Promise.all([
       socketService.stop(),
       mqttService.disconnect(),

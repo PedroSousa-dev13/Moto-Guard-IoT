@@ -16,6 +16,6 @@ export function imageFromCategory(category?: string | null): string {
   }
   const normalized = category.toLowerCase();
   const path = CATEGORY_IMAGE_MAP[normalized] ?? "/motos/naked.png";
-  console.log(`imageFromCategory: input="${category}", normalized="${normalized}", path="${path}"`);
+  console.debug(`imageFromCategory: input="${category}", normalized="${normalized}", path="${path}"`);
   return path;
 }

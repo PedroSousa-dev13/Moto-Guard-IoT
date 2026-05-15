@@ -61,7 +61,7 @@ class TripClusteringService {
       const updates = results.map((res) => 
         prisma.trip.update({
           where: { id: res.tripId },
-          data: { drivingStyle: res.drivingStyle as any },
+          data: { drivingStyle: res.drivingStyle as "AGGRESSIVE" | "DEFENSIVE" | "ECONOMY" },
         })
       );
 
@@ -73,7 +73,7 @@ class TripClusteringService {
     }
   }
 
-  private runPythonClustering(payload: any): Promise<ClusteringResult[]> {
+  private runPythonClustering(payload: object): Promise<ClusteringResult[]> {
     return new Promise((resolve, reject) => {
       const proc = spawn("python", [CLUSTERING_SCRIPT], {
         env: {

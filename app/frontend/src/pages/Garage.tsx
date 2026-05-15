@@ -113,8 +113,8 @@ export default function Garage() {
       }
       closeForm();
       await load();
-    } catch (err: any) {
-      setSaveError(err?.response?.data?.error ?? "Erro ao guardar mota.");
+    } catch (err: unknown) {
+      setSaveError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erro ao guardar mota.");
     } finally {
       setSaving(false);
     }
@@ -126,8 +126,8 @@ export default function Garage() {
       setConfirmDeleteId(null);
       if (detailId === id) setDetailId(null);
       await load();
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? "Erro ao remover mota.");
+    } catch (err: unknown) {
+      alert((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erro ao remover mota.");
     }
   }
 

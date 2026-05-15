@@ -54,7 +54,7 @@ class InfluxService {
         batchSize: 20,
         flushInterval: 5000,
         writeFailed: (_error, _lines, attempt, _expires) => {
-          const msg = (_error as any)?.statusCode;
+          const msg = (_error as { statusCode?: number })?.statusCode;
           if (msg === 401 || msg === 403) {
             if (attempt === 1) {
               console.warn(`[InfluxDB] Auth error ${msg} — tentativa ${attempt}.`);
@@ -131,8 +131,10 @@ class InfluxService {
   ): Promise<Record<string, unknown>[]> {
     if (!this._available) return [];
     const stop = (endedAt ?? new Date()).toISOString();
+    // Sanitizar deviceId para prevenir injeção em Flux (escapar aspas)
+    const safeDeviceId = deviceId?.replace(/"/g, '\\"') ?? "";
     const deviceFilter = deviceId
-      ? `  |> filter(fn: (r) => r.device_id == "${deviceId}")`
+      ? `  |> filter(fn: (r) => r.device_id == "${safeDeviceId}")`
       : "";
 
     const query = `

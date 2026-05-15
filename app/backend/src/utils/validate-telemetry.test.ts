@@ -5,7 +5,7 @@ describe('ValidateTelemetryUtility', () => {
   const validPayload = {
     telemetry: { speed_kmh: 0, rpm: 0, gear: 0, throttle_pct: 0, engine_temp_c: 80, voltage: 12.5, brake_front_pct: 0, brake_rear_pct: 0 },
     imu: { roll_deg: 0, pitch_deg: 0, yaw_deg: 0, g_force: 1.0 },
-    active_safety: {},
+    active_safety: { abs_active: false, tc_active: false },
     health: { oil_pressure_bar: 3.0, tire_pressure_front_bar: 2.5, tire_pressure_rear_bar: 2.5 },
     location: { latitude: 0, longitude: 0 },
     system: { device_id: 'test', moto_model: 'test', timestamp: '2026-04-22T00:00:00Z' }

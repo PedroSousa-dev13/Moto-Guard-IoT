@@ -204,6 +204,10 @@ class HeadlessSimulator:
         self.th_temp_critica = 110.0
         self.th_volt_critica = VOLTAGEM_CRITICA
 
+        # Graceful shutdown (registado uma vez, não dentro de _save_odometer)
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
         # Modelo inicial
         self.modelo_inicial = modelo
         self.moto_model_display: str | None = None
@@ -235,10 +239,6 @@ class HeadlessSimulator:
                 json.dump({"odometer_km": self.tele.odometer_km}, f)
         except Exception as e:
             log(f"Odómetro: erro ao salvar — {e}")
-
-        # Graceful shutdown
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
 
     def _signal_handler(self, signum, frame):
         log("Sinal de paragem recebido — a encerrar…")

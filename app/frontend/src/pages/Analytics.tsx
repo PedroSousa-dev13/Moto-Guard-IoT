@@ -107,11 +107,11 @@ export default function Analytics() {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await tripsAPI.getFeed(undefined, 500);
+      const res = await tripsAPI.getFeed(undefined, undefined, 500);
       setFeed(res.data);
       setLastUpdatedAt(new Date().toISOString());
-    } catch (err: any) {
-      setError(err?.response?.data?.error ?? "Não foi possível carregar analytics.");
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Não foi possível carregar analytics.");
     } finally {
       setIsLoading(false);
     }
@@ -754,7 +754,7 @@ export default function Analytics() {
   );
 }
 
-function AreaChartWrapper({ data }: { data: any[] }) {
+function AreaChartWrapper({ data }: { data: Array<{ t: number; avgSpeed: number }> }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>

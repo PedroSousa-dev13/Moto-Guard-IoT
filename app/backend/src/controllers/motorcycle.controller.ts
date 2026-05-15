@@ -27,6 +27,13 @@ export async function createMotorcycle(
     res.status(400).json({ error: "Campo 'category' é obrigatório" });
     return;
   }
+  if (year !== undefined && year !== null && year !== "") {
+    const yearNum = parseInt(year, 10);
+    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
+      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+      return;
+    }
+  }
 
   try {
     let finalProfileId = profileId;
@@ -112,6 +119,13 @@ export async function updateMotorcycle(req: AuthRequest, res: Response): Promise
   if (name !== undefined && (!name || typeof name !== "string")) {
     res.status(400).json({ error: "Campo 'name' é inválido" });
     return;
+  }
+  if (year !== undefined && year !== null && year !== "") {
+    const yearNum = parseInt(year, 10);
+    if (Number.isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
+      res.status(400).json({ error: `Ano inválido: deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+      return;
+    }
   }
 
   try {

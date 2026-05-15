@@ -1,4 +1,3 @@
-import React from 'react';
 import { Play, RotateCcw, Loader2, CheckCircle } from 'lucide-react';
 
 interface ParsedGpxRoute {

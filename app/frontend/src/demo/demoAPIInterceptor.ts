@@ -120,7 +120,8 @@ export function setupDemoInterceptor(isDemoMode: () => boolean): () => void {
       return config;
     }
 
-    // Task 3.9 — Fallback for unmapped GET endpoints
+    // Unmapped GET endpoints in demo mode
+    console.warn(`[Demo] Endpoint não mapeado: ${config.method?.toUpperCase()} ${config.url} — a responder com dados vazios`);
     config.adapter = createDemoAdapter({});
     return config;
   });

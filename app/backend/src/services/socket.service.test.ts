@@ -40,6 +40,7 @@ vi.mock('socket.io', () => {
   const io = {
     on: vi.fn(),
     emit: vi.fn(),
+    use: vi.fn(),
   };
   return {
     Server: vi.fn().mockImplementation(function() {

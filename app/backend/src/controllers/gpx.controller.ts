@@ -42,6 +42,13 @@ interface SaveSimulatorGpxPayload {
   totalTime?: number;
 }
 
+const ALLOWED_MIME_TYPES = ["application/gpx+xml", "application/xml", "text/xml"];
+
+function isValidGpxMimeType(mime: string | undefined): boolean {
+  if (!mime) return false;
+  return ALLOWED_MIME_TYPES.includes(mime.toLowerCase());
+}
+
 function badRequest(message: string): Error & { statusCode: number } {
   const err = new Error(message) as Error & { statusCode: number };
   err.statusCode = 400;
@@ -156,6 +163,17 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     return;
   }
 
+  const filename = file.originalname || "";
+  if (!filename.toLowerCase().endsWith(".gpx")) {
+    res.status(400).json({ error: "Apenas ficheiros .gpx são suportados" });
+    return;
+  }
+
+  if (!isValidGpxMimeType(file.mimetype)) {
+    res.status(400).json({ error: "Tipo de ficheiro não suportado" });
+    return;
+  }
+
   const requestedMotorcycleId =
     typeof req.body?.motorcycleId === "string" && req.body.motorcycleId.trim() !== ""
       ? req.body.motorcycleId.trim()
@@ -170,8 +188,10 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     let xml: string;
     try {
       xml = fs.readFileSync(file.path, "utf8");
-    } finally {
-      fs.unlink(file.path, () => {}); // cleanup async
+    } catch {
+      fs.unlink(file.path, () => {});
+      res.status(400).json({ error: "Erro ao ler o ficheiro GPX" });
+      return;
     }
     const parsed = parseGpx(xml);
 
@@ -267,30 +287,33 @@ export async function parseGpxFile(req: GpxImportRequest, res: Response): Promis
   if (!file) {
     res.status(400).json({ 
       success: false, 
-      error: "GPX file is required",
-      validationErrors: ["No file provided in request"]
+      error: "Ficheiro GPX em falta"
     });
     return;
   }
 
-  // Validate file extension
   const filename = file.originalname || "";
   if (!filename.toLowerCase().endsWith('.gpx')) {
     res.status(400).json({
       success: false,
-      error: "Only .gpx files are supported",
-      validationErrors: ["File must have .gpx extension"]
+      error: "Apenas ficheiros .gpx são suportados"
     });
     return;
   }
 
-  // Validate file size (10MB limit as per requirements)
-  const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+  if (!isValidGpxMimeType(file.mimetype)) {
+    res.status(400).json({
+      success: false,
+      error: "Tipo de ficheiro não suportado"
+    });
+    return;
+  }
+
+  const maxSizeBytes = 10 * 1024 * 1024;
   if (file.size > maxSizeBytes) {
     res.status(413).json({
       success: false,
-      error: "File size exceeds 10MB limit",
-      validationErrors: [`File size ${Math.round(file.size / 1024 / 1024)}MB exceeds maximum allowed size of 10MB`]
+      error: `Ficheiro demasiado grande (${Math.round(file.size / 1024 / 1024)}MB). Limite: 10MB`
     });
     return;
   }
@@ -299,26 +322,28 @@ export async function parseGpxFile(req: GpxImportRequest, res: Response): Promis
     let xml: string;
     try {
       xml = fs.readFileSync(file.path, "utf8");
-    } finally {
-      fs.unlink(file.path, () => {}); // cleanup async
+    } catch {
+      fs.unlink(file.path, () => {});
+      res.status(400).json({
+        success: false,
+        error: "Erro ao ler o ficheiro GPX"
+      });
+      return;
     }
     const parsed = parseGpx(xml);
 
     if (parsed.waypoints.length === 0) {
       res.status(400).json({
         success: false,
-        error: "GPX file contains no valid waypoints",
-        validationErrors: ["No trackpoints (trkpt) or waypoints (wpt) found in GPX file"]
+        error: "O GPX não contém trackpoints (trkpt) ou waypoints (wpt) válidos"
       });
       return;
     }
 
-    // Validate minimum waypoint requirement (at least 2 for route creation)
     if (parsed.waypoints.length < 2) {
       res.status(400).json({
         success: false,
-        error: "GPX file must contain at least 2 waypoints",
-        validationErrors: [`Found ${parsed.waypoints.length} waypoint(s), minimum 2 required for route creation`]
+        error: `O GPX deve conter pelo menos 2 waypoints (contém ${parsed.waypoints.length})`
       });
       return;
     }
@@ -354,15 +379,14 @@ export async function parseGpxFile(req: GpxImportRequest, res: Response): Promis
     if (err instanceof Error && err.message.includes('XML')) {
       res.status(400).json({
         success: false,
-        error: "Invalid GPX file format",
-        validationErrors: ["GPX file appears to be corrupted or contains invalid XML"]
+        error: "Formato GPX inválido — ficheiro corrompido ou XML inválido"
       });
       return;
     }
 
     res.status(500).json({
       success: false,
-      error: "Internal server error while processing GPX file"
+      error: "Erro interno ao processar o ficheiro GPX"
     });
   }
 }
@@ -418,71 +442,76 @@ export async function exportTripGpx(req: AuthRequest, res: Response): Promise<vo
   const userId = req.userId!;
   const tripId = req.params.tripId as string;
 
-  const trip = await prisma.trip.findFirst({
-    where: { id: tripId, userId },
-    include: {
-      gpxData: true,
-      motorcycle: { select: { deviceId: true, name: true, brand: true } },
-    },
-  });
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id: tripId, userId },
+      include: {
+        gpxData: true,
+        motorcycle: { select: { deviceId: true, name: true, brand: true } },
+      },
+    });
 
-  if (!trip) {
-    res.status(404).json({ error: "Viagem não encontrada" });
-    return;
-  }
+    if (!trip) {
+      res.status(404).json({ error: "Viagem não encontrada" });
+      return;
+    }
 
-  const nameParts = [
-    "MotoGuard",
-    trip.motorcycle?.name || null,
-    trip.motorcycle?.brand || null,
-  ].filter(Boolean);
-  const gpxName = nameParts.join(" · ");
-  const startedAtIso = trip.startedAt ? trip.startedAt.toISOString() : null;
-  let filename = trip.gpxData?.filename || `trip-${trip.id}.gpx`;
-  let waypoints: Array<{ lat: number; lon: number; ele?: number | null; time?: string | null }> = [];
+    const nameParts = [
+      "MotoGuard",
+      trip.motorcycle?.name || null,
+      trip.motorcycle?.brand || null,
+    ].filter(Boolean);
+    const gpxName = nameParts.join(" · ");
+    const startedAtIso = trip.startedAt ? trip.startedAt.toISOString() : null;
+    let filename = trip.gpxData?.filename || `trip-${trip.id}.gpx`;
+    let waypoints: Array<{ lat: number; lon: number; ele?: number | null; time?: string | null }> = [];
 
-  if (trip.gpxData?.waypoints) {
-    const raw = trip.gpxData.waypoints as unknown;
-    if (Array.isArray(raw)) {
-      waypoints = raw
+    if (trip.gpxData?.waypoints) {
+      const raw = trip.gpxData.waypoints as unknown;
+      if (Array.isArray(raw)) {
+        waypoints = raw
+          .map((p) => ({
+            lat: typeof p?.lat === "number" ? p.lat : null,
+            lon: typeof p?.lon === "number" ? p.lon : null,
+            ele: typeof p?.ele === "number" ? p.ele : null,
+            time: toIsoTime(p?.time),
+          }))
+          .filter((p): p is { lat: number; lon: number; ele: number | null; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
+      }
+    } else {
+      const points = await influxService.queryTripTelemetry(
+        trip.startedAt,
+        trip.endedAt,
+        trip.motorcycle?.deviceId,
+      );
+
+      waypoints = points
         .map((p) => ({
-          lat: typeof p?.lat === "number" ? p.lat : null,
-          lon: typeof p?.lon === "number" ? p.lon : null,
-          ele: typeof p?.ele === "number" ? p.ele : null,
+          lat: typeof p?.latitude === "number" ? (p.latitude as number) : null,
+          lon: typeof p?.longitude === "number" ? (p.longitude as number) : null,
           time: toIsoTime(p?.time),
         }))
-        .filter((p): p is { lat: number; lon: number; ele: number | null; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
+        .filter((p): p is { lat: number; lon: number; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
+
+      filename = `motoguard-trip-${trip.id}.gpx`;
     }
-  } else {
-    const points = await influxService.queryTripTelemetry(
-      trip.startedAt,
-      trip.endedAt,
-      trip.motorcycle?.deviceId,
-    );
 
-    waypoints = points
-      .map((p) => ({
-        lat: typeof p?.latitude === "number" ? (p.latitude as number) : null,
-        lon: typeof p?.longitude === "number" ? (p.longitude as number) : null,
-        time: toIsoTime(p?.time),
-      }))
-      .filter((p): p is { lat: number; lon: number; time: string | null } => typeof p.lat === "number" && typeof p.lon === "number");
+    if (waypoints.length === 0) {
+      res.status(400).json({ error: "Não há pontos GPS suficientes para exportar GPX" });
+      return;
+    }
 
-    filename = `motoguard-trip-${trip.id}.gpx`;
+    const gpx = buildGpx({
+      name: gpxName || "MotoGuard Trip",
+      startedAt: startedAtIso,
+      waypoints,
+    });
+
+    res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="motoguard-trip-${trip.id}.gpx"`);
+    res.status(200).send(gpx);
+  } catch (err) {
+    console.error(`[GPX] Erro ao exportar viagem ${tripId}:`, (err as Error).message);
+    res.status(500).json({ error: "Erro interno ao exportar GPX" });
   }
-
-  if (waypoints.length === 0) {
-    res.status(400).json({ error: "Não há pontos GPS suficientes para exportar GPX" });
-    return;
-  }
-
-  const gpx = buildGpx({
-    name: gpxName || "MotoGuard Trip",
-    startedAt: startedAtIso,
-    waypoints,
-  });
-
-  res.setHeader("Content-Type", "application/gpx+xml; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="motoguard-trip-${trip.id}.gpx"`);
-  res.status(200).send(gpx);
 }
