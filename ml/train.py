@@ -32,7 +32,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from features import FeatureExtractor, FEATURE_NAMES
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-MODEL_VERSION = "isolation-forest-v1"
 DEFAULT_OUTPUT = Path(__file__).parent / "models" / "isolation_forest.pkl"
 
 
@@ -171,6 +170,7 @@ def train(
     model.fit(X_scaled)
 
     # Serializar Model_Artifact
+    model_version = f"isolation-forest-v1-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     artifact = {
         "model": model,
@@ -179,16 +179,18 @@ def train(
             "trained_at": datetime.now(timezone.utc).isoformat(),
             "n_samples": n_trips,
             "feature_names": FEATURE_NAMES,
-            "model_version": MODEL_VERSION,
+            "model_version": model_version,
             "n_estimators": n_estimators,
             "contamination": contamination,
             "random_state": random_state,
+            "sigmoid_midpoint": -0.30,
+            "sigmoid_k": 15,
         },
     }
     joblib.dump(artifact, output_path)
 
     print(f"[train] Model_Artifact guardado em: {output_path}")
-    print(f"[train] Metadados: n_samples={n_trips}, version={MODEL_VERSION}")
+    print(f"[train] Metadados: n_samples={n_trips}, version={model_version}")
 
 
 if __name__ == "__main__":
