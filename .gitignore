@@ -438,3 +438,6 @@ app/backend/dist/
 
 # ─── MotoGuard: app backend node_modules ────────────────────────────────────
 app/node_modules/
+
+# MotoGuard: uploads temporarios de GPX (testes)
+app/tmp/uploads/
