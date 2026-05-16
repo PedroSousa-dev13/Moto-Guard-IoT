@@ -60,7 +60,7 @@ const HomePage: FC = () => {
           <div className="relative z-10 flex flex-col items-center lg:items-start text-center lg:text-left gap-8 animate-slide-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-[0.2em] text-accent backdrop-blur-md shadow-xl">
               <span className="animate-ping w-2 h-2 rounded-full bg-accent" />
-              🏍️ MotoGuard IoT
+              <img src="/logo.svg" alt="MotoGuard IoT" className="h-8 w-auto" />
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none m-0 text-white">
               Monitoramento <br />

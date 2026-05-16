@@ -97,7 +97,7 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
       className={`flex-shrink-0 w-52 h-36 rounded-2xl border transition-all cursor-pointer flex flex-col group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/20 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
     >
       <img src={img} alt={moto.name} className="moto-card-bg" />
-      <div className="absolute inset-0 bg-gradient-to-t from-surface/80 via-surface/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-surface/0 via-surface/0 to-transparent dark:from-surface/8 dark:via-surface/5 pointer-events-none" />
       <div className="p-4 relative z-10 flex-1 flex flex-col justify-end">
         <div className="flex flex-col gap-0.5">
           <div className="font-black text-sm text-text truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
@@ -565,8 +565,8 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
 
   return (
     <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5 relative min-h-[220px]">
-      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-transparent to-surface/80 pointer-events-none" />
+      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[50%] -translate-y-1/2 w-full h-full opacity-30 object-cover drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none dark:opacity-20" />
+      <div className="absolute inset-0 bg-gradient-to-r from-surface/0 via-surface/0 to-transparent dark:from-surface/8 dark:via-transparent dark:to-surface/8 pointer-events-none" />
       <div className="absolute inset-0 bg-radial-gradient from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       <div className="flex-1 p-10 flex flex-col justify-center gap-8 relative z-10">
@@ -654,8 +654,8 @@ function TripListCard({
 
   return (
     <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 relative min-h-[160px] ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
-      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-transparent to-surface/80 pointer-events-none" />
+      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[50%] -translate-y-1/2 w-full h-full opacity-30 object-cover drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none dark:opacity-20" />
+      <div className="absolute inset-0 bg-gradient-to-r from-surface/0 via-surface/0 to-transparent dark:from-surface/8 dark:via-transparent dark:to-surface/8 pointer-events-none" />
       
       <div className="flex flex-col lg:flex-row min-h-[160px] relative z-10">
         <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer" onClick={() => onToggle(trip.id)}>

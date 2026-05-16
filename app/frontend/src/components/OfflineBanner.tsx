@@ -34,13 +34,13 @@ export default function OfflineBanner() {
     >
       {reconnecting ? (
         <>
-          <WifiOff size={15} />
-          <span>Sem ligação ao servidor — a reconectar...</span>
+          <WifiOff size={14} />
+          <span>Sem ligação ao servidor</span>
           <span className="offline-banner__dot" />
         </>
       ) : (
         <>
-          <RefreshCw size={15} />
+          <RefreshCw size={14} />
           <span>Ligação restabelecida</span>
         </>
       )}

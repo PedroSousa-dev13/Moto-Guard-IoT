@@ -103,10 +103,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
         <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar">
           {/* Brand */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20">
-              <Bike size={24} strokeWidth={2.5} />
-            </div>
-            <h2 className="text-2xl font-black text-text tracking-tighter m-0">MotoGuard</h2>
+            <img src="/logo.svg" alt="MotoGuard" className="h-12 w-auto" />
           </div>
 
           {/* Header */}

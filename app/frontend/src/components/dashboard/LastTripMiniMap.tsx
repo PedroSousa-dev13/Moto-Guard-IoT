@@ -114,9 +114,9 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
   if (!trip) return null;
 
   return (
-    <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-white/5 bg-black/40 group shadow-inner">
+    <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-border-glass-subtle bg-surface-2 group shadow-inner">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-50">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-50">
           <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />
         </div>
       )}
@@ -133,8 +133,8 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
           <div className="w-full h-full min-h-0 flex-1">
             <ResponsiveContainer width="99%" height="99%">
               <RadarChart cx="50%" cy="40%" outerRadius="65%" data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 7, fontWeight: 'bold' }} />
+                <PolarGrid stroke="var(--glass-border)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--muted)', fontSize: 9, fontWeight: 'bold' }} />
                 <Radar
                   name="Desempenho"
                   dataKey="A"
@@ -145,19 +145,19 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
               </RadarChart>
             </ResponsiveContainer>
           </div>
-          <div className="absolute top-2 right-2 bg-white/5 backdrop-blur-md border border-white/10 p-1.5 rounded-lg text-muted">
+          <div className="absolute top-2 right-2 bg-surface shadow-sm border border-border-glass-subtle p-1.5 rounded-lg text-muted">
             <ShieldAlert size={14} />
           </div>
         </div>
       )}
 
       {hasRoute && (
-        <div className="absolute top-2 right-2 bg-accent/20 backdrop-blur-md border border-accent/30 p-1.5 rounded-lg text-accent z-[400]">
+        <div className="absolute top-2 right-2 bg-accent-light backdrop-blur-md border border-accent/30 p-1.5 rounded-lg text-accent z-[400]">
           <MapPin size={14} />
         </div>
       )}
       
-      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/5 px-2.5 py-1 rounded-xl flex items-center gap-2 z-[400]">
+      <div className="absolute bottom-3 left-3 bg-surface shadow-md border border-border-glass-subtle px-2.5 py-1 rounded-xl flex items-center gap-2 z-[400]">
         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
         <span className="text-[0.6rem] font-black text-text uppercase tracking-widest">
             {hasRoute ? (trip.source === "GPX_IMPORTED" ? "Rota GPX" : "Rota Registada") : "Análise de Estilo"}

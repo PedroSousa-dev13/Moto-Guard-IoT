@@ -118,10 +118,31 @@ function ChartPlaceholder() {
 export default function Dashboard() {
   const { telemetry, status, tripEndedSignal, realtimeAnomaly } = useSocket();
   const [lastTrip, setLastTrip] = useState<TripFeedItem | null>(null);
+  const [connectionNotice, setConnectionNotice] = useState<"offline" | "online" | null>(null);
+  const [wasOffline, setWasOffline] = useState(false);
   
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => { document.title = "Dashboard — MotoGuard"; }, []);
+
+  useEffect(() => {
+    let timeoutId: number | undefined;
+
+    if (!status.ws) {
+      setConnectionNotice("offline");
+      setWasOffline(true);
+    } else if (wasOffline) {
+      setConnectionNotice("online");
+      timeoutId = window.setTimeout(() => {
+        setConnectionNotice(null);
+        setWasOffline(false);
+      }, 2500);
+    }
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [status.ws, wasOffline]);
 
   useEffect(() => {
     tripsAPI.getFeed(undefined, 1)
@@ -185,6 +206,12 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          {connectionNotice && (
+            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${connectionNotice === "offline" ? "bg-red/10 text-red border-red/20" : "bg-green/10 text-green border-green/20"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${connectionNotice === "offline" ? "bg-red animate-pulse" : "bg-green animate-pulse"}`} />
+              {connectionNotice === "offline" ? "Sem ligação" : "Ligação restabelecida"}
+            </div>
+          )}
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.mqtt ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle opacity-50"}`}>
             <span className={`w-1.5 h-1.5 rounded-full bg-current ${status.mqtt ? 'animate-pulse' : ''}`} />
             MQTT
@@ -199,19 +226,24 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
         <div className="flex flex-col gap-8">
           
-          {/* HERO CARD */}
-          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass shadow-2xl group bg-surface/40">
+{/* HERO CARD */}
+          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass-subtle shadow-2xl group bg-black">
             <img 
               src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
               alt="Motorcycle" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
+              className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:scale-105 transition-transform duration-700" 
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent flex flex-col justify-center p-10 z-10">
+            
+            {/* Gradiente escuro fixo para garantir que o texto branco se lê sempre perfeitamente */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10 z-10">
+              
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border shadow-2xl mb-6 transition-all duration-500 ${hasData ? "bg-green/20 text-green border-green/30 shadow-green/20 scale-110" : "bg-orange/20 text-orange border-orange/30 shadow-orange/20"}`}>
-                {hasData ? <CheckCircle2 size={36} /> : <Radio size={36} className="animate-pulse" />}
+                {hasData ? <CheckCircle2 size={36} className="text-green" /> : <Radio size={36} className="animate-pulse text-orange" />}
               </div>
-              <h2 className="text-3xl font-black text-text mb-2 tracking-tight">{hasData ? "Tudo certo!" : "Pronto para iniciar"}</h2>
-              <p className="text-muted text-sm font-medium max-w-xs leading-relaxed">
+              
+              <h2 className="text-3xl font-black text-white mb-2 tracking-tight">{hasData ? "Tudo certo!" : "Pronto para iniciar"}</h2>
+              
+              <p className="text-white/80 text-sm font-medium max-w-xs leading-relaxed">
                 {hasData 
                   ? "Sistema ativo e monitorizando todos os parâmetros da sua moto em tempo real." 
                   : "Ligue o simulador ou um dispositivo real para começar a monitorizar a sua viagem."}
@@ -421,7 +453,7 @@ export default function Dashboard() {
               <div className="absolute inset-3 border border-accent/10 rounded-full" />
               <div className="absolute inset-6 border border-accent/20 rounded-full" />
               <div className={`absolute inset-0 border-2 border-accent rounded-full animate-ping opacity-0 ${hasData ? 'opacity-20' : ''}`} />
-              <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 mx-auto ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
+              <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 mx-auto ${hasData ? "bg-green text-white shadow-green/40 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
                 <Cpu size={32} />
               </div>
             </div>

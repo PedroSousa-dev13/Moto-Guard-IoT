@@ -289,6 +289,23 @@
     @apply text-green bg-green/10 border-green/20;
   }
 
+  .offline-banner {
+    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all;
+    border-color: var(--glass-border-subtle);
+  }
+
+  .offline-banner--offline {
+    @apply text-red bg-red/10 border-red/20;
+  }
+
+  .offline-banner--online {
+    @apply text-green bg-green/10 border-green/20;
+  }
+
+  .offline-banner__dot {
+    @apply w-2 h-2 rounded-full bg-current animate-pulse;
+  }
+
   /* Logs */
   .log-section {
     @apply mt-8 pt-8 border-t border-border-glass-subtle flex flex-col gap-4;
@@ -502,8 +519,9 @@
 
   /* Premium Moto Cards Utilities */
   .moto-card-bg {
-    @apply absolute right-[-20%] bottom-[-10%] h-[120%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.15] group-hover:-translate-x-2 pointer-events-none;
+    @apply absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-100 object-cover drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.15] pointer-events-none;
   }
+
   
   .card-centered {
     @apply flex flex-col justify-center items-center h-full w-full;
