@@ -436,6 +436,16 @@ app/models/VR-Mobil.glb
 *.glb
 *.fbx
 
+# ─── MotoGuard: planning files ─────────────────────────────────────────────
+a_fazer.txt
+a_fazer.md
+a-fazer-melhorias-interface.md
+carrossel_*.md
+carrossel_*.txt
+carrossel_descricao.md
+audit_report.md
+scratch/
+
 # ─── MotoGuard: app backend build output ────────────────────────────────────
 app/backend/dist/
 app/frontend/dist/
@@ -460,3 +470,6 @@ npm-debug.log*
 
 # Simulator state
 simulador/odometer_state.json
+
+# ─── MotoGuard: large font file unnecessary in VCS ──────────────────────────
+app/frontend/public/fonts/helvetiker_regular.typeface.json

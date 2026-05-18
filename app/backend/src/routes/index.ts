@@ -9,6 +9,7 @@ import healthRoutes from "./health.routes";
 import telemetryRoutes from "./telemetry.routes";
 import commandRoutes from "./command.routes";
 import authRoutes from "./auth.routes";
+import authProtectedRoutes from "./auth-protected.routes";
 import authResetRoutes from "./auth-reset.routes";
 import tripRoutes from "./trip.routes";
 import motorcycleRoutes from "./motorcycle.routes";
@@ -25,6 +26,7 @@ router.use(authResetRoutes);
 // Rotas protegidas (com CSRF — já têm cookie de sessão JWT)
 const protectedRouter = Router();
 protectedRouter.use(csrfMiddleware);
+protectedRouter.use(authProtectedRoutes);
 protectedRouter.use(tripRoutes);
 protectedRouter.use(telemetryRoutes);
 protectedRouter.use(commandRoutes);
