@@ -92,7 +92,7 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
           <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">
             <Cpu size={14} /> Simular Eventos & Falhas
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { label: "Forçar Queda", icon: <AlertTriangle size={14} />, type: "queda", color: "red" },
               { label: "Reset Eventos", icon: <RefreshCcw size={14} />, type: "reset_eventos", color: "neutral" },
@@ -115,7 +115,7 @@ export default function CommandPanel({ sendCommand, addLog, logs, running, onSto
           <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60 mt-2">
             <Zap size={14} /> Controlos Manuais (Hold)
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button 
               className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all bg-orange/10 border border-orange/20 text-orange hover:bg-orange hover:text-white active:scale-95 select-none disabled:opacity-30"
               onMouseDown={() => sendCommand({ acao: "override", tipo: "throttle", active: true })}

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -8,6 +8,8 @@ import OfflineBanner from './OfflineBanner';
 import SOSCountdown from './SOSCountdown';
 import { useSocket } from '../hooks/useSocket';
 
+const STORAGE_KEY = 'motoguard_sidebar_collapsed';
+
 interface LayoutProps {
   children?: ReactNode;
 }
@@ -16,11 +18,26 @@ const Layout: FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const { isDemoMode } = useDemoContext();
   const { crashAlert, cancelEmergency } = useSocket();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(sidebarCollapsed));
+    } catch {}
+  }, [sidebarCollapsed]);
+
+  const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
 
   if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="min-h-screen flex flex-col bg-bg transition-colors duration-500">
-        <Navbar />
+        <Navbar onToggleSidebar={toggleSidebar} sidebarCollapsed={false} />
         <main className="flex-1">
           {children || <Outlet />}
         </main>
@@ -30,18 +47,18 @@ const Layout: FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-bg transition-colors duration-500 overflow-x-hidden">
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="flex-1 flex flex-col min-w-0 relative">
         {crashAlert && (
-          <SOSCountdown 
-            deviceId={crashAlert.deviceId} 
-            initialSeconds={crashAlert.countdownSec} 
-            onCancel={cancelEmergency} 
+          <SOSCountdown
+            deviceId={crashAlert.deviceId}
+            initialSeconds={crashAlert.countdownSec}
+            onCancel={cancelEmergency}
           />
         )}
-        <Navbar />
+        <Navbar onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />
         <OfflineBanner />
-        <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-12 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-10 md:py-12 custom-scrollbar">
           <div className="max-w-[1600px] mx-auto w-full">
             {children || <Outlet />}
           </div>
