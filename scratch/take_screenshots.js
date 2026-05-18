@@ -25,29 +25,22 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await page.screenshot({ path: path.join(screenshotsDir, 'home_login.png') });
   console.log('Saved home_login.png');
 
-  // Open demo modal
-  const demoBtns = await page.$$('button');
-  for (const btn of demoBtns) {
-    const text = await page.evaluate(el => el.textContent, btn);
-    if (text.includes('Demonstração')) {
-      await btn.click();
-      break;
-    }
-  }
-  await delay(1000);
+  // Navigate to login
+  console.log('Navigating to Login page...');
+  await page.goto('http://localhost:3000/login', { waitUntil: 'networkidle2' });
+  await delay(1500);
 
-  // Click activate demo
-  const modalBtns = await page.$$('button');
-  for (const btn of modalBtns) {
-    const text = await page.evaluate(el => el.textContent, btn);
-    if (text.includes('Explorar Modo Demo')) {
-      await btn.click();
-      break;
-    }
-  }
+  // Type login credentials
+  console.log('Typing credentials...');
+  await page.type('input[type="email"]', 'dadsa@sdasda.com');
+  await page.type('input[type="password"]', 'password123');
 
-  console.log('Waiting for login/dashboard navigation...');
-  await delay(3000); // give time to load demo and redirect
+  // Click login
+  console.log('Clicking login button...');
+  await page.click('button[type="submit"]');
+
+  console.log('Waiting for login and redirect to /dashboard...');
+  await delay(4000); // give time to load dashboard and redirect
 
   const pagesToScreenshot = [
     { url: '/dashboard', name: 'dashboard.png' },
@@ -57,7 +50,12 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     { url: '/trips', name: 'viagens.png' },
     { url: '/real-simulator', name: 'simulador.png' },
     { url: '/alertas', name: 'alertas.png' },
-    { url: '/settings', name: 'configuracoes.png' }
+    { url: '/settings', name: 'configuracoes.png' },
+    { url: '/profile', name: 'perfil.png' },
+    { url: '/about', name: 'sobre.png' },
+    { url: '/gpx', name: 'gpx.png' },
+    { url: '/gpx-simulator', name: 'gpx_simulador.png' },
+    { url: '/simulator-contexts', name: 'simulator_contexts.png' }
   ];
 
   for (const item of pagesToScreenshot) {
@@ -73,11 +71,12 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   await page.goto('http://localhost:3000/trips', { waitUntil: 'networkidle2' });
   await delay(1500);
   
-  // Click the first link that starts with /trips/
+  // Click the first completed link that starts with /trips/ (the second one, since the first is the active trip)
   const tripLinks = await page.$$('a[href^="/trips/"]');
   if (tripLinks.length > 0) {
-    await tripLinks[0].click();
-    await delay(2000);
+    const completedLink = tripLinks.length > 1 ? tripLinks[1] : tripLinks[0];
+    await completedLink.click();
+    await delay(2500); // give Leaflet map and charts plenty of time to render
     await page.screenshot({ path: path.join(screenshotsDir, 'detalhe_viagem.png') });
     console.log('Saved detalhe_viagem.png');
   } else {
