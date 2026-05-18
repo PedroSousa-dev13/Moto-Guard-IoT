@@ -1,8 +1,9 @@
-import { CSSProperties, ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   Activity, Gauge, Thermometer, Zap, Navigation, Wind,
   AlertTriangle, Shield, BarChart2, Info,
-  ChevronDown, ChevronUp, Bike
+  ChevronDown, ChevronUp, Bike, Square, Rocket, TrendingUp,
+  Smartphone, Battery, Droplets, CircleDot, Bell
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,18 +21,23 @@ interface Section {
   id: string;
   title: string;
   icon: ReactNode;
-  color: string;
   fields: DataField[];
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
+
+const SECTION_THEME: Record<string, { bg: string; text: string; border: string }> = {
+  telemetry: { bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
+  imu: { bg: "bg-blue/10", text: "text-blue", border: "border-blue/20" },
+  health: { bg: "bg-yellow/10", text: "text-yellow", border: "border-yellow/20" },
+  scores: { bg: "bg-green/10", text: "text-green", border: "border-green/20" },
+};
 
 const SECTIONS: Section[] = [
   {
     id: "telemetry",
     title: "Telemetria de Condução",
     icon: <Gauge size={20} />,
-    color: "#4f46e5",
     fields: [
       {
         key: "speed_kmh",
@@ -88,7 +94,6 @@ const SECTIONS: Section[] = [
     id: "imu",
     title: "IMU — Unidade de Medição Inercial",
     icon: <Activity size={20} />,
-    color: "#0ea5e9",
     fields: [
       {
         key: "roll_deg",
@@ -127,7 +132,6 @@ const SECTIONS: Section[] = [
     id: "health",
     title: "Saúde Mecânica",
     icon: <Thermometer size={20} />,
-    color: "#f97316",
     fields: [
       {
         key: "engine_temp_c",
@@ -182,7 +186,6 @@ const SECTIONS: Section[] = [
     id: "scores",
     title: "Safety Score & Performance Score",
     icon: <Shield size={20} />,
-    color: "#22c55e",
     fields: [
       {
         key: "safety_score",
@@ -255,15 +258,15 @@ function SeverityBadge({ severity }: { severity: "info" | "warn" | "critical" })
 function FieldCard({ field }: { field: DataField }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden mb-3 transition-all duration-200">
+    <div className="bg-surface/40 backdrop-blur-md border border-border-glass rounded-xl overflow-hidden mb-3 transition-all duration-200">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-all"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-panel transition-all"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <span className="font-black text-sm text-text">{field.label}</span>
-          <span className="px-2 py-0.5 rounded-lg bg-white/5 text-muted text-[0.7rem] font-bold border border-white/10">
+          <span className="px-2 py-0.5 rounded-lg bg-panel text-muted text-[0.7rem] font-bold border border-border-glass">
             {field.unit}
           </span>
           <span className="text-[0.75rem] text-muted truncate opacity-80 font-medium">
@@ -276,7 +279,7 @@ function FieldCard({ field }: { field: DataField }) {
       </button>
 
       {open && (
-        <div className="px-5 pb-5 pt-0 border-t border-white/5 animate-fade-in">
+        <div className="px-5 pb-5 pt-0 border-t border-border-glass animate-fade-in">
           <p className="text-sm text-text-2 my-4 leading-relaxed font-medium">{field.description}</p>
 
           <div className="text-[0.65rem] font-black uppercase tracking-widest text-accent mb-3">Impacto no sistema</div>
@@ -293,7 +296,7 @@ function FieldCard({ field }: { field: DataField }) {
               <div className="text-[0.65rem] font-black uppercase tracking-widest text-accent mb-3">Limiares</div>
               <div className="flex flex-col gap-2">
                 {field.thresholds.map((t, i) => (
-                  <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-black/20 border border-white/5">
+                  <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-panel border border-border-glass">
                     <SeverityBadge severity={t.severity} />
                     <span className="text-xs text-muted font-bold">{t.label}</span>
                     <span className="ml-auto font-black text-text text-sm">{t.value}</span>
@@ -352,7 +355,7 @@ export default function About() {
           { icon: <Shield size={14} />, label: "Safety Score", color: "text-green" },
         ].map((step, i) => (
           step.icon ? (
-            <div key={i} className={`flex items-center gap-2 px-4 py-2 bg-surface/60 border border-white/10 rounded-xl whitespace-nowrap shadow-sm`}>
+            <div key={i} className={`flex items-center gap-2 px-4 py-2 bg-surface/60 border border-border-glass rounded-xl whitespace-nowrap shadow-sm`}>
               <span className={step.color}>{step.icon}</span>
               <span className={`text-[0.7rem] font-black uppercase tracking-widest ${step.color}`}>{step.label}</span>
             </div>
@@ -365,20 +368,17 @@ export default function About() {
       {/* Sections */}
       <div className="flex flex-col gap-5">
         {SECTIONS.map((section) => (
-          <div key={section.id} className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
+          <div key={section.id} className="bg-surface/60 backdrop-blur-md border border-border-glass rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
             <button
               type="button"
               onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
-              className={`w-full flex items-center gap-4 px-6 py-5 text-left transition-all ${activeSection === section.id ? 'bg-white/5' : 'hover:bg-white/5'}`}
+              className={`w-full flex items-center gap-4 px-6 py-5 text-left transition-all ${activeSection === section.id ? 'bg-panel' : 'hover:bg-panel'}`}
             >
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/5 shadow-inner"
-                style={{ backgroundColor: `${section.color}20`, color: section.color }}
-              >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border shadow-inner ${SECTION_THEME[section.id]?.bg ?? 'bg-accent/10'} ${SECTION_THEME[section.id]?.text ?? 'text-accent'} ${SECTION_THEME[section.id]?.border ?? 'border-accent/20'}`}>
                 {section.icon}
               </div>
               <span className="font-black text-base text-text flex-1">{section.title}</span>
-              <span className="px-2.5 py-1 rounded-lg bg-surface-2 text-muted text-[0.65rem] font-black uppercase tracking-wider border border-white/5">
+              <span className="px-2.5 py-1 rounded-lg bg-surface-2 text-muted text-[0.65rem] font-black uppercase tracking-wider border border-border-glass">
                 {section.fields.length} campos
               </span>
               <div className="text-muted ml-2">
@@ -387,7 +387,7 @@ export default function About() {
             </button>
 
             {activeSection === section.id && (
-              <div className="px-6 py-5 border-t border-white/5 animate-fade-in bg-black/10">
+              <div className="px-6 py-5 border-t border-border-glass animate-fade-in bg-surface">
                 {section.fields.map((field) => (
                   <FieldCard key={field.key} field={field} />
                 ))}
@@ -398,7 +398,7 @@ export default function About() {
       </div>
 
       {/* Event types summary */}
-      <div className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-lg mt-8">
+      <div className="bg-surface/60 backdrop-blur-md border border-border-glass rounded-2xl overflow-hidden shadow-lg mt-8">
         <div className="px-6 py-4 bg-red/10 border-b border-red/10 flex items-center gap-4">
           <AlertTriangle size={20} className="text-red" />
           <h2 className="text-sm font-black text-text uppercase tracking-widest">Tipos de Eventos Detetados</h2>
@@ -406,19 +406,19 @@ export default function About() {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { icon: "🛑", name: "HARD_BRAKING", label: "Travagem Brusca", desc: "Desaceleração > 0.35G com travão > 60%" },
-              { icon: "🚀", name: "RAPID_ACCELERATION", label: "Aceleração Brusca", desc: "Aceleração > 0.30G com throttle > 70%" },
-              { icon: "↗️", name: "EXCESSIVE_LEAN", label: "Inclinação Excessiva", desc: "Roll > 110% do típico a > 25 km/h" },
-              { icon: "📳", name: "HIGH_VIBRATION", label: "Vibração Anómala", desc: "G-force > média + 0.65G com roll < 20°" },
-              { icon: "🌡️", name: "OVERHEAT", label: "Sobreaquecimento", desc: "Temperatura acima do limiar crítico do perfil" },
-              { icon: "🔋", name: "LOW_VOLTAGE", label: "Voltagem Baixa", desc: "Tensão abaixo do limiar crítico — possível falha de alternador" },
-              { icon: "🛢️", name: "OIL_PRESSURE_LOW", label: "Pressão de Óleo Baixa", desc: "< 0.9 bar a velocidade > 25 km/h" },
-              { icon: "🛞", name: "TIRE_PRESSURE_LOW", label: "Pressão de Pneus Baixa", desc: "< 1.3 bar em qualquer pneu" },
-              { icon: "💥", name: "CRASH_DETECTED", label: "Queda Detetada", desc: "Roll + G-force acima dos limiares de queda do perfil" },
-              { icon: "🚨", name: "SPEEDING", label: "Excesso de Velocidade", desc: "> 10% acima do limite legal durante 3+ ticks (WARNING); > 25% → CRITICAL" },
+              { icon: <Square className="text-red" size={24} />, name: "HARD_BRAKING", label: "Travagem Brusca", desc: "Desaceleração > 0.35G com travão > 60%" },
+              { icon: <Rocket className="text-orange" size={24} />, name: "RAPID_ACCELERATION", label: "Aceleração Brusca", desc: "Aceleração > 0.30G com throttle > 70%" },
+              { icon: <TrendingUp className="text-yellow" size={24} />, name: "EXCESSIVE_LEAN", label: "Inclinação Excessiva", desc: "Roll > 110% do típico a > 25 km/h" },
+              { icon: <Smartphone className="text-purple" size={24} />, name: "HIGH_VIBRATION", label: "Vibração Anómala", desc: "G-force > média + 0.65G com roll < 20°" },
+              { icon: <Thermometer className="text-yellow" size={24} />, name: "OVERHEAT", label: "Sobreaquecimento", desc: "Temperatura acima do limiar crítico do perfil" },
+              { icon: <Battery className="text-green" size={24} />, name: "LOW_VOLTAGE", label: "Voltagem Baixa", desc: "Tensão abaixo do limiar crítico — possível falha de alternador" },
+              { icon: <Droplets className="text-blue" size={24} />, name: "OIL_PRESSURE_LOW", label: "Pressão de Óleo Baixa", desc: "< 0.9 bar a velocidade > 25 km/h" },
+              { icon: <CircleDot className="text-orange" size={24} />, name: "TIRE_PRESSURE_LOW", label: "Pressão de Pneus Baixa", desc: "< 1.3 bar em qualquer pneu" },
+              { icon: <Zap className="text-red" size={24} />, name: "CRASH_DETECTED", label: "Queda Detetada", desc: "Roll + G-force acima dos limiares de queda do perfil" },
+              { icon: <Bell className="text-red" size={24} />, name: "SPEEDING", label: "Excesso de Velocidade", desc: "> 10% acima do limite legal durante 3+ ticks (WARNING); > 25% → CRITICAL" },
             ].map((ev) => (
-              <div key={ev.name} className="flex gap-4 p-4 rounded-xl bg-black/20 border border-white/5 hover:border-white/10 transition-all group">
-                <span className="text-3xl flex-shrink-0 group-hover:scale-110 transition-transform">{ev.icon}</span>
+              <div key={ev.name} className="flex gap-4 p-4 rounded-xl bg-panel border border-border-glass hover:border-white/10 transition-all group">
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 group-hover:scale-110 transition-transform">{ev.icon}</div>
                 <div className="flex flex-col gap-1">
                   <div className="font-black text-sm text-text leading-tight">{ev.label}</div>
                   <div className="text-[0.65rem] text-accent font-black font-mono tracking-tighter opacity-80">{ev.name}</div>

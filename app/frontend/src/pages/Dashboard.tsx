@@ -36,7 +36,7 @@ function fmtTime(ts: string | null | undefined): string {
 
 function Sparkline({ data, color, loading }: { data: any[], color: string, loading?: boolean }) {
   if (loading || data.length === 0) {
-    return <div className="h-10 w-full mt-1 bg-white/5 animate-pulse rounded-lg" />;
+    return <div className="h-10 w-full mt-1 bg-panel animate-pulse rounded-lg" />;
   }
   return (
     <div className="h-10 w-full mt-1">
@@ -224,7 +224,7 @@ export default function Dashboard() {
             <StatCard 
               icon={<Gauge size={20} />} 
               label="Velocidade" 
-              color="#3b82f6" 
+              color="var(--accent)" 
               footer={`Máxima: ${fmt(tel?.speed_kmh)} km/h`}
               loading={!hasData}
             >
@@ -233,7 +233,7 @@ export default function Dashboard() {
                 max={220} 
                 label="km/h" 
                 unit="Velocidade" 
-                color="#3b82f6" 
+                color="var(--accent)" 
                 size={100}
                 strokeWidth={8}
               />
@@ -242,7 +242,7 @@ export default function Dashboard() {
             <StatCard 
               icon={<Zap size={20} />} 
               label="RPM" 
-              color="#10b981" 
+              color="var(--green)" 
               footer={`Máxima: ${fmt(tel?.rpm)} rpm`}
               loading={!hasData}
             >
@@ -251,7 +251,7 @@ export default function Dashboard() {
                 max={120} 
                 label="x100" 
                 unit="RPM" 
-                color="#10b981" 
+                color="var(--green)" 
                 size={100}
                 strokeWidth={8}
               />
@@ -262,7 +262,7 @@ export default function Dashboard() {
               label="Temperatura" 
               value={fmt(tel?.engine_temp_c ?? 85)} 
               unit="°C" 
-              color="#f97316" 
+              color="var(--yellow)" 
               sparkData={tempSpark}
               footer="Normal"
               loading={!hasData}
@@ -270,9 +270,9 @@ export default function Dashboard() {
             <StatCard 
               icon={<Battery size={20} />} 
               label="Bateria" 
-              value={fmt(tel?.voltage ?? 14.2, 1)} 
+              value={fmt(tel?.voltage ?? 12.5)} 
               unit="V" 
-              color="#ef4444" 
+              color="var(--red)" 
               sparkData={battSpark}
               footer="Saudável"
               loading={!hasData}
@@ -307,16 +307,11 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorRpm" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="var(--green)" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="var(--green)" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'rgba(13,13,27,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                    />
-                    <Area type="monotone" dataKey="speed" stroke="var(--accent)" strokeWidth={4} fillOpacity={1} fill="url(#colorSpeed)" animationDuration={500} />
-                    <Area type="monotone" dataKey="rpm" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRpm)" animationDuration={500} />
+                    <Area type="monotone" dataKey="rpm" stroke="var(--green)" strokeWidth={3} fillOpacity={1} fill="url(#colorRpm)" animationDuration={500} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
