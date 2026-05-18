@@ -103,7 +103,7 @@ services:
       # JWT
       JWT_SECRET: ${JWT_SECRET:-motoguard-dev-secret-change-in-prod}
       # Encryption (separate from JWT_SECRET!)
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-generate-32-byte-random-hex-string}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-generate-64-char-hex-string-for-aes-256-encryption-key-!}
       # App URL & Email (Resend)
       APP_URL: ${APP_URL:-http://localhost:5173}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
