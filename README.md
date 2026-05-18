@@ -419,9 +419,48 @@ mosquitto_pub -h localhost -t motoguard/comando \
 
 ---
 
-## 📸 Screenshots
+## 📸 Detalhe das Páginas e Screenshots
 
-> **Nota:** Screenshots reais devem ser adicionados em `imagens/screenshots/` e referenciados aqui quando disponíveis.
+Abaixo está o detalhe de cada uma das páginas da aplicação, juntamente com o seu respetivo espaço para a captura de ecrã (print).
+
+> **Nota para o Developer:** Guarda os *prints* na pasta `imagens/screenshots/` com os nomes correspondentes (ex: `dashboard.png`, `garagem.png`) para que apareçam automaticamente aqui no README.
+
+### 🏠 Home Page & Autenticação
+A página inicial da aplicação que apresenta o projeto e os formulários de **Login** e **Registo** de utilizadores.
+![Home Page e Login](imagens/screenshots/home_login.png)
+
+### 📊 Dashboard
+Painel principal onde é possível ter uma visão geral do sistema, com widgets interativos, resumo da última viagem e métricas rápidas do estado do motociclo.
+![Dashboard](imagens/screenshots/dashboard.png)
+
+### 🏍️ Garagem (Gestão de Motas)
+Permite gerir as várias motas do utilizador, definir o modelo (Scooter, Naked, Desportiva, etc.), configurar limites personalizados e associar o ID do dispositivo IoT.
+![Garagem](imagens/screenshots/garagem.png)
+
+### 🗺️ Mapa & Navegação em Tempo Real
+Visualização da localização atual do motociclo no mapa, com acompanhamento em tempo real da viagem, marcadores de eventos (como travagens bruscas ou quedas) e percurso percorrido.
+![Mapa em Tempo Real](imagens/screenshots/mapa.png)
+
+### 📈 Analytics e Relatórios
+Secção dedicada à análise aprofundada dos dados recolhidos. Inclui gráficos complexos (Velocidade, RPM, Temperatura), Heatmaps de densidade de incidentes, e a classificação ML (Machine Learning) do estilo de condução.
+![Analytics](imagens/screenshots/analytics.png)
+
+### 🛣️ Viagens e Detalhes da Viagem
+Listagem de todas as viagens guardadas no histórico. Ao abrir o **Detalhe da Viagem**, é possível ver estatísticas detalhadas, exportar o relatório (PDF/CSV/GPX) e consultar a pontuação de segurança.
+![Histórico de Viagens](imagens/screenshots/viagens.png)
+![Detalhe da Viagem](imagens/screenshots/detalhe_viagem.png)
+
+### 🎮 Simulador de Condução (Real-Time & GPX)
+Páginas que permitem simular telemetria em tempo real ou injetar ficheiros GPX. A interface exibe os mostradores em tempo real (Gauges), um giroscópio visual para a inclinação da mota e a possibilidade de disparar eventos manualmente (quedas, falhas de motor, etc.).
+![Simulador Real-Time](imagens/screenshots/simulador.png)
+
+### ⚠️ Alertas
+Página de gestão de notificações e alertas de segurança. Lista incidentes como "Queda Detetada", "Sobreaquecimento" ou "Bateria Fraca", com timestamps e níveis de severidade.
+![Alertas](imagens/screenshots/alertas.png)
+
+### ⚙️ Perfil e Configurações
+Gestão dos dados do utilizador, preferências do sistema (Modo Escuro/Claro), idioma (PT/EN), e configurações de alertas por e-mail e outras notificações.
+![Configurações e Perfil](imagens/screenshots/configuracoes.png)
 
 ---
 
