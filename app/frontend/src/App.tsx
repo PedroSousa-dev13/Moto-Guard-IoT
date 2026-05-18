@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { DemoProvider } from './demo/DemoContext';
@@ -8,24 +8,29 @@ import DemoBanner from './demo/DemoBanner';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OnboardingGuard from './components/auth/OnboardingGuard';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import { ToastProvider } from './components/ui/ToastProvider';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 import HomePage from './pages/HomePage';
-import Dashboard from './pages/Dashboard';
-import Trips from './pages/Trips';
-import TripDetail from './pages/TripDetail';
-import Gpx from './pages/Gpx';
-import Map from './pages/Map';
-import SimulatorContexts from './pages/SimulatorContexts';
-import Analytics from './pages/Analytics';
-import Alertas from './pages/Alertas';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import Garage from './pages/Garage';
-import Login from './pages/Login';
-import ResetPassword from './pages/ResetPassword';
-import About from './pages/About';
-import RealSimulator from './pages/RealSimulator';
-import GpxSimulator from './pages/GpxSimulator';
+import { loadSettings, applyTheme } from './utils/settings';
 import './App.css';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Trips = lazy(() => import('./pages/Trips'));
+const TripDetail = lazy(() => import('./pages/TripDetail'));
+const Gpx = lazy(() => import('./pages/Gpx'));
+const Map = lazy(() => import('./pages/Map'));
+const SimulatorContexts = lazy(() => import('./pages/SimulatorContexts'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Alertas = lazy(() => import('./pages/Alertas'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Garage = lazy(() => import('./pages/Garage'));
+const Login = lazy(() => import('./pages/Login'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const About = lazy(() => import('./pages/About'));
+const RealSimulator = lazy(() => import('./pages/RealSimulator'));
+const GpxSimulator = lazy(() => import('./pages/GpxSimulator'));
 
 function HomeOrDashboard() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -34,56 +39,73 @@ function HomeOrDashboard() {
   return <HomePage />;
 }
 
+function AppFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg">
+      <LoadingSpinner size="large" />
+    </div>
+  );
+}
+
 function App() {
+  useEffect(() => {
+    const settings = loadSettings();
+    applyTheme(settings.theme);
+  }, []);
   return (
     <I18nProvider>
       <AuthProvider>
-        <Router>
-          <TranslatedApp>
-            <DemoProvider>
-              <div className="App">
-                <Layout>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/reset-password/:token" element={<ResetPassword />} />
-                    <Route path="/" element={<HomeOrDashboard />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/garage" element={
-                      <ProtectedRoute>
-                        <Garage />
-                      </ProtectedRoute>
-                    } />
-                    {/* All other protected routes share a single OnboardingGuard instance */}
-                    <Route element={
-                      <ProtectedRoute>
-                        <OnboardingGuard>
-                          <>
-                            <DemoBanner />
-                            <Outlet />
-                          </>
-                        </OnboardingGuard>
-                      </ProtectedRoute>
-                    }>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/trips" element={<Trips />} />
-                      <Route path="/trips/:id" element={<TripDetail />} />
-                      <Route path="/map" element={<Map />} />
-                      <Route path="/gpx" element={<Gpx />} />
-                      <Route path="/simulator-contexts" element={<SimulatorContexts />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/alertas" element={<Alertas />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/real-simulator" element={<RealSimulator />} />
-                      <Route path="/gpx-simulator" element={<GpxSimulator />} />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Layout>
-              </div>
-            </DemoProvider>
-          </TranslatedApp>
-        </Router>
+        <ToastProvider>
+          <Router>
+            <TranslatedApp>
+              <DemoProvider>
+                <div className="App">
+                  <Layout>
+                    <ErrorBoundary>
+                      <Suspense fallback={<AppFallback />}>
+                        <Routes>
+                          <Route path="/login" element={<Login />} />
+                          <Route path="/reset-password/:token" element={<ResetPassword />} />
+                          <Route path="/" element={<HomeOrDashboard />} />
+                          <Route path="/about" element={<About />} />
+                          <Route path="/garage" element={
+                            <ProtectedRoute>
+                              <Garage />
+                            </ProtectedRoute>
+                          } />
+                          <Route element={
+                            <ProtectedRoute>
+                              <OnboardingGuard>
+                                <>
+                                  <DemoBanner />
+                                  <Outlet />
+                                </>
+                              </OnboardingGuard>
+                            </ProtectedRoute>
+                          }>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/trips" element={<Trips />} />
+                            <Route path="/trips/:id" element={<TripDetail />} />
+                            <Route path="/map" element={<Map />} />
+                            <Route path="/gpx" element={<Gpx />} />
+                            <Route path="/simulator-contexts" element={<SimulatorContexts />} />
+                            <Route path="/analytics" element={<Analytics />} />
+                            <Route path="/alertas" element={<Alertas />} />
+                            <Route path="/settings" element={<Settings />} />
+                            <Route path="/profile" element={<Profile />} />
+                            <Route path="/real-simulator" element={<RealSimulator />} />
+                            <Route path="/gpx-simulator" element={<GpxSimulator />} />
+                          </Route>
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                      </Suspense>
+                    </ErrorBoundary>
+                  </Layout>
+                </div>
+              </DemoProvider>
+            </TranslatedApp>
+          </Router>
+        </ToastProvider>
       </AuthProvider>
     </I18nProvider>
   );

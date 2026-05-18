@@ -21,6 +21,8 @@ import { gpxAPI, tripsAPI } from "../services/api";
 import type { Trip, TripTelemetryResponse, TripEvent } from "../types";
 import { deriveGpxSeries } from "../utils/gpx";
 import { imageFromCategory } from "../utils/categoryImageMap";
+import TripStatCard from "../components/trips/TripStatCard";
+import TripChartCard from "../components/trips/TripChartCard";
 import { 
   MapPin, 
   Activity, 
@@ -587,20 +589,20 @@ export default function TripDetail() {
           </div>
 
           <div className="flex flex-col gap-5">
-            <StatCard icon={<Milestone size={28} />} label="Distância Total" value={summary.distanceKm?.toFixed(2) ?? "—"} unit="km" />
-            <StatCard icon={<Gauge size={28} />} label="Velocidade Máx." value={summary.maxSpeed?.toFixed(1) ?? "—"} unit="km/h" />
-            <StatCard icon={<Activity size={28} />} label="Velocidade Média" value={summary.avgSpeed?.toFixed(1) ?? "—"} unit="km/h" />
+            <TripStatCard icon={<Milestone size={28} />} label="Distância Total" value={summary.distanceKm?.toFixed(2) ?? "—"} unit="km" />
+            <TripStatCard icon={<Gauge size={28} />} label="Velocidade Máx." value={summary.maxSpeed?.toFixed(1) ?? "—"} unit="km/h" />
+            <TripStatCard icon={<Activity size={28} />} label="Velocidade Média" value={summary.avgSpeed?.toFixed(1) ?? "—"} unit="km/h" />
             
             {(chartSeries.length > 0 || trip.source !== "GPX_IMPORTED") ? (
               <>
-                <StatCard icon={<Zap size={28} />} label="Inclinação Máx." value={summary.maxRoll?.toFixed(1) ?? "—"} unit="°" />
-                <StatCard icon={<Thermometer size={28} />} label="Temp. Máxima" value={summary.maxTemp?.toFixed(1) ?? "—"} unit="°C" />
+                <TripStatCard icon={<Zap size={28} />} label="Inclinação Máx." value={summary.maxRoll?.toFixed(1) ?? "—"} unit="°" />
+                <TripStatCard icon={<Thermometer size={28} />} label="Temp. Máxima" value={summary.maxTemp?.toFixed(1) ?? "—"} unit="°C" />
               </>
             ) : (
-              <StatCard icon={<Mountain size={28} />} label="Altitude Máx." value={summary.maxEle?.toFixed(0) ?? "—"} unit="m" />
+              <TripStatCard icon={<Mountain size={28} />} label="Altitude Máx." value={summary.maxEle?.toFixed(0) ?? "—"} unit="m" />
             )}
             
-            <StatCard icon={<MapPin size={28} />} label="Pontos GPS" value={summary.gpsPoints.toString()} unit="pts" />
+            <TripStatCard icon={<MapPin size={28} />} label="Pontos GPS" value={summary.gpsPoints.toString()} unit="pts" />
           </div>
         </div>
 
@@ -614,7 +616,7 @@ export default function TripDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {(chartSeries.length === 0 && trip.source === "GPX_IMPORTED") ? (
               <>
-                <ChartCard title="Perfil de Velocidade" icon={<Gauge size={20} />}>
+                <TripChartCard title="Perfil de Velocidade" icon={<Gauge size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={gpxSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -634,9 +636,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="speedKmh" stroke="#3b82f6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
 
-                <ChartCard title="Variação de Altitude" icon={<Mountain size={20} />}>
+                <TripChartCard title="Variação de Altitude" icon={<Mountain size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={gpxSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -656,11 +658,11 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="ele" stroke="#10b981" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
               </>
             ) : (
               <>
-                <ChartCard title="Velocidade & Ritmo" icon={<Gauge size={20} />}>
+                <TripChartCard title="Velocidade & Ritmo" icon={<Gauge size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -680,9 +682,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="speed" stroke="#3b82f6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
 
-                <ChartCard title="Eficiência (RPM vs Velocidade)" icon={<Zap size={20} />}>
+                <TripChartCard title="Eficiência (RPM vs Velocidade)" icon={<Zap size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <ScatterChart>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -695,7 +697,7 @@ export default function TripDetail() {
                       <Scatter data={rpmVsSpeed} fill="#10b981" />
                     </ScatterChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
               </>
             )}
           </div>
@@ -708,7 +710,7 @@ export default function TripDetail() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <ChartCard title="Temperatura do Motor" icon={<Thermometer size={20} />}>
+                <TripChartCard title="Temperatura do Motor" icon={<Thermometer size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -728,9 +730,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="temp" stroke="#f97316" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
 
-                <ChartCard title="Dinâmica de Inclinação (Roll)" icon={<Activity size={20} />}>
+                <TripChartCard title="Dinâmica de Inclinação (Roll)" icon={<Activity size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -750,9 +752,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="roll" stroke="#8b5cf6" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
                 
-                <ChartCard title="Dinâmica Longitudinal (Pitch)" icon={<Activity size={20} />}>
+                <TripChartCard title="Dinâmica Longitudinal (Pitch)" icon={<Activity size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -772,9 +774,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="pitch" stroke="#f43f5e" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
 
-                <ChartCard title="Pressão do Óleo (Bar)" icon={<Activity size={20} />}>
+                <TripChartCard title="Pressão do Óleo (Bar)" icon={<Activity size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -794,9 +796,9 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="oil" stroke="#0ea5e9" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
 
-                <ChartCard title="Sistemas de Pneus (Pressão)" icon={<Activity size={20} />}>
+                <TripChartCard title="Sistemas de Pneus (Pressão)" icon={<Activity size={20} />}>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartSeries}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -817,7 +819,7 @@ export default function TripDetail() {
                       <Line type="monotone" dataKey="tireR" name="Trás" stroke="#f59e0b" dot={false} strokeWidth={4} animationDuration={2000} />
                     </LineChart>
                   </ResponsiveContainer>
-                </ChartCard>
+                </TripChartCard>
               </div>
             </>
           )}
@@ -827,39 +829,5 @@ export default function TripDetail() {
   );
 }
 
-function StatCard({ icon, label, value, unit }: { icon: React.ReactNode; label: string; value: string; unit: string }) {
-  return (
-    <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-7 flex items-center gap-7 group hover:border-accent/40 hover:bg-white/5 transition-all shadow-xl hover:shadow-accent/5">
-      <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform shadow-inner">
-        {icon}
-      </div>
-      <div className="flex flex-col gap-1.5 min-w-0">
-        <span className="text-[0.6rem] font-black uppercase tracking-[0.25em] text-muted opacity-60 truncate">{label}</span>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-text tracking-tighter tabular-nums">{value}</span>
-          <span className="text-xs font-black text-muted opacity-40 uppercase tracking-widest shrink-0">{unit}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function ChartCard({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col gap-10 group hover:border-accent/40 transition-all shadow-2xl overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-150 transition-transform">
-        {icon}
-      </div>
-      <div className="flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4 text-xl font-black text-text tracking-tight uppercase tracking-widest leading-none">
-          <div className="text-accent bg-accent/10 p-2.5 rounded-xl shadow-lg">{icon}</div>
-          {title}
-        </div>
-      </div>
-      <div className="flex-1 min-h-[300px] relative z-10">
-        {children}
-      </div>
-    </div>
-  );
-}
 
