@@ -1,0 +1,28 @@
+$env:CLAUDE_CODE_USE_OPENAI="1"
+$env:OPENAI_BASE_URL="https://openrouter.ai/api/v1"
+$env:OPENAI_API_KEY="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"
+$env:OPENAI_MODEL="tencent/hy3-preview:free"
+
+
+
+Projeto Sugerido: **ComplyAI — Plataforma de Compliance com IA para PMEs Portuguesas**
+
+> **A lacuna:** O mercado português tem milhares de PMEs que precisam de cumprir RGPD/NIS2 mas não têm orçamento para consultorias caras nem equipas de IT. Simultaneamente, IA e Cibersegurança são as áreas com maior escassez de talento.
+
+**O que faz:**
+- Scanner automático de vulnerabilidades (segurança)
+- Assistente IA (LLM) que analisa políticas de privacidade, contratos e documentos
+- Gera relatórios de compliance RGPD/NIS2 personalizados
+- Dashboard com risk score, recomendações e plano de ação
+- Upload de documentos → IA extrai não-conformidades → sugere correções
+
+**Stack sugerida (a preencher lacunas do teu portfólio):**
+
+| Componente | Tecnologia | O que demonstra |
+|------------|-----------|-----------------|
+| Backend API | Python (FastAPI) + PostgreSQL | APIs modernas |
+| Frontend | React + TypeScript + Tailwind | Full-stack |
+| IA | LLM (via API OpenAI/Llama) + RAG (LangChain) | **Competência #1 mercado** |
+| Scanner | OWASP ZAP / Nuclei | **Cibersegurança** |
+| Cloud | Docker + Deploy (AWS/Azure) | Cloud/DevOps |
+| Auth | JWT + OAuth2 + 2FA | Segurança
