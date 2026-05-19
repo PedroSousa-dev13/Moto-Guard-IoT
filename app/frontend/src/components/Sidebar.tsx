@@ -53,9 +53,9 @@ const Sidebar: FC<SidebarProps> = ({ collapsed }) => {
   ];
 
   return (
-    <aside className={`w-full ${collapsed ? 'md:w-20' : 'md:w-72'} bg-surface/80 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-border-glass-subtle flex flex-col shrink-0 z-[100] transition-all duration-300`}>
+    <aside className={`w-full ${collapsed ? 'md:w-20' : 'md:w-60'} bg-surface/80 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-border-glass-subtle flex flex-col shrink-0 z-100 transition-all duration-300`}>
       {/* HEADER */}
-      <div className={`px-6 py-4 ${collapsed ? 'justify-center' : 'justify-start'} flex items-center gap-3`}>
+      <div className={`px-4 py-3 ${collapsed ? 'justify-center' : 'justify-start'} flex items-center gap-3`}>
         <Link
           to="/"
           className="flex items-center no-underline bg-transparent hover:bg-transparent focus:outline-none focus:ring-0 active:bg-transparent"
@@ -69,7 +69,7 @@ const Sidebar: FC<SidebarProps> = ({ collapsed }) => {
       </div>
 
       {/* NAV */}
-      <nav className={`${collapsed ? 'hidden' : 'flex-1'} overflow-y-auto custom-scrollbar p-4 md:p-6 flex flex-row md:flex-col gap-4 md:gap-8 overflow-x-auto no-scrollbar`}>
+      <nav className={`${collapsed ? 'hidden' : 'flex-1'} overflow-y-auto custom-scrollbar p-2.5 md:p-3 flex flex-row md:flex-col gap-2.5 md:gap-3 overflow-x-auto no-scrollbar`}>
         {navGroups.map((group) => (
           <div key={group.label} className="flex flex-row md:flex-col gap-2 min-w-max md:min-w-0">
             <div className="hidden md:block text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted mb-4 opacity-40 ml-2">
@@ -80,22 +80,22 @@ const Sidebar: FC<SidebarProps> = ({ collapsed }) => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group relative shrink-0 md:shrink-1 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all group relative shrink-0 md:shrink ${
                     location.pathname === item.path
                       ? 'bg-accent/10 text-accent border border-accent/20 shadow-lg shadow-accent/5'
                       : 'text-muted hover:text-text hover:bg-panel border border-transparent'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
                     location.pathname === item.path
                       ? 'bg-accent text-white shadow-lg shadow-accent/20'
                       : 'bg-panel text-muted group-hover:bg-panel-hover group-hover:text-text'
                   }`}>
                     {item.icon}
                   </div>
-                  <span className="font-bold text-sm tracking-tight whitespace-nowrap">{item.label}</span>
+                  <span className="font-bold text-[0.72rem] tracking-tight whitespace-nowrap">{item.label}</span>
                   {location.pathname === item.path && (
-                    <div className="absolute left-[-1px] top-1/4 bottom-1/4 w-1 bg-accent rounded-full hidden md:block" />
+                    <div className="absolute -left-px top-1/4 bottom-1/4 w-1 bg-accent rounded-full hidden md:block" />
                   )}
                 </Link>
               ))}

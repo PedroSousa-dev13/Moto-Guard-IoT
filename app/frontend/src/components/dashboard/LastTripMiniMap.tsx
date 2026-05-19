@@ -114,7 +114,7 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
   if (!trip) return null;
 
   return (
-    <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-border-glass-subtle bg-surface-2 group shadow-inner">
+    <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-border-glass-subtle bg-surface-2 group shadow-inner">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/50 backdrop-blur-sm z-50">
           <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin" />

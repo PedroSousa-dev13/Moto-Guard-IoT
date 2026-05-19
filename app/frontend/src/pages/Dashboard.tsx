@@ -180,10 +180,10 @@ export default function Dashboard() {
   const battSpark = history.map(h => ({ value: h.batt }));
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in relative">
+    <div className="flex flex-col gap-6 animate-fade-in relative min-w-0">
       {/* Floating Realtime Anomaly Alert */}
       {realtimeAnomaly && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-100 animate-bounce">
           <div className="bg-red/90 backdrop-blur-xl border border-white/20 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-white">
             <AlertTriangle size={24} className="text-white" />
             <div className="flex flex-col">
@@ -196,18 +196,18 @@ export default function Dashboard() {
 
 
       {/* ── HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-black text-text tracking-tight m-0">Dashboard</h1>
-          <div className="flex items-center gap-2 text-sm font-medium">
+          <h1 className="text-2xl sm:text-3xl font-black text-text tracking-tight m-0">Dashboard</h1>
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
             <span className={`w-2 h-2 rounded-full ${hasData ? "bg-green shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-orange shadow-[0_0_10px_rgba(249,115,22,0.5)]"}`} />
             <span className="text-muted">{hasData ? "Visão geral do seu sistema em tempo real" : "Sistema em modo de espera"}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {connectionNotice && (
-            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${connectionNotice === "offline" ? "bg-red/10 text-red border-red/20" : "bg-green/10 text-green border-green/20"}`}>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.65rem] font-black uppercase tracking-widest border transition-all ${connectionNotice === "offline" ? "bg-red/10 text-red border-red/20" : "bg-green/10 text-green border-green/20"}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${connectionNotice === "offline" ? "bg-red animate-pulse" : "bg-green animate-pulse"}`} />
               {connectionNotice === "offline" ? "Sem ligação" : "Ligação restabelecida"}
             </div>
@@ -223,11 +223,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
-        <div className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-5 min-w-0">
+        <div className="flex flex-col gap-5 min-w-0">
           
 {/* HERO CARD */}
-          <div className="relative h-72 rounded-3xl overflow-hidden border border-border-glass-subtle shadow-2xl group bg-black">
+          <div className="relative h-60 sm:h-64 rounded-3xl overflow-hidden border border-border-glass-subtle shadow-2xl group bg-black">
             <img 
               src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=2070&auto=format&fit=crop" 
               alt="Motorcycle" 
@@ -235,7 +235,7 @@ export default function Dashboard() {
             />
             
             {/* Gradiente escuro fixo para garantir que o texto branco se lê sempre perfeitamente */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10 z-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-6 z-10">
               
               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border shadow-2xl mb-6 transition-all duration-500 ${hasData ? "bg-green/20 text-green border-green/30 shadow-green/20 scale-110" : "bg-orange/20 text-orange border-orange/30 shadow-orange/20"}`}>
                 {hasData ? <CheckCircle2 size={36} className="text-green" /> : <Radio size={36} className="animate-pulse text-orange" />}
@@ -252,7 +252,7 @@ export default function Dashboard() {
           </div>
 
           {/* STATS ROW */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard 
               icon={<Gauge size={20} />} 
               label="Velocidade" 
@@ -266,7 +266,7 @@ export default function Dashboard() {
                 label="km/h" 
                 unit="Velocidade" 
                 color="#3b82f6" 
-                size={100}
+                size={88}
                 strokeWidth={8}
               />
             </StatCard>
@@ -284,7 +284,7 @@ export default function Dashboard() {
                 label="x100" 
                 unit="RPM" 
                 color="#10b981" 
-                size={100}
+                size={88}
                 strokeWidth={8}
               />
             </StatCard>
@@ -312,7 +312,7 @@ export default function Dashboard() {
           </div>
 
           {/* MAIN CHART */}
-          <Card className="flex flex-col gap-6 overflow-hidden">
+          <Card className="flex flex-col gap-5 overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <span className="text-[0.7rem] font-black uppercase tracking-widest text-text opacity-60 ml-1">Telemetria ao Vivo</span>
               {hasData && (
@@ -329,7 +329,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="h-[300px] w-full -mx-4">
+            <div className="h-60 sm:h-64 w-full -mx-4">
               {history.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -356,7 +356,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6 border-t border-border-glass-subtle">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-border-glass-subtle">
               {[
                 { label: "Duração", icon: <Clock size={16} />, val: hasData ? "00:22:14" : "--:--" },
                 { label: "Distância", icon: <Route size={16} />, val: hasData ? "5.6 km" : "0.0 km" },
@@ -379,7 +379,7 @@ export default function Dashboard() {
 
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-6 min-w-0">
           
           {/* ÚLTIMA VIAGEM */}
           <Card className="flex flex-col gap-6">
@@ -394,19 +394,19 @@ export default function Dashboard() {
               <LastTripMiniMap trip={lastTrip} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col items-center justify-center gap-2 bg-white/5 p-4 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                  <Clock size={16} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0 flex flex-col items-center justify-center gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                  <Clock size={14} />
                 </div>
-                <span className="text-sm font-black text-text tabular-nums">{lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</span>
+                <span className="text-sm font-black text-text tabular-nums break-words">{lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</span>
                 <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Início</span>
               </div>
-              <div className="flex flex-col items-center justify-center gap-2 bg-white/5 p-4 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                  <Route size={16} />
+              <div className="min-w-0 flex flex-col items-center justify-center gap-2 bg-white/5 p-3 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                  <Route size={14} />
                 </div>
-                <span className="text-sm font-black text-text tabular-nums">{lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)}` : "0.0"} <span className="text-[0.7rem] opacity-40">km</span></span>
+                <span className="text-sm font-black text-text tabular-nums break-words">{lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)}` : "0.0"} <span className="text-[0.65rem] opacity-40">km</span></span>
                 <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Distância</span>
               </div>
             </div>
@@ -445,10 +445,10 @@ export default function Dashboard() {
           </Card>
 
           {/* TELEMETRIA AO VIVO STATUS */}
-          <Card className="flex flex-col items-center text-center gap-8 px-7 sm:px-10 py-10 relative overflow-hidden group">
+          <Card className="flex flex-col items-center text-center gap-6 px-6 sm:px-8 py-8 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             
-            <div className="relative w-28 h-28 flex items-center justify-center mx-auto">
+            <div className="relative w-24 h-24 flex items-center justify-center mx-auto">
               <div className="absolute inset-0 border border-accent/5 rounded-full" />
               <div className="absolute inset-3 border border-accent/10 rounded-full" />
               <div className="absolute inset-6 border border-accent/20 rounded-full" />
