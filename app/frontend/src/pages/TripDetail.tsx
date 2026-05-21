@@ -516,7 +516,7 @@ export default function TripDetail() {
         {/* HERO SECTION */}
         <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group min-h-[260px]">
           <img src={imageFromCategory((trip.motorcycle as any)?.category)} alt="moto" className="moto-card-bg" />
-          <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/0 pointer-events-none" />
           <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
           
           <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left justify-center">

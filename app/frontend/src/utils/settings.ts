@@ -118,6 +118,7 @@ export function loadSettings(): AppSettings {
 export function saveSettings(s: AppSettings) {
   localStorage.setItem(KEY, JSON.stringify(s));
   applyTheme(s.theme);
+  window.dispatchEvent(new Event("motoguard_settings_changed"));
 }
 
 /**

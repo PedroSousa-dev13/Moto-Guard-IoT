@@ -267,7 +267,7 @@ export default function Garage() {
                   alt={moto.category ?? "moto"} 
                   className="moto-card-bg"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/0 pointer-events-none" />
                 <div className="p-6 relative z-10 flex-1 flex flex-col">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-black text-xl text-text truncate leading-tight mb-1 group-hover:text-accent transition-colors">{moto.name}</h3>

@@ -38,20 +38,24 @@ export default function RouteActionsComponent({
   const canSendToSimulator = route.waypoints && route.waypoints.length >= 2;
 
   return (
-    <div className="gpx-route-actions">
-      <div className="custom-route-actions">
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex gap-3">
         <button 
-          className="btn btn-sm" 
+          className="flex-1 py-3 rounded-2xl bg-panel border border-border-glass-subtle text-[0.65rem] font-black uppercase tracking-widest text-muted hover:text-text transition-all duration-300 flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-30 disabled:pointer-events-none" 
           onClick={onClearRoute}
           disabled={disabled || isSending}
           title="Limpar rota carregada"
         >
-          <RotateCcw size={13} /> 
-          Limpar Rota
+          <RotateCcw size={12} /> 
+          Limpar
         </button>
         
         <button
-          className={`btn btn-sm ${routeSent ? "btn-success" : "btn-primary"}`}
+          className={`flex-[2] py-3 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 shadow-xl ${
+            routeSent
+              ? "bg-green/10 text-green border border-green/20"
+              : "bg-accent text-white shadow-accent/20 hover:scale-[1.02] hover:bg-accent-strong active:scale-[0.98]"
+          } disabled:opacity-30 disabled:pointer-events-none`}
           onClick={onSendToSimulator}
           disabled={disabled || isSending || !canSendToSimulator}
           title={
@@ -64,37 +68,33 @@ export default function RouteActionsComponent({
         >
           {isSending ? (
             <>
-              <Loader2 size={13} className="animate-spin" /> 
+              <Loader2 size={12} className="animate-spin" /> 
               A enviar...
             </>
           ) : routeSent ? (
             <>
-              <CheckCircle size={13} /> 
-              Rota enviada ✓
+              <CheckCircle size={12} /> 
+              Enviada ✓
             </>
           ) : (
             <>
-              <Play size={13} /> 
-              Enviar para Simulador
+              <Play size={12} /> 
+              Usar Rota
             </>
           )}
         </button>
       </div>
 
       {!canSendToSimulator && route.waypoints && (
-        <div className="gpx-route-warning">
-          <div className="alert alert-warning" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
-            A rota deve conter pelo menos 2 pontos para ser enviada ao simulador.
-            Pontos atuais: {route.waypoints.length}
-          </div>
+        <div className="p-4 rounded-2xl bg-yellow/10 border border-yellow/20 text-yellow text-[0.75rem] font-bold animate-fade-in flex flex-col gap-1">
+          <span>A rota deve conter pelo menos 2 pontos para ser enviada ao simulador.</span>
+          <span className="opacity-60 text-[0.65rem] font-medium uppercase tracking-wider">Pontos atuais: {route.waypoints.length}</span>
         </div>
       )}
 
       {routeSent && (
-        <div className="gpx-route-success">
-          <div className="alert alert-success" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
-            Rota enviada com sucesso! A redirecionar para o simulador...
-          </div>
+        <div className="p-4 rounded-2xl bg-green/10 border border-green/20 text-green text-[0.75rem] font-bold animate-pulse">
+          Rota enviada com sucesso! A redirecionar para o simulador...
         </div>
       )}
     </div>

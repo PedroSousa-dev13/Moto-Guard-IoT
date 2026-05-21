@@ -95,7 +95,7 @@ export default function FileUploadComponent({
   };
 
   return (
-    <div className="gpx-file-upload">
+    <div className="flex flex-col gap-4 w-full">
       <input
         ref={fileInputRef}
         type="file"
@@ -106,7 +106,11 @@ export default function FileUploadComponent({
       />
       
       <div
-        className={`gpx-upload-area ${isDragOver ? 'drag-over' : ''} ${disabled || isUploading ? 'disabled' : ''}`}
+        className={`w-full p-8 rounded-3xl bg-surface/50 border border-dashed text-center flex flex-col items-center justify-center gap-4 transition-all duration-300 group cursor-pointer relative overflow-hidden select-none outline-none focus:border-accent ${
+          isDragOver
+            ? 'border-accent bg-accent/5 scale-[1.01] shadow-[0_0_20px_rgba(139,92,246,0.15)]'
+            : 'border-border-glass-subtle hover:border-accent/40 hover:bg-panel-hover/50'
+        } ${disabled || isUploading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -121,16 +125,18 @@ export default function FileUploadComponent({
           }
         }}
       >
-        <div className="gpx-upload-icon">
+        <div className={`w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent transition-all duration-300 ${
+          isDragOver ? 'scale-110 rotate-6 bg-accent/20 border-accent/40' : 'group-hover:scale-105'
+        }`}>
           {isUploading ? (
-            <Loader2 size={32} className="animate-spin" />
+            <Loader2 size={24} className="animate-spin text-accent" />
           ) : (
-            <Upload size={32} />
+            <Upload size={24} className="group-hover:translate-y-[-2px] transition-transform duration-300" />
           )}
         </div>
         
-        <div className="gpx-upload-text">
-          <div className="gpx-upload-primary">
+        <div className="flex flex-col gap-1">
+          <div className="text-[0.8rem] font-black text-text tracking-tight">
             {isUploading 
               ? 'A carregar ficheiro...' 
               : isDragOver
@@ -138,46 +144,53 @@ export default function FileUploadComponent({
                 : 'Arrasta um ficheiro GPX ou clica para selecionar'
             }
           </div>
-          <div className="gpx-upload-secondary">
+          <div className="text-[0.65rem] font-bold text-muted uppercase tracking-widest opacity-60">
             Máximo 10MB • Apenas ficheiros .gpx
           </div>
         </div>
       </div>
 
       {isUploading && (
-        <div className="gpx-upload-progress">
-          <div 
-            className={`gpx-progress-bar${progress > 0 ? '' : ' gpx-progress-indeterminate'}`}
-            role="progressbar"
-            aria-valuenow={progress > 0 ? progress : undefined}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Progresso do upload do ficheiro GPX"
-          >
+        <div className="w-full flex flex-col gap-2 p-4 rounded-2xl bg-panel border border-border-glass-subtle animate-fade-in">
+          <div className="flex justify-between items-center text-[0.65rem] font-black uppercase tracking-widest text-muted">
+            <span className="flex items-center gap-2">
+              <Loader2 size={10} className="animate-spin text-accent" />
+              A processar GPX...
+            </span>
+            <span>{progress > 0 ? `${progress.toFixed(0)}%` : 'Aguarde'}</span>
+          </div>
+          <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden border border-border-glass-subtle">
             <div 
-              className="gpx-progress-fill" 
+              className={`h-full bg-accent transition-all duration-300 rounded-full shadow-[0_0_12px_rgba(139,92,246,0.5)] ${
+                progress > 0 ? '' : 'w-full animate-pulse'
+              }`}
               style={{ width: progress > 0 ? `${progress}%` : '100%' }}
             />
           </div>
-          {progress > 0 && (
-            <div className="gpx-progress-text">
-              {progress.toFixed(0)}%
-            </div>
-          )}
         </div>
       )}
 
       {selectedFile && !isUploading && (
-        <div className="gpx-selected-file gpx-upload-success">
-          <div className="gpx-file-info">
-            <div className="gpx-file-name">{selectedFile.name}</div>
-            <div className="gpx-file-size">
-              {(selectedFile.size / 1024).toFixed(1)} KB · Ficheiro carregado ✓
+        <div className="w-full p-4 rounded-2xl bg-green/5 border border-green/20 flex items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green">
+              <Upload size={16} />
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-[0.8rem] font-black text-text truncate max-w-[200px]" title={selectedFile.name}>
+                {selectedFile.name}
+              </span>
+              <span className="text-[0.65rem] font-bold text-green uppercase tracking-widest opacity-80">
+                {(selectedFile.size / 1024).toFixed(1)} KB · Carregado ✓
+              </span>
             </div>
           </div>
           <button 
-            className="btn-icon-clear" 
-            onClick={clearFile}
+            className="w-8 h-8 rounded-lg bg-panel hover:bg-red/10 border border-border-glass-subtle text-muted hover:text-red flex items-center justify-center transition-all" 
+            onClick={(e) => {
+              e.stopPropagation();
+              clearFile();
+            }}
             title="Remover ficheiro"
             aria-label="Remover ficheiro selecionado"
           >

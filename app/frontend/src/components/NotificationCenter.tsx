@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Bell, X, CheckCheck, ExternalLink } from "lucide-react";
+import { Bell, X, CheckCheck } from "lucide-react";
 import { loadAlerts, saveAlerts, type AlertItem } from "../utils/alerts";
 import { useNotifications } from "../hooks/useNotifications";
 
@@ -140,14 +140,6 @@ export default function NotificationCenter() {
                     Todas lidas
                   </button>
                 )}
-                <button
-                  className="nav-icon-link"
-                  onClick={() => { setOpen(false); navigate("/alertas"); }}
-                  title="Ver todos os alertas"
-                  style={{ width: 28, height: 28 }}
-                >
-                  <ExternalLink size={14} />
-                </button>
               </div>
             </div>
 

@@ -1,12 +1,8 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
-import { 
-  Radar, RadarChart, PolarGrid, 
-  PolarAngleAxis, ResponsiveContainer 
-} from 'recharts';
 import { tripsAPI } from '../../services/api';
 import type { TripFeedItem } from '../../types';
-import { MapPin, ShieldAlert } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface LastTripMiniMapProps {
   trip: TripFeedItem | null;
@@ -55,13 +51,7 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
   }, [trip]);
 
   useEffect(() => {
-    if (!mapContainerRef.current || routePoints.length <= 1) {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      return;
-    }
+    if (!mapContainerRef.current) return;
 
     if (!mapRef.current) {
       mapRef.current = L.map(mapContainerRef.current, {
@@ -74,18 +64,30 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
-      polylineRef.current = L.polyline(routePoints, { color: '#3b82f6', weight: 4 }).addTo(mapRef.current);
-      
+      polylineRef.current = L.polyline([], { color: '#3b82f6', weight: 4 }).addTo(mapRef.current);
+    }
+
+    const hasRoute = routePoints.length > 1;
+
+    if (hasRoute && polylineRef.current) {
+      polylineRef.current.setLatLngs(routePoints);
       setTimeout(() => {
         if (mapRef.current && polylineRef.current) {
           mapRef.current.invalidateSize();
           mapRef.current.fitBounds(polylineRef.current.getBounds(), { padding: [15, 15] });
         }
       }, 100);
-    } else if (polylineRef.current) {
-      polylineRef.current.setLatLngs(routePoints);
-      mapRef.current.invalidateSize();
-      mapRef.current.fitBounds(polylineRef.current.getBounds(), { padding: [15, 15] });
+    } else {
+      if (polylineRef.current) {
+        polylineRef.current.setLatLngs([]);
+      }
+      // Center map on default coordinates (e.g. Vila Real)
+      mapRef.current.setView([41.2951, -7.7463], 14);
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      }, 100);
     }
   }, [routePoints]);
 
@@ -97,17 +99,6 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
       }
     };
   }, []);
-
-  const radarData = useMemo(() => {
-    if (!trip) return [];
-    return [
-      { subject: 'Vel.', A: trip.safetyScore ? trip.safetyScore * 0.8 : 70, fullMark: 100 },
-      { subject: 'Inc.', A: trip.safetyScore ? trip.safetyScore * 0.9 : 85, fullMark: 100 },
-      { subject: 'Suav.', A: trip.safetyScore ?? 80, fullMark: 100 },
-      { subject: 'Seg.', A: trip.safetyScore ?? 90, fullMark: 100 },
-      { subject: 'Cons.', A: 75, fullMark: 100 },
-    ];
-  }, [trip]);
 
   const hasRoute = routePoints.length > 1;
 
@@ -124,43 +115,17 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
       {/* Map Container */}
       <div 
         ref={mapContainerRef} 
-        className={`h-full w-full grayscale-[0.5] brightness-[0.7] contrast-[1.2] transition-opacity duration-500 ${hasRoute ? 'opacity-100' : 'opacity-0 absolute invisible'}`}
+        className="h-full w-full grayscale-[0.5] brightness-[0.7] contrast-[1.2] transition-opacity duration-500 opacity-100"
       />
 
-      {/* Radar Chart Container (Fallback) */}
-      {!hasRoute && !isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-2 pt-4">
-          <div className="w-full h-full min-h-0 flex-1">
-            <ResponsiveContainer width="99%" height="99%">
-              <RadarChart cx="50%" cy="40%" outerRadius="65%" data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 7, fontWeight: 'bold' }} />
-                <Radar
-                  name="Desempenho"
-                  dataKey="A"
-                  stroke="var(--accent)"
-                  fill="var(--accent)"
-                  fillOpacity={0.3}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="absolute top-2 right-2 bg-white/5 backdrop-blur-md border border-white/10 p-1.5 rounded-lg text-muted">
-            <ShieldAlert size={14} />
-          </div>
-        </div>
-      )}
-
-      {hasRoute && (
-        <div className="absolute top-2 right-2 bg-accent/20 backdrop-blur-md border border-accent/30 p-1.5 rounded-lg text-accent z-[400]">
-          <MapPin size={14} />
-        </div>
-      )}
+      <div className="absolute top-2 right-2 bg-accent/20 backdrop-blur-md border border-accent/30 p-1.5 rounded-lg text-accent z-[400]">
+        <MapPin size={14} />
+      </div>
       
       <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/5 px-2.5 py-1 rounded-xl flex items-center gap-2 z-[400]">
         <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
         <span className="text-[0.6rem] font-black text-text uppercase tracking-widest">
-            {hasRoute ? (trip.source === "GPX_IMPORTED" ? "Rota GPX" : "Rota Registada") : "Análise de Estilo"}
+            {hasRoute ? (trip.source === "GPX_IMPORTED" ? "Rota GPX" : "Rota Registada") : "Sem Rota Registada"}
         </span>
       </div>
     </div>
@@ -168,3 +133,4 @@ const LastTripMiniMap: React.FC<LastTripMiniMapProps> = ({ trip }) => {
 };
 
 export default LastTripMiniMap;
+

@@ -73,6 +73,11 @@ function App() {
                               <Garage />
                             </ProtectedRoute>
                           } />
+                          <Route path="/profile" element={
+                            <ProtectedRoute>
+                              <Profile />
+                            </ProtectedRoute>
+                          } />
                           <Route element={
                             <ProtectedRoute>
                               <OnboardingGuard>
@@ -92,7 +97,6 @@ function App() {
                             <Route path="/analytics" element={<Analytics />} />
                             <Route path="/alertas" element={<Alertas />} />
                             <Route path="/settings" element={<Settings />} />
-                            <Route path="/profile" element={<Profile />} />
                             <Route path="/real-simulator" element={<RealSimulator />} />
                             <Route path="/gpx-simulator" element={<GpxSimulator />} />
                           </Route>

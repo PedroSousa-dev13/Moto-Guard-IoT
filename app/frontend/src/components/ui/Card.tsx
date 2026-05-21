@@ -5,6 +5,7 @@ interface CardProps {
   subtitle?: string;
   children: ReactNode;
   className?: string;
+  bodyClassName?: string;
   headerActions?: ReactNode;
   footer?: ReactNode;
 }
@@ -14,6 +15,7 @@ const Card: React.FC<CardProps> = ({
   subtitle, 
   children, 
   className = '', 
+  bodyClassName = '',
   headerActions,
   footer 
 }) => {
@@ -28,7 +30,7 @@ const Card: React.FC<CardProps> = ({
           {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
         </div>
       )}
-      <div className="p-5 flex-1">
+      <div className={`p-5 flex-1 ${bodyClassName}`}>
         {children}
       </div>
       {footer && (

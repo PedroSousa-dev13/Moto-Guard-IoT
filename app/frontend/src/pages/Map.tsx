@@ -436,7 +436,7 @@ export default function Map() {
     (mode === 'gpx' && !gpxRoute);
 
   return (
-    <div className="flex flex-col gap-6 h-[calc(100vh-140px)] animate-fade-in">
+    <div className="flex flex-col gap-6 flex-1 min-h-0 animate-fade-in">
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 shrink-0">
         <div>

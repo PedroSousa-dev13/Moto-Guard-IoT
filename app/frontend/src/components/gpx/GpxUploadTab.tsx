@@ -74,54 +74,54 @@ export default function GpxUploadTab({
   const gpxFileBusy = gpxUploading || gpxProcessing;
 
   return (
-    <div className="routes-panel custom-route-panel">
-      <div className="custom-route-inner">
-        <div className="custom-route-title">
-          <Navigation size={16} />
-          GPX Upload
+    <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
+      <div>
+        <div className="flex items-center gap-2 text-text font-black tracking-tight mb-2">
+          <Navigation size={18} className="text-accent" />
+          <span>GPX Upload</span>
         </div>
-        <p className="custom-route-hint">
+        <p className="text-[0.75rem] font-medium text-muted leading-relaxed">
           Carrega um ficheiro GPX para importar uma rota e enviá-la para o simulador.
         </p>
-
-        <FileUploadComponent
-          onFileSelect={onFileSelect}
-          onError={onError}
-          isUploading={gpxFileBusy}
-          progress={uploadProgress}
-          disabled={gpxFileBusy}
-        />
-
-        {gpxError && (
-          <div className="alert alert-danger" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
-            {gpxError}
-          </div>
-        )}
-
-        {gpxRoute && !gpxFileBusy && !gpxError && (
-          <div className="alert alert-success" style={{ fontSize: "0.8rem", padding: "8px 12px" }}>
-            GPX processado com sucesso. Revisa a pré-visualização abaixo e envia para o simulador quando estiveres pronto.
-          </div>
-        )}
-
-        {gpxRoute && (
-          <>
-            <RoutePreviewComponent
-              route={gpxRoute}
-              onMapRender={onMapRender}
-            />
-            
-            <RouteActionsComponent
-              route={gpxRoute}
-              onSendToSimulator={onSendToSimulator}
-              onClearRoute={handleClearRoute}
-              isSending={gpxSending}
-              routeSent={gpxSent}
-              disabled={gpxFileBusy}
-            />
-          </>
-        )}
       </div>
+
+      <FileUploadComponent
+        onFileSelect={onFileSelect}
+        onError={onError}
+        isUploading={gpxFileBusy}
+        progress={uploadProgress}
+        disabled={gpxFileBusy}
+      />
+
+      {gpxError && (
+        <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-[0.75rem] font-bold animate-fade-in">
+          {gpxError}
+        </div>
+      )}
+
+      {gpxRoute && !gpxFileBusy && !gpxError && (
+        <div className="p-4 rounded-2xl bg-green/10 border border-green/20 text-green text-[0.75rem] font-bold animate-fade-in">
+          GPX processado com sucesso. Revisa a pré-visualização abaixo e envia para o simulador quando estiveres pronto.
+        </div>
+      )}
+
+      {gpxRoute && (
+        <div className="flex flex-col gap-6 animate-fade-in">
+          <RoutePreviewComponent
+            route={gpxRoute}
+            onMapRender={onMapRender}
+          />
+          
+          <RouteActionsComponent
+            route={gpxRoute}
+            onSendToSimulator={onSendToSimulator}
+            onClearRoute={handleClearRoute}
+            isSending={gpxSending}
+            routeSent={gpxSent}
+            disabled={gpxFileBusy}
+          />
+        </div>
+      )}
     </div>
   );
 }
