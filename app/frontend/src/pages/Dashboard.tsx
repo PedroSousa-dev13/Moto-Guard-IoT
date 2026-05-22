@@ -246,7 +246,7 @@ export default function Dashboard() {
         </div>
 
         {/* ÚLTIMA VIAGEM */}
-        <Card className="lg:w-[280px] lg:aspect-square lg:shrink-0" bodyClassName="flex flex-col gap-4 h-full justify-between">
+        <Card className="lg:w-[280px] lg:h-[280px] lg:shrink-0" bodyClassName="flex flex-col gap-4 h-full justify-between">
           <div className="flex items-center justify-between px-1">
             <span className="text-[0.7rem] font-black uppercase tracking-widest text-text opacity-60">Última Viagem</span>
             <Link to="/trips" className="text-[0.65rem] font-black uppercase tracking-widest text-accent hover:underline flex items-center gap-1">
@@ -344,7 +344,7 @@ export default function Dashboard() {
         </div>
 
         {/* ALERTAS RECENTES */}
-        <Card className="lg:w-[280px] lg:aspect-square lg:shrink-0" bodyClassName="flex flex-col gap-4 h-full justify-between">
+        <Card className="lg:w-[280px] lg:h-[280px] lg:shrink-0" bodyClassName="flex flex-col gap-4 h-full justify-between">
           <div className="flex items-center justify-between px-1">
             <span className="text-[0.7rem] font-black uppercase tracking-widest text-text opacity-60">Alertas Recentes</span>
             <Link to="/alertas" className="text-[0.65rem] font-black uppercase tracking-widest text-accent hover:underline">Ver Todos</Link>
@@ -379,7 +379,7 @@ export default function Dashboard() {
       {/* ROW 3: Live Telemetry & Telemetry Status */}
       <div className="flex flex-col lg:flex-row gap-8 items-stretch">
         {/* MAIN CHART */}
-        <Card className="flex-1 min-w-0" bodyClassName="flex flex-col gap-4 h-full justify-between overflow-hidden">
+        <Card className="flex-1 min-w-0 lg:h-[280px]" bodyClassName="flex flex-col gap-4 h-full justify-between overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <span className="text-[0.7rem] font-black uppercase tracking-widest text-text opacity-60 ml-1">Telemetria ao Vivo</span>
             {hasData && (
@@ -440,7 +440,7 @@ export default function Dashboard() {
         </Card>
 
         {/* TELEMETRIA AO VIVO STATUS */}
-        <Card className="lg:w-[280px] lg:aspect-square lg:shrink-0 relative overflow-hidden group" bodyClassName="flex flex-col items-center text-center justify-between gap-3 h-full">
+        <Card className="lg:w-[280px] lg:h-[280px] lg:shrink-0 relative overflow-hidden group" bodyClassName="flex flex-col items-center text-center justify-between gap-3 h-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           
           <div className="relative w-20 h-20 flex items-center justify-center mx-auto">

@@ -59,6 +59,15 @@ function drawHeatmap(
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
+  // Safely verify that map is loaded and container exists to avoid unmount crashes
+  try {
+    if (!(map as any)._loaded || !map.getContainer()) {
+      return;
+    }
+  } catch (e) {
+    return;
+  }
+
   const size = canvas.width;
   ctx.clearRect(0, 0, size, size);
 
@@ -66,7 +75,12 @@ function drawHeatmap(
 
   // Draw each point as a radial gradient
   for (const pt of points) {
-    const pos = map.latLngToContainerPoint([pt.lat, pt.lng]);
+    let pos;
+    try {
+      pos = map.latLngToContainerPoint([pt.lat, pt.lng]);
+    } catch (e) {
+      continue;
+    }
     const x = pos.x;
     const y = pos.y;
 
@@ -83,24 +97,28 @@ function drawHeatmap(
   }
 
   // Apply colormap via pixel manipulation
-  const imageData = ctx.getImageData(0, 0, size, size);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3] / 255;
-    if (alpha > 0) {
-      if (alpha < 0.33) {
-        data[i] = 0; data[i + 1] = Math.round(alpha * 3 * 255); data[i + 2] = 255;
-      } else if (alpha < 0.66) {
-        const t = (alpha - 0.33) * 3;
-        data[i] = Math.round(t * 255); data[i + 1] = 255; data[i + 2] = Math.round((1 - t) * 255);
-      } else {
-        const t = (alpha - 0.66) * 3;
-        data[i] = 255; data[i + 1] = Math.round((1 - t) * 255); data[i + 2] = 0;
+  try {
+    const imageData = ctx.getImageData(0, 0, size, size);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3] / 255;
+      if (alpha > 0) {
+        if (alpha < 0.33) {
+          data[i] = 0; data[i + 1] = Math.round(alpha * 3 * 255); data[i + 2] = 255;
+        } else if (alpha < 0.66) {
+          const t = (alpha - 0.33) * 3;
+          data[i] = Math.round(t * 255); data[i + 1] = 255; data[i + 2] = Math.round((1 - t) * 255);
+        } else {
+          const t = (alpha - 0.66) * 3;
+          data[i] = 255; data[i + 1] = Math.round((1 - t) * 255); data[i + 2] = 0;
+        }
+        data[i + 3] = Math.round(alpha * 200);
       }
-      data[i + 3] = Math.round(alpha * 200);
     }
+    ctx.putImageData(imageData, 0, 0);
+  } catch (e) {
+    // ignore canvas manipulation errors during teardown
   }
-  ctx.putImageData(imageData, 0, 0);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -197,18 +215,32 @@ export default function EventHeatmap({ defaultEventType }: Props) {
         (m.getPanes().overlayPane as HTMLElement).appendChild(canvas);
         canvasRef.current = canvas;
         this._map = m;
+        this._resizeListener = () => this._resize();
         this._resize();
-        m.on("moveend zoomend resize", () => this._resize());
+        m.on("moveend zoomend resize", this._resizeListener);
       },
       onRemove(m: L.Map) {
         canvasRef.current?.remove();
-        m.off("moveend zoomend resize");
+        if (this._resizeListener) {
+          try {
+            m.off("moveend zoomend resize", this._resizeListener);
+          } catch (e) {
+            // ignore
+          }
+        }
       },
       _resize() {
-        const size = this._map.getSize();
-        if (canvasRef.current) {
-          canvasRef.current.width = size.x;
-          canvasRef.current.height = size.y;
+        try {
+          if (!this._map || !(this._map as any)._loaded || !this._map.getContainer()) {
+            return;
+          }
+          const size = this._map.getSize();
+          if (canvasRef.current) {
+            canvasRef.current.width = size.x;
+            canvasRef.current.height = size.y;
+          }
+        } catch (e) {
+          // ignore getSize() issues on unmount
         }
       },
     });
@@ -229,7 +261,7 @@ export default function EventHeatmap({ defaultEventType }: Props) {
   useEffect(() => {
     const map = mapRef.current;
     const canvas = canvasRef.current;
-    if (!map || !canvas) return;
+    if (!map || !canvas || !(map as any)._loaded) return;
 
     const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
 
@@ -241,9 +273,25 @@ export default function EventHeatmap({ defaultEventType }: Props) {
       }));
       drawHeatmap(canvas, map, points, radius);
 
-      const redraw = () => drawHeatmap(canvas, map, points, radius);
+      const redraw = () => {
+        try {
+          if ((map as any)._loaded) {
+            drawHeatmap(canvas, map, points, radius);
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
       map.on("moveend zoomend", redraw);
-      return () => { map.off("moveend zoomend", redraw); };
+      return () => {
+        try {
+          if ((map as any)._loaded) {
+            map.off("moveend zoomend", redraw);
+          }
+        } catch (err) {
+          // ignore
+        }
+      };
     } else {
       const ctx = canvas.getContext("2d");
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
@@ -252,7 +300,7 @@ export default function EventHeatmap({ defaultEventType }: Props) {
 
   useEffect(() => {
     const markersLayer = markersLayerRef.current;
-    if (!markersLayer) return;
+    if (!markersLayer || !mapRef.current || !(mapRef.current as any)._loaded) return;
 
     markersLayer.clearLayers();
     if (!showMarkers) return;

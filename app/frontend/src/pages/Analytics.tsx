@@ -32,7 +32,9 @@ import {
   Download,
   RefreshCw,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  Image
 } from "lucide-react";
 import EventHeatmap from "../components/EventHeatmap";
 import {
@@ -85,6 +87,17 @@ function pctColorClass(curr: number | null, prev: number | null, higherIsBetter 
   return better ? "text-green" : "text-red";
 }
 
+function NoDataPlaceholder({ className = "min-h-[240px]" }: { className?: string }) {
+  return (
+    <div 
+      className={`flex items-center justify-center w-full font-black text-sm uppercase tracking-widest animate-fade-in ${className}`}
+      style={{ color: "rgba(100, 116, 139, 0.4)" }}
+    >
+      (No data)
+    </div>
+  );
+}
+
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState<AnalyticsTab>("charts");
   const [range, setRange] = useState<PresetRange>("7d");
@@ -98,6 +111,103 @@ export default function Analytics() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const chartsRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const [cardOrder, setCardOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem("analytics_card_order");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 6) {
+          return parsed;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return ["activity", "security", "conduction", "trends", "speed", "insights"];
+  });
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragActiveIndex, setDragActiveIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("analytics_card_order", JSON.stringify(cardOrder));
+  }, [cardOrder]);
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnter = (targetIndex: number) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+    // 1. Record "First" (current) positions
+    const firstRects: Record<string, DOMRect> = {};
+    cardOrder.forEach((cardId) => {
+      const el = cardRefs.current[cardId];
+      if (el) {
+        firstRects[cardId] = el.getBoundingClientRect();
+      }
+    });
+
+    const newOrder = [...cardOrder];
+    const [removed] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, removed);
+    setCardOrder(newOrder);
+    setDraggedIndex(targetIndex);
+
+    // 2. Invert & Play in requestAnimationFrame
+    requestAnimationFrame(() => {
+      newOrder.forEach((cardId) => {
+        const el = cardRefs.current[cardId];
+        const first = firstRects[cardId];
+        if (el && first) {
+          const last = el.getBoundingClientRect();
+          const dx = first.left - last.left;
+          const dy = first.top - last.top;
+
+          if (dx !== 0 || dy !== 0) {
+            // Apply invert transform with no transition
+            el.style.transition = 'none';
+            el.style.transform = `translate(${dx}px, ${dy}px)`;
+
+            // Force reflow
+            void el.offsetHeight;
+
+            // Transition smoothly to target position
+            el.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            el.style.transform = 'translate(0, 0)';
+
+            // Clean up inline styles once transition ends
+            const cleanup = () => {
+              el.style.transition = '';
+              el.style.transform = '';
+              el.removeEventListener('transitionend', cleanup);
+            };
+            el.addEventListener('transitionend', cleanup);
+          }
+        }
+      });
+    });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragActiveIndex(null);
+  };
+
+  const renderGrabHandle = (index: number) => (
+    <div 
+      className="cursor-grab active:cursor-grabbing text-muted/30 hover:text-text transition-colors p-1"
+      onMouseDown={() => setDragActiveIndex(index)}
+      onMouseUp={() => setDragActiveIndex(null)}
+      onMouseLeave={() => setDragActiveIndex(null)}
+      title="Arrastar para reordenar"
+    >
+      <Menu size={16} />
+    </div>
+  );
 
   useEffect(() => {
     document.title = "Analytics — MotoGuard";
@@ -160,6 +270,10 @@ export default function Analytics() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [series.filtered]);
 
+  const sortedStyleStats = useMemo(() => {
+    return [...styleStats].sort((a, b) => b.value - a.value);
+  }, [styleStats]);
+
   function handleExportCsv() {
     exportCsv(series.filtered, `analytics-${range}.csv`);
   }
@@ -167,9 +281,11 @@ export default function Analytics() {
   async function handleExportPng() {
     if (!chartsRef.current) return;
     setExporting(true);
+    chartsRef.current.classList.add("html2canvas-export");
     try {
       await exportChartsPng(chartsRef.current, `analytics-${range}.png`);
     } finally {
+      chartsRef.current.classList.remove("html2canvas-export");
       setExporting(false);
     }
   }
@@ -239,21 +355,6 @@ export default function Analytics() {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="glass-panel p-1 flex gap-1 rounded-2xl">
-            <button
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
-              onClick={() => setActiveTab("charts")}
-            >
-              <BarChart2 size={14} /> Performance
-            </button>
-            <button
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
-              onClick={() => setActiveTab("heatmap")}
-            >
-              <Map size={14} /> Geográfico
-            </button>
-          </div>
-
           {activeTab === "charts" && (
             <div className="flex items-center gap-3 glass-panel p-1 rounded-2xl">
               <div className="relative group">
@@ -308,11 +409,26 @@ export default function Analytics() {
                   disabled={exporting || series.points.length === 0}
                   title="Exportar Imagem"
                 >
-                  {exporting ? <RefreshCw size={16} className="animate-spin" /> : <BarChart2 size={16} />}
+                  {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Image size={16} />}
                 </button>
               </div>
             </div>
           )}
+
+          <div className="glass-panel p-1 flex gap-1 rounded-2xl">
+            <button
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
+              onClick={() => setActiveTab("charts")}
+            >
+              <BarChart2 size={14} /> Performance
+            </button>
+            <button
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
+              onClick={() => setActiveTab("heatmap")}
+            >
+              <Map size={14} /> Geográfico
+            </button>
+          </div>
         </div>
       </div>
 
@@ -357,8 +473,9 @@ export default function Analytics() {
             </Card>
           )}
 
-          {/* KPI Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div ref={chartsRef} className="flex flex-col gap-8 p-6 -m-6 rounded-3xl bg-[#06060c]">
+            {/* KPI Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { 
                 label: "Distância Total", 
@@ -405,7 +522,7 @@ export default function Analytics() {
               };
               const isBetter = higher ? (curr ?? 0) >= (prev ?? 0) : (curr ?? 0) <= (prev ?? 0);
               return (
-                <div key={label} className="glass-panel p-6 group hover:border-white/20 transition-all hover:scale-[1.02] cursor-default">
+                <div key={label} className="glass-panel rounded-3xl p-6 group hover:border-white/20 transition-all hover:scale-[1.02] cursor-default">
                   <div className="flex justify-between items-start mb-6">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${colorMap[color]}`}>
                       {icon}
@@ -427,334 +544,401 @@ export default function Analytics() {
             })}
           </div>
 
-          {series.points.length === 0 ? (
-            <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-4 mt-8 shadow-xl">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-3xl">📭</div>
-              <div className="flex flex-col gap-1">
-                <h3 className="text-lg font-black text-text m-0">Sem dados para este período</h3>
-                <p className="text-muted text-sm font-medium m-0 max-w-xs">Tente ajustar o intervalo temporal ou verifique se existem viagens registadas.</p>
-              </div>
-            </div>
-          ) : (
-            <div ref={chartsRef} className="flex flex-col gap-6 mt-8">
-              
-              {/* Row 1: Activity Hub */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card 
-                  title="Resumo de Atividade" 
-                  subtitle="Correlação entre volume de viagens e distância percorrida"
-                  className="overflow-hidden"
-                >
-                  <ResponsiveContainer width="100%" height={320}>
-                    <ComposedChart data={series.points}>
-                      <defs>
-                        <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.4}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                      <XAxis 
-                        dataKey="t" 
-                        tickFormatter={(v) => formatShortDay(v as number)} 
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                        axisLine={false}
-                        tickLine={false}
-                        dy={15}
-                      />
-                      <YAxis 
-                        yAxisId="left"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                        dx={-10}
-                      />
-                      <YAxis 
-                        yAxisId="right" 
-                        orientation="right"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                        dx={10}
-                      />
-                      <Tooltip 
-                        labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ 
-                          background: "rgba(13,13,27,0.8)", 
-                          border: "1px solid rgba(255,255,255,0.1)", 
-                          borderRadius: "16px", 
-                          backdropFilter: "blur(20px)", 
-                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-                          padding: "12px"
-                        }}
-                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}
-                        cursor={{ stroke: "var(--accent)", strokeWidth: 1, strokeDasharray: "4 4" }}
-                      />
-                      <Legend 
-                        verticalAlign="top" 
-                        align="right" 
-                        height={40} 
-                        iconType="circle" 
-                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
-                      />
-                      <Area 
-                        yAxisId="left"
-                        type="monotone" 
-                        dataKey="distanceKm" 
-                        stroke="var(--accent)" 
-                        strokeWidth={4}
-                        fillOpacity={1}
-                        fill="url(#colorDist)"
-                        name="Distância (km)" 
-                        animationDuration={1500}
-                      />
-                      <Bar 
-                        yAxisId="right"
-                        dataKey="tripCount" 
-                        fill="url(#colorTrips)" 
-                        radius={[6, 6, 0, 0]}
-                        name="Nº Viagens" 
-                        barSize={24}
-                        animationDuration={1500}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+            {cardOrder.map((cardId, index) => {
+              const dragProps = {
+                ref: (el: HTMLDivElement | null) => { cardRefs.current[cardId] = el; },
+                draggable: dragActiveIndex === index,
+                onDragStart: () => handleDragStart(index),
+                onDragEnter: () => handleDragEnter(index),
+                onDragEnd: handleDragEnd,
+                onDragOver: (e: React.DragEvent) => e.preventDefault(),
+                className: `transition-all duration-300 ${draggedIndex === index ? "opacity-30 scale-[0.98] border-accent/30 shadow-[0_0_20px_rgba(139,92,246,0.15)] rounded-xl" : ""}`
+              };
 
-                <Card 
-                  title="Perfil de Segurança & Risco" 
-                  subtitle="Distribuição de eventos por nível de severidade"
-                  className="overflow-hidden"
-                >
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                      <XAxis 
-                        dataKey="t" 
-                        tickFormatter={(v) => formatShortDay(v as number)}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                        axisLine={false}
-                        tickLine={false}
-                        dy={15}
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                      />
-                      <Tooltip 
-                        labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ 
-                          background: "rgba(13,13,27,0.8)", 
-                          border: "1px solid rgba(255,255,255,0.1)", 
-                          borderRadius: "16px", 
-                          backdropFilter: "blur(20px)", 
-                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
-                        }}
-                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
-                      />
-                      <Legend 
-                        verticalAlign="top" 
-                        align="right" 
-                        height={40} 
-                        iconType="circle" 
-                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
-                      />
-                      <Bar dataKey="criticalEvents" fill="var(--red)" name="Crítico" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} />
-                      <Bar dataKey="warningEvents" fill="var(--yellow)" name="Aviso" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} />
-                      <Bar dataKey="infoEvents" fill="var(--accent)" name="Info" stackId="ev" radius={[6, 6, 0, 0]} animationDuration={1500} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Card>
-              </div>
-
-              {/* Row 2: Behavior Trends */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card 
-                  title="Tendências de Comportamento" 
-                  subtitle="Evolução dos scores de segurança e performance"
-                  className="overflow-hidden"
-                >
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                      <XAxis 
-                        dataKey="t" 
-                        tickFormatter={(v) => formatShortDay(v as number)}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                        axisLine={false}
-                        tickLine={false}
-                        dy={15}
-                      />
-                      <YAxis 
-                        domain={[0, 100]} 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
-                      />
-                      <Tooltip 
-                        labelFormatter={(v) => formatTs(v as number)}
-                        contentStyle={{ 
-                          background: "rgba(13,13,27,0.8)", 
-                          border: "1px solid rgba(255,255,255,0.1)", 
-                          borderRadius: "16px", 
-                          backdropFilter: "blur(20px)", 
-                          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
-                        }}
-                        itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
-                      />
-                      <Legend 
-                        verticalAlign="top" 
-                        align="right" 
-                        height={40} 
-                        iconType="circle" 
-                        wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="safetyAvg" 
-                        stroke="var(--green)" 
-                        strokeWidth={5}
-                        dot={{ r: 5, strokeWidth: 2, fill: "var(--bg)", stroke: "var(--green)" }}
-                        activeDot={{ r: 8, strokeWidth: 0, fill: "var(--green)" }}
-                        name="Safety Score" 
-                        animationDuration={1500}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="performanceAvg" 
-                        stroke="var(--accent)" 
-                        strokeWidth={5}
-                        dot={{ r: 5, strokeWidth: 2, fill: "var(--bg)", stroke: "var(--accent)" }}
-                        activeDot={{ r: 8, strokeWidth: 0, fill: "var(--accent)" }}
-                        name="Performance" 
-                        animationDuration={1500}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Card>
-
-                <Card 
-                  title="Dinâmica de Velocidade" 
-                  subtitle="Média de velocidade registada por período"
-                  className="overflow-hidden"
-                >
-                  <AreaChartWrapper data={series.points} />
-                </Card>
-              </div>
-
-              {/* Row 3: Driving Style (Clustering) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card 
-                  title="Perfil de Condução (ML Clustering)" 
-                  subtitle="Distribuição baseada em padrões de telemetria"
-                  className="lg:col-span-1"
-                >
-                  <div className="flex flex-col items-center">
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie
-                          data={styleStats}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {styleStats.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={
-                                entry.name === "AGGRESSIVE" ? "#ef4444" : 
-                                entry.name === "DEFENSIVE" ? "#10b981" : "#3b82f6"
-                              } 
+              if (cardId === "activity") {
+                return (
+                  <div key="activity" {...dragProps}>
+                    <Card 
+                      title="Resumo de Atividade" 
+                      subtitle="Correlação entre volume de viagens e distância percorrida"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 ? (
+                        <NoDataPlaceholder className="min-h-[320px]" />
+                      ) : (
+                        <ResponsiveContainer width="100%" height={320}>
+                          <ComposedChart data={series.points}>
+                            <defs>
+                              <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0.4}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <XAxis 
+                              dataKey="t" 
+                              tickFormatter={(v) => formatShortDay(v as number)} 
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                              axisLine={false}
+                              tickLine={false}
+                              dy={15}
                             />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="flex gap-4 mt-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red" />
-                        <span className="text-[0.65rem] font-black uppercase text-muted">Agressivo</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green" />
-                        <span className="text-[0.65rem] font-black uppercase text-muted">Defensivo</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue" />
-                        <span className="text-[0.65rem] font-black uppercase text-muted">Económico</span>
-                      </div>
-                    </div>
+                            <YAxis 
+                              yAxisId="left"
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                              dx={-10}
+                            />
+                            <YAxis 
+                              yAxisId="right" 
+                              orientation="right"
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                              dx={10}
+                            />
+                            <Tooltip 
+                              labelFormatter={(v) => formatTs(v as number)}
+                              contentStyle={{ 
+                                background: "rgba(13,13,27,0.8)", 
+                                border: "1px solid rgba(255,255,255,0.1)", 
+                                borderRadius: "16px", 
+                                backdropFilter: "blur(20px)", 
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                                padding: "12px"
+                              }}
+                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                              cursor={{ stroke: "#8b5cf6", strokeWidth: 1, strokeDasharray: "4 4" }}
+                            />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right" 
+                              height={40} 
+                              iconType="circle" 
+                              wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                            />
+                            <Area 
+                              yAxisId="left"
+                              type="monotone" 
+                              dataKey="distanceKm" 
+                              stroke="#8b5cf6" 
+                              strokeWidth={4}
+                              fillOpacity={1}
+                              fill="url(#colorDist)"
+                              name="Distância (km)" 
+                              animationDuration={1500}
+                              isAnimationActive={!exporting}
+                            />
+                            <Bar 
+                              yAxisId="right"
+                              dataKey="tripCount" 
+                              fill="url(#colorTrips)" 
+                              radius={[6, 6, 0, 0]}
+                              name="Nº Viagens" 
+                              barSize={24}
+                              animationDuration={1500}
+                              isAnimationActive={!exporting}
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      )}
+                    </Card>
                   </div>
-                </Card>
-                <Card 
-                  title="Insights de Estilo (AI)" 
-                  subtitle="Análise comparativa de padrões de condução"
-                  className="lg:col-span-2"
-                >
-                  <div className="flex flex-col gap-6">
-                    <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-3 opacity-10">
-                        <Zap size={40} className="text-accent" />
-                      </div>
-                      <p className="text-muted text-sm leading-relaxed relative z-10">
-                        O nosso modelo de **Machine Learning (K-means)** analisa as tuas viagens em múltiplas dimensões. 
-                        Padrões de aceleração brusca e travagens frequentes categorizam o estilo como <span className="text-red font-black">Agressivo</span>, 
-                        enquanto a fluidez e consistência indicam um estilo <span className="text-green font-black">Defensivo</span>.
-                      </p>
-                    </div>
+                );
+              }
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="glass-panel p-5 border-white/5 relative group hover:border-accent/30 transition-all">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
-                              <TrendingUp size={16} />
-                            </div>
-                            <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Tendência Atual</h4>
-                          </div>
-                          <p className="text-sm font-black text-text tracking-tight leading-tight">
-                            {styleStats.sort((a,b) => b.value - a.value)[0]?.value > 0 
-                              ? `O teu estilo predominante é ${styleStats.sort((a,b) => b.value - a.value)[0].name.toLowerCase()}.` 
-                              : "A aguardar dados suficientes para análise."}
-                          </p>
-                       </div>
-                       <div className="glass-panel p-5 border-white/5 relative group hover:border-green/30 transition-all">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded-lg bg-green/20 flex items-center justify-center text-green">
-                              <ShieldCheck size={16} />
-                            </div>
-                            <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Recomendação</h4>
-                          </div>
-                          <p className="text-sm font-black text-text tracking-tight leading-tight">
-                            {styleStats.find(s => s.name === "AGGRESSIVE")?.value! > 2 
-                              ? "Recomendamos suavizar as travagens para aumentar a vida útil dos componentes." 
-                              : "Mantém a suavidade nas acelerações para otimizar a eficiência de combustível."}
-                          </p>
-                       </div>
-                    </div>
+              if (cardId === "security") {
+                return (
+                  <div key="security" {...dragProps}>
+                    <Card 
+                      title="Perfil de Segurança & Risco" 
+                      subtitle="Distribuição de eventos por nível de severidade"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 ? (
+                        <NoDataPlaceholder className="min-h-[320px]" />
+                      ) : (
+                        <ResponsiveContainer width="100%" height={320}>
+                          <BarChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <XAxis 
+                              dataKey="t" 
+                              tickFormatter={(v) => formatShortDay(v as number)}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                              axisLine={false}
+                              tickLine={false}
+                              dy={15}
+                            />
+                            <YAxis 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                            />
+                            <Tooltip 
+                              labelFormatter={(v) => formatTs(v as number)}
+                              contentStyle={{ 
+                                background: "rgba(13,13,27,0.8)", 
+                                border: "1px solid rgba(255,255,255,0.1)", 
+                                borderRadius: "16px", 
+                                backdropFilter: "blur(20px)", 
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+                              }}
+                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
+                            />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right" 
+                              height={40} 
+                              iconType="circle" 
+                              wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                            />
+                            <Bar dataKey="criticalEvents" fill="#ef4444" name="Crítico" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} isAnimationActive={!exporting} />
+                            <Bar dataKey="warningEvents" fill="#f59e0b" name="Aviso" stackId="ev" radius={[0, 0, 0, 0]} animationDuration={1500} isAnimationActive={!exporting} />
+                            <Bar dataKey="infoEvents" fill="#8b5cf6" name="Info" stackId="ev" radius={[6, 6, 0, 0]} animationDuration={1500} isAnimationActive={!exporting} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </Card>
                   </div>
-                </Card>
-              </div>
+                );
+              }
+
+              if (cardId === "conduction") {
+                return (
+                  <div key="conduction" {...dragProps}>
+                    <Card 
+                      title="Perfil de Condução (ML Clustering)" 
+                      subtitle="Distribuição baseada em padrões de telemetria"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 || !styleStats.some(s => s.value > 0) ? (
+                        <NoDataPlaceholder className="min-h-[260px]" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-between h-full py-1">
+                          <ResponsiveContainer width="100%" height={240}>
+                            <PieChart>
+                              <Pie
+                                data={styleStats}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                                isAnimationActive={!exporting}
+                              >
+                                {styleStats.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={
+                                      entry.name === "AGGRESSIVE" ? "#ef4444" : 
+                                      entry.name === "DEFENSIVE" ? "#10b981" : "#3b82f6"
+                                    } 
+                                  />
+                                ))}
+                              </Pie>
+                              <Tooltip 
+                                contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="flex gap-4 mt-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-red" />
+                              <span className="text-[0.65rem] font-black uppercase text-muted">Agressivo</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-green" />
+                              <span className="text-[0.65rem] font-black uppercase text-muted">Defensivo</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-blue" />
+                              <span className="text-[0.65rem] font-black uppercase text-muted">Económico</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                );
+              }
+
+              if (cardId === "trends") {
+                return (
+                  <div key="trends" {...dragProps}>
+                    <Card 
+                      title="Tendências de Comportamento" 
+                      subtitle="Evolução dos scores de segurança e performance"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 ? (
+                        <NoDataPlaceholder className="min-h-[280px]" />
+                      ) : (
+                        <ResponsiveContainer width="100%" height={280}>
+                          <LineChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <XAxis 
+                              dataKey="t" 
+                              tickFormatter={(v) => formatShortDay(v as number)}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                              axisLine={false}
+                              tickLine={false}
+                              dy={15}
+                            />
+                            <YAxis 
+                              domain={[0, 100]} 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+                            />
+                            <Tooltip 
+                              labelFormatter={(v) => formatTs(v as number)}
+                              contentStyle={{ 
+                                background: "rgba(13,13,27,0.8)", 
+                                border: "1px solid rgba(255,255,255,0.1)", 
+                                borderRadius: "16px", 
+                                backdropFilter: "blur(20px)", 
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+                              }}
+                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
+                            />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right" 
+                              height={40} 
+                              iconType="circle" 
+                              wrapperStyle={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "1px", paddingBottom: "20px" }} 
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="safetyAvg" 
+                              stroke="#10b981" 
+                              strokeWidth={5}
+                              dot={{ r: 5, strokeWidth: 2, fill: "#06060c", stroke: "#10b981" }}
+                              activeDot={{ r: 8, strokeWidth: 0, fill: "#10b981" }}
+                              name="Safety Score" 
+                              animationDuration={1500}
+                              isAnimationActive={!exporting}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="performanceAvg" 
+                              stroke="#8b5cf6" 
+                              strokeWidth={5}
+                              dot={{ r: 5, strokeWidth: 2, fill: "#06060c", stroke: "#8b5cf6" }}
+                              activeDot={{ r: 8, strokeWidth: 0, fill: "#8b5cf6" }}
+                              name="Performance" 
+                              animationDuration={1500}
+                              isAnimationActive={!exporting}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </Card>
+                  </div>
+                );
+              }
+
+              if (cardId === "speed") {
+                return (
+                  <div key="speed" {...dragProps}>
+                    <Card 
+                      title="Dinâmica de Velocidade" 
+                      subtitle="Média de velocidade registada por período"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 ? (
+                        <NoDataPlaceholder className="min-h-[280px]" />
+                      ) : (
+                        <AreaChartWrapper data={series.points} isAnimationActive={!exporting} />
+                      )}
+                    </Card>
+                  </div>
+                );
+              }
+
+              if (cardId === "insights") {
+                return (
+                  <div key="insights" {...dragProps}>
+                    <Card 
+                      title="Insights de Estilo (AI)" 
+                      subtitle="Análise comparativa de padrões de condução"
+                      className="overflow-hidden h-full"
+                      headerActions={renderGrabHandle(index)}
+                    >
+                      {series.points.length === 0 || !(sortedStyleStats[0]?.value > 0) ? (
+                        <NoDataPlaceholder className="min-h-[280px]" />
+                      ) : (
+                        <div className="flex flex-col gap-6 justify-between h-full">
+                          <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3 opacity-10">
+                              <Zap size={40} className="text-accent" />
+                            </div>
+                            <p className="text-muted text-sm leading-relaxed relative z-10">
+                              O nosso modelo de **Machine Learning (K-means)** analisa as tuas viagens em múltiplas dimensões. 
+                              Padrões de aceleração brusca e travagens frequentes categorizam o estilo como <span className="text-red font-black">Agressivo</span>, 
+                              enquanto a fluidez e consistência indicam um estilo <span className="text-green font-black">Defensivo</span>.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="glass-panel rounded-2xl p-5 border-white/5 relative group hover:border-accent/30 transition-all">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
+                                  <TrendingUp size={16} />
+                                </div>
+                                <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Tendência Atual</h4>
+                              </div>
+                              <p className="text-sm font-black text-text tracking-tight leading-tight">
+                                {sortedStyleStats[0]?.value > 0 
+                                  ? `O teu estilo predominante é ${sortedStyleStats[0].name.toLowerCase()}.` 
+                                  : "A aguardar dados suficientes para análise."}
+                              </p>
+                            </div>
+                            <div className="glass-panel rounded-2xl p-5 border-white/5 relative group hover:border-green/30 transition-all">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-green/20 flex items-center justify-center text-green">
+                                  <ShieldCheck size={16} />
+                                </div>
+                                <h4 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-muted">Recomendação</h4>
+                              </div>
+                              <p className="text-sm font-black text-text tracking-tight leading-tight">
+                                {styleStats.find(s => s.name === "AGGRESSIVE")?.value! > 2 
+                                  ? "Recomendamos suavizar as travagens para aumentar a vida útil dos componentes." 
+                                  : "Mantém a suavidade nas acelerações para otimizar a eficiência de combustível."}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                );
+              }
+
+              return null;
+            })}
 
             </div>
-          )}
+          </div>
         </>
       )}
     </div>
   );
 }
 
-function AreaChartWrapper({ data }: { data: Array<{ t: number; avgSpeed: number }> }) {
+function AreaChartWrapper({ data, isAnimationActive }: { data: Array<{ t: number; avgSpeed: number }>; isAnimationActive?: boolean }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -768,7 +952,7 @@ function AreaChartWrapper({ data }: { data: Array<{ t: number; avgSpeed: number 
         <XAxis 
           dataKey="t" 
           tickFormatter={(v) => formatShortDay(v as number)}
-          tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
+          tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
           axisLine={false}
           tickLine={false}
           dy={15}
@@ -776,7 +960,7 @@ function AreaChartWrapper({ data }: { data: Array<{ t: number; avgSpeed: number 
         <YAxis 
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 10, fill: "var(--muted)", fontWeight: 700 }}
+          tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
         />
         <Tooltip 
           labelFormatter={(v) => formatTs(v as number)}
@@ -798,6 +982,7 @@ function AreaChartWrapper({ data }: { data: Array<{ t: number; avgSpeed: number 
           fill="url(#colorSpeed)"
           name="Vel. Média" 
           animationDuration={1500}
+          isAnimationActive={isAnimationActive}
         />
       </ComposedChart>
     </ResponsiveContainer>

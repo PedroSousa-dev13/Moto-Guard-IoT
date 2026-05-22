@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 import type { TripFeedItem } from "../types";
 
 export function exportCsv(data: TripFeedItem[], filename = "analytics.csv") {
@@ -42,53 +43,20 @@ export function exportCsv(data: TripFeedItem[], filename = "analytics.csv") {
 }
 
 export async function exportChartsPng(container: HTMLElement, filename = "analytics.png") {
-  const rect = container.getBoundingClientRect();
-  const scale = window.devicePixelRatio || 1;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(rect.width * scale);
-  canvas.height = Math.round(rect.height * scale);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2, // Double scale for high-quality Retina/HD rendering
+      useCORS: true,
+      backgroundColor: "#06060c", // Maintain MotoGuard IoT dark aesthetic background
+    });
 
-  ctx.scale(scale, scale);
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#ffffff";
-  ctx.fillRect(0, 0, rect.width, rect.height);
-
-  const svgs = Array.from(container.querySelectorAll<SVGSVGElement>("svg"));
-
-  await Promise.all(
-    svgs.map(
-      (svg) =>
-        new Promise<void>((resolve) => {
-          const svgRect = svg.getBoundingClientRect();
-          const clone = svg.cloneNode(true) as SVGElement;
-          clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-          clone.setAttribute("width", String(svgRect.width));
-          clone.setAttribute("height", String(svgRect.height));
-          const serialized = new XMLSerializer().serializeToString(clone);
-          const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-          const url = URL.createObjectURL(blob);
-          const img = new Image();
-          img.onload = () => {
-            const x = svgRect.left - rect.left;
-            const y = svgRect.top - rect.top;
-            ctx.drawImage(img, x, y, svgRect.width, svgRect.height);
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          img.src = url;
-        }),
-    ),
-  );
-
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    triggerDownload(URL.createObjectURL(blob), filename);
-  }, "image/png");
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      triggerDownload(URL.createObjectURL(blob), filename);
+    }, "image/png");
+  } catch (err) {
+    console.error("Erro ao exportar imagem com html2canvas:", err);
+  }
 }
 
 function triggerDownload(url: string, filename: string) {

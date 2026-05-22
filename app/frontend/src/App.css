@@ -513,3 +513,130 @@
     @apply flex flex-wrap gap-2 items-center;
   }
 }
+
+/* html2canvas robust high-fidelity export overrides */
+.html2canvas-export {
+  background-color: #06060c !important;
+  color: #ffffff !important;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif !important;
+}
+
+.html2canvas-export .glass-panel {
+  background-color: #0d0d1b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.html2canvas-export .bg-surface\/60 {
+  background-color: #0d0d1b !important;
+}
+
+.html2canvas-export .border-border-glass {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.html2canvas-export .border-border-glass-subtle {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.html2canvas-export .bg-panel {
+  background-color: rgba(13, 13, 27, 0.9) !important;
+}
+
+.html2canvas-export .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.html2canvas-export .border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.html2canvas-export .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.html2canvas-export .text-muted {
+  color: #64748b !important;
+}
+
+.html2canvas-export .text-text {
+  color: #ffffff !important;
+}
+
+.html2canvas-export .text-text-2 {
+  color: #94a3b8 !important;
+}
+
+.html2canvas-export .text-accent {
+  color: #8b5cf6 !important;
+}
+
+.html2canvas-export .text-green {
+  color: #10b981 !important;
+}
+
+.html2canvas-export .text-red {
+  color: #ef4444 !important;
+}
+
+.html2canvas-export .text-yellow {
+  color: #f59e0b !important;
+}
+
+.html2canvas-export .text-blue {
+  color: #3b82f6 !important;
+}
+
+.html2canvas-export .text-orange {
+  color: #f97316 !important;
+}
+
+.html2canvas-export .bg-accent\/20 {
+  background-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.html2canvas-export .bg-blue\/20 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.html2canvas-export .bg-green\/20 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.html2canvas-export .bg-orange\/20 {
+  background-color: rgba(249, 115, 22, 0.2) !important;
+}
+
+.html2canvas-export .bg-red\/20 {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.html2canvas-export .bg-accent\/5 {
+  background-color: rgba(139, 92, 246, 0.05) !important;
+}
+
+.html2canvas-export .border-accent\/10 {
+  border-color: rgba(139, 92, 246, 0.1) !important;
+}
+
+.html2canvas-export .border-accent\/20 {
+  border-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.html2canvas-export .border-green\/20 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.html2canvas-export .border-blue\/20 {
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.html2canvas-export .border-orange\/20 {
+  border-color: rgba(249, 115, 22, 0.2) !important;
+}
+
+.html2canvas-export .border-red\/20 {
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
