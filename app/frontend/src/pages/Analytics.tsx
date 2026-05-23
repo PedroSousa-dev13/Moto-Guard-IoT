@@ -34,7 +34,8 @@ import {
   Clock,
   ChevronDown,
   Menu,
-  Image
+  Image,
+  X
 } from "lucide-react";
 import EventHeatmap from "../components/EventHeatmap";
 import {
@@ -110,6 +111,17 @@ export default function Analytics() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportPreviewUrl, setExportPreviewUrl] = useState<string | null>(null);
+
+  // Revogar Blob URL ao fechar a pré-visualização ou desmontar o componente para evitar fugas de memória
+  useEffect(() => {
+    return () => {
+      if (exportPreviewUrl && exportPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(exportPreviewUrl);
+      }
+    };
+  }, [exportPreviewUrl]);
+
   const chartsRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -282,8 +294,18 @@ export default function Analytics() {
     if (!chartsRef.current) return;
     setExporting(true);
     chartsRef.current.classList.add("html2canvas-export");
+    // Aguarda 300ms para garantir que o React e o Recharts renderizaram o estado estático sem animações
+    await new Promise((resolve) => setTimeout(resolve, 300));
     try {
-      await exportChartsPng(chartsRef.current, `analytics-${range}.png`);
+      const url = await exportChartsPng(chartsRef.current, `analytics-${range}.png`);
+      if (url) {
+        setExportPreviewUrl(url);
+      } else {
+        alert("Não foi possível gerar o ficheiro de imagem. Ocorreu um erro desconhecido.");
+      }
+    } catch (err: any) {
+      console.error("Erro na exportação:", err);
+      alert(`Não foi possível gerar a imagem.\n\nDetalhes: ${err?.message || err}\n\nStack: ${err?.stack?.split("\n").slice(0, 4).join("\n") || "Não disponível"}`);
     } finally {
       chartsRef.current.classList.remove("html2canvas-export");
       setExporting(false);
@@ -406,7 +428,7 @@ export default function Analytics() {
                 <button
                   className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
                   onClick={() => void handleExportPng()}
-                  disabled={exporting || series.points.length === 0}
+                  disabled={exporting}
                   title="Exportar Imagem"
                 >
                   {exporting ? <RefreshCw size={16} className="animate-spin" /> : <Image size={16} />}
@@ -877,14 +899,11 @@ export default function Analytics() {
                       className="overflow-hidden h-full"
                       headerActions={renderGrabHandle(index)}
                     >
-                      {series.points.length === 0 || !(sortedStyleStats[0]?.value > 0) ? (
+                      {(exporting && (series.points.length === 0 || !(sortedStyleStats[0]?.value > 0))) ? (
                         <NoDataPlaceholder className="min-h-[280px]" />
                       ) : (
                         <div className="flex flex-col gap-6 justify-between h-full">
                           <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-10">
-                              <Zap size={40} className="text-accent" />
-                            </div>
                             <p className="text-muted text-sm leading-relaxed relative z-10">
                               O nosso modelo de **Machine Learning (K-means)** analisa as tuas viagens em múltiplas dimensões. 
                               Padrões de aceleração brusca e travagens frequentes categorizam o estilo como <span className="text-red font-black">Agressivo</span>, 
@@ -933,6 +952,52 @@ export default function Analytics() {
             </div>
           </div>
         </>
+      )}
+
+      {exportPreviewUrl && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-surface border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-white/5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-text m-0">Pré-visualização do Relatório</h3>
+                <p className="text-xs text-muted m-0 mt-1">O teu relatório de análise foi gerado com sucesso!</p>
+              </div>
+              <button 
+                onClick={() => setExportPreviewUrl(null)}
+                className="w-8 h-8 rounded-full bg-white/5 text-muted hover:text-text flex items-center justify-center transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center gap-4 bg-black/25">
+              <p className="text-xs text-center text-muted max-w-md">
+                Clica em <strong>"Descarregar PNG"</strong> para descarregar o ficheiro, ou clica com o botão direito na imagem e escolhe <strong>"Guardar imagem como..."</strong>.
+              </p>
+              <div className="border border-white/5 rounded-xl overflow-hidden shadow-lg bg-[#06060c] max-w-full p-2">
+                <img 
+                  src={exportPreviewUrl} 
+                  alt="Relatório Exportado" 
+                  className="max-w-full h-auto object-contain rounded-lg max-h-[50vh]"
+                />
+              </div>
+            </div>
+            <div className="p-5 border-t border-white/5 flex justify-end gap-3 bg-surface-2">
+              <button 
+                onClick={() => setExportPreviewUrl(null)}
+                className="px-5 py-2.5 rounded-xl font-bold text-muted hover:bg-white/5 transition-all text-xs"
+              >
+                Fechar
+              </button>
+              <a 
+                href={exportPreviewUrl} 
+                download={`analytics-${range}.png`}
+                className="bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent/20 transition-all text-xs flex items-center gap-2"
+              >
+                <Download size={14} /> Descarregar PNG
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

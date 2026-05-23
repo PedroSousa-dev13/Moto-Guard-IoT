@@ -68,7 +68,7 @@ const Sidebar: FC<SidebarProps> = ({ collapsed, onToggle }) => {
         } h-full flex flex-col overflow-hidden transition-all duration-300`}
       >
         {/* HEADER / LOGO */}
-        <div className="p-4 md:p-6 border-b border-border-glass-subtle flex items-center justify-center shrink-0 min-h-[80px]">
+        <div className="p-4 md:p-6 border-b border-border-glass-subtle flex items-center justify-center shrink-0 h-20">
           <img src="/logo.svg" alt="MotoGuard Logo" className="h-10 w-auto object-contain transition-all duration-300 ease-in-out" />
         </div>
 
@@ -122,8 +122,8 @@ const Sidebar: FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Appendix / Tab Toggle Button */}
       <button
         onClick={onToggle}
-        className="absolute top-4 left-full bg-surface/90 hover:bg-panel border-y border-r border-border-glass flex items-center justify-center cursor-pointer shadow-xl transition-all duration-300 select-none z-[110]
-          w-9 h-9 rounded-r-xl text-muted hover:text-accent active:scale-[0.95] backdrop-blur-2xl"
+        className="absolute top-2 left-full -ml-[1px] bg-surface/80 hover:bg-surface/90 border-y border-r border-border-glass flex items-center justify-center cursor-pointer shadow-xl transition-all duration-300 select-none z-[110]
+          w-7 h-16 rounded-r-2xl text-muted hover:text-accent active:scale-[0.95] backdrop-blur-2xl"
         title={collapsed ? "Expandir menu" : "Recolher menu"}
       >
         {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}

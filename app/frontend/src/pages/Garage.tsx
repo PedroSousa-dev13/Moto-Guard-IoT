@@ -265,52 +265,52 @@ export default function Garage() {
                 <img 
                   src={imageFromCategory(moto.category)} 
                   alt={moto.category ?? "moto"} 
-                  className="moto-card-bg"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100 transition-transform duration-700 ease-out group-hover:scale-105 select-none z-0"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/0 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent pointer-events-none z-0" />
                 <div className="p-6 relative z-10 flex-1 flex flex-col">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-xl text-text truncate leading-tight mb-1 group-hover:text-accent transition-colors">{moto.name}</h3>
-                    <p className="text-[0.7rem] text-muted font-bold uppercase tracking-wider">
+                    <h3 className="font-black text-xl text-white truncate leading-tight mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{moto.name}</h3>
+                    <p className="text-[0.7rem] text-white/80 font-bold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
                       {[moto.brand, moto.model, moto.year].filter(Boolean).join(" · ") || "Especificação base"}
                     </p>
                   </div>
 
                   <div className="badge-row mt-4">
-                    <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-accent/10 text-accent border border-accent/20 shadow-inner">
+                    <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-accent text-white border border-accent/30 shadow-md shadow-black/40">
                       {moto.category}
                     </span>
                     {moto.plate && (
-                      <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-white/5 text-text-2 border border-white/10">
+                      <span className="text-[0.65rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-black/60 text-white border border-white/20 shadow-md shadow-black/40">
                         {moto.plate}
                       </span>
                     )}
                   </div>
 
                   {isDetail && (
-                    <div className="mt-6 pt-5 border-t border-white/5 flex flex-col gap-3 animate-fade-in">
+                    <div className="mt-6 pt-5 border-t border-white/10 flex flex-col gap-3 animate-fade-in">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-muted font-bold uppercase tracking-tighter">Odómetro</span>
-                        <span className="text-text font-black">{moto.odometer?.toLocaleString("pt-PT") ?? 0} km</span>
+                        <span className="text-white/70 font-bold uppercase tracking-tighter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">Odómetro</span>
+                        <span className="text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{moto.odometer?.toLocaleString("pt-PT") ?? 0} km</span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-muted font-bold uppercase tracking-tighter">Visto em</span>
-                        <span className="text-text font-black">{moto.lastSeenAt ? new Date(moto.lastSeenAt).toLocaleString("pt-PT") : "Nunca"}</span>
+                        <span className="text-white/70 font-bold uppercase tracking-tighter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">Visto em</span>
+                        <span className="text-white font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{moto.lastSeenAt ? new Date(moto.lastSeenAt).toLocaleString("pt-PT") : "Nunca"}</span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-muted font-bold uppercase tracking-tighter">ID Dispositivo</span>
-                        <span className="text-accent font-mono text-[0.6rem] font-bold">{moto.deviceId || "—"}</span>
+                        <span className="text-white/70 font-bold uppercase tracking-tighter drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">ID Dispositivo</span>
+                        <span className="text-white font-mono text-[0.65rem] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{moto.deviceId || "—"}</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 bg-black/20 border-t border-white/5 flex gap-2 justify-end relative z-10 mt-auto">
+                <div className="p-4 bg-black/20 flex gap-2 justify-end relative z-10 mt-auto">
                   {isConfirmDelete ? (
                     <div className="flex items-center gap-3 w-full">
-                      <span className="text-xs font-bold text-red flex-1 animate-pulse">Confirmar remoção?</span>
-                      <button className="bg-red text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-all" onClick={() => void handleDelete(moto.id)}>Remover</button>
-                      <button className="text-muted hover:text-text px-3 py-2 rounded-xl text-xs font-bold transition-all" onClick={() => setConfirmDeleteId(null)}>Voltar</button>
+                      <span className="text-xs font-bold text-red-400 flex-1 animate-pulse drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Confirmar remoção?</span>
+                      <button className="bg-red-600 border border-red-500/30 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-500 hover:scale-105 active:scale-95 transition-all shadow-md" onClick={() => void handleDelete(moto.id)}>Remover</button>
+                      <button className="bg-white/85 border border-white/30 text-slate-900 px-3 py-2 rounded-xl text-xs font-bold hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-md" onClick={() => setConfirmDeleteId(null)}>Voltar</button>
                     </div>
                   ) : (
                     <>
@@ -319,16 +319,16 @@ export default function Garage() {
                         onClick={() => navigate(`/dashboard?device=${moto.deviceId}`)}>
                         <Activity size={14} /> Monitorizar
                       </button>
-                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => navigate(`/trips?moto=${moto.id}`)} title="Ver Viagens">
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/85 border border-white/30 text-slate-900 hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/20" onClick={() => navigate(`/trips?moto=${moto.id}`)} title="Ver Viagens">
                         <Route size={18} />
                       </button>
-                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => setDetailId(isDetail ? null : moto.id)} title={isDetail ? "Menos info" : "Mais info"}>
-                        {isDetail ? <X size={18} /> : <Activity size={18} className="opacity-50" />}
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/85 border border-white/30 text-slate-900 hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/20" onClick={() => setDetailId(isDetail ? null : moto.id)} title={isDetail ? "Menos info" : "Mais info"}>
+                        {isDetail ? <X size={18} /> : <Activity size={18} />}
                       </button>
-                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-muted hover:text-text hover:bg-white/10 transition-all" onClick={() => openEdit(moto)} title="Editar">
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/85 border border-white/30 text-slate-900 hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/20" onClick={() => openEdit(moto)} title="Editar">
                         <Pencil size={18} />
                       </button>
-                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-red/60 hover:text-red hover:bg-red/10 transition-all" onClick={() => setConfirmDeleteId(moto.id)} title="Remover">
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/85 border border-white/30 text-red-600 hover:bg-red-50 hover:text-red-700 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/20" onClick={() => setConfirmDeleteId(moto.id)} title="Remover">
                         <Trash2 size={18} />
                       </button>
                     </>

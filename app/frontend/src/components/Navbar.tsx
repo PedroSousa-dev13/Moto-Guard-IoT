@@ -76,7 +76,7 @@ const Navbar: FC<NavbarProps> = () => {
   }, [navigate, location]);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 md:px-8 md:py-4 bg-bg/60 backdrop-blur-xl border-b border-border-glass-subtle shadow-xl shadow-black/10 transition-all duration-300">
+    <nav className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 md:px-8 md:h-20 bg-bg/60 backdrop-blur-xl border-b border-border-glass-subtle shadow-xl shadow-black/10 transition-all duration-300">
       <div className="flex items-center gap-3">
         <Link to="/" className="flex items-center gap-3 no-underline group md:hidden">
           <div className="p-2 rounded-xl bg-accent/10 text-accent group-hover:scale-110 transition-transform">
