@@ -153,9 +153,6 @@ export default function RealSimulator() {
           "DEVICE_REAL"
         );
         emitTelemetry(socket, payload);
-
-        // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "DEVICE_REAL" });
       }
       setCurrentTimeSec(0);
       setSession((prev) => ({
@@ -197,9 +194,6 @@ export default function RealSimulator() {
         "DEVICE_REAL"
       );
       emitTelemetry(socket, payload);
-
-      // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "DEVICE_REAL" });
     }
     setCurrentTimeSec(0);
     setSession((prev) => ({
@@ -274,7 +268,7 @@ export default function RealSimulator() {
     setSession((prev) => ({ ...prev, videoFile: file }));
   }, []);
 
-  // Cleanup: parar motor apenas no unmount real do componente
+  // Cleanup: parar motor e notificar backend no unmount
   // NÃO incluir syncEngine nas deps — muda a cada render e matava o loop!
   useEffect(() => {
     return () => {
@@ -282,6 +276,22 @@ export default function RealSimulator() {
       syncEngine.stop();
       if (videoRef.current) {
         videoRef.current.pause();
+      }
+      // Enviar parar via HTTP keepalive para garantir que o backend fecha a viagem
+      if (simSession.playbackState === "playing" || simSession.playbackState === "paused") {
+        try {
+          const csrfToken = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/)?.[1];
+          fetch("/api/command", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+            },
+            credentials: "include",
+            body: JSON.stringify({ acao: "parar", device_id: simSession.deviceId, source: "DEVICE_REAL" }),
+            keepalive: true,
+          }).catch(() => {});
+        } catch { /* ignore */ }
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -37,7 +37,7 @@ COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm install
 
 COPY frontend/ ./frontend/
-RUN cd frontend && npm run build
+RUN cd frontend && npm install && npm run build
 
 # ─── Arrancar ────────────────────────────────────────────────────────────────
 EXPOSE 3000
