@@ -149,15 +149,27 @@ export class SocketService {
 
       socket.on("send_command", async (command: SimulatorCommand) => {
         console.log("Comando recebido do frontend:", JSON.stringify(command));
+
+        const normalizedAction = command?.acao?.toLowerCase() ?? "";
+        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
+
+        // ── Guard anti-repetição para "parar" ───────────────────────────
+        // Se o dispositivo foi parado nos últimos 5 segundos e não há
+        // viagem ativa, ignoramos para evitar loops (frontend → backend
+        // → MQTT → simulador → backend → frontend → …).
+        if (["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction)) {
+          const recentStop = transportDeviceId ? this.recentStopByDevice.get(transportDeviceId) : undefined;
+          const tripActive = transportDeviceId ? (this.tripActiveByDevice.get(transportDeviceId) ?? false) : false;
+          if (recentStop !== undefined && Date.now() - recentStop < 5000 && !tripActive) {
+            return;
+          }
+        }
+
         const sent = mqttService.publishCommand(command);
         if (!sent) {
           socket.emit("error_msg", { message: "MQTT não está conectado" });
           return;
         }
-
-        const normalizedAction = command?.acao?.toLowerCase() ?? "";
-
-        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
         const identityDeviceId = command?.new_device_id ?? transportDeviceId;
         const userId = command?.userId ?? null;
 
@@ -710,13 +722,6 @@ export class SocketService {
       return;
     }
 
-    // Só enviar stop_trip se houver uma viagem ativa
-    mqttService.publishCommand({
-      acao: "stop_trip",
-      device_id: deviceId,
-      source: "BACKEND",
-    });
-
     await this.flushTripStats(deviceId);
     await this.finalizeTrip({
       deviceId,
@@ -778,6 +783,7 @@ export class SocketService {
 
       if (recentTrip) {
         console.log(`Viagem já finalizada recentemente: ${recentTrip.id}`);
+        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
         this.io?.emit("trip_ended", {
           deviceId,
           motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
