@@ -159,7 +159,7 @@ export default function SimulatorContexts() {
     resetSimulationView(false);
   }, [tripEndedSignal, resetSimulationView]);
 
-  // Cleanup: ao sair da página do simulador, parar o motor Python
+  // Cleanup: ao sair da página do simulador, parar o motor Python e limpar estado
   useEffect(() => {
     return () => {
       const deviceId = getLastKnownDeviceId();
@@ -174,9 +174,13 @@ export default function SimulatorContexts() {
       //    navegação entre páginas — o browser garante que o pedido
       //    completo mesmo que o componente seja desmontado).
       try {
+        const csrfToken = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/)?.[1];
         fetch("/api/command", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+          },
           credentials: "include",
           body: JSON.stringify({ acao: "parar", device_id: deviceId }),
           keepalive: true,
@@ -184,6 +188,9 @@ export default function SimulatorContexts() {
       } catch {
         // Ignorar erros — o WebSocket já tratou do caso normal
       }
+
+      // 3. Limpar estado de telemetria para não mostrar dados stale ao voltar
+      resetSimulationView(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

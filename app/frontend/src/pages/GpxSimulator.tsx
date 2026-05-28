@@ -201,7 +201,6 @@ export default function GpxSimulator() {
       console.log("[GpxSimulator] Route finished. Stopping.");
       const socket = socketRef.current;
       if (socket?.connected) {
-        // Enviar payload final
         const lastRow = simSession.rows[simSession.rows.length - 1];
         const payload = buildPayload(
           lastRow,
@@ -213,9 +212,6 @@ export default function GpxSimulator() {
           "GPX_IMPORTED"
         );
         emitTelemetry(socket, payload);
-
-        // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
         void persistGpxData();
       }
       
@@ -256,9 +252,6 @@ export default function GpxSimulator() {
         "GPX_IMPORTED"
       );
       emitTelemetry(socket, payload);
-
-      // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
       void persistGpxData();
     }
 
@@ -321,10 +314,26 @@ export default function GpxSimulator() {
     }));
   }, []);
 
-  // Cleanup
+  // Cleanup: parar motor e notificar backend no unmount
   useEffect(() => {
     return () => {
       syncEngine.stop();
+      // Enviar parar via HTTP keepalive para garantir que o backend fecha a viagem
+      if (simSession.playbackState === "playing" || simSession.playbackState === "paused") {
+        try {
+          const csrfToken = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/)?.[1];
+          fetch("/api/command", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+            },
+            credentials: "include",
+            body: JSON.stringify({ acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" }),
+            keepalive: true,
+          }).catch(() => {});
+        } catch { /* ignore */ }
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

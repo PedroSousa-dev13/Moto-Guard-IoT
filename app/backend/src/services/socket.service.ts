@@ -67,6 +67,7 @@ export class SocketService {
   private pendingEmergenciesByDevice = new Map<string, NodeJS.Timeout>();
   private lastTelemetryByDevice = new Map<string, TelemetryPayload>();
   private activeTripIdByDevice = new Map<string, string>(); // Persistência: tripId atual
+  private creatingTripByDevice = new Map<string, boolean>(); // Guard contra criação concorrente
   private lastStopHandledAtByDevice = new Map<string, number>();
   private lastTripEndedAtByDevice = new Map<string, number>();
   // Timestamps de paragens recentes — usados para evitar que pacotes
@@ -279,7 +280,16 @@ export class SocketService {
 
     // Reencaminhar telemetria e derivar eventos em tempo real.
     mqttService.onTelemetry(async (payload: TelemetryPayload) => {
-      this.lastTelemetryByDevice.set(payload.system.device_id, payload);
+      const deviceId = payload.system.device_id;
+      const recentStop = deviceId ? this.recentStopByDevice.get(deviceId) : undefined;
+      const isTripEnded = payload.system.event_status === "TRIP_ENDED";
+      // Se o dispositivo parou há <5 s, descarta telemetria "fantasma"
+      // (pacotes MQTT que estavam em trânsito antes do stop). Apenas
+      // TRIP_ENDED passa para finalizar a viagem corretamente.
+      if (recentStop !== undefined && Date.now() - recentStop < 5000 && !isTripEnded) {
+        return;
+      }
+      this.lastTelemetryByDevice.set(deviceId, payload);
       influxService.writeTelemetry(payload);
       this.io?.emit("telemetry_update", payload);
       this.handleAlertEvent(payload);
@@ -537,6 +547,12 @@ export class SocketService {
       return;
     }
 
+    // Guardar contra chamadas concorrentes (race condition com pacotes rápidos)
+    if (this.creatingTripByDevice.get(deviceId)) {
+      return;
+    }
+    this.creatingTripByDevice.set(deviceId, true);
+
     try {
       // Priorizar o último utilizador que interagiu com este dispositivo (essencial para o simulador partilhado)
       const lastUserId = this.lastUserIdByDevice.get(deviceId);
@@ -653,6 +669,8 @@ export class SocketService {
       console.log(`Viagem iniciada: ${trip.id} (device: ${deviceId}, user: ${association.userId})`);
     } catch (error) {
       console.error("Erro ao criar viagem:", error);
+    } finally {
+      this.creatingTripByDevice.delete(deviceId);
     }
   }
 
@@ -950,6 +968,7 @@ export class SocketService {
 
   private clearDeviceRuntimeState(deviceId: string): void {
     this.tripActiveByDevice.delete(deviceId);
+    this.creatingTripByDevice.delete(deviceId);
     this.stationaryTicksByDevice.delete(deviceId);
     this.lastEventStatusByDevice.delete(deviceId);
     this.lastTelemetryByDevice.delete(deviceId);
@@ -959,7 +978,9 @@ export class SocketService {
     this.heuristicStateByDevice.delete(deviceId);
     this.profileThresholdsCacheByDevice.delete(deviceId);
     this.pendingEmergenciesByDevice.delete(deviceId);
-    this.recentStopByDevice.delete(deviceId);
+    // NOTA: NÃO apagar recentStopByDevice aqui — é a única defesa
+    // contra o loop de "parar" repetidos. O cleanup é feito pelo
+    // setTimeout de 5s definido em send_command.
     this.lastUserIdByDevice.delete(deviceId);
     this.lastMotoModelByDevice.delete(deviceId);
     this.lastSourceByDevice.delete(deviceId);
@@ -1116,6 +1137,11 @@ export class SocketService {
 
     // Mapear status para tipo e severidade
     const { eventType, severity, message } = this.mapStatusToEventType(status);
+
+    // Eventos desconhecidos (ex: TRIP_ENDED, NORMAL) não são persistidos na BD
+    if (eventType === "UNKNOWN_EVENT") {
+      return;
+    }
 
     if (!tripId) {
       if (eventType === "CRASH_DETECTED") {
