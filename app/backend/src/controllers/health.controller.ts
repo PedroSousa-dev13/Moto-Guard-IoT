@@ -3,6 +3,7 @@ import { env } from "../config/env";
 import { mqttService } from "../services/mqtt.service";
 import { telemetryStore } from "../services/telemetry.store";
 import { socketService } from "../services/socket.service";
+import { influxService } from "../services/influx.service";
 
 export function getHealth(_req: Request, res: Response): void {
   res.json({
@@ -18,8 +19,9 @@ export function getHealth(_req: Request, res: Response): void {
       hasData: telemetryStore.hasData,
     },
     infrastructure: {
-      influxdb: "available",
+      influxdb: influxService.available ? "available" : "unavailable",
       postgres: "configured",
     },
   });
 }
+

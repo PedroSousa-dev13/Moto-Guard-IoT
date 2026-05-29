@@ -149,15 +149,33 @@ export class SocketService {
 
       socket.on("send_command", async (command: SimulatorCommand) => {
         console.log("Comando recebido do frontend:", JSON.stringify(command));
+
+        const normalizedAction = command?.acao?.toLowerCase() ?? "";
+        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
+        const isStopAction = ["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction);
+
+        // ── Guard anti-repetição para "parar" ───────────────────────────
+        // Se o dispositivo foi parado nos últimos 5 segundos, ignoramos
+        // COMPLETAMENTE (nem sequer publicamos ao MQTT) para evitar
+        // loops: frontend → backend → MQTT → simulador → backend → …
+        if (isStopAction && transportDeviceId) {
+          const recentStop = this.recentStopByDevice.get(transportDeviceId);
+          if (recentStop !== undefined && Date.now() - recentStop < 5000) {
+            console.log(`[SocketService] Stop duplicado ignorado para ${transportDeviceId} (${Date.now() - recentStop}ms desde último stop)`);
+            return;
+          }
+          // Registar ANTES de publicar para bloquear imediatamente duplicados
+          this.recentStopByDevice.set(transportDeviceId, Date.now());
+          setTimeout(() => {
+            this.recentStopByDevice.delete(transportDeviceId);
+          }, 5000);
+        }
+
         const sent = mqttService.publishCommand(command);
         if (!sent) {
           socket.emit("error_msg", { message: "MQTT não está conectado" });
           return;
         }
-
-        const normalizedAction = command?.acao?.toLowerCase() ?? "";
-
-        const transportDeviceId = command?.device_id ?? telemetryStore.latest?.system?.device_id;
         const identityDeviceId = command?.new_device_id ?? transportDeviceId;
         const userId = command?.userId ?? null;
 
@@ -190,27 +208,16 @@ export class SocketService {
           }
         }
 
-        if (["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction)) {
+        if (isStopAction) {
           try {
-            // ── Registar paragem recente (anti-pacote-fantasma) ─────────────
-            // Guardamos o timestamp para que o handleTripLifecycle ignore
-            // pacotes de telemetria que ainda estejam em trânsito no MQTT.
-            // NOTA: Isto NÃO interfere com o fluxo normal do TRIP_ENDED vindo
-            // do Python via MQTT — apenas impede que pacotes normais (speed>5)
-            // que cheguem atrasados recriem a viagem.
-            if (transportDeviceId) {
-              this.recentStopByDevice.set(transportDeviceId, Date.now());
-              setTimeout(() => {
-                this.recentStopByDevice.delete(transportDeviceId);
-              }, 5000);
-            }
-
-            // ── Lógica original preservada (não mexer) ─────────────────────
+            // ── Lógica de finalização de viagem ────────────────────────────
             // Para fontes simulador (SIMULATOR, GPX_IMPORTED, DEVICE_REAL),
             // o estado runtime NÃO é limpo aqui — o Python publica o seu
             // próprio TRIP_ENDED via MQTT, e o handleTripLifecycle() trata
             // de finalizar a viagem (endTrip()) com todos os dados.
-            const stopSource = command?.source?.toUpperCase() ?? "";
+            const stopSource = command?.source?.toUpperCase()
+              ?? (transportDeviceId ? this.lastSourceByDevice.get(transportDeviceId)?.toUpperCase() : undefined)
+              ?? "";
             const simulatorStopSources = new Set(["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"]);
             const lastStatus = transportDeviceId
               ? this.lastTelemetryByDevice.get(transportDeviceId)?.system?.event_status?.toUpperCase()
@@ -468,16 +475,13 @@ export class SocketService {
       return;
     }
 
-    // Se não há viagem ativa mas o simulador enviou TRIP_ENDED, 
-    // notificar o frontend para parar a UI
+    // Se não há viagem ativa mas o simulador enviou TRIP_ENDED,
+    // suprimir silenciosamente — NÃO emitir trip_ended para o frontend
+    // porque isso causa spam na consola de eventos.
+    // O frontend já lida com a UI cleanup via o useEffect de tripEndedSignal.
     if (!tripActive && status === "TRIP_ENDED") {
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: payload.system.moto_model,
-        timestamp: payload.system.timestamp,
-        status: "NO_TRIP",
-        error: "Viagem concluída (sem dados registados localmente)"
-      });
+      console.log(`[SocketService] TRIP_ENDED recebido para ${deviceId} sem viagem ativa — suprimido`);
+      this.lastTripEndedAtByDevice.set(deviceId, Date.now());
       return;
     }
 
@@ -701,21 +705,10 @@ export class SocketService {
     this.stationaryTicksByDevice.set(deviceId, 0);
 
     if (!tripId) {
-      console.warn(`Nenhuma viagem ativa para deviceId: ${deviceId}`);
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: payload.system.moto_model,
-        timestamp,
-      });
+      console.warn(`[SocketService] endTrip: nenhuma viagem ativa para ${deviceId} — suprimido`);
       return;
     }
 
-    // Só enviar stop_trip se houver uma viagem ativa
-    mqttService.publishCommand({
-      acao: "stop_trip",
-      device_id: deviceId,
-      source: "BACKEND",
-    });
 
     await this.flushTripStats(deviceId);
     await this.finalizeTrip({
@@ -761,7 +754,8 @@ export class SocketService {
     if (!tripId) {
       const now = endedAt.getTime();
       const lastHandledAt = this.lastStopHandledAtByDevice.get(deviceId) ?? 0;
-      if (now - lastHandledAt < 1500) {
+      if (now - lastHandledAt < 5000) {
+        console.log(`[SocketService] forceEndTrip: debounce para ${deviceId} (${now - lastHandledAt}ms)`);
         return;
       }
       this.lastStopHandledAtByDevice.set(deviceId, now);
@@ -778,6 +772,7 @@ export class SocketService {
 
       if (recentTrip) {
         console.log(`Viagem já finalizada recentemente: ${recentTrip.id}`);
+        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
         this.io?.emit("trip_ended", {
           deviceId,
           motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
@@ -790,17 +785,9 @@ export class SocketService {
         return;
       }
 
-      const created = lastPayload
-        ? await this.createCompletedTripFromLastPayload(deviceId, endedAt, endedAt)
-        : await this.createCompletedTripWithoutTelemetry(deviceId, endedAt, endedAt);
-      this.io?.emit("trip_ended", {
-        deviceId,
-        motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
-        timestamp: endedAt.toISOString(),
-        tripId: created?.tripId,
-        distanceKm: created?.distanceKm,
-        maxSpeedKmh: created?.maxSpeedKmh,
-      });
+      // Sem viagem ativa e sem viagem recente — NÃO criar viagem fantasma.
+      // NÃO emitir trip_ended aqui — isso causaria spam no frontend.
+      console.log(`[SocketService] forceEndTrip: sem viagem ativa nem recente para ${deviceId} — ignorado (sem emissão)`);
       this.lastTripEndedAtByDevice.set(deviceId, Date.now());
       return;
     }

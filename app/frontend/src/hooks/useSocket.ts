@@ -54,6 +54,7 @@ export function useSocket() {
     const payload = {
       acao: "parar" as const,
       device_id: deviceId,
+      source: "SIMULATOR",
     };
     socketRef.current.emit("send_command", payload);
     console.debug(`[useSocket] Stop command sent to ${deviceId}`);
@@ -115,7 +116,7 @@ export function useSocket() {
     if (socketRef.current) {
       socketRef.current.emit("cancel_emergency", { deviceId });
       // Também parar o simulador
-      socketRef.current.emit("send_command", { acao: "parar", device_id: deviceId });
+      socketRef.current.emit("send_command", { acao: "parar", device_id: deviceId, source: "SIMULATOR" });
       setCrashAlert(null);
       addLog(`Cancelamento de emergência e paragem enviados para ${deviceId}`, "#22c55e");
     }

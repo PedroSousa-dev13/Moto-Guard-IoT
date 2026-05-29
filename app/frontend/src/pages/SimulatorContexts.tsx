@@ -143,7 +143,11 @@ export default function SimulatorContexts() {
     }
   }, [isAdmin]);
 
-  // Quando a viagem termina, enviar "parar" ao simulador Python e limpar a vista
+  // Quando a viagem termina, limpar a vista local.
+  // NOTA: Não enviamos "parar" aqui porque:
+  //   - Se o user carregou em Stop, o "parar" já foi enviado por handleStop().
+  //   - Se a rota terminou automaticamente, o simulador já publicou TRIP_ENDED
+  //     e está em pausa — não precisa de outro "parar".
   useEffect(() => {
     if (!tripEndedSignal) return;
     setToast((prev) =>
@@ -152,7 +156,7 @@ export default function SimulatorContexts() {
         : { message: "Simulação terminada", type: "success" }
     );
     setMapResetSignal((v) => v + 1);
-    resetSimulationView(true); // true = envia "parar" via MQTT antes de limpar estado
+    resetSimulationView(false);
   }, [tripEndedSignal, resetSimulationView]);
 
   // Cleanup: ao sair da página do simulador, parar o motor Python
@@ -174,7 +178,7 @@ export default function SimulatorContexts() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ acao: "parar", device_id: deviceId }),
+          body: JSON.stringify({ acao: "parar", device_id: deviceId, source: "SIMULATOR" }),
           keepalive: true,
         }).catch(() => {});
       } catch {
@@ -294,7 +298,7 @@ export default function SimulatorContexts() {
               onStop={() => {
                 setToast({ message: "Simulação terminada", type: "success" });
                 setMapResetSignal((v) => v + 1);
-                resetSimulationView(true);
+                resetSimulationView(false);
               }}
             />
           </div>
