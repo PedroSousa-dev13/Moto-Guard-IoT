@@ -333,7 +333,7 @@ export default function Alertas() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-30 group"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel border border-border-glass text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-panel-hover transition-all disabled:opacity-30 group"
             onClick={loadBackendAlerts}
             disabled={backendLoading}
           >
@@ -349,15 +349,15 @@ export default function Alertas() {
               Marcar lidas
             </button>
           )}
-          <div className="glass-panel p-1 flex gap-1 rounded-2xl bg-black/20">
+          <div className="glass-panel p-1 flex gap-1 rounded-2xl bg-panel">
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "list" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "list" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-panel-hover"}`}
               onClick={() => setViewMode("list")}
             >
               <LayoutList size={14} /> Lista
             </button>
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "timeline" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${viewMode === "timeline" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-panel-hover"}`}
               onClick={() => setViewMode("timeline")}
             >
               <History size={14} /> Timeline
@@ -368,11 +368,11 @@ export default function Alertas() {
 
       <div className="flex flex-col gap-5 flex-1 min-h-0">
         {/* FILTER BAR */}
-        <div className="p-2.5 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col xl:flex-row gap-2.5 items-stretch xl:items-center shadow-xl shrink-0">
+        <div className="p-2.5 bg-surface/40 backdrop-blur-xl border border-border-glass rounded-2xl flex flex-col xl:flex-row gap-2.5 items-stretch xl:items-center shadow-xl shrink-0">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
-              className="w-full bg-black/20 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-[0.7rem] font-bold text-text focus:outline-none focus:border-accent/40 placeholder:text-muted/40 transition-all"
+              className="w-full bg-surface-2 border border-border-glass-subtle rounded-xl py-2 pl-10 pr-4 text-[0.7rem] font-bold text-text focus:outline-none focus:border-accent/40 placeholder:text-muted/40 transition-all"
               placeholder="Pesquisar mensagens, dispositivos..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -381,7 +381,7 @@ export default function Alertas() {
           
           <div className="flex flex-wrap gap-2">
             <select
-              className="bg-black/20 border border-white/5 rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[110px]"
+              className="bg-surface-2 border border-border-glass-subtle rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-surface-3 transition-all min-w-[110px]"
               value={status}
               onChange={(e) => setStatus(e.target.value as StatusFilter)}
             >
@@ -391,7 +391,7 @@ export default function Alertas() {
             </select>
             
             <select
-              className="bg-black/20 border border-white/5 rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[110px]"
+              className="bg-surface-2 border border-border-glass-subtle rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-surface-3 transition-all min-w-[110px]"
               value={severity}
               onChange={(e) => setSeverity(e.target.value as SeverityFilter)}
             >
@@ -402,7 +402,7 @@ export default function Alertas() {
             </select>
 
             <select
-              className="bg-black/20 border border-white/5 rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[130px]"
+              className="bg-surface-2 border border-border-glass-subtle rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-surface-3 transition-all min-w-[130px]"
               value={type}
               onChange={(e) => setType(e.target.value as TypeFilter)}
             >
@@ -414,7 +414,7 @@ export default function Alertas() {
 
             {devices.length > 1 && (
               <select
-                className="bg-black/20 border border-white/5 rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-black/30 transition-all min-w-[130px]"
+                className="bg-surface-2 border border-border-glass-subtle rounded-xl py-1.5 px-3 text-[0.6rem] font-black text-text focus:outline-none focus:border-accent/40 appearance-none cursor-pointer hover:bg-surface-3 transition-all min-w-[130px]"
                 value={deviceFilter}
                 onChange={(e) => setDeviceFilter(e.target.value)}
               >
@@ -438,9 +438,9 @@ export default function Alertas() {
             <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-4 custom-scrollbar">
               {filtered.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-6 opacity-30 p-10 text-center">
-                  <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl">📭</div>
+                  <div className="w-20 h-20 rounded-full bg-panel flex items-center justify-center text-4xl">📭</div>
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-xl font-black text-white m-0 tracking-tight">Vazio</h3>
+                    <h3 className="text-xl font-black text-text m-0 tracking-tight">Vazio</h3>
                     <p className="text-sm font-medium m-0 max-w-[200px]">Sem alertas que correspondam aos teus critérios.</p>
                   </div>
                 </div>
@@ -448,13 +448,13 @@ export default function Alertas() {
                 paginated.map((a) => (
                   <button
                     key={a.id}
-                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3.5 overflow-hidden group min-h-[110px] ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-white/[0.03] border-white/5 hover:border-white/20"}`}
+                    className={`relative w-full p-5 rounded-2xl border transition-all text-left flex flex-col gap-3.5 overflow-hidden group min-h-[110px] ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-surface-2/60 border-border-glass-subtle hover:border-border-glass"}`}
                     onClick={() => setSelectedId(a.id)}
                   >
                     {a.status === "unread" && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent shadow-[0_0_10px_rgba(139,92,246,0.5)]" />}
                     <div className="flex items-center justify-between gap-4 relative z-10">
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 transition-all ${selectedId === a.id ? "scale-110 bg-accent/20 border-accent/20" : "group-hover:scale-105"}`}>
+                        <div className={`w-8 h-8 rounded-lg bg-panel flex items-center justify-center border border-border-glass-subtle transition-all ${selectedId === a.id ? "scale-110 bg-accent/20 border-accent/20" : "group-hover:scale-105"}`}>
                           {typeIcon(a.type)}
                         </div>
                         <span className={`text-[0.8rem] font-black tracking-tight transition-colors ${selectedId === a.id ? "text-accent" : "text-text group-hover:text-accent"}`}>{a.title}</span>
@@ -464,7 +464,7 @@ export default function Alertas() {
                       </span>
                     </div>
                     <p className="text-[0.7rem] font-medium text-text-2 m-0 line-clamp-1 opacity-70 group-hover:opacity-100 transition-opacity">{a.message}</p>
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between pt-2 border-t border-border-glass-subtle">
                       <span className="text-[0.55rem] font-black text-muted uppercase tracking-[0.1em] opacity-40">{a.motoModel || a.deviceId || "SISTEMA"}</span>
                       <div className="flex items-center gap-1.5">
                         <div className={`w-1.5 h-1.5 rounded-full ${severityDotColorClass(a.severity)}`} />
@@ -475,12 +475,12 @@ export default function Alertas() {
                 ))
               ) : (
                 <div className="relative pl-10 flex flex-col gap-6 py-4">
-                  <div className="absolute left-[19px] top-0 bottom-0 w-px bg-white/10" />
+                  <div className="absolute left-[19px] top-0 bottom-0 w-px bg-border-glass" />
                   {paginated.map((a) => (
                     <div key={a.id} className="relative group">
-                      <div className={`absolute -left-[31px] top-2.5 w-6 h-6 rounded-full border-4 border-[#0a0a0a] z-10 transition-transform group-hover:scale-110 shadow-lg ${severityDotColorClass(a.severity)}`} />
+                      <div className={`absolute -left-[31px] top-2.5 w-6 h-6 rounded-full border-4 border-bg z-10 transition-transform group-hover:scale-110 shadow-lg ${severityDotColorClass(a.severity)}`} />
                       <button 
-                        className={`w-full p-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-white/[0.03] border-white/5 hover:border-white/20"}`}
+                        className={`w-full p-4 rounded-xl border transition-all text-left flex flex-col gap-2 ${selectedId === a.id ? "bg-accent/10 border-accent/40 shadow-lg" : "bg-surface-2/60 border-border-glass-subtle hover:border-border-glass"}`}
                         onClick={() => setSelectedId(a.id)}
                       >
                         <div className="flex items-center justify-between">
@@ -499,9 +499,9 @@ export default function Alertas() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl shrink-0">
+              <div className="flex items-center justify-between p-3 bg-panel border border-border-glass rounded-xl shrink-0">
                 <button 
-                  className="px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest text-muted hover:text-white disabled:opacity-20 transition-all hover:bg-white/5" 
+                  className="px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest text-muted hover:text-text disabled:opacity-20 transition-all hover:bg-panel-hover" 
                   onClick={() => setPage((p) => Math.max(1, p - 1))} 
                   disabled={page === 1}
                 >
@@ -513,7 +513,7 @@ export default function Alertas() {
                   <span className="text-[0.65rem] font-black text-muted/60">{totalPages}</span>
                 </div>
                 <button 
-                  className="px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest text-muted hover:text-white disabled:opacity-20 transition-all hover:bg-white/5" 
+                  className="px-3 py-1.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest text-muted hover:text-text disabled:opacity-20 transition-all hover:bg-panel-hover" 
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))} 
                   disabled={page === totalPages}
                 >
@@ -524,17 +524,17 @@ export default function Alertas() {
           </div>
 
           {/* DETAIL PANE */}
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl relative min-h-0">
+          <div className="bg-surface/60 backdrop-blur-xl border border-border-glass rounded-3xl overflow-hidden flex flex-col shadow-2xl relative min-h-0">
             {!selected ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-8 p-12 text-center">
                 <div className="relative">
                   <div className="absolute inset-0 bg-accent/20 blur-[60px] rounded-full animate-pulse" />
-                  <div className="relative w-32 h-32 rounded-3xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-6xl shadow-2xl transform hover:rotate-6 transition-transform duration-500">
+                  <div className="relative w-32 h-32 rounded-3xl bg-panel border border-border-glass flex items-center justify-center text-6xl shadow-2xl transform hover:rotate-6 transition-transform duration-500">
                     🧾
                   </div>
                 </div>
                 <div className="flex flex-col gap-3 max-w-xs">
-                  <h3 className="text-2xl font-black text-white m-0 tracking-tight">Seleciona um alerta</h3>
+                  <h3 className="text-2xl font-black text-text m-0 tracking-tight">Seleciona um alerta</h3>
                   <p className="text-sm font-medium text-muted m-0 leading-relaxed opacity-60">Escolhe um item na lista para ver todos os detalhes e métricas de telemetria em tempo real.</p>
                 </div>
                 <div className="flex gap-4 mt-4">
@@ -542,7 +542,7 @@ export default function Alertas() {
                     <span className="text-xl font-black text-accent">{allAlerts.length}</span>
                     <span className="text-[0.5rem] font-black text-muted uppercase tracking-[0.2em]">Total</span>
                   </div>
-                  <div className="w-px h-8 bg-white/10 self-center" />
+                  <div className="w-px h-8 bg-border-glass-subtle self-center" />
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-xl font-black text-red">{allAlerts.filter(a => a.severity === 'CRITICAL').length}</span>
                     <span className="text-[0.5rem] font-black text-muted uppercase tracking-[0.2em]">Críticos</span>
@@ -551,10 +551,10 @@ export default function Alertas() {
               </div>
             ) : (
               <>
-                <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent shrink-0">
+                <div className="p-6 md:p-8 border-b border-border-glass-subtle bg-gradient-to-b from-panel to-transparent shrink-0">
                   <div className="flex items-start justify-between gap-6 mb-6">
                     <div className="flex-1 flex flex-col gap-2">
-                      <h2 className="text-2xl md:text-3xl font-black text-white tracking-tighter m-0 flex items-center gap-4">
+                      <h2 className="text-2xl md:text-3xl font-black text-text tracking-tighter m-0 flex items-center gap-4">
                         <span className="text-3xl md:text-4xl">{typeIcon(selected.type)}</span>
                         {selected.title}
                       </h2>
@@ -564,7 +564,7 @@ export default function Alertas() {
                       </div>
                     </div>
                     <button
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all ${selected.status === "unread" ? "bg-accent text-white shadow-xl shadow-accent/20" : "bg-white/5 border border-white/10 text-muted hover:text-text hover:bg-white/10"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all ${selected.status === "unread" ? "bg-accent text-white shadow-xl shadow-accent/20" : "bg-panel border border-border-glass text-muted hover:text-text hover:bg-panel-hover"}`}
                       onClick={() => setAlert({ ...selected, status: selected.status === "unread" ? "ack" : "unread" })}
                     >
                       {selected.status === "unread" ? <CheckCircle size={14} /> : <Search size={14} />}
@@ -583,7 +583,7 @@ export default function Alertas() {
                       </span>
                     )}
                     {selected.deviceId && (
-                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-muted text-[0.55rem] font-black uppercase tracking-widest">
+                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-panel border border-border-glass-subtle text-muted text-[0.55rem] font-black uppercase tracking-widest">
                         ID: {selected.deviceId}
                       </span>
                     )}
@@ -593,7 +593,7 @@ export default function Alertas() {
                 <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-8 custom-scrollbar">
                   <div className="flex flex-col gap-4">
                     <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-40">Mensagem do Sistema</span>
-                    <div className="p-6 rounded-2xl bg-black/20 border border-white/5 text-base md:text-lg font-bold text-text leading-relaxed shadow-inner">
+                    <div className="p-6 rounded-2xl bg-surface-2 border border-border-glass-subtle text-base md:text-lg font-bold text-text leading-relaxed shadow-inner">
                       {selected.message}
                     </div>
                   </div>
@@ -602,15 +602,15 @@ export default function Alertas() {
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between">
                         <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-40">Telemetria no Instante</span>
-                        <div className="h-px flex-1 mx-4 bg-white/5" />
+                        <div className="h-px flex-1 mx-4 bg-border-glass-subtle" />
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {Object.entries(selected.meta).map(([key, value]) => {
                           if (value == null) return null;
                           return (
-                            <div key={key} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col gap-1 group hover:border-accent/40 transition-all">
+                            <div key={key} className="p-4 rounded-xl bg-panel border border-border-glass-subtle flex flex-col gap-1 group hover:border-accent/40 transition-all">
                               <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                              <span className="text-base font-black text-white tracking-tight flex items-baseline gap-1">
+                              <span className="text-base font-black text-text tracking-tight flex items-baseline gap-1">
                                 {typeof value === 'number' ? value.toFixed(key.toLowerCase().includes('temp') ? 1 : 2) : String(value)}
                                 <span className="text-[0.55rem] text-muted font-bold">
                                   {key.toLowerCase().includes('kmh') && "KM/H"}
@@ -629,7 +629,7 @@ export default function Alertas() {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-40">Ações Rápidas & Localização</span>
-                      <div className="h-px flex-1 mx-4 bg-white/5" />
+                      <div className="h-px flex-1 mx-4 bg-border-glass-subtle" />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {selected.lat != null && selected.lng != null && (
@@ -637,13 +637,13 @@ export default function Alertas() {
                           href={`https://maps.google.com/?q=${selected.lat},${selected.lng}`} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all hover:scale-105"
+                          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-panel border border-border-glass text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-panel-hover transition-all hover:scale-105"
                         >
                           <ExternalLink size={14} className="text-accent" /> Google Maps
                         </a>
                       )}
                       {selected.lat != null && (
-                        <button className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-white/10 transition-all hover:scale-105" onClick={() => navigate(`/map`)}>
+                        <button className="flex items-center gap-2 px-4 py-3 rounded-xl bg-panel border border-border-glass text-[0.65rem] font-black text-text uppercase tracking-widest hover:bg-panel-hover transition-all hover:scale-105" onClick={() => navigate(`/map`)}>
                           <MapPin size={14} className="text-accent" /> Ver no Mapa
                         </button>
                       )}
@@ -656,7 +656,7 @@ export default function Alertas() {
                   </div>
 
                   {selected.lat != null && selected.lng != null && (
-                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-4">
+                    <div className="p-6 rounded-2xl bg-surface-2 border border-border-glass-subtle flex flex-col gap-4">
                       <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-40">Coordenadas GPS</span>
                       <div className="flex gap-12">
                         <div className="flex flex-col gap-0.5">

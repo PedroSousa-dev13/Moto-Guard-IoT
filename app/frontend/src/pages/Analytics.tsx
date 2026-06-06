@@ -358,7 +358,7 @@ export default function Analytics() {
   return (
     <div className="flex flex-col gap-10 animate-fade-in">
       {/* Premium Header */}
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 pb-4 border-b border-white/5">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 pb-4 border-b border-border-glass-subtle">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
@@ -382,7 +382,7 @@ export default function Analytics() {
               <div className="relative group">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-hover:text-accent transition-colors" size={14} />
                 <select
-                  className="bg-black/40 border border-white/5 rounded-xl pl-9 pr-8 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer min-w-[160px]"
+                  className="bg-surface-2 border border-border-glass-subtle rounded-xl pl-9 pr-8 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer min-w-[160px]"
                   value={range}
                   onChange={(e) => setRange(e.target.value as PresetRange)}
                 >
@@ -400,7 +400,7 @@ export default function Analytics() {
 
               <div className="relative group">
                 <select
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer w-[110px]"
+                  className="bg-surface-2 border border-border-glass-subtle rounded-xl px-4 py-2.5 text-xs text-text font-black uppercase tracking-widest focus:border-accent outline-none appearance-none cursor-pointer w-[110px]"
                   value={granularity}
                   onChange={(e) => setGranularity(e.target.value as Granularity)}
                 >
@@ -413,12 +413,12 @@ export default function Analytics() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 border-l border-white/10 pl-2 ml-1">
-                <button className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all" onClick={() => void load()} title="Atualizar">
+              <div className="flex items-center gap-1 border-l border-border-glass-subtle pl-2 ml-1">
+                <button className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panel-hover transition-all" onClick={() => void load()} title="Atualizar">
                   <RefreshCw size={16} />
                 </button>
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panel-hover transition-all disabled:opacity-30"
                   onClick={handleExportCsv}
                   disabled={series.filtered.length === 0}
                   title="Exportar CSV"
@@ -426,7 +426,7 @@ export default function Analytics() {
                   <Download size={16} />
                 </button>
                 <button
-                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-white/5 transition-all disabled:opacity-30"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panel-hover transition-all disabled:opacity-30"
                   onClick={() => void handleExportPng()}
                   disabled={exporting}
                   title="Exportar Imagem"
@@ -439,13 +439,13 @@ export default function Analytics() {
 
           <div className="glass-panel p-1 flex gap-1 rounded-2xl">
             <button
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "charts" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-panel-hover"}`}
               onClick={() => setActiveTab("charts")}
             >
               <BarChart2 size={14} /> Performance
             </button>
             <button
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-white/5"}`}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "heatmap" ? "bg-accent text-white shadow-lg shadow-accent/30" : "text-muted hover:text-text hover:bg-panel-hover"}`}
               onClick={() => setActiveTab("heatmap")}
             >
               <Map size={14} /> Geográfico
@@ -455,12 +455,12 @@ export default function Analytics() {
       </div>
 
       {activeTab === "heatmap" && (
-        <div className="bg-surface/60 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl animate-fade-in">
+        <div className="bg-surface/60 backdrop-blur-md border border-border-glass rounded-2xl p-8 shadow-xl animate-fade-in">
           <div className="flex flex-col gap-2 mb-8">
             <h3 className="text-xl font-black text-text m-0 tracking-tight">Mapa de Calor de Eventos</h3>
             <p className="text-muted text-sm font-medium m-0">Distribuição geográfica de incidentes críticos detetados em todas as viagens.</p>
           </div>
-          <div className="rounded-2xl overflow-hidden border border-white/5 shadow-inner bg-black/20">
+          <div className="rounded-2xl overflow-hidden border border-border-glass-subtle shadow-inner bg-surface-2">
             <EventHeatmap />
           </div>
         </div>
@@ -475,7 +475,7 @@ export default function Analytics() {
                   <label className="text-[0.7rem] font-black uppercase tracking-widest text-muted ml-1" htmlFor="analytics-from">Data de Início</label>
                   <input
                     id="analytics-from"
-                    className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-text font-black focus:border-accent outline-none"
+                    className="bg-surface-2 border border-border-glass-subtle rounded-xl px-4 py-2.5 text-sm text-text font-black focus:border-accent outline-none"
                     type="date"
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
@@ -485,7 +485,7 @@ export default function Analytics() {
                   <label className="text-[0.7rem] font-black uppercase tracking-widest text-muted ml-1" htmlFor="analytics-to">Data de Fim</label>
                   <input
                     id="analytics-to"
-                    className="bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-text font-black focus:border-accent outline-none"
+                    className="bg-surface-2 border border-border-glass-subtle rounded-xl px-4 py-2.5 text-sm text-text font-black focus:border-accent outline-none"
                     type="date"
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
@@ -495,7 +495,7 @@ export default function Analytics() {
             </Card>
           )}
 
-          <div ref={chartsRef} className="flex flex-col gap-8 p-6 -m-6 rounded-3xl bg-[#06060c]">
+          <div ref={chartsRef} className="flex flex-col gap-8 p-6 -m-6 rounded-3xl bg-bg">
             {/* KPI Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
@@ -544,13 +544,13 @@ export default function Analytics() {
               };
               const isBetter = higher ? (curr ?? 0) >= (prev ?? 0) : (curr ?? 0) <= (prev ?? 0);
               return (
-                <div key={label} className="glass-panel rounded-3xl p-6 group hover:border-white/20 transition-all hover:scale-[1.02] cursor-default">
+                <div key={label} className="glass-panel rounded-3xl p-6 group hover:border-border-glass transition-all hover:scale-[1.02] cursor-default">
                   <div className="flex justify-between items-start mb-6">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${colorMap[color]}`}>
                       {icon}
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <div className={`text-xs font-black flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/5 ${ isBetter ? 'text-green' : 'text-red' }`}>
+                      <div className={`text-xs font-black flex items-center gap-1.5 px-2 py-1 rounded-lg bg-panel border border-border-glass-subtle ${ isBetter ? 'text-green' : 'text-red' }`}>
                         <TrendingUp size={12} className={isBetter ? "" : "rotate-180"} />
                         {pctChange(curr, prev)}
                       </div>
@@ -602,7 +602,7 @@ export default function Analytics() {
                                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0.4}/>
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border-subtle)" vertical={false} />
                             <XAxis 
                               dataKey="t" 
                               tickFormatter={(v) => formatShortDay(v as number)} 
@@ -629,14 +629,15 @@ export default function Analytics() {
                             <Tooltip 
                               labelFormatter={(v) => formatTs(v as number)}
                               contentStyle={{ 
-                                background: "rgba(13,13,27,0.8)", 
-                                border: "1px solid rgba(255,255,255,0.1)", 
+                                background: "var(--surface)", 
+                                border: "1px solid var(--glass-border)", 
                                 borderRadius: "16px", 
-                                backdropFilter: "blur(20px)", 
-                                boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                                backdropFilter: "var(--glass-blur)", 
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
                                 padding: "12px"
                               }}
-                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                              labelStyle={{ color: "var(--text)" }}
+                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text)" }}
                               cursor={{ stroke: "#8b5cf6", strokeWidth: 1, strokeDasharray: "4 4" }}
                             />
                             <Legend 
@@ -690,7 +691,7 @@ export default function Analytics() {
                       ) : (
                         <ResponsiveContainer width="100%" height={320}>
                           <BarChart data={series.points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border-subtle)" vertical={false} />
                             <XAxis 
                               dataKey="t" 
                               tickFormatter={(v) => formatShortDay(v as number)}
@@ -707,13 +708,14 @@ export default function Analytics() {
                             <Tooltip 
                               labelFormatter={(v) => formatTs(v as number)}
                               contentStyle={{ 
-                                background: "rgba(13,13,27,0.8)", 
-                                border: "1px solid rgba(255,255,255,0.1)", 
+                                background: "var(--surface)", 
+                                border: "1px solid var(--glass-border)", 
                                 borderRadius: "16px", 
-                                backdropFilter: "blur(20px)", 
-                                boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+                                backdropFilter: "var(--glass-blur)", 
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
                               }}
-                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
+                              labelStyle={{ color: "var(--text)" }}
+                              itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", color: "var(--text)" }}
                             />
                             <Legend 
                               verticalAlign="top" 
@@ -769,7 +771,14 @@ export default function Analytics() {
                                 ))}
                               </Pie>
                               <Tooltip 
-                                contentStyle={{ background: "rgba(13,13,13,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
+                                contentStyle={{ 
+                                  background: "var(--surface)", 
+                                  border: "1px solid var(--glass-border)", 
+                                  borderRadius: "12px",
+                                  boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
+                                }}
+                                labelStyle={{ color: "var(--text)" }}
+                                itemStyle={{ color: "var(--text)" }}
                               />
                             </PieChart>
                           </ResponsiveContainer>
@@ -912,7 +921,7 @@ export default function Analytics() {
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="glass-panel rounded-2xl p-5 border-white/5 relative group hover:border-accent/30 transition-all">
+                            <div className="glass-panel rounded-2xl p-5 border-border-glass-subtle relative group hover:border-accent/30 transition-all">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
                                   <TrendingUp size={16} />
@@ -925,7 +934,7 @@ export default function Analytics() {
                                   : "A aguardar dados suficientes para análise."}
                               </p>
                             </div>
-                            <div className="glass-panel rounded-2xl p-5 border-white/5 relative group hover:border-green/30 transition-all">
+                            <div className="glass-panel rounded-2xl p-5 border-border-glass-subtle relative group hover:border-green/30 transition-all">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="w-8 h-8 rounded-lg bg-green/20 flex items-center justify-center text-green">
                                   <ShieldCheck size={16} />
@@ -1013,7 +1022,7 @@ function AreaChartWrapper({ data, isAnimationActive }: { data: Array<{ t: number
             <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border-subtle)" vertical={false} />
         <XAxis 
           dataKey="t" 
           tickFormatter={(v) => formatShortDay(v as number)}
@@ -1030,13 +1039,14 @@ function AreaChartWrapper({ data, isAnimationActive }: { data: Array<{ t: number
         <Tooltip 
           labelFormatter={(v) => formatTs(v as number)}
           contentStyle={{ 
-            background: "rgba(13,13,27,0.8)", 
-            border: "1px solid rgba(255,255,255,0.1)", 
+            background: "var(--surface)", 
+            border: "1px solid var(--glass-border)", 
             borderRadius: "16px", 
-            backdropFilter: "blur(20px)", 
-            boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+            backdropFilter: "var(--glass-blur)", 
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
           }}
-          itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase" }}
+          labelStyle={{ color: "var(--text)" }}
+          itemStyle={{ fontSize: "11px", fontWeight: "900", textTransform: "uppercase", color: "var(--text)" }}
         />
         <Area 
           type="monotone" 

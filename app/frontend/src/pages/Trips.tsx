@@ -95,11 +95,10 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
       className={`flex-shrink-0 w-52 h-36 rounded-2xl border transition-all cursor-pointer flex flex-col group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/20 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
     >
       <img src={img} alt={moto.name} className="moto-card-bg" />
-      <div className="absolute inset-0 bg-gradient-to-t from-surface/80 via-surface/40 to-transparent pointer-events-none" />
       <div className="p-4 relative z-10 flex-1 flex flex-col justify-end">
         <div className="flex flex-col gap-0.5">
-          <div className="font-black text-sm text-text truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
-          <div className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-80 truncate">
+          <div className="font-black text-sm text-white truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
+          <div className="text-[0.6rem] font-bold text-white/70 uppercase tracking-widest truncate">
             {moto.brand} {moto.model}
           </div>
         </div>
@@ -381,7 +380,7 @@ export default function Trips() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           <div className="flex flex-col gap-2.5">
             <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Origem</label>
-            <select className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer" value={sourceFilter}
+            <select className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer shadow-sm" value={sourceFilter}
               onChange={(e) => {
                 const nextSource = e.target.value as TripSourceFilter;
                 setSourceFilter(nextSource);
@@ -393,30 +392,30 @@ export default function Trips() {
                 setPage(1);
                 setExpandedId(null);
               }}>
-              <option value="ALL" className="bg-slate-900">Todas</option>
-              <option value="SIMULATOR" className="bg-slate-900">Simulador IoT</option>
-              <option value="GPX_IMPORTED" className="bg-slate-900">Ficheiros GPX</option>
-              <option value="DEVICE_REAL" className="bg-slate-900">Dispositivo Real</option>
+              <option value="ALL" className="bg-surface">Todas</option>
+              <option value="SIMULATOR" className="bg-surface">Simulador IoT</option>
+              <option value="GPX_IMPORTED" className="bg-surface">Ficheiros GPX</option>
+              <option value="DEVICE_REAL" className="bg-surface">Dispositivo Real</option>
             </select>
           </div>
           <div className="flex flex-col gap-2.5">
             <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Estado</label>
-            <select className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer" value={statusFilter}
+            <select className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer shadow-sm" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value as TripStatusFilter); setPage(1); setExpandedId(null); }}>
-              <option value="ALL" className="bg-slate-900">Todos</option>
-              <option value="ACTIVE" className="bg-slate-900">Ativas</option>
-              <option value="COMPLETED" className="bg-slate-900">Concluídas</option>
-              <option value="CANCELLED" className="bg-slate-900">Canceladas</option>
+              <option value="ALL" className="bg-surface">Todos</option>
+              <option value="ACTIVE" className="bg-surface">Ativas</option>
+              <option value="COMPLETED" className="bg-surface">Concluídas</option>
+              <option value="CANCELLED" className="bg-surface">Canceladas</option>
             </select>
           </div>
           <div className="flex flex-col gap-2.5">
             <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">De</label>
-            <input className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all" type="date" value={fromDate}
+            <input className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all shadow-sm" type="date" value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="flex flex-col gap-2.5">
             <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Até</label>
-            <input className="bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all" type="date" value={toDate}
+            <input className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all shadow-sm" type="date" value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="flex items-center pt-6 justify-center">
@@ -539,10 +538,10 @@ export default function Trips() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-8 py-8 mt-4 border-t border-white/5 shrink-0">
           <div className="flex items-center gap-5">
             <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Itens por página</span>
-            <select className="bg-white/5 border border-white/5 rounded-xl px-4 py-2 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all cursor-pointer"
+            <select className="bg-surface border border-border-glass rounded-xl px-4 py-2 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all cursor-pointer"
               value={pageSize}
               onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); setExpandedId(null); }}>
-              {[5, 10, 20, 50].map((n) => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
+              {[5, 10, 20, 50].map((n) => <option key={n} value={n} className="bg-surface">{n}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-6">
@@ -576,61 +575,62 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
 
   return (
     <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5 relative min-h-[220px]">
-      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-surface/0 to-surface/80 pointer-events-none" />
       <div className="absolute inset-0 bg-radial-gradient from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
-      <div className="flex-1 p-10 flex flex-col justify-center gap-8 relative z-10">
-        <div className="flex flex-col gap-4">
-          <h3 className="text-2xl font-black text-text tracking-tight m-0">{item.motorcycle?.name}</h3>
-          <div className="flex flex-wrap gap-2.5">
-            <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
-              {badge.icon} {badge.label}
-            </span>
-            <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
-              {src.icon} {src.label}
-            </span>
-            <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
+      <div className="flex-1 p-10 flex flex-col justify-center gap-8 relative overflow-hidden z-10">
+        <img src={motoImg} alt="moto" className="absolute inset-0 w-full h-full object-cover opacity-100 drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none z-0" />
+        <div className="relative z-10 flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-2xl font-black text-white tracking-tight m-0">{item.motorcycle?.name}</h3>
+            <div className="flex flex-wrap gap-2.5">
+              <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
+                {badge.icon} {badge.label}
+              </span>
+              <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
+                {src.icon} {src.label}
+              </span>
+              <TripCategoryBadge category={item.category} confidence={item.categoryConfidence} />
+            </div>
           </div>
+          <div className="flex flex-wrap gap-8 items-center">
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
+              <Calendar size={16} className="text-accent" /> {formatDate(item.startedAt)}
+            </div>
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
+              <Clock size={16} className="text-accent" /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}
+            </div>
+            <div className={`flex items-center gap-2.5 text-xs font-black uppercase tracking-widest ${item.eventCounts?.total > 0 ? 'text-red' : 'text-green'}`}>
+              <AlertCircle size={16} /> {item.eventCounts?.total ?? 0} Eventos
+            </div>
+          </div>
+          {item.labels?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {item.labels.map(l => (
+                <span key={l} className="px-3 py-1 rounded-xl bg-accent/5 border border-accent/20 text-accent text-[0.6rem] font-black uppercase tracking-widest">{l}</span>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap gap-8 items-center">
-          <div className="flex items-center gap-2.5 text-xs font-bold text-muted hover:text-text transition-colors">
-            <Calendar size={16} className="text-accent/60" /> {formatDate(item.startedAt)}
-          </div>
-          <div className="flex items-center gap-2.5 text-xs font-bold text-muted hover:text-text transition-colors">
-            <Clock size={16} className="text-accent/60" /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}
-          </div>
-          <div className={`flex items-center gap-2.5 text-xs font-black uppercase tracking-widest ${item.eventCounts?.total > 0 ? 'text-red' : 'text-green opacity-40'}`}>
-            <AlertCircle size={16} /> {item.eventCounts?.total ?? 0} Eventos
-          </div>
-        </div>
-        {item.labels?.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {item.labels.map(l => (
-              <span key={l} className="px-3 py-1 rounded-xl bg-accent/5 border border-accent/20 text-accent text-[0.6rem] font-black uppercase tracking-widest">{l}</span>
-            ))}
-          </div>
-        )}
       </div>
-      <div className="lg:w-80 p-10 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-center gap-10 shrink-0 relative">
+      <div className="lg:w-80 p-10 lg:border-l border-border-glass bg-white/5 flex flex-col justify-center items-center gap-10 shrink-0 relative">
         <div className="flex gap-8">
           <div className={`flex flex-col items-center gap-2 group/score ${safety.className}`}>
-            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-black/40 shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.safetyScore}</div>
-            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety</span>
+            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-surface shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.safetyScore}</div>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-white/60">Safety</span>
           </div>
           <div className={`flex flex-col items-center gap-2 group/score ${perf.className}`}>
-            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-black/40 shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.performanceScore}</div>
-            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Perf</span>
+            <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-surface shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.performanceScore}</div>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-white/60">Perf</span>
           </div>
         </div>
         <div className="flex gap-10 justify-center w-full">
           <div className="flex flex-col items-center group/stat">
-            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
-            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM</span>
+            <span className="text-2xl font-black text-white tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
+            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM</span>
           </div>
           <div className="flex flex-col items-center group/stat">
-            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
-            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM/H</span>
+            <span className="text-2xl font-black text-white tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
+            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM/H</span>
           </div>
         </div>
         <Link to={`/trips/${item.id}`} className="w-full">
@@ -665,75 +665,76 @@ function TripListCard({
 
   return (
     <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 relative min-h-[160px] ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
-      <img src={motoImg} alt="moto" className="absolute left-1/2 top-1/2 -translate-x-[60%] -translate-y-1/2 w-[80%] h-[150%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-surface/40 via-surface/0 to-surface/80 pointer-events-none" />
       
       <div className="flex flex-col lg:flex-row min-h-[160px] relative z-10">
-        <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer" onClick={() => onToggle(trip.id)}>
-          <div className="flex flex-col gap-4">
-            <h3 className="text-xl font-black text-text tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>
-          <div className="flex flex-wrap gap-2.5">
-            <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
-              {badge.icon} {badge.label}
-            </span>
-            <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
-              {src.icon} {src.label}
-            </span>
-            <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
-          </div>
-          </div>
-          <div className="flex flex-wrap gap-8 items-center">
-            <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-muted hover:text-text transition-colors">
-              <Calendar size={14} className="text-accent/60" /> {formatDate(trip.startedAt)}
-            </div>
-            <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-muted hover:text-text transition-colors">
-              <Clock size={14} className="text-accent/60" /> {formatDuration(trip.startedAt, trip.endedAt)}
-            </div>
-            {evCount > 0 && (
-              <div className="flex items-center gap-2.5 text-[0.7rem] font-black uppercase tracking-widest text-red">
-                <AlertCircle size={14} /> {evCount} Eventos
+        <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer relative overflow-hidden z-10" onClick={() => onToggle(trip.id)}>
+          <img src={motoImg} alt="moto" className="absolute inset-0 w-full h-full object-cover opacity-100 drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none z-0" />
+          <div className="relative z-10 flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+              <h3 className="text-xl font-black text-white tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>
+              <div className="flex flex-wrap gap-2.5">
+                <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
+                  {badge.icon} {badge.label}
+                </span>
+                <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${src.className}`}>
+                  {src.icon} {src.label}
+                </span>
+                <TripCategoryBadge category={trip.category} confidence={trip.categoryConfidence} />
               </div>
-            )}
-          </div>
-          <div className="flex items-center mt-1" onClick={(e) => e.stopPropagation()}>
-             <label className={`flex items-center gap-3 cursor-pointer group transition-opacity ${isDisabled ? 'opacity-30 grayscale cursor-not-allowed' : 'opacity-100'}`}>
-               <input
-                 type="checkbox"
-                 className="hidden"
-                 checked={isSelected}
-                 disabled={isDisabled}
-                 onChange={() => onCompareToggle(trip.id)}
-               />
-               <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-accent border-accent shadow-lg shadow-accent/20' : 'border-white/10 group-hover:border-white/30 bg-black/20'}`}>
-                 {isSelected && <Check size={16} className="text-white" strokeWidth={4} />}
-               </div>
-               <span className={`text-[0.65rem] font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-accent' : 'text-muted group-hover:text-text'}`}>Comparar Viagem</span>
-             </label>
+            </div>
+            <div className="flex flex-wrap gap-8 items-center">
+              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-white/70 hover:text-white transition-colors">
+                <Calendar size={14} className="text-accent" /> {formatDate(trip.startedAt)}
+              </div>
+              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-white/70 hover:text-white transition-colors">
+                <Clock size={14} className="text-accent" /> {formatDuration(trip.startedAt, trip.endedAt)}
+              </div>
+              {evCount > 0 && (
+                <div className="flex items-center gap-2.5 text-[0.7rem] font-black uppercase tracking-widest text-red">
+                  <AlertCircle size={14} /> {evCount} Eventos
+                </div>
+              )}
+            </div>
+            <div className="flex items-center mt-1" onClick={(e) => e.stopPropagation()}>
+               <label className={`flex items-center gap-3 cursor-pointer group transition-opacity ${isDisabled ? 'opacity-30 grayscale cursor-not-allowed' : 'opacity-100'}`}>
+                 <input
+                   type="checkbox"
+                   className="hidden"
+                   checked={isSelected}
+                   disabled={isDisabled}
+                   onChange={() => onCompareToggle(trip.id)}
+                 />
+                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-accent border-accent shadow-lg shadow-accent/20' : 'border-white/10 group-hover:border-white/30 bg-black/20'}`}>
+                   {isSelected && <Check size={16} className="text-white" strokeWidth={4} />}
+                 </div>
+                 <span className={`text-[0.65rem] font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-accent' : 'text-white/70 group-hover:text-white'}`}>Comparar Viagem</span>
+               </label>
+            </div>
           </div>
         </div>
-        <div className="lg:w-72 p-8 lg:border-l border-white/5 bg-black/10 flex flex-col justify-center items-end gap-8 shrink-0">
+        <div className="lg:w-72 p-8 lg:border-l border-border-glass bg-white/5 flex flex-col justify-center items-end gap-8 shrink-0">
           <div className="flex gap-8 justify-end w-full">
             <div className="flex flex-col items-end group/stat">
-              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
-              <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM</span>
+              <span className="text-xl font-black text-white tracking-tighter tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM</span>
             </div>
             <div className="flex flex-col items-end group/stat">
-              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
-              <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">KM/H</span>
+              <span className="text-xl font-black text-white tracking-tighter tabular-nums">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM/H</span>
             </div>
           </div>
-          <button className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${isOpen ? 'bg-white/10 text-text border border-white/10' : 'bg-accent text-white shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'}`} onClick={() => onToggle(trip.id)}>
+          <button className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${isOpen ? 'bg-white/10 text-white border border-white/10' : 'bg-accent text-white shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'}`} onClick={() => onToggle(trip.id)}>
             {isOpen ? "Ocultar" : "Detalhes"} {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
         </div>
       </div>
 
       {isOpen && (
-        <div className="bg-black/20 border-t border-white/5 p-10 animate-slide-down">
+        <div className="bg-surface-2/40 border-t border-border-glass-subtle p-10 animate-slide-down">
           {detailLoadingId === trip.id ? (
             <div className="flex flex-col items-center justify-center py-12 gap-5">
               <div className="w-10 h-10 rounded-full border-4 border-accent/10 border-t-accent animate-spin" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted animate-pulse">A extrair telemetria...</span>
+              <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-white/60 animate-pulse">A extrair telemetria...</span>
             </div>
           ) : (
             <div className="flex flex-col gap-10">
@@ -745,20 +746,20 @@ function TripListCard({
                   { label: "Força G Máx.", val: `${trip.maxGForce?.toFixed(2) ?? "—"}`, unit: "G", icon: <Cpu size={14} /> }
                 ].map(stat => (
                   <div key={stat.label} className="bg-white/5 border border-white/5 rounded-3xl p-6 flex flex-col gap-2 hover:border-accent/30 transition-colors shadow-inner group/mini">
-                    <div className="flex items-center gap-2 text-[0.55rem] font-black uppercase tracking-[0.15em] text-muted opacity-60">
+                    <div className="flex items-center gap-2 text-[0.55rem] font-black uppercase tracking-[0.15em] text-white/60">
                        <span className="text-accent group-hover/mini:scale-110 transition-transform">{stat.icon}</span>
                        {stat.label}
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-black text-text tracking-tighter tabular-nums">{stat.val}</span>
-                      <span className="text-[0.6rem] font-bold text-muted opacity-40 uppercase tracking-widest">{stat.unit}</span>
+                      <span className="text-3xl font-black text-white tracking-tighter tabular-nums">{stat.val}</span>
+                      <span className="text-[0.6rem] font-bold text-white/40 uppercase tracking-widest">{stat.unit}</span>
                     </div>
                   </div>
                 ))}
               </div>
               
               <Link to={`/trips/${trip.id}`} className="group/btn">
-                <button className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 py-5 rounded-2xl font-black text-sm text-text transition-all group-hover/btn:border-accent/40 shadow-xl">
+                <button className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 py-5 rounded-2xl font-black text-sm text-white transition-all group-hover/btn:border-accent/40 shadow-xl">
                   <Activity size={20} className="text-accent group-hover/btn:scale-125 transition-transform" /> Ver Relatório Pós‑Viagem Completo <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-3" />
                 </button>
               </Link>
@@ -771,12 +772,12 @@ function TripListCard({
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {trip.events.map((ev) => (
-                      <div key={ev.id} className={`flex items-center gap-5 p-5 rounded-3xl bg-black/40 border border-white/5 border-l-4 group/ev hover:bg-black/60 transition-colors ${severityColorClass(ev.severity)}`}>
+                      <div key={ev.id} className={`flex items-center gap-5 p-5 rounded-3xl bg-surface-2/50 border border-border-glass-subtle border-l-4 group/ev hover:bg-surface-2/80 transition-colors ${severityColorClass(ev.severity)}`}>
                         <span className="text-3xl group-hover/ev:scale-125 transition-transform drop-shadow-lg shrink-0">{eventTypeIcon(ev.type)}</span>
                         <div className="flex flex-col flex-1 gap-1.5 min-w-0">
                           <div className="flex justify-between items-start gap-4">
-                            <span className="text-[0.85rem] font-black text-text leading-tight truncate">{ev.message}</span>
-                            <span className="text-[0.6rem] font-black text-muted opacity-50 uppercase tracking-widest whitespace-nowrap">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
+                            <span className="text-[0.85rem] font-black text-white leading-tight truncate">{ev.message}</span>
+                            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest whitespace-nowrap">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
                           </div>
                           {ev.speedKmh != null && (
                             <div className="flex items-center gap-2 text-[0.6rem] font-black uppercase tracking-widest text-accent/60">

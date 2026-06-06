@@ -502,7 +502,7 @@
 
   /* Premium Moto Cards Utilities */
   .moto-card-bg {
-    @apply absolute right-[-20%] bottom-[-10%] h-[120%] opacity-[0.15] object-contain drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.15] group-hover:-translate-x-2 pointer-events-none;
+    @apply absolute inset-0 w-full h-full object-cover drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none;
   }
   
   .card-centered {

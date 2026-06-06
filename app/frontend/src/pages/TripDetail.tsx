@@ -544,7 +544,7 @@ export default function TripDetail() {
           
           <div className="flex gap-6 relative z-10 items-center">
             {trip.safetyScore != null && (
-              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+              <div className="bg-surface border border-border-glass p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.safetyScore >= 80 ? 'INFO' : (trip.safetyScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.safetyScore}
@@ -553,7 +553,7 @@ export default function TripDetail() {
               </div>
             )}
             {trip.performanceScore != null && (
-              <div className="bg-black/40 backdrop-blur-lg border border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
+              <div className="bg-surface border border-border-glass p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
                 <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Performance</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.performanceScore >= 80 ? 'INFO' : (trip.performanceScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.performanceScore}
