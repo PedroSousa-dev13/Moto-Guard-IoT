@@ -106,7 +106,8 @@ export async function exportChartsPng(container: HTMLElement, filename = "analyt
   }
 
   // Intercept window.getComputedStyle to translate any Tailwind v4 computed oklab/oklch colors
-  // into standard high-fidelity Hex/RGBA colors supported by html2canvas's Color.parse engine.
+  // into standard high-fidelity Hex/RGBA colors supported by html2canvas's Color.parse engine,
+  // and handle Recharts SVG gradient references by resolving them directly to solid colors.
   window.getComputedStyle = function(elt, pseudoElt) {
     const style = originalGetComputedStyle.call(window, elt, pseudoElt);
     return new Proxy(style, {
@@ -115,26 +116,46 @@ export async function exportChartsPng(container: HTMLElement, filename = "analyt
         // on CSSStyleDeclaration require their 'this' context to be the raw native target object.
         // Passing the receiver throws 'TypeError: Illegal invocation' in many modern browsers.
         const val = Reflect.get(target, prop);
-        if (typeof val === "string" && (val.includes("oklab") || val.includes("oklch"))) {
+        if (typeof val === "string") {
+          if (val.includes("oklab") || val.includes("oklch")) {
+            const propStr = String(prop);
+            if (propStr === "color") {
+              return "#ffffff"; // Text fallback
+            }
+            if (propStr === "backgroundColor") {
+              return "rgba(13, 13, 27, 0.6)"; // Standard glass surface background
+            }
+            if (propStr.includes("Color")) {
+              return "rgba(255, 255, 255, 0.08)"; // Standard glass border color
+            }
+            if (propStr === "fill" || propStr === "stroke") {
+              return "#8b5cf6"; // Core brand accent purple color
+            }
+            return "rgba(255, 255, 255, 0.1)"; // Safe generic glass translucent fallback
+          }
+
           const propStr = String(prop);
-          if (propStr === "color") {
-            return "#ffffff"; // Text fallback
+          if (propStr === "fill" || propStr === "fill-opacity" || propStr === "fillOpacity") {
+            if (val.includes("colorDist")) {
+              return propStr === "fill" ? "#8b5cf6" : "0.25";
+            }
+            if (val.includes("colorSpeed")) {
+              return propStr === "fill" ? "#0ea5e9" : "0.25";
+            }
+            if (val.includes("colorTrips")) {
+              if (propStr === "fill") return "#6366f1";
+              return elt.tagName.toLowerCase() === "path" ? "0.6" : "1.0";
+            }
           }
-          if (propStr === "backgroundColor") {
-            return "rgba(13, 13, 27, 0.6)"; // Standard glass surface background
-          }
-          if (propStr.includes("Color")) {
-            return "rgba(255, 255, 255, 0.08)"; // Standard glass border color
-          }
-          if (propStr === "fill" || propStr === "stroke") {
-            return "#8b5cf6"; // Core brand accent purple color
-          }
-          return "rgba(255, 255, 255, 0.1)"; // Safe generic glass translucent fallback
         }
         return typeof val === "function" ? val.bind(target) : val;
       }
     });
   };
+
+  const rect = container.getBoundingClientRect();
+  const width = Math.ceil(rect.width);
+  const height = Math.ceil(rect.height);
 
   try {
     const canvas = await html2canvas(container, {
@@ -144,17 +165,16 @@ export async function exportChartsPng(container: HTMLElement, filename = "analyt
       backgroundColor: "#06060c", // Maintain MotoGuard IoT dark aesthetic background
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 1754, // Force spacious premium landscape A3 width in the virtual document
-      windowHeight: 1240, // Force spacious premium landscape A3 height in the virtual document
+      windowWidth: width,
+      windowHeight: height,
       onclone: (clonedDoc) => {
-        // Find the cloned container element and force it to match A3 landscape dimensions!
-        // This ensures the exported dashboard is always a spacious, balanced, high-resolution document.
+        // Find the cloned container element and force it to match the original rendered dimensions.
+        // This ensures the exported dashboard matches the on-screen layout exactly without distortion.
         const clonedContainer = clonedDoc.querySelector(".html2canvas-export") as HTMLElement;
         if (clonedContainer) {
           clonedContainer.style.margin = "0";
-          clonedContainer.style.padding = "40px";
-          clonedContainer.style.width = "1674px"; // 1754px - 80px (horizontal padding)
-          clonedContainer.style.minHeight = "1160px"; // 1240px - 80px (vertical padding)
+          clonedContainer.style.width = `${width}px`;
+          clonedContainer.style.height = `${height}px`;
           clonedContainer.style.boxSizing = "border-box";
         }
 
@@ -164,27 +184,28 @@ export async function exportChartsPng(container: HTMLElement, filename = "analyt
           grad.parentNode?.removeChild(grad);
         });
 
-        // Find elements with gradient fills and replace with solid fallbacks
-        const clonedAreas = clonedDoc.querySelectorAll("path[fill^='url(#color']");
-        clonedAreas.forEach((area) => {
-          const fillAttr = area.getAttribute("fill");
-          if (fillAttr?.includes("colorDist")) {
-            area.setAttribute("fill", "#8b5cf6");
-            area.setAttribute("fill-opacity", "0.25");
-          } else if (fillAttr?.includes("colorSpeed")) {
-            area.setAttribute("fill", "#0ea5e9");
-            area.setAttribute("fill-opacity", "0.25");
-          } else if (fillAttr?.includes("colorTrips")) {
-            area.setAttribute("fill", "#6366f1");
-            area.setAttribute("fill-opacity", "0.6");
-          }
-        });
-
-        const clonedBars = clonedDoc.querySelectorAll("rect[fill^='url(#color']");
-        clonedBars.forEach((bar) => {
-          const fillAttr = bar.getAttribute("fill");
-          if (fillAttr?.includes("colorTrips")) {
-            bar.setAttribute("fill", "#6366f1");
+        // Find elements with gradient fills and replace with solid fallbacks (attributes + styles)
+        clonedDoc.querySelectorAll("path, rect").forEach((el: any) => {
+          const fillAttr = el.getAttribute("fill") || el.style.fill;
+          if (fillAttr) {
+            if (fillAttr.includes("colorDist")) {
+              el.setAttribute("fill", "#8b5cf6");
+              el.style.fill = "#8b5cf6";
+              el.setAttribute("fill-opacity", "0.25");
+              el.style.fillOpacity = "0.25";
+            } else if (fillAttr.includes("colorSpeed")) {
+              el.setAttribute("fill", "#0ea5e9");
+              el.style.fill = "#0ea5e9";
+              el.setAttribute("fill-opacity", "0.25");
+              el.style.fillOpacity = "0.25";
+            } else if (fillAttr.includes("colorTrips")) {
+              el.setAttribute("fill", "#6366f1");
+              el.style.fill = "#6366f1";
+              if (el.tagName.toLowerCase() === "path") {
+                el.setAttribute("fill-opacity", "0.6");
+                el.style.fillOpacity = "0.6";
+              }
+            }
           }
         });
 

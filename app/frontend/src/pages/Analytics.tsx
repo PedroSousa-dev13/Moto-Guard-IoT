@@ -654,7 +654,7 @@ export default function Analytics() {
                               stroke="#8b5cf6" 
                               strokeWidth={4}
                               fillOpacity={1}
-                              fill="url(#colorDist)"
+                              fill={`url(${window.location.pathname}#colorDist)`}
                               name="Distância (km)" 
                               animationDuration={1500}
                               isAnimationActive={!exporting}
@@ -662,7 +662,7 @@ export default function Analytics() {
                             <Bar 
                               yAxisId="right"
                               dataKey="tripCount" 
-                              fill="url(#colorTrips)" 
+                              fill={`url(${window.location.pathname}#colorTrips)`} 
                               radius={[6, 6, 0, 0]}
                               name="Nº Viagens" 
                               barSize={24}
@@ -1054,7 +1054,7 @@ function AreaChartWrapper({ data, isAnimationActive }: { data: Array<{ t: number
           stroke="#0ea5e9" 
           strokeWidth={4}
           fillOpacity={1}
-          fill="url(#colorSpeed)"
+          fill={`url(${window.location.pathname}#colorSpeed)`}
           name="Vel. Média" 
           animationDuration={1500}
           isAnimationActive={isAnimationActive}

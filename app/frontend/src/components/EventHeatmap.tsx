@@ -146,6 +146,17 @@ export default function EventHeatmap({ defaultEventType }: Props) {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [radius, setRadius] = useState(35);
 
+  const pointsRef = useRef<{ lat: number; lng: number; weight: number }[]>([]);
+  const layerRef = useRef<any>(null);
+  const showHeatmapRef = useRef(showHeatmap);
+  const radiusRef = useRef(radius);
+
+  // Sync state refs so they are always up-to-date in Leaflet event handlers without closure issues
+  useEffect(() => {
+    showHeatmapRef.current = showHeatmap;
+    radiusRef.current = radius;
+  }, [showHeatmap, radius]);
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -215,37 +226,51 @@ export default function EventHeatmap({ defaultEventType }: Props) {
         (m.getPanes().overlayPane as HTMLElement).appendChild(canvas);
         canvasRef.current = canvas;
         this._map = m;
-        this._resizeListener = () => this._resize();
-        this._resize();
-        m.on("moveend zoomend resize", this._resizeListener);
+        this._updateListener = () => this._update();
+        m.on("viewreset moveend zoomend resize", this._updateListener);
+        this._update();
       },
       onRemove(m: L.Map) {
         canvasRef.current?.remove();
-        if (this._resizeListener) {
+        if (this._updateListener) {
           try {
-            m.off("moveend zoomend resize", this._resizeListener);
+            m.off("viewreset moveend zoomend resize", this._updateListener);
           } catch (e) {
             // ignore
           }
         }
       },
-      _resize() {
+      _update() {
         try {
           if (!this._map || !(this._map as any)._loaded || !this._map.getContainer()) {
             return;
           }
-          const size = this._map.getSize();
-          if (canvasRef.current) {
-            canvasRef.current.width = size.x;
-            canvasRef.current.height = size.y;
+          const map = this._map;
+          const size = map.getSize();
+          const canvas = canvasRef.current;
+          if (canvas) {
+            canvas.width = size.x;
+            canvas.height = size.y;
+            
+            const topLeft = map.containerPointToLayerPoint([0, 0]);
+            L.DomUtil.setPosition(canvas, topLeft);
+            
+            if (showHeatmapRef.current) {
+              drawHeatmap(canvas, map, pointsRef.current, radiusRef.current);
+            } else {
+              const ctx = canvas.getContext("2d");
+              ctx?.clearRect(0, 0, canvas.width, canvas.height);
+            }
           }
         } catch (e) {
-          // ignore getSize() issues on unmount
+          // ignore
         }
       },
     });
 
-    new (CanvasLayer as any)().addTo(map);
+    const layer = new (CanvasLayer as any)();
+    layer.addTo(map);
+    layerRef.current = layer;
     markersLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
@@ -259,43 +284,13 @@ export default function EventHeatmap({ defaultEventType }: Props) {
   }, []);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const canvas = canvasRef.current;
-    if (!map || !canvas || !(map as any)._loaded) return;
-
     const geoEvents = events.filter((e) => e.latitude != null && e.longitude != null);
-
-    if (showHeatmap) {
-      const points = geoEvents.map((e) => ({
-        lat: e.latitude!,
-        lng: e.longitude!,
-        weight: e.severity === "CRITICAL" ? 1 : e.severity === "WARNING" ? 0.6 : 0.3,
-      }));
-      drawHeatmap(canvas, map, points, radius);
-
-      const redraw = () => {
-        try {
-          if ((map as any)._loaded) {
-            drawHeatmap(canvas, map, points, radius);
-          }
-        } catch (e) {
-          // ignore
-        }
-      };
-      map.on("moveend zoomend", redraw);
-      return () => {
-        try {
-          if ((map as any)._loaded) {
-            map.off("moveend zoomend", redraw);
-          }
-        } catch (err) {
-          // ignore
-        }
-      };
-    } else {
-      const ctx = canvas.getContext("2d");
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    pointsRef.current = geoEvents.map((e) => ({
+      lat: e.latitude!,
+      lng: e.longitude!,
+      weight: e.severity === "CRITICAL" ? 1 : e.severity === "WARNING" ? 0.6 : 0.3,
+    }));
+    layerRef.current?._update();
   }, [events, showHeatmap, radius]);
 
   useEffect(() => {
