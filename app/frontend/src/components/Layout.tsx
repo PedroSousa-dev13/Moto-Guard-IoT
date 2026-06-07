@@ -36,7 +36,13 @@ const Layout: FC<LayoutProps> = ({ children }) => {
     } catch {}
   }, [sidebarCollapsed]);
 
-  const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      window.dispatchEvent(new CustomEvent('motoguard_sidebar_toggle', { detail: { collapsed: next } }));
+      return next;
+    });
+  };
 
   if (!isAuthenticated && !isDemoMode) {
     return (

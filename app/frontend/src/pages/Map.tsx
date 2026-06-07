@@ -349,6 +349,7 @@ export default function Map() {
     };
     sendCommand(cmd);
     localStorage.setItem('sim_route', JSON.stringify(cmd.route));
+    window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: true } }));
     setSent(true);
     setTimeout(() => navigate('/simulator-contexts'), 800);
   }
@@ -365,6 +366,7 @@ export default function Map() {
     };
     sendCommand(cmd);
     localStorage.setItem('sim_route', JSON.stringify(cmd.route));
+    window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: true } }));
     setCustomSent(true);
     setTimeout(() => navigate('/simulator-contexts'), 800);
   }
@@ -425,6 +427,7 @@ export default function Map() {
     setGpxSending(true);
     sendCommand({ acao: 'definir_rota', route: gpxRoute.simulatorRoute });
     localStorage.setItem('sim_route', JSON.stringify(gpxRoute.simulatorRoute));
+    window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: true } }));
     setGpxSent(true);
     setTimeout(() => { setGpxSending(false); navigate('/simulator-contexts'); }, 800);
   }

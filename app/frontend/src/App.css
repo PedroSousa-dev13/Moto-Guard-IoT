@@ -70,6 +70,26 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+
+  /* Simulator Player Bar Colors (Dark Theme) */
+  --player-bar-bg: #0c0b16;
+  --player-bar-border: rgba(167, 139, 250, 0.25);
+  --player-bar-shadow: 0 12px 45px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  --player-bar-text: #ffffff;
+  --player-bar-text-muted: #8f8ca8;
+  --player-bar-btn-bg: #161426;
+  --player-bar-btn-border: #2c274c;
+  --player-bar-btn-hover-bg: rgba(255, 255, 255, 0.05);
+  --player-bar-btn-disabled-bg: rgba(255, 255, 255, 0.02);
+  --player-bar-btn-disabled-border: #2c274c;
+  --player-bar-btn-disabled-text: rgba(255, 255, 255, 0.2);
+  --player-bar-select-bg: #131128;
+  --player-bar-select-border: #362b66;
+  --player-bar-select-option-bg: #120f23;
+  --player-bar-separator: rgba(255, 255, 255, 0.1);
+  --player-bar-console-bg: rgba(11, 8, 22, 0.95);
+  --player-bar-console-border: rgba(255, 255, 255, 0.06);
+  --player-bar-console-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="light"] {
@@ -90,6 +110,26 @@
   --glass-blur: blur(12px);
   --panel-bg-subtle: rgba(15, 23, 42, 0.03);
   --panel-bg-hover: rgba(15, 23, 42, 0.06);
+
+  /* Simulator Player Bar Colors (Light Theme) */
+  --player-bar-bg: #ffffff;
+  --player-bar-border: rgba(99, 102, 241, 0.25);
+  --player-bar-shadow: 0 12px 45px rgba(15, 23, 42, 0.05), 0 0 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --player-bar-text: #0f172a;
+  --player-bar-text-muted: #64748b;
+  --player-bar-btn-bg: #f1f5f9;
+  --player-bar-btn-border: rgba(15, 23, 42, 0.08);
+  --player-bar-btn-hover-bg: rgba(15, 23, 42, 0.06);
+  --player-bar-btn-disabled-bg: rgba(0, 0, 0, 0.02);
+  --player-bar-btn-disabled-border: rgba(15, 23, 42, 0.08);
+  --player-bar-btn-disabled-text: rgba(0, 0, 0, 0.2);
+  --player-bar-select-bg: #ffffff;
+  --player-bar-select-border: rgba(15, 23, 42, 0.12);
+  --player-bar-select-option-bg: #ffffff;
+  --player-bar-separator: rgba(15, 23, 42, 0.1);
+  --player-bar-console-bg: rgba(255, 255, 255, 0.95);
+  --player-bar-console-border: rgba(15, 23, 42, 0.08);
+  --player-bar-console-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
 }
 
 @layer base {
@@ -511,6 +551,91 @@
   
   .badge-row {
     @apply flex flex-wrap gap-2 items-center;
+  }
+
+  /* Simulator Player Bar Theme Styles */
+  .player-bar-container {
+    background-color: var(--player-bar-bg);
+    border-color: var(--player-bar-border);
+    box-shadow: var(--player-bar-shadow);
+    color: var(--player-bar-text);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .player-bar-text-muted {
+    color: var(--player-bar-text-muted);
+  }
+
+  .player-bar-btn {
+    background-color: var(--player-bar-btn-bg) !important;
+    border-color: var(--player-bar-btn-border) !important;
+    color: var(--player-bar-text-muted) !important;
+    transition: all 0.2s ease;
+  }
+
+  .player-bar-btn:hover:not(:disabled) {
+    background-color: var(--player-bar-btn-hover-bg) !important;
+    color: var(--player-bar-text) !important;
+  }
+
+  .player-bar-btn:disabled {
+    background-color: var(--player-bar-btn-disabled-bg) !important;
+    border-color: var(--player-bar-btn-disabled-border) !important;
+    color: var(--player-bar-btn-disabled-text) !important;
+    opacity: 1 !important;
+  }
+
+  .player-bar-select {
+    background-color: var(--player-bar-select-bg) !important;
+    border-color: var(--player-bar-select-border) !important;
+    color: var(--player-bar-text) !important;
+    transition: all 0.2s ease;
+  }
+
+  .player-bar-select:focus {
+    border-color: var(--accent) !important;
+  }
+
+  .player-bar-select option {
+    background-color: var(--player-bar-select-option-bg) !important;
+    color: var(--player-bar-text) !important;
+  }
+
+  .player-bar-separator {
+    background-color: var(--player-bar-separator) !important;
+  }
+
+  .player-bar-console {
+    background-color: var(--player-bar-console-bg);
+    border-color: var(--player-bar-console-border);
+    box-shadow: var(--player-bar-console-shadow);
+  }
+
+  /* Custom outlines for Play and Stop buttons in Light Mode to ensure visibility */
+  [data-theme="light"] .player-bar-btn-play-active {
+    border: 1px solid var(--accent) !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  [data-theme="light"] .player-bar-btn-play-disabled {
+    border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  }
+
+  [data-theme="light"] .player-bar-btn-stop-active {
+    border: 1px solid rgba(15, 23, 42, 0.25) !important;
+  }
+
+  [data-theme="light"] .player-bar-btn-stop-disabled {
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  }
+
+  /* Play icon dynamic theme colors */
+  .player-bar-play-icon {
+    color: #8b5cf6 !important;
+  }
+
+  [data-theme="light"] .player-bar-play-icon {
+    color: #000000 !important;
   }
 }
 

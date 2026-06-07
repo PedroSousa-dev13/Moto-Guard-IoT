@@ -9,7 +9,7 @@ import TempVoltCard from "../components/TempVoltCard";
 import IMUCard from "../components/IMUCard";
 import MapCard from "../components/MapCard";
 import StatusCard from "../components/StatusCard";
-import CommandPanel from "../components/CommandPanel";
+import SimulatorPlayerBar from "../components/SimulatorPlayerBar";
 import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
 import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
@@ -189,7 +189,7 @@ export default function SimulatorContexts() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-10">
+    <div className="flex flex-col gap-8 animate-fade-in pb-4">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
@@ -285,38 +285,24 @@ export default function SimulatorContexts() {
           />
         </div>
 
-        {/* COMMAND CENTER */}
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-surface/60 backdrop-blur-xl border border-border-glass shadow-2xl group animate-fade-in [animation-delay:400ms]">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50" />
-          <div className="p-1">
-            <CommandPanel
-              sendCommand={sendCommandAndSignal}
-              addLog={addLog}
-              logs={logs}
-              running={running}
-              allowedModels={allowedModels}
-              onStop={() => {
-                setToast({ message: "Simulação terminada", type: "success" });
-                setMapResetSignal((v) => v + 1);
-                resetSimulationView(false);
-              }}
-            />
-          </div>
-        </div>
+
       </div>
 
-      {/* FOOTER STATS */}
-      <div className="flex items-center justify-center gap-10 px-8 py-4 rounded-2xl bg-panel border border-border-glass-subtle shadow-inner shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Pacotes Recebidos</span>
-          <span className="text-sm font-black text-text tracking-tight tabular-nums">{msgCount.toLocaleString()}</span>
-        </div>
-        <div className="w-px h-4 bg-border-glass-subtle" />
-        <div className="flex items-center gap-2">
-          <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Última Transmissão</span>
-          <span className="text-sm font-black text-accent tracking-tight uppercase">{lastUpdate ?? "A AGUARDAR..."}</span>
-        </div>
-      </div>
+      {/* PLAYER BAR (fixed bottom) */}
+      <SimulatorPlayerBar
+        sendCommand={sendCommandAndSignal}
+        addLog={addLog}
+        logs={logs}
+        running={running}
+        allowedModels={allowedModels}
+        telemetry={telemetry}
+        msgCount={msgCount}
+        onStop={() => {
+          setToast({ message: "Simulação terminada", type: "success" });
+          setMapResetSignal((v) => v + 1);
+          resetSimulationView(false);
+        }}
+      />
 
       {toast && (
         <Toast

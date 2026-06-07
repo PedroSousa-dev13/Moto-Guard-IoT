@@ -286,6 +286,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
     setRouteStart(null);
     setRouteEnd(null);
     localStorage.removeItem("sim_route");
+    window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: false } }));
     if (trailRef.current) {
       trailPointsRef.current = [];
       trailRef.current.setLatLngs([]);
@@ -305,6 +306,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
         loop: false,
       })
     );
+    window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: true } }));
     sendCommand({
       acao: "definir_rota",
       route: {
@@ -436,6 +438,7 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
               onClick={() => {
                 sendCommand({ acao: "reset_rota" });
                 localStorage.removeItem("sim_route");
+                window.dispatchEvent(new CustomEvent('motoguard_route_changed', { detail: { hasRoute: false } }));
                 clearRouteSelection();
               }}
             >
