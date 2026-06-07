@@ -4,6 +4,7 @@ import { formatTime } from "./utils";
 
 export interface CsvDropzoneProps {
   onParsed: (result: ParseResult) => void;
+  className?: string;
 }
 
 function isParseError(result: ParseResult | ParseError): result is ParseError {
@@ -25,7 +26,7 @@ function describeParseError(error: ParseError): string {
   }
 }
 
-export default function CsvDropzone({ onParsed }: CsvDropzoneProps) {
+export default function CsvDropzone({ onParsed, className }: CsvDropzoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function CsvDropzone({ onParsed }: CsvDropzoneProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 h-full ${className || ""}`}>
       {/* Drop zone */}
       <div
         onDrop={handleDrop}
@@ -89,7 +90,7 @@ export default function CsvDropzone({ onParsed }: CsvDropzoneProps) {
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
         aria-label="Zona de importação de CSV. Clique ou arraste um ficheiro .csv"
-        className={`flex flex-col items-center justify-center gap-4 p-10 border-2 border-dashed rounded-[2rem] transition-all outline-none cursor-pointer ${
+        className={`flex-1 flex flex-col items-center justify-center gap-4 p-10 border-2 border-dashed rounded-[2rem] transition-all outline-none cursor-pointer ${
           isDragOver 
             ? "bg-accent/10 border-accent shadow-lg shadow-accent/5 scale-[1.01]" 
             : error 

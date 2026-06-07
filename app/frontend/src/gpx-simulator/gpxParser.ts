@@ -339,6 +339,40 @@ export function parseGPX(
     };
   }
 
+  // Synthesize timestamps if they are missing in the GPX file (e.g. planned route files without tracking)
+  const hasTimestampsOriginal = trackpoints.some((pt) => pt.time !== null);
+  if (!hasTimestampsOriginal) {
+    const now = new Date();
+    trackpoints[0].time = now;
+    
+    let prevBearing = 0;
+    for (let i = 1; i < trackpoints.length; i++) {
+      const prev = trackpoints[i - 1];
+      const curr = trackpoints[i];
+      
+      const distanceM = haversineDistance(prev.lat, prev.lon, curr.lat, curr.lon);
+      
+      // Calculate bearing change
+      const bearing = calculateBearing(prev.lat, prev.lon, curr.lat, curr.lon);
+      let bearingChange = 0;
+      if (i > 1) {
+        bearingChange = bearing - prevBearing;
+        if (bearingChange > 180) bearingChange -= 360;
+        if (bearingChange < -180) bearingChange += 360;
+      }
+      prevBearing = bearing;
+      
+      // Dynamic target speed (km/h): slow down in curves, speed up on straights
+      const targetSpeedKmh = Math.max(20, Math.min(80, 60 - Math.abs(bearingChange) * 1.5));
+      const targetSpeedMs = targetSpeedKmh / 3.6;
+      
+      // Calculate time delta in seconds (minimum 0.5s to ensure sequential updates)
+      const dt = distanceM > 0 ? Math.max(0.5, distanceM / targetSpeedMs) : 1.0;
+      
+      curr.time = new Date(prev.time!.getTime() + dt * 1000);
+    }
+  }
+
   const hasTimestamps = trackpoints.some((pt) => pt.time !== null);
   if (!hasTimestamps) {
     return {

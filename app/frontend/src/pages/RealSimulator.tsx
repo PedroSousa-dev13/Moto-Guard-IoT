@@ -347,11 +347,16 @@ export default function RealSimulator() {
         <p className="text-[0.6rem] font-black text-muted uppercase tracking-[0.25em] opacity-40">Análise de telemetria sincronizada com vídeo</p>
       </div>
 
-      {/* TOP SOURCE BAR (Clean) */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch">
-        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex-1 flex items-center justify-between group">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent/60 group-hover:text-accent group-hover:bg-accent/10 transition-all">
+      {/* TOP CONTROL GRID (Left: CsvDropzone + File Status, Center: Video Player, Right: Map) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_1fr] xl:grid-cols-[300px_1.2fr_1fr] gap-6 items-stretch">
+        {/* COL 1: CSV IMPORT & STATUS */}
+        <div className="flex flex-col gap-4">
+          <div className="flex-1 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-4 flex flex-col justify-center min-h-[280px]">
+            <CsvDropzone onParsed={handleCsvParsed} />
+          </div>
+          
+          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent">
               <Activity size={18} />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -359,102 +364,84 @@ export default function RealSimulator() {
               <span className="text-xs font-bold text-white/80">{hasRows ? "Telemetria Ativa" : "Aguardando CSV..."}</span>
             </div>
           </div>
-          <CsvDropzone onParsed={handleCsvParsed} compact />
-        </div>
-        
-        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex items-center gap-6 group hover:border-border-glass transition-all">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Duração Total</span>
-            <span className="text-xs font-black text-white/80 tabular-nums">{totalDurationSec.toFixed(1)}s</span>
-          </div>
-          <div className="w-px h-6 bg-white/5" />
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Estado</span>
-            <span className="text-xs font-black text-green/80 uppercase tracking-tight">{simSession.playbackState === "playing" ? "Reproduzindo" : "Parado"}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3-COLUMN PREMIUM DASHBOARD */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_340px_1fr] gap-6 items-stretch min-h-[600px]">
-        {/* COL 1: MOTOR & VELOCIDADE */}
-        <div className="flex flex-col gap-6">
-          <GaugeCard data={telemetryData} sources={telemetrySources} />
-          <IMUCard data={imuData} sources={telemetrySources} />
         </div>
 
-        {/* COL 2: SAÚDE & METADADOS */}
-        <div className="flex flex-col gap-6">
-          <TempVoltCard telemetry={telemetryData} health={healthData} sources={telemetrySources} />
-          
-          {/* Metadata Card (Premium) */}
-          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
-            <div className="flex flex-col gap-1">
-              <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest opacity-40">Metadados do Percurso</span>
-              <div className="mt-4 grid grid-cols-1 gap-4">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Origem</span>
-                  <span className="font-black text-white/80">{sourceFormat === "riderdata" ? "RiderData" : "CSV Genérico"}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Frequência</span>
-                  <span className="font-black text-white/80">10 Hz</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Progresso</span>
-                  <span className="font-black text-white/80 tabular-nums">{(currentTimeSec / totalDurationSec * 100 || 0).toFixed(0)}%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green" />
-                <span className="text-[0.5rem] font-black text-muted uppercase">Original</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue" />
-                <span className="text-[0.5rem] font-black text-muted uppercase">Simulado</span>
-              </div>
-            </div>
-          </div>
+        {/* COL 2: VIDEO PLAYER */}
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[380px] flex flex-col justify-center">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
+          <VideoPlayer
+            videoFile={simSession.videoFile}
+            videoRef={videoRef}
+            onFileSelect={handleVideoFileSelect}
+          />
         </div>
 
-        {/* COL 3: MAPA & VÍDEO */}
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1">
-            <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[400px]">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
-              <RouteMap
-                gpsTrack={gpsTrack}
-                currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
-              />
-              {!hasRows && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
-                  <div className="text-5xl grayscale opacity-20">🗺️</div>
-                  <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega telemetria para ver o percurso</p>
-                </div>
-              )}
-            </div>
-
-            <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[400px]">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red/0 via-red/40 to-red/0 opacity-50 z-10" />
-              <VideoPlayer
-                videoFile={simSession.videoFile}
-                videoRef={videoRef}
-                onFileSelect={handleVideoFileSelect}
-              />
-            </div>
-          </div>
-
-          {socketError && (
-            <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
-              <AlertTriangle size={18} />
-              <span>{socketError}</span>
+        {/* COL 3: MAP */}
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[380px]">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
+          <RouteMap
+            gpsTrack={gpsTrack}
+            currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
+          />
+          {!hasRows && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+              <div className="text-5xl grayscale opacity-20">🗺️</div>
+              <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega telemetria para ver o percurso</p>
             </div>
           )}
         </div>
+      </div>
+
+      {socketError && (
+        <div className="p-4 rounded-2xl bg-red/10 border border-red/20 text-red text-xs font-bold flex items-center gap-3 animate-shake">
+          <AlertTriangle size={18} />
+          <span>{socketError}</span>
+        </div>
+      )}
+
+      {/* HUD CARDS SECTION */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+        {/* METADADOS DO PERCURSO */}
+        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-[2rem] p-6 flex flex-col justify-between relative overflow-hidden group min-h-[280px]">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue/0 via-blue/40 to-blue/0 opacity-50" />
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest opacity-40">Metadados do Percurso</span>
+            <div className="mt-6 flex flex-col gap-4">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Origem</span>
+                <span className="font-black text-white/80">{sourceFormat === "riderdata" ? "RiderData" : "CSV Genérico"}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Frequência</span>
+                <span className="font-black text-white/80">10 Hz</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-muted opacity-40 uppercase text-[0.5rem]">Progresso</span>
+                <span className="font-black text-white/80 tabular-nums">{(currentTimeSec / totalDurationSec * 100 || 0).toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between w-full">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green" />
+              <span className="text-[0.5rem] font-black text-muted uppercase">Original</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue" />
+              <span className="text-[0.5rem] font-black text-muted uppercase">Simulado</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SAÚDE & FLUIDOS */}
+        <TempVoltCard telemetry={telemetryData} health={healthData} sources={telemetrySources} />
+
+        {/* IMU - INÉRCIA */}
+        <IMUCard data={imuData} sources={telemetrySources} />
+
+        {/* MOTOR & VELOCIDADE */}
+        <GaugeCard data={telemetryData} sources={telemetrySources} />
       </div>
 
       {/* PLAYBACK CONTROLS */}
