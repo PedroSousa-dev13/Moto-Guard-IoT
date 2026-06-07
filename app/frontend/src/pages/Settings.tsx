@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, ReactNode, FormEvent } from "react";
+import { useEffect, useMemo, useState, ReactNode, FormEvent, useRef } from "react";
 import Card from "../components/ui/Card";
 import { useAuth } from "../hooks/useAuth";
 import { useI18n } from "../i18n";
@@ -15,10 +15,350 @@ type Tab = "prefs" | "alerts" | "thresholds" | "about";
 
 interface Msg { type: "success" | "error"; text: string }
 
+// Helper converters
+const kmhToMph = (kmh: number) => Math.round(kmh * 0.621371);
+const mphToKmh = (mph: number) => Math.round(mph / 0.621371);
+const cToF = (c: number) => Math.round(c * 1.8 + 32);
+const fToC = (f: number) => Math.round((f - 32) / 1.8);
+
+interface ThresholdRegulatorProps {
+  title: string;
+  icon: ReactNode;
+  category: "speed" | "gforce" | "roll" | "temp";
+  unit: "metric" | "imperial";
+  warnValue: number; // always stored in metric
+  critValue: number; // always stored in metric
+  onChange: (warn: number, crit: number) => void;
+}
+
+function ThresholdRegulator({
+  title,
+  icon,
+  category,
+  unit,
+  warnValue,
+  critValue,
+  onChange,
+}: ThresholdRegulatorProps) {
+  const isImperial = unit === "imperial";
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // 1. Define bounds & steps depending on category and unit
+  let trackMin = 0;
+  let trackMax = 100;
+  let step = 1;
+  let unitLabel = "";
+
+  // display values (converted if imperial)
+  let displayWarn = warnValue;
+  let displayCrit = critValue;
+
+  if (category === "speed") {
+    trackMin = isImperial ? 35 : 60;
+    trackMax = isImperial ? 185 : 300;
+    step = 5;
+    unitLabel = isImperial ? "mph" : "km/h";
+    displayWarn = isImperial ? kmhToMph(warnValue) : warnValue;
+    displayCrit = isImperial ? kmhToMph(critValue) : critValue;
+  } else if (category === "temp") {
+    trackMin = isImperial ? 140 : 60;
+    trackMax = isImperial ? 390 : 200;
+    step = 5;
+    unitLabel = isImperial ? "°F" : "°C";
+    displayWarn = isImperial ? cToF(warnValue) : warnValue;
+    displayCrit = isImperial ? cToF(critValue) : critValue;
+  } else if (category === "gforce") {
+    trackMin = 0.1;
+    trackMax = 5.0;
+    step = 0.05;
+    unitLabel = "G";
+  } else if (category === "roll") {
+    trackMin = 10;
+    trackMax = 90;
+    step = 1;
+    unitLabel = "°";
+  }
+
+  // 2. Keep local states for inputs so users can type freely
+  const [inputWarn, setInputWarn] = useState(String(displayWarn));
+  const [inputCrit, setInputCrit] = useState(String(displayCrit));
+
+  // Sync inputs with display values when props change
+  useEffect(() => {
+    setInputWarn(String(displayWarn));
+  }, [displayWarn]);
+
+  useEffect(() => {
+    setInputCrit(String(displayCrit));
+  }, [displayCrit]);
+
+  const updateValues = (newDisplayWarn: number, newDisplayCrit: number, lastModified: "warn" | "crit") => {
+    let w = Math.max(trackMin, Math.min(trackMax, newDisplayWarn));
+    let c = Math.max(trackMin, Math.min(trackMax, newDisplayCrit));
+
+    // Round values to correct decimal places before comparing to avoid JS float precision bugs
+    if (category === "gforce") {
+      w = Math.round(w * 100) / 100;
+      c = Math.round(c * 100) / 100;
+    } else {
+      w = Math.round(w);
+      c = Math.round(c);
+    }
+
+    // Co-dependency constraints (strict unequal checks)
+    if (lastModified === "warn" && w > c) {
+      c = w;
+    } else if (lastModified === "crit" && c < w) {
+      w = c;
+    }
+
+    // Calculate final metric values without introducing round-trip drift to the unchanged field
+    let metricWarn: number;
+    let metricCrit: number;
+
+    if (lastModified === "warn") {
+      if (isImperial) {
+        if (category === "speed") {
+          metricWarn = mphToKmh(w);
+        } else if (category === "temp") {
+          metricWarn = fToC(w);
+        } else {
+          metricWarn = w;
+        }
+      } else {
+        metricWarn = w;
+      }
+
+      // If Critical was pushed, match the metric value. Otherwise preserve the exact original value
+      if (c === w) {
+        metricCrit = metricWarn;
+      } else {
+        metricCrit = critValue;
+      }
+    } else {
+      if (isImperial) {
+        if (category === "speed") {
+          metricCrit = mphToKmh(c);
+        } else if (category === "temp") {
+          metricCrit = fToC(c);
+        } else {
+          metricCrit = c;
+        }
+      } else {
+        metricCrit = c;
+      }
+
+      // If Warning was pushed, match the metric value. Otherwise preserve the exact original value
+      if (w === c) {
+        metricWarn = metricCrit;
+      } else {
+        metricWarn = warnValue;
+      }
+    }
+
+    onChange(metricWarn, metricCrit);
+  };
+
+  const handleInputChange = (val: string, type: "warn" | "crit") => {
+    if (type === "warn") {
+      setInputWarn(val);
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed)) {
+        updateValues(parsed, displayCrit, "warn");
+      }
+    } else {
+      setInputCrit(val);
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed)) {
+        updateValues(displayWarn, parsed, "crit");
+      }
+    }
+  };
+
+  const handleInputBlur = (type: "warn" | "crit") => {
+    const raw = type === "warn" ? parseFloat(inputWarn) : parseFloat(inputCrit);
+    if (isNaN(raw)) {
+      if (type === "warn") setInputWarn(String(displayWarn));
+      else setInputCrit(String(displayCrit));
+      return;
+    }
+
+    const clamped = Math.max(trackMin, Math.min(trackMax, raw));
+    const stepped = Math.round(clamped / step) * step;
+
+    if (type === "warn") {
+      updateValues(stepped, displayCrit, "warn");
+    } else {
+      updateValues(displayWarn, stepped, "crit");
+    }
+  };
+
+  const onDrag = (clientY: number, type: "warn" | "crit") => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const y = clientY - rect.top;
+    const percentage = 1 - (y / rect.height);
+    const clampedPercentage = Math.max(0, Math.min(1, percentage));
+    const rawVal = trackMin + clampedPercentage * (trackMax - trackMin);
+    const steppedVal = Math.round(rawVal / step) * step;
+
+    if (type === "warn") {
+      updateValues(steppedVal, displayCrit, "warn");
+    } else {
+      updateValues(displayWarn, steppedVal, "crit");
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, type: "warn" | "crit") => {
+    e.preventDefault();
+    const handleMove = (moveEvent: MouseEvent) => {
+      onDrag(moveEvent.clientY, type);
+    };
+    const handleUp = () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, type: "warn" | "crit") => {
+    const handleMove = (moveEvent: TouchEvent) => {
+      if (moveEvent.touches[0]) {
+        onDrag(moveEvent.touches[0].clientY, type);
+      }
+    };
+    const handleUp = () => {
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleUp);
+    };
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleUp);
+  };
+
+  // 3. Position percent (0-100) for handles placement
+  const warnPercent = ((displayWarn - trackMin) / (trackMax - trackMin)) * 100;
+  const critPercent = ((displayCrit - trackMin) / (trackMax - trackMin)) * 100;
+
+  return (
+    <Card className="flex flex-col items-center p-6 bg-surface/30 backdrop-blur-xl border border-white/5 rounded-3xl hover:border-accent/20 transition-all duration-300 shadow-2xl relative overflow-visible w-full min-h-[420px]">
+      {/* Title & Icon Header */}
+      <div className="flex items-center gap-2 mb-6">
+        <span className="text-accent">{icon}</span>
+        <span className="font-black text-xs text-text uppercase tracking-wider">{title}</span>
+      </div>
+
+      {/* Vertical Track Area */}
+      <div className="relative h-[220px] w-full flex items-center justify-center my-4 select-none overflow-visible">
+        {/* Central Ruler Line & Ticks */}
+        <div ref={trackRef} className="relative h-full w-[40px] flex items-center justify-center">
+          {/* 10 horizontal ticks perfectly distributed */}
+          {Array.from({ length: 10 }).map((_, idx) => {
+            const topPercent = (idx / 9) * 100;
+            return (
+              <div
+                key={idx}
+                className="absolute left-0 right-0 h-[1px] bg-white/10"
+                style={{ top: `${topPercent}%` }}
+              />
+            );
+          })}
+
+          {/* Center Vertical Axis Line */}
+          <div className="absolute top-0 bottom-0 w-[2px] bg-white/20" />
+        </div>
+
+        {/* Warning Droplet (Aviso) - Left side of the track, pointing right */}
+        <div
+          className="absolute cursor-ns-resize z-20 hover:z-30 active:z-30 flex items-center justify-end overflow-visible"
+          style={{
+            bottom: `${warnPercent}%`,
+            right: "calc(50% + 2px)",
+            transform: "translateY(50%)",
+            width: "36px",
+            height: "36px",
+          }}
+          onMouseDown={(e) => handleMouseDown(e, "warn")}
+          onTouchStart={(e) => handleTouchStart(e, "warn")}
+        >
+          <div className="text-yellow hover:scale-110 active:scale-95 transition-all duration-150 drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" transform="rotate(90 12 12)" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Critical Droplet (Crítico) - Right side of the track, pointing left */}
+        <div
+          className="absolute cursor-ns-resize z-20 hover:z-30 active:z-30 flex items-center justify-start overflow-visible"
+          style={{
+            bottom: `${critPercent}%`,
+            left: "calc(50% + 2px)",
+            transform: "translateY(50%)",
+            width: "36px",
+            height: "36px",
+          }}
+          onMouseDown={(e) => handleMouseDown(e, "crit")}
+          onTouchStart={(e) => handleTouchStart(e, "crit")}
+        >
+          <div className="text-red hover:scale-110 active:scale-95 transition-all duration-150 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" transform="rotate(-90 12 12)" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Input boxes under the track */}
+      <div className="grid grid-cols-2 gap-4 w-full mt-6">
+        {/* Left Column: Warning (Aviso) */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[0.62rem] font-black text-yellow uppercase tracking-widest text-center">Aviso</span>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={inputWarn}
+              onChange={(e) => handleInputChange(e.target.value, "warn")}
+              onBlur={() => handleInputBlur("warn")}
+              className="w-full bg-black/30 border border-yellow/20 focus:border-yellow focus:ring-1 focus:ring-yellow/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
+            />
+            <span className="absolute right-2.5 text-[0.6rem] font-black text-muted pointer-events-none uppercase">{unitLabel}</span>
+          </div>
+        </div>
+
+        {/* Right Column: Critical (Crítico) */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[0.62rem] font-black text-red uppercase tracking-widest text-center">Crítico</span>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={inputCrit}
+              onChange={(e) => handleInputChange(e.target.value, "crit")}
+              onBlur={() => handleInputBlur("crit")}
+              className="w-full bg-black/30 border border-red/20 focus:border-red focus:ring-1 focus:ring-red/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
+            />
+            <span className="absolute right-2.5 text-[0.6rem] font-black text-muted pointer-events-none uppercase">{unitLabel}</span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { user } = useAuth();
   const { t, setLanguage: setI18nLanguage } = useI18n();
-  const [activeTab, setActiveTab] = useState<Tab>("prefs");
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    try {
+      const saved = sessionStorage.getItem("settings_active_tab");
+      if (saved === "prefs" || saved === "alerts" || saved === "thresholds" || saved === "about") {
+        return saved as Tab;
+      }
+    } catch {
+      // ignore
+    }
+    return "prefs";
+  });
   const [form, setForm] = useState<AppSettings>(() => loadSettings());
   const [isSaving, setIsSaving] = useState(false);
   const [msg, setMsg] = useState<Msg | null>(null);
@@ -56,8 +396,45 @@ export default function Settings() {
     setForm((p) => ({ ...p, alerts: { ...p.alerts, [k]: v } }));
   }
 
-  function setThreshold<K extends keyof AppSettings["thresholds"]>(k: K, v: number) {
-    setForm((p) => ({ ...p, thresholds: { ...p.thresholds, [k]: v } }));
+  function handleRegulatorChange(
+    warnKey: keyof AppSettings["thresholds"],
+    critKey: keyof AppSettings["thresholds"],
+    warnVal: number,
+    critVal: number
+  ) {
+    setForm((p) => ({
+      ...p,
+      thresholds: {
+        ...p.thresholds,
+        [warnKey]: warnVal,
+        [critKey]: critVal,
+      },
+    }));
+  }
+
+  function handleResetTab() {
+    setMsg(null);
+    const defaults = defaultSettings();
+    if (activeTab === "prefs") {
+      setForm((p) => ({
+        ...p,
+        theme: defaults.theme,
+        units: defaults.units,
+        language: defaults.language,
+        mapStyle: defaults.mapStyle,
+        mapAutopilot: defaults.mapAutopilot,
+      }));
+    } else if (activeTab === "alerts") {
+      setForm((p) => ({
+        ...p,
+        alerts: defaults.alerts,
+      }));
+    } else if (activeTab === "thresholds") {
+      setForm((p) => ({
+        ...p,
+        thresholds: defaults.thresholds,
+      }));
+    }
   }
 
   return (
@@ -72,16 +449,36 @@ export default function Settings() {
           </h1>
           <p className="text-muted text-sm font-medium mt-1">{t('settings.subtitle')}</p>
         </div>
-        {isDirty && (
-          <div className="flex items-center gap-3 animate-fade-in">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted hover:bg-white/5 transition-all" onClick={() => { setForm(loadSettings()); setMsg(null); }}>
-              <RotateCcw size={14} /> {t('common.discard')}
+        <div className="flex items-center gap-3">
+          {activeTab !== "about" && (
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted hover:bg-white/5 hover:text-text transition-all"
+              onClick={handleResetTab}
+            >
+              <RotateCcw size={14} /> {t('settings.resetDefault')}
             </button>
-            <button className="flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95" onClick={(e) => void handleSave(e)} disabled={isSaving}>
-              <Check size={14} /> {isSaving ? t('settings.saving') : t('settings.saveChanges')}
-            </button>
-          </div>
-        )}
+          )}
+          {isDirty && (
+            <>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-muted hover:text-red hover:bg-red/5 transition-all"
+                onClick={() => { setForm(loadSettings()); setMsg(null); }}
+              >
+                <Trash2 size={14} /> {t('common.discard')}
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-accent/20 transition-all active:scale-95"
+                onClick={(e) => void handleSave(e)}
+                disabled={isSaving}
+              >
+                <Check size={14} /> {isSaving ? t('settings.saving') : t('settings.saveChanges')}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -89,7 +486,11 @@ export default function Settings() {
         {TABS.map((tab) => (
           <button key={tab.id} role="tab" aria-selected={activeTab === tab.id}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text hover:bg-white/5"}`}
-            onClick={() => { setActiveTab(tab.id); setMsg(null); }}>
+            onClick={() => {
+              setActiveTab(tab.id);
+              sessionStorage.setItem("settings_active_tab", tab.id);
+              setMsg(null);
+            }}>
             {tab.icon} <span>{tab.label}</span>
           </button>
         ))}
@@ -186,14 +587,7 @@ export default function Settings() {
             </div>
           </Card>
 
-          <div className="flex items-center justify-end gap-3 mt-4">
-            <button type="button" className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-muted hover:bg-white/5 transition-all" onClick={() => { setForm(defaultSettings()); setMsg(null); }}>
-              <RotateCcw size={16} /> {t('settings.resetDefault')}
-            </button>
-            <button type="submit" className="flex items-center gap-2 bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed" disabled={isSaving || !isDirty}>
-              <Check size={18} /> {isSaving ? t('settings.saving') : t('common.save')}
-            </button>
-          </div>
+
         </form>
       )}
 
@@ -272,93 +666,66 @@ export default function Settings() {
             </div>
           </Card>
 
-          <div className="flex justify-end mt-4">
-            <button type="submit" className="bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2" disabled={isSaving || !isDirty}>
-              <Check size={18} /> {isSaving ? "A guardar..." : "Guardar Alterações"}
-            </button>
-          </div>
+
         </form>
       )}
 
       {/* ── Limiares ── */}
       {activeTab === "thresholds" && (
-        <form onSubmit={(e) => void handleSave(e)} className="grid grid-cols-1 gap-6">
+        <form onSubmit={(e) => void handleSave(e)} className="grid grid-cols-1 gap-8">
           <div className="bg-accent/10 border border-accent/20 rounded-2xl px-6 py-4 flex gap-4 items-center shadow-lg shadow-accent/5">
             <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent flex-shrink-0">
               <Shield size={20} />
             </div>
             <p className="text-sm font-bold text-text-2 m-0 leading-relaxed">
-              Os limiares definem quando os alertas são gerados. <span className="text-yellow">Aviso = amarelo</span>, <span className="text-red">Crítico = vermelho</span>.
+              Os limiares definem quando os alertas são gerados no sistema. Arraste as gotas ou edite os valores numéricos em baixo. <span className="text-yellow">Aviso = gota esquerda</span>, <span className="text-red">Crítico = gota direita</span>.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                title: "Velocidade", icon: <Gauge size={18} />, unit: "km/h",
-                fields: [
-                  { id: "t-speed-warn", label: "Aviso", field: "maxSpeedKmhWarn" as const, min: 60, max: 200, step: 5 },
-                  { id: "t-speed-crit", label: "Crítico", field: "maxSpeedKmhCrit" as const, min: 80, max: 300, step: 5 },
-                ],
-              },
-              {
-                title: "G-Force", icon: <Activity size={18} />, unit: "G",
-                fields: [
-                  { id: "t-gf-warn", label: "Aviso", field: "maxGForceWarn" as const, min: 0.1, max: 5, step: 0.05 },
-                  { id: "t-gf-crit", label: "Crítico", field: "maxGForceCrit" as const, min: 0.1, max: 5, step: 0.05 },
-                ],
-              },
-              {
-                title: "Inclinação (Roll)", icon: <Sliders size={18} />, unit: "°",
-                fields: [
-                  { id: "t-roll-warn", label: "Aviso", field: "maxRollDegWarn" as const, min: 10, max: 90, step: 1 },
-                  { id: "t-roll-crit", label: "Crítico", field: "maxRollDegCrit" as const, min: 10, max: 90, step: 1 },
-                ],
-              },
-              {
-                title: "Temperatura do Motor", icon: <Thermometer size={18} />, unit: "°C",
-                fields: [
-                  { id: "t-temp-warn", label: "Aviso", field: "maxEngineTempCWarn" as const, min: 60, max: 200, step: 5 },
-                  { id: "t-temp-crit", label: "Crítico", field: "maxEngineTempCCrit" as const, min: 60, max: 200, step: 5 },
-                ],
-              },
-            ].map(({ title, icon, unit, fields }) => (
-              <Card key={title} title={title} className="overflow-hidden">
-                <div className="flex flex-col gap-8">
-                  {fields.map(({ id, label, field, min, max, step }) => (
-                    <div key={field} className="flex flex-col gap-4">
-                      <div className="flex justify-between items-center">
-                        <div className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest ${label === "Aviso" ? 'text-yellow' : 'text-red'}`}>
-                          <div className={`w-2 h-2 rounded-full bg-current`} />
-                          {label}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <input id={id} className="bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-sm text-text font-black text-center focus:border-accent outline-none w-[70px]" type="number" min={min} max={max} step={step}
-                            value={form.thresholds[field]}
-                            onChange={(e) => setThreshold(field, Number(e.target.value))} />
-                          <span className="text-[0.7rem] font-black text-muted uppercase">{unit}</span>
-                        </div>
-                      </div>
-                      <input type="range" min={min} max={max} step={step}
-                        value={form.thresholds[field]}
-                        onChange={(e) => setThreshold(field, Number(e.target.value))}
-                        className={`w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-accent ${label === "Aviso" ? 'accent-yellow' : 'accent-red'}`} />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            ))}
+          {/* 4 Vertical Regulator Sliders in a responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <ThresholdRegulator
+              title="Velocidade"
+              icon={<Gauge size={18} />}
+              category="speed"
+              unit={form.units}
+              warnValue={form.thresholds.maxSpeedKmhWarn}
+              critValue={form.thresholds.maxSpeedKmhCrit}
+              onChange={(w, c) => handleRegulatorChange("maxSpeedKmhWarn", "maxSpeedKmhCrit", w, c)}
+            />
+
+            <ThresholdRegulator
+              title="Força G"
+              icon={<Activity size={18} />}
+              category="gforce"
+              unit={form.units}
+              warnValue={form.thresholds.maxGForceWarn}
+              critValue={form.thresholds.maxGForceCrit}
+              onChange={(w, c) => handleRegulatorChange("maxGForceWarn", "maxGForceCrit", w, c)}
+            />
+
+            <ThresholdRegulator
+              title="Inclinação (Roll)"
+              icon={<Sliders size={18} />}
+              category="roll"
+              unit={form.units}
+              warnValue={form.thresholds.maxRollDegWarn}
+              critValue={form.thresholds.maxRollDegCrit}
+              onChange={(w, c) => handleRegulatorChange("maxRollDegWarn", "maxRollDegCrit", w, c)}
+            />
+
+            <ThresholdRegulator
+              title="Temp. Motor"
+              icon={<Thermometer size={18} />}
+              category="temp"
+              unit={form.units}
+              warnValue={form.thresholds.maxEngineTempCWarn}
+              critValue={form.thresholds.maxEngineTempCCrit}
+              onChange={(w, c) => handleRegulatorChange("maxEngineTempCWarn", "maxEngineTempCCrit", w, c)}
+            />
           </div>
 
-          <div className="flex items-center justify-end gap-3 mt-4">
-            <button type="button" className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-muted hover:bg-white/5 transition-all"
-              onClick={() => setForm((p) => ({ ...p, thresholds: defaultThresholds() }))}>
-              <RotateCcw size={16} /> Repor padrão
-            </button>
-            <button type="submit" className="flex items-center gap-2 bg-accent text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed" disabled={isSaving || !isDirty}>
-              <Check size={18} /> {isSaving ? "A guardar..." : "Guardar Alterações"}
-            </button>
-          </div>
+
         </form>
       )}
 

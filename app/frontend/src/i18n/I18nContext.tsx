@@ -29,6 +29,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [renderKey, setRenderKey] = useState(0);
 
   const setLanguage = (lang: Language) => {
+    if (lang === language) return;
     setLanguageState(lang);
     const settings = loadSettings();
     saveSettings({ ...settings, language: lang });
