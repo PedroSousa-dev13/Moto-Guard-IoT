@@ -258,14 +258,14 @@ function ThresholdRegulator({
             return (
               <div
                 key={idx}
-                className="absolute left-0 right-0 h-[1px] bg-white/10"
+                className="absolute left-0 right-0 h-[1px] bg-[#8b5cf6]/30 dark:bg-white/10"
                 style={{ top: `${topPercent}%` }}
               />
             );
           })}
 
           {/* Center Vertical Axis Line */}
-          <div className="absolute top-0 bottom-0 w-[2px] bg-white/20" />
+          <div className="absolute top-0 bottom-0 w-[2px] bg-[#8b5cf6]/60 dark:bg-white/20" />
         </div>
 
         {/* Warning Droplet (Aviso) - Left side of the track, pointing right */}
@@ -320,7 +320,7 @@ function ThresholdRegulator({
               value={inputWarn}
               onChange={(e) => handleInputChange(e.target.value, "warn")}
               onBlur={() => handleInputBlur("warn")}
-              className="w-full bg-black/30 border border-yellow/20 focus:border-yellow focus:ring-1 focus:ring-yellow/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
+              className="w-full bg-white dark:bg-black/30 border border-yellow/30 dark:border-yellow/20 focus:border-yellow focus:ring-1 focus:ring-yellow/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
             />
             <span className="absolute right-2.5 text-[0.6rem] font-black text-muted pointer-events-none uppercase">{unitLabel}</span>
           </div>
@@ -335,7 +335,7 @@ function ThresholdRegulator({
               value={inputCrit}
               onChange={(e) => handleInputChange(e.target.value, "crit")}
               onBlur={() => handleInputBlur("crit")}
-              className="w-full bg-black/30 border border-red/20 focus:border-red focus:ring-1 focus:ring-red/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
+              className="w-full bg-white dark:bg-black/30 border border-red/30 dark:border-red/20 focus:border-red focus:ring-1 focus:ring-red/20 rounded-xl py-2 pl-3 pr-8 text-xs font-black text-center text-text outline-none transition-all"
             />
             <span className="absolute right-2.5 text-[0.6rem] font-black text-muted pointer-events-none uppercase">{unitLabel}</span>
           </div>
@@ -372,6 +372,22 @@ export default function Settings() {
 
   useEffect(() => { document.title = `${t('settings.title')} — MotoGuard`; }, [t]);
 
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const current = loadSettings();
+      setForm((p) => ({
+        ...p,
+        theme: current.theme,
+      }));
+    };
+    window.addEventListener("motoguard_settings_changed", syncFromStorage);
+    window.addEventListener("storage", syncFromStorage);
+    return () => {
+      window.removeEventListener("motoguard_settings_changed", syncFromStorage);
+      window.removeEventListener("storage", syncFromStorage);
+    };
+  }, []);
+
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(loadSettings()), [form]);
 
   async function handleSave(e: FormEvent) {
@@ -380,11 +396,14 @@ export default function Settings() {
     setIsSaving(true);
     setMsg(null);
     try {
-      saveSettings(form);
+      const currentTheme = loadSettings().theme;
+      const settingsToSave = { ...form, theme: currentTheme };
+      saveSettings(settingsToSave);
       // Apply theme with night mode detection for Dashboard
-      applyTheme(form.theme, true);
+      applyTheme(currentTheme, true);
       setI18nLanguage(form.language);
       setMsg({ type: "success", text: t('settings.saveSuccess') });
+      setForm(settingsToSave);
     } catch {
       setMsg({ type: "error", text: t('settings.saveError') });
     } finally {
