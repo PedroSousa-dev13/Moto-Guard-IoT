@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, FC } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useDemoContext } from '../demo/DemoContext';
 import { useI18n } from '../i18n';
 import { Bike, Settings, LogOut, LogIn, Maximize2, Minimize2, Sun, Moon, Monitor } from 'lucide-react';
 import { loadSettings, saveSettings, applyTheme, getEffectiveTheme } from '../utils/settings';
@@ -18,9 +19,13 @@ interface NavbarProps {
 
 const Navbar: FC<NavbarProps> = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { isDemoMode, demoUser, exitDemoMode } = useDemoContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
+
+  const showAuthenticatedUI = isAuthenticated || isDemoMode;
+  const displayUser = isDemoMode ? { name: demoUser.name, email: demoUser.email } : user;
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [theme, setTheme] = useState(() => loadSettings().theme);
@@ -94,7 +99,7 @@ const Navbar: FC<NavbarProps> = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        {isAuthenticated ? (
+        {showAuthenticatedUI ? (
           <>
             <NotificationCenter />
 
@@ -130,28 +135,41 @@ const Navbar: FC<NavbarProps> = () => {
               <Settings size={17} />
             </Link>
 
-            <Link
-              to="/profile"
-              className="hidden sm:flex items-center gap-2 bg-panel border border-border-glass-subtle p-1 rounded-xl group hover:bg-panel-hover transition-all no-underline cursor-pointer"
-            >
-              <div className="w-7 h-7 rounded-lg bg-accent-gradient flex items-center justify-center text-[0.6rem] font-black text-white shadow-lg shadow-accent/20">
-                {getInitials(user?.name)}
-              </div>
-              <span className="text-[0.65rem] font-black text-muted tracking-wide px-1.5 uppercase opacity-80 group-hover:text-text transition-colors">
-                {user?.name}
-              </span>
-            </Link>
+            {!isDemoMode && (
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 bg-panel border border-border-glass-subtle p-1 rounded-xl group hover:bg-panel-hover transition-all no-underline cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-accent-gradient flex items-center justify-center text-[0.6rem] font-black text-white shadow-lg shadow-accent/20">
+                  {getInitials(displayUser?.name)}
+                </div>
+                <span className="text-[0.65rem] font-black text-muted tracking-wide px-1.5 uppercase opacity-80 group-hover:text-text transition-colors">
+                  {displayUser?.name}
+                </span>
+              </Link>
+            )}
 
-            <button
-              onClick={() => {
-                logout();
-                navigate('/', { replace: true });
-              }}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-red/10 border border-red/20 text-red hover:bg-red hover:text-white hover:border-transparent transition-all shadow-lg shadow-red/5 active:scale-95"
-              title="Sair"
-            >
-              <LogOut size={17} />
-            </button>
+            {isDemoMode ? (
+              <button
+                onClick={exitDemoMode}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500 hover:text-white hover:border-transparent transition-all shadow-lg shadow-amber-500/5 active:scale-95 text-[0.7rem] font-black uppercase tracking-wider"
+                title="Sair do modo demo"
+              >
+                <LogOut size={15} />
+                <span className="hidden sm:inline">Demo</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/', { replace: true });
+                }}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-red/10 border border-red/20 text-red hover:bg-red hover:text-white hover:border-transparent transition-all shadow-lg shadow-red/5 active:scale-95"
+                title="Sair"
+              >
+                <LogOut size={17} />
+              </button>
+            )}
           </>
         ) : (
           <button

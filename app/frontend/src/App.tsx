@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
-import { DemoProvider } from './demo/DemoContext';
+import { DemoProvider, useDemoContext } from './demo/DemoContext';
 import { I18nProvider } from './i18n';
 import { TranslatedApp } from './i18n/TranslatedApp';
 import DemoBanner from './demo/DemoBanner';
@@ -34,8 +34,9 @@ const GpxSimulator = lazy(() => import('./pages/GpxSimulator'));
 
 function HomeOrDashboard() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { isDemoMode } = useDemoContext();
   if (isLoading) return null;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated || isDemoMode) return <Navigate to="/dashboard" replace />;
   return <HomePage />;
 }
 

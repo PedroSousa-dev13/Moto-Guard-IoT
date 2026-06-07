@@ -54,6 +54,13 @@ export function setupDemoInterceptor(isDemoMode: () => boolean): () => void {
     const url = (config.url ?? '').split('?')[0]; // strip query params
 
     // -----------------------------------------------------------------------
+    // Auth routes must always pass through to the real backend
+    // -----------------------------------------------------------------------
+    if (url.startsWith('/auth')) {
+      return config;
+    }
+
+    // -----------------------------------------------------------------------
     // Task 3.8 — POST | PUT | DELETE → { success: true }
     // -----------------------------------------------------------------------
     if (method === 'post' || method === 'put' || method === 'delete') {

@@ -279,9 +279,6 @@ const HomePage: FC = () => {
                 <button className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-sm hover:bg-white/10 transition-all" onClick={() => { activateDemo(); setIsDemoOpen(false); }}>
                   🎮 Explorar Modo Demo
                 </button>
-                <button className="px-8 py-4 rounded-2xl bg-transparent text-muted font-black text-sm hover:text-white transition-all" onClick={() => setIsDemoOpen(false)}>
-                  Fechar
-                </button>
               </div>
             </div>
           </div>
