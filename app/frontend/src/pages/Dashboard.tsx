@@ -448,7 +448,7 @@ export default function Dashboard() {
             <div className="absolute inset-2 border border-accent/10 rounded-full" />
             <div className="absolute inset-4 border border-accent/20 rounded-full" />
             <div className={`absolute inset-0 border-2 border-accent rounded-full animate-ping opacity-0 ${hasData ? 'opacity-20' : ''}`} />
-            <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 mx-auto ${hasData ? "bg-green text-white shadow-green/40 rotate-12 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
+            <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-500 mx-auto ${hasData ? "bg-green text-white shadow-green/40 scale-110" : "bg-accent text-white shadow-accent/40"}`}>
               <Cpu size={24} />
             </div>
           </div>
