@@ -20,6 +20,7 @@
   --color-green: var(--green);
   --color-yellow: var(--yellow);
   --color-red: var(--red);
+  --color-blue: var(--blue);
   
   --color-panel: var(--panel-bg-subtle);
   --color-panel-hover: var(--panel-bg-hover);
@@ -58,6 +59,7 @@
   --green: #10b981;
   --yellow: #f59e0b;
   --red: #ef4444;
+  --blue: #3b82f6;
   
   /* Borders & Shadows */
   --glass-border: rgba(255, 255, 255, 0.08);
