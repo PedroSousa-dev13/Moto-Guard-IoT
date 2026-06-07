@@ -58,9 +58,9 @@ const HomePage: FC = () => {
       <section className="relative min-h-screen flex items-center px-6 md:px-12 pt-20 overflow-hidden">
         <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="relative z-10 flex flex-col items-center lg:items-start text-center lg:text-left gap-8 animate-slide-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-[0.2em] text-accent backdrop-blur-md shadow-xl">
-              <span className="animate-ping w-2 h-2 rounded-full bg-accent" />
-              🏍️ MotoGuard IoT
+            <div className="inline-flex items-center gap-4 px-8 py-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-xl">
+              <span className="animate-ping w-4 h-4 rounded-full bg-accent" />
+              <img src="/logo.svg" alt="MotoGuard Logo" className="h-8 w-auto" />
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none m-0 text-white">
               Monitoramento <br />
@@ -227,8 +227,8 @@ const HomePage: FC = () => {
       <footer className="py-12 px-6 border-t border-white/5 bg-slate-950 relative z-10">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-8 opacity-60 hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏍️</span>
-            <span className="text-lg font-black tracking-tight text-white m-0 uppercase">MotoGuard IoT</span>
+            <img src="/logo.svg" alt="MotoGuard Logo" className="h-7 w-auto" />
+            <span className="text-lg font-black tracking-tight text-white m-0 uppercase">IoT</span>
           </div>
           <p className="text-sm font-bold text-muted m-0">
             © 2026 MotoGuard IoT. Tecnologia de ponta para quem vive sobre duas rodas.

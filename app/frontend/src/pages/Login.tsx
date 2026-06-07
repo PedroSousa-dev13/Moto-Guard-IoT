@@ -2,6 +2,7 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import LoginSidebar from "../components/auth/LoginSidebar";
+import HomePage from './HomePage';
 
 export default function Login() {
   const { isAuthenticated } = useAuth();
@@ -19,12 +20,15 @@ export default function Login() {
   }
 
   return (
-    <LoginSidebar
-      isOpen
-      defaultMode={defaultMode}
-      onClose={() => navigate("/", { replace: true })}
-      onSuccess={() => navigate(redirectTo, { replace: true })}
-      onRegisterSuccess={() => navigate("/garage", { replace: true })}
-    />
+    <>
+      <HomePage />
+      <LoginSidebar
+        isOpen
+        defaultMode={defaultMode}
+        onClose={() => navigate("/", { replace: true })}
+        onSuccess={() => navigate(redirectTo, { replace: true })}
+        onRegisterSuccess={() => navigate("/garage", { replace: true })}
+      />
+    </>
   );
 }
