@@ -7,9 +7,8 @@ import {
   type AlertMinSeverity, type AppSettings, type Language, type MapStyle,
 } from "../utils/settings";
 import {
-  Settings2, Bell, Sliders, Info, Sun, Moon, Globe, Gauge,
+  Settings2, Bell, Sliders, Info, Globe, Gauge,
   Activity, Thermometer, Zap, Shield, Trash2, Check, RotateCcw,
-  Monitor,
 } from "lucide-react";
 
 type Tab = "prefs" | "alerts" | "thresholds" | "about";
@@ -105,40 +104,6 @@ export default function Settings() {
       {/* ── Preferências ── */}
       {activeTab === "prefs" && (
         <form onSubmit={(e) => void handleSave(e)} className="grid grid-cols-1 gap-6">
-
-          <Card title={t('settings.appearance')} className="overflow-hidden">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue border border-blue/20">
-                    <Sun size={18} />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="font-black text-sm text-text">{t('settings.theme')}</div>
-                    <div className="text-[0.7rem] text-muted font-bold uppercase tracking-tighter">{t('settings.themeLight')} / {t('settings.themeDark')} / Auto</div>
-                  </div>
-                </div>
-                <div className="bg-black/20 border border-white/5 rounded-xl p-1 flex gap-1">
-                  <button type="button"
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${form.theme === "light" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text hover:bg-white/5"}`}
-                    onClick={() => setForm((p) => ({ ...p, theme: "light" }))}>
-                    <Sun size={18} />
-                  </button>
-                  <button type="button"
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${form.theme === "dark" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text hover:bg-white/5"}`}
-                    onClick={() => setForm((p) => ({ ...p, theme: "dark" }))}>
-                    <Moon size={18} />
-                  </button>
-                  <button type="button"
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${form.theme === "auto" ? "bg-accent text-white shadow-lg" : "text-muted hover:text-text hover:bg-white/5"}`}
-                    onClick={() => setForm((p) => ({ ...p, theme: "auto" }))}
-                    title="Auto (18h-6h)">
-                    <Monitor size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Card>
 
           <Card title={t('settings.language')} className="overflow-hidden">
             <div className="flex flex-col gap-6">

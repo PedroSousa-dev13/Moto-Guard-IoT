@@ -107,9 +107,6 @@ const Sidebar: FC<SidebarProps> = ({ collapsed, onToggle }) => {
                       {!collapsed && (
                         <span className="font-bold text-sm tracking-tight whitespace-nowrap">{item.label}</span>
                       )}
-                      {isActive && !collapsed && (
-                        <div className="absolute left-[-1px] top-1/4 bottom-1/4 w-1 bg-accent rounded-full hidden md:block" />
-                      )}
                     </Link>
                   );
                 })}

@@ -136,6 +136,9 @@ export function isNightTime(): boolean {
  */
 export function getEffectiveTheme(theme: Theme): "light" | "dark" {
   if (theme === "auto") {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
     return isNightTime() ? "dark" : "light";
   }
   return theme;

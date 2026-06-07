@@ -51,6 +51,30 @@ function App() {
   useEffect(() => {
     const settings = loadSettings();
     applyTheme(settings.theme);
+
+    // Dynamic sync if OS/PC color scheme changes when theme is set to 'auto'
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = () => {
+      const currentSettings = loadSettings();
+      if (currentSettings.theme === 'auto') {
+        applyTheme('auto');
+        window.dispatchEvent(new Event("motoguard_settings_changed"));
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else {
+      mediaQuery.addListener(handleSystemThemeChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } else {
+        mediaQuery.removeListener(handleSystemThemeChange);
+      }
+    };
   }, []);
   return (
     <I18nProvider>

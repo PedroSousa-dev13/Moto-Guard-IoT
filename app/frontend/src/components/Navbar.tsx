@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect, FC } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../i18n';
-import { Bike, Settings, LogOut, LogIn, Maximize2, Minimize2, Sun, Moon } from 'lucide-react';
+import { Bike, Settings, LogOut, LogIn, Maximize2, Minimize2, Sun, Moon, Monitor } from 'lucide-react';
 import { loadSettings, saveSettings, applyTheme, getEffectiveTheme } from '../utils/settings';
 import NotificationCenter from './NotificationCenter';
 
@@ -50,13 +50,20 @@ const Navbar: FC<NavbarProps> = () => {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
     const settings = loadSettings();
+    let nextTheme: 'light' | 'dark' | 'auto';
+    if (settings.theme === 'light') {
+      nextTheme = 'dark';
+    } else if (settings.theme === 'dark') {
+      nextTheme = 'auto';
+    } else {
+      nextTheme = 'light';
+    }
     settings.theme = nextTheme;
     saveSettings(settings);
     applyTheme(nextTheme, true);
     setTheme(nextTheme);
-  }, [effectiveTheme]);
+  }, []);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -102,9 +109,17 @@ const Navbar: FC<NavbarProps> = () => {
             <button
               onClick={toggleTheme}
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-panel border border-border-glass-subtle text-muted hover:text-text hover:bg-panel-hover transition-all"
-              title={effectiveTheme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              title={
+                theme === 'light'
+                  ? 'Mudar para Modo Escuro (Atual: Claro)'
+                  : theme === 'dark'
+                  ? 'Mudar para Modo Automático (Atual: Escuro)'
+                  : 'Mudar para Modo Claro (Atual: Automático)'
+              }
             >
-              {effectiveTheme === 'dark' ? <Moon size={17} /> : <Sun size={17} />}
+              {theme === 'light' && <Sun size={17} />}
+              {theme === 'dark' && <Moon size={17} />}
+              {theme === 'auto' && <Monitor size={17} />}
             </button>
 
             <Link
