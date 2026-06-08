@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Play, Pause, Square, Bike } from 'lucide-react';
 import { formatTime } from './utils';
 import type { Motorcycle, MotorcycleProfile } from '../types';
@@ -46,6 +47,27 @@ export function PlaybackControls({
   profiles = [],
   onProfileChange,
 }: PlaybackControlsProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("motoguard_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleSidebarToggle = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.collapsed === 'boolean') {
+        setSidebarCollapsed(customEvent.detail.collapsed);
+      }
+    };
+    window.addEventListener('motoguard_sidebar_toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('motoguard_sidebar_toggle', handleSidebarToggle);
+    };
+  }, []);
+
   const isPlaying = playbackState === 'playing';
   const progress = totalDurationSec > 0 ? currentTimeSec / totalDurationSec : 0;
 
@@ -65,7 +87,12 @@ export function PlaybackControls({
   };
 
   return (
-    <div className="bg-surface/80 backdrop-blur-2xl border-t border-border-glass px-8 py-6 flex flex-col md:flex-row items-center gap-8 shadow-2xl animate-fade-in v2-debug-indicator">
+    <div
+      className={`fixed bottom-0 right-0 z-[100] px-4 md:px-8 pb-[5px] pointer-events-none flex flex-col items-center transition-all duration-300 ${
+        sidebarCollapsed ? "left-0" : "left-0 md:left-72"
+      }`}
+    >
+      <div className="w-full max-w-[1250px] border rounded-[2.5rem] player-bar-container backdrop-blur-2xl px-8 py-4 flex flex-col md:flex-row items-center gap-6 shadow-2xl animate-fade-in pointer-events-auto v2-debug-indicator">
       {/* Transport buttons */}
       <div className="flex items-center gap-3">
         {isPlaying ? (
@@ -188,5 +215,6 @@ export function PlaybackControls({
         <strong className="text-sm font-black text-accent tabular-nums tracking-tighter">{emittedCount.toLocaleString()}</strong>
       </div>
     </div>
+  </div>
   );
 }

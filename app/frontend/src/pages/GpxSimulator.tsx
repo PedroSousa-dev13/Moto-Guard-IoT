@@ -19,7 +19,7 @@ import { buildPayload, emitTelemetry } from "../real-simulator/telemetryEmitter"
 import { useAuth } from "../hooks/useAuth";
 import { gpxAPI, motorcyclesAPI } from "../services/api";
 import type { Motorcycle, MotorcycleProfile } from "../types";
-import { Navigation, AlertTriangle, Mountain, Activity, MoveHorizontal, MoveVertical, Compass, Gauge, Zap, Disc, ArrowUpCircle, Thermometer, Droplets, CircleDot } from "lucide-react";
+import { Navigation, AlertTriangle, Mountain, Activity, MoveHorizontal, MoveVertical, Compass, Gauge, Zap, Disc, ArrowUpCircle, Thermometer, Droplets, CircleDot, Bike } from "lucide-react";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
 import IMUCard from "../components/IMUCard";
@@ -382,7 +382,7 @@ export default function GpxSimulator() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+    <div className="flex flex-col gap-6 animate-fade-in pb-32">
       {/* CLEAN HEADER */}
       <div className="flex flex-col gap-1 border-b border-white/5 pb-4">
         <h1 className="text-2xl font-black text-white tracking-tight m-0 flex items-center gap-3">
@@ -392,48 +392,36 @@ export default function GpxSimulator() {
         <p className="text-[0.6rem] font-black text-muted uppercase tracking-[0.25em] opacity-40">Reprodução de telemetria enriquecida via GPS</p>
       </div>
 
-      {/* TOP SOURCE BAR (Clean) */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch">
-        <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex-1 flex items-center justify-between group">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/5 flex items-center justify-center text-accent/60 group-hover:text-accent group-hover:bg-accent/10 transition-all">
-              <Navigation size={18} />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Fonte de Dados</span>
-              <span className="text-xs font-bold text-white/80">{hasRows ? "Ficheiro GPX Carregado" : "Nenhum ficheiro selecionado"}</span>
-            </div>
-          </div>
-          <GpxDropzone onParsed={handleGpxParsed} />
-        </div>
-        
-        {gpxStats && (
-          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex items-center gap-6 group hover:border-border-glass transition-all">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Altitude</span>
-              <span className="text-xs font-black text-blue/80 tabular-nums">{gpxStats.minElevation}m – {gpxStats.maxElevation}m</span>
-            </div>
-            <div className="w-px h-6 bg-white/5" />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">Ganho Acumulado</span>
-              <div className="flex items-center gap-2 text-xs font-black text-blue/80 tabular-nums">
-                <span>↗ {gpxStats.elevationGain}m</span>
-                <span className="opacity-20">|</span>
-                <span>↘ {gpxStats.elevationLoss}m</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* 3-COLUMN PREMIUM DASHBOARD */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_340px_1fr] gap-6 items-stretch min-h-[600px]">
-        {/* COL 1: MOTOR & VELOCIDADE */}
+        {/* COL 1: CONTROLS, LEGEND, IMPORT & TELEMETRY */}
         <div className="flex flex-col gap-6">
-          <GaugeCard data={telemetryData} sources={gpxSources} />
-          
-          {/* Legend Card */}
-          <div className="bg-panel/20 border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-3">
+          {/* Perfil de Moto Selector Card */}
+          <div className="bg-panel/40 backdrop-blur-xl border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Bike size={14} className="text-accent" />
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-60">Perfil de Moto</span>
+            </div>
+            <div className="relative">
+              <select
+                value={selectedProfile?.name || "Naked"}
+                onChange={(e) => {
+                  const prof = profiles.find(p => p.name === e.target.value);
+                  if (prof) setSelectedProfile(prof);
+                }}
+                className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
+              >
+                {profiles.map((p) => (
+                  <option key={p.name} value={p.name} className="bg-surface">
+                    {p.name.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Legenda de Origem Card */}
+          <div className="bg-panel/40 border border-border-glass-subtle rounded-2xl p-4 flex flex-col gap-3">
              <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest opacity-40">Legenda de Origem</span>
              <div className="flex items-center gap-4">
                <div className="flex items-center gap-1.5">
@@ -446,28 +434,38 @@ export default function GpxSimulator() {
                </div>
              </div>
           </div>
+
+          {/* Importar Rota GPX Dropzone */}
+          <GpxDropzone
+            onParsed={handleGpxParsed}
+            selectedProfile={selectedProfile?.name || "Naked"}
+          />
         </div>
 
-        {/* COL 2: SAÚDE & INÉRCIA */}
+        {/* COL 2: SAÚDE, INÉRCIA & MOTOR */}
         <div className="flex flex-col gap-6">
           <TempVoltCard telemetry={telemetryData} health={healthData} sources={gpxSources} />
           <IMUCard data={imuData} sources={gpxSources} />
+          {/* Motor & Velocidade Card */}
+          <GaugeCard data={telemetryData} sources={gpxSources} />
         </div>
 
         {/* COL 3: MAPA */}
-        <div className="flex flex-col gap-6">
-          <div className="relative flex-1 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group min-h-[500px]">
+        <div className="flex flex-col gap-6 h-full min-h-[500px]">
+          <div className="relative flex-grow bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl group flex flex-col h-full">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/0 via-accent/40 to-accent/0 opacity-50 z-10" />
-            <RouteMap
-              gpsTrack={gpsTrack}
-              currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
-            />
-            {!hasRows && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
-                <div className="text-5xl grayscale opacity-20">🗺️</div>
-                <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega um percurso para ativar o mapa</p>
-              </div>
-            )}
+            <div className="w-full flex-grow relative h-full">
+              <RouteMap
+                gpsTrack={gpsTrack}
+                currentPosition={simSession.playbackState === "playing" ? currentPosition : null}
+              />
+              {!hasRows && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
+                  <div className="text-5xl grayscale opacity-20">🗺️</div>
+                  <p className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Carrega um percurso para ativar o mapa</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {socketError && (
@@ -480,25 +478,23 @@ export default function GpxSimulator() {
       </div>
 
       {/* PLAYBACK CONTROLS */}
-      <div className="sticky bottom-0 z-50">
-        <PlaybackControls
-          playbackState={simSession.playbackState}
-          playbackSpeed={simSession.playbackSpeed}
-          currentTimeSec={currentTimeSec}
-          totalDurationSec={totalDurationSec}
-          emittedCount={simSession.emittedCount}
-          deviceId={simSession.deviceId}
-          disabled={!hasRows}
-          profiles={profiles}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onStop={handleStop}
-          onSpeedChange={handleSpeedChange}
-          onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
-          onProfileChange={(p) => setSelectedProfile(p)}
-          onSeek={handleSeek}
-        />
-      </div>
+      <PlaybackControls
+        playbackState={simSession.playbackState}
+        playbackSpeed={simSession.playbackSpeed}
+        currentTimeSec={currentTimeSec}
+        totalDurationSec={totalDurationSec}
+        emittedCount={simSession.emittedCount}
+        deviceId={simSession.deviceId}
+        disabled={!hasRows}
+        profiles={profiles}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
+        onSpeedChange={handleSpeedChange}
+        onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
+        onProfileChange={(p) => setSelectedProfile(p)}
+        onSeek={handleSeek}
+      />
     </div>
   );
 }

@@ -337,7 +337,7 @@ export default function RealSimulator() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+    <div className="flex flex-col gap-6 animate-fade-in pb-32">
       {/* CLEAN HEADER */}
       <div className="flex flex-col gap-1 border-b border-white/5 pb-4">
         <h1 className="text-2xl font-black text-white tracking-tight m-0 flex items-center gap-3">
@@ -445,25 +445,23 @@ export default function RealSimulator() {
       </div>
 
       {/* PLAYBACK CONTROLS */}
-      <div className="sticky bottom-0 z-50">
-        <PlaybackControls
-          playbackState={simSession.playbackState}
-          playbackSpeed={simSession.playbackSpeed}
-          currentTimeSec={currentTimeSec}
-          totalDurationSec={totalDurationSec}
-          emittedCount={simSession.emittedCount}
-          deviceId={simSession.deviceId}
-          disabled={isDisabled}
-          profiles={profiles}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onStop={handleStop}
-          onSpeedChange={handleSpeedChange}
-          onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
-          onProfileChange={(p) => setSelectedProfile(p)}
-          onSeek={handleSeek}
-        />
-      </div>
+      <PlaybackControls
+        playbackState={simSession.playbackState}
+        playbackSpeed={simSession.playbackSpeed}
+        currentTimeSec={currentTimeSec}
+        totalDurationSec={totalDurationSec}
+        emittedCount={simSession.emittedCount}
+        deviceId={simSession.deviceId}
+        disabled={isDisabled}
+        profiles={profiles}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
+        onSpeedChange={handleSpeedChange}
+        onDeviceIdChange={(id) => setSession((prev) => ({ ...prev, deviceId: id }))}
+        onProfileChange={(p) => setSelectedProfile(p)}
+        onSeek={handleSeek}
+      />
     </div>
   );
 }
