@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { authAPI } from "../../services/api";
-import { X, Mail, Lock, User, ArrowLeft, Bike } from 'lucide-react';
+import { X, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
 interface LoginSidebarProps {
   isOpen: boolean;
@@ -102,12 +102,7 @@ const LoginSidebar: React.FC<LoginSidebarProps> = ({ isOpen, onClose, onSuccess,
       >
         <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar">
           {/* Brand */}
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center text-white shadow-lg shadow-accent/20">
-              <Bike size={24} strokeWidth={2.5} />
-            </div>
-            <h2 className="text-2xl font-black text-text tracking-tighter m-0">MotoGuard</h2>
-          </div>
+          <img src="/logo.svg" alt="MotoGuard Logo" className="h-12 w-auto object-contain" />
 
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
