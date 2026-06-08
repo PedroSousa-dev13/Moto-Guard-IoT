@@ -473,3 +473,6 @@ simulador/odometer_state.json
 
 # ─── MotoGuard: large font file unnecessary in VCS ──────────────────────────
 app/frontend/public/fonts/helvetiker_regular.typeface.json
+
+# ─── MotoGuard: sensitive files ─────────────────────────────────────────────
+Novo Documento de Texto.txt
