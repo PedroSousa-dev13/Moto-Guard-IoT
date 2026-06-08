@@ -417,8 +417,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-
-
 # ─── MotoGuard: Docker volumes ──────────────────────────────────────────────
 docker/mosquitto/data/
 docker/mosquitto/log/
@@ -426,15 +424,55 @@ docker/mosquitto/log/
 # ─── MotoGuard: env files ───────────────────────────────────────────────────
 app/.env
 app/.env.local
+.env
+.env.*
+!.env.example
 
 # ─── MotoGuard: Prisma generated code ──────────────────────────────────────
 app/backend/src/generated/prisma/
 
 # ─── MotoGuard: orphaned 3D model ──────────────────────────────────────────
 app/models/VR-Mobil.glb
+*.glb
+*.fbx
+
+# ─── MotoGuard: planning files ─────────────────────────────────────────────
+a_fazer.txt
+a_fazer.md
+a-fazer-melhorias-interface.md
+carrossel_*.md
+carrossel_*.txt
+carrossel_descricao.md
+audit_report.md
+scratch/
 
 # ─── MotoGuard: app backend build output ────────────────────────────────────
 app/backend/dist/
+app/frontend/dist/
 
 # ─── MotoGuard: app backend node_modules ────────────────────────────────────
 app/node_modules/
+node_modules/
+
+# Python
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# npm debug logs
+npm-debug.log*
+
+# Simulator state
+simulador/odometer_state.json
+
+# ─── MotoGuard: large font file unnecessary in VCS ──────────────────────────
+app/frontend/public/fonts/helvetiker_regular.typeface.json
+
+# ─── MotoGuard: sensitive files ─────────────────────────────────────────────
+Novo Documento de Texto.txt

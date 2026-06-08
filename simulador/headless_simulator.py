@@ -370,10 +370,13 @@ class HeadlessSimulator:
 
         target_id = dados.get("device_id")
         if target_id:
-            # Se o ID for um dos simuladores padrão do frontend ou o nosso ID configurado, adotamos
+            # Só adotamos um novo device_id se houver um perfil ativo.
+            # Quando o simulador está idle (perfil_nome is None) não faz
+            # sentido re-adotar — evita loop após "parar".
             if (target_id.startswith("MOTOGUARD-SIM-") or target_id == DEVICE_ID) and target_id != self.current_device_id:
-                log(f"Adotando novo device_id para escuta: {target_id}")
-                self.current_device_id = target_id
+                if self.perfil_nome is not None:
+                    log(f"Adotando novo device_id para escuta: {target_id}")
+                    self.current_device_id = target_id
             elif target_id != self.current_device_id and target_id != DEVICE_ID:
                 # Se for para outro ID específico que não reconhecemos, ignoramos
                 return

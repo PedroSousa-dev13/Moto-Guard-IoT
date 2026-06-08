@@ -11,6 +11,7 @@ import type { RefObject } from "react";
 import { io, Socket } from "socket.io-client";
 import type { ParsedRow, ParseResult } from "../real-simulator/csvParser";
 import type { GpxStats } from "../gpx-simulator/gpxParser";
+import { parseGPX } from "../gpx-simulator/gpxParser";
 import GpxDropzone from "../gpx-simulator/GpxDropzone";
 import RouteMap from "../real-simulator/RouteMap";
 import { PlaybackControls } from "../real-simulator/PlaybackControls";
@@ -70,6 +71,7 @@ export default function GpxSimulator() {
   const socketRef = useRef<Socket | null>(null);
   const simulationStartTimeRef = useRef<Date>(new Date());
   const gpxPersistedRef = useRef(false);
+  const gpxRawTextRef = useRef<string | null>(null);
 
   // Dummy video ref (useSyncEngine requires it but we pass null)
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
@@ -201,7 +203,6 @@ export default function GpxSimulator() {
       console.log("[GpxSimulator] Route finished. Stopping.");
       const socket = socketRef.current;
       if (socket?.connected) {
-        // Enviar payload final
         const lastRow = simSession.rows[simSession.rows.length - 1];
         const payload = buildPayload(
           lastRow,
@@ -213,9 +214,6 @@ export default function GpxSimulator() {
           "GPX_IMPORTED"
         );
         emitTelemetry(socket, payload);
-
-        // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
         void persistGpxData();
       }
       
@@ -256,9 +254,6 @@ export default function GpxSimulator() {
         "GPX_IMPORTED"
       );
       emitTelemetry(socket, payload);
-
-      // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
       void persistGpxData();
     }
 
@@ -304,12 +299,13 @@ export default function GpxSimulator() {
   );
 
   // GPX parsed
-  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number }) => {
+  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number; rawText: string }) => {
     setGpxStats(stats);
     setGpxFileName(meta.fileName);
     setGpxFileSize(meta.fileSize);
     setTripId(null);
     gpxPersistedRef.current = false;
+    gpxRawTextRef.current = meta.rawText;
     setTotalDurationSec(result.durationSec);
     setCurrentTimeSec(0);
     setSession((prev) => ({
@@ -321,13 +317,49 @@ export default function GpxSimulator() {
     }));
   }, []);
 
-  // Cleanup
+  // Cleanup: parar motor e notificar backend no unmount
   useEffect(() => {
     return () => {
       syncEngine.stop();
+      // Enviar parar via HTTP keepalive para garantir que o backend fecha a viagem
+      if (simSession.playbackState === "playing" || simSession.playbackState === "paused") {
+        try {
+          const csrfToken = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/)?.[1];
+          fetch("/api/command", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+            },
+            credentials: "include",
+            body: JSON.stringify({ acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" }),
+            keepalive: true,
+          }).catch(() => {});
+        } catch { /* ignore */ }
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-parse GPX when profile changes (only if idle — don't interrupt playback)
+  useEffect(() => {
+    if (!selectedProfile || !gpxRawTextRef.current) return;
+    if (simSession.playbackState !== "idle") return;
+
+    const result = parseGPX(gpxRawTextRef.current, { motorcycleProfile: selectedProfile.name });
+    if ("type" in result) return; // ParseError — ignore
+
+    const { gpxStats: stats, ...parseResult } = result;
+    setGpxStats(stats);
+    setTotalDurationSec(result.durationSec);
+    setCurrentTimeSec(0);
+    setSession((prev) => ({
+      ...prev,
+      rows: parseResult.rows,
+      currentRowIndex: 0,
+      emittedCount: 0,
+    }));
+  }, [selectedProfile?.name, simSession.playbackState]);
 
   // Derived state
   const hasRows = simSession.rows.length > 0;
@@ -404,7 +436,7 @@ export default function GpxSimulator() {
               <span className="text-xs font-bold text-white/80">{hasRows ? "Ficheiro GPX Carregado" : "Nenhum ficheiro selecionado"}</span>
             </div>
           </div>
-          <GpxDropzone onParsed={handleGpxParsed} />
+          <GpxDropzone onParsed={handleGpxParsed} profileName={selectedProfile?.name || "Naked"} />
         </div>
         
         {gpxStats && (

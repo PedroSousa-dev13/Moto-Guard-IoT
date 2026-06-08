@@ -143,7 +143,11 @@ export default function SimulatorContexts() {
     }
   }, [isAdmin]);
 
-  // Quando a viagem termina, enviar "parar" ao simulador Python e limpar a vista
+  // Quando a viagem termina, limpar a vista local.
+  // NOTA: Não enviamos "parar" aqui porque:
+  //   - Se o user carregou em Stop, o "parar" já foi enviado por handleStop().
+  //   - Se a rota terminou automaticamente, o simulador já publicou TRIP_ENDED
+  //     e está em pausa — não precisa de outro "parar".
   useEffect(() => {
     if (!tripEndedSignal) return;
     setToast((prev) =>
@@ -152,10 +156,10 @@ export default function SimulatorContexts() {
         : { message: "Simulação terminada", type: "success" }
     );
     setMapResetSignal((v) => v + 1);
-    resetSimulationView(true); // true = envia "parar" via MQTT antes de limpar estado
+    resetSimulationView(false);
   }, [tripEndedSignal, resetSimulationView]);
 
-  // Cleanup: ao sair da página do simulador, parar o motor Python
+  // Cleanup: ao sair da página do simulador, parar o motor Python e limpar estado
   useEffect(() => {
     return () => {
       const deviceId = getLastKnownDeviceId();
@@ -170,9 +174,13 @@ export default function SimulatorContexts() {
       //    navegação entre páginas — o browser garante que o pedido
       //    completo mesmo que o componente seja desmontado).
       try {
+        const csrfToken = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]+)/)?.[1];
         fetch("/api/command", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+          },
           credentials: "include",
           body: JSON.stringify({ acao: "parar", device_id: deviceId }),
           keepalive: true,
@@ -180,6 +188,9 @@ export default function SimulatorContexts() {
       } catch {
         // Ignorar erros — o WebSocket já tratou do caso normal
       }
+
+      // 3. Limpar estado de telemetria para não mostrar dados stale ao voltar
+      resetSimulationView(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -294,7 +305,7 @@ export default function SimulatorContexts() {
               onStop={() => {
                 setToast({ message: "Simulação terminada", type: "success" });
                 setMapResetSignal((v) => v + 1);
-                resetSimulationView(true);
+                resetSimulationView(false);
               }}
             />
           </div>

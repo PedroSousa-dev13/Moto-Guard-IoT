@@ -135,12 +135,12 @@ class FeatureExtractor:
 
         # ── Ratios relativos ao perfil ────────────────────────────────────
         if profile:
-            p_max_speed = float(profile.get("maxSpeedKmh") or 1.0) or 1.0
-            p_max_roll = float(profile.get("typicalMaxRollDeg") or 1.0) or 1.0
-            p_crash_g = float(profile.get("crashGForce") or 1.0) or 1.0
-            speed_ratio = max_speed / p_max_speed
-            roll_ratio = max_roll / p_max_roll
-            gforce_ratio = max_gforce / p_crash_g
+            p_max_speed = float(profile.get("maxSpeedKmh") or 1.0)
+            p_max_roll = float(profile.get("typicalMaxRollDeg") or 1.0)
+            p_crash_g = float(profile.get("crashGForce") or 1.0)
+            speed_ratio = max_speed / p_max_speed if p_max_speed > 0 else 0.0
+            roll_ratio = max_roll / p_max_roll if p_max_roll > 0 else 0.0
+            gforce_ratio = max_gforce / p_crash_g if p_crash_g > 0 else 0.0
         else:
             speed_ratio = 0.0
             roll_ratio = 0.0

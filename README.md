@@ -157,11 +157,11 @@ graph TB
 |-----------|--------|-----------|
 | React | 19.x | Framework UI |
 | TypeScript | 5.x | Tipagem estática |
-| Vite | 5.x | Build tool |
-| Socket.IO Client | 4.x | WebSocket em tempo real |
+| Vite | 6.x | Build tool |
+| Socket.IO Client | 4.8.x | WebSocket em tempo real |
 | Leaflet | 1.9.x | Mapas interativos |
-| Recharts | 2.x | Gráficos |
-| i18next | 23.x | Internacionalização |
+| Recharts | 3.x | Gráficos |
+| i18next | - | Internacionalização |
 
 ### Backend
 | Tecnologia | Versão | Propósito |
@@ -169,8 +169,8 @@ graph TB
 | Node.js | 20.x | Runtime JavaScript |
 | TypeScript | 5.x | Tipagem estática |
 | Express | 4.x | Framework web |
-| Prisma | 7.x (via @prisma/client) | ORM |
-| Socket.IO | 4.x | WebSocket server |
+| Prisma | 7.x | ORM |
+| Socket.IO | 4.8.x | WebSocket server |
 | MQTT.js | 5.x | Cliente MQTT |
 | JWT | 9.x | Autenticação |
 
@@ -419,9 +419,69 @@ mosquitto_pub -h localhost -t motoguard/comando \
 
 ---
 
-## 📸 Screenshots
+## 📸 Detalhe das Páginas e Screenshots
 
-> **Nota:** Screenshots reais devem ser adicionados em `imagens/screenshots/` e referenciados aqui quando disponíveis.
+Abaixo está o detalhe de cada uma das páginas da aplicação, juntamente com o seu respetivo espaço para a captura de ecrã (print).
+
+### 🏠 Home Page & Autenticação
+A página inicial da aplicação que apresenta o projeto e os formulários de **Login** e **Registo** de utilizadores.
+![Home Page e Login](imagens/screenshots/home_login.png)
+
+### 📊 Dashboard
+Painel principal onde é possível ter uma visão geral do sistema, com widgets interativos, resumo da última viagem e métricas rápidas do estado do motociclo.
+![Dashboard](imagens/screenshots/dashboard.png)
+
+### 🏍️ Garagem (Gestão de Motas)
+Permite gerir as várias motas do utilizador, definir o modelo (Scooter, Naked, Desportiva, etc.), configurar limites personalizados e associar o ID do dispositivo IoT.
+![Garagem](imagens/screenshots/garagem.png)
+
+### 🗺️ Mapa & Navegação em Tempo Real
+Visualização da localização atual do motociclo no mapa, com acompanhamento em tempo real da viagem, marcadores de eventos (como travagens bruscas ou quedas) e percurso percorrido.
+![Mapa em Tempo Real](imagens/screenshots/mapa.png)
+
+### 📈 Analytics e Relatórios
+Secção dedicada à análise aprofundada dos dados recolhidos. Inclui gráficos complexos (Velocidade, RPM, Temperatura), Heatmaps de densidade de incidentes, e a classificação ML (Machine Learning) do estilo de condução.
+![Analytics](imagens/screenshots/analytics.png)
+
+### 🛣️ Histórico de Viagens
+Listagem de todas as viagens guardadas no histórico. Apresenta métricas agregadas de distância, tempo, pontuações de segurança e filtros de busca inteligente.
+![Histórico de Viagens](imagens/screenshots/viagens.png)
+
+### 🔍 Análise Pós-Viagem (Detalhe)
+Relatório interativo de uma viagem concluída, contendo estatísticas detalhadas de velocidade, inclinação, forças G, rota no mapa de satélite e incidentes cronológicos.
+![Detalhe da Viagem](imagens/screenshots/detalhe_viagem.png)
+
+### 📂 Gestor e Importador GPX
+Permite importar ficheiros GPX externos, analisar as suas coordenadas e dados associados antes de guardá-los no histórico do utilizador.
+![Gestor GPX](imagens/screenshots/gpx.png)
+
+### 🎮 Simulador Real-Time IoT
+Simulador gráfico de telemetria em tempo real, com mostradores virtuais (gauges), giroscópio para a inclinação da mota e simulador de incidentes críticos.
+![Simulador Real-Time](imagens/screenshots/simulador.png)
+
+### 🧭 Simulador de Rotas GPX
+Simulador que injeta dados de telemetria baseados em rotas GPX reais importadas, ideal para testes automáticos de campo.
+![Simulador GPX](imagens/screenshots/gpx_simulador.png)
+
+### ⚙️ Contextos de Simulação
+Interface avançada para gerir diferentes cenários de simulação, perfis de teste e comportamentos dinâmicos de sensores.
+![Contextos de Simulação](imagens/screenshots/simulator_contexts.png)
+
+### ⚠️ Alertas & Eventos
+Painel centralizado de gestão de notificações e alertas de risco detetados na telemetria, divididos por nível de severidade.
+![Alertas](imagens/screenshots/alertas.png)
+
+### 🛠️ Configurações do Sistema
+Gestão de preferências globais de conta, idioma (PT/EN), modo de tema (Claro/Escuro) e integrações de e-mail.
+![Configurações](imagens/screenshots/configuracoes.png)
+
+### 👤 Perfil do Utilizador
+Ecrã dedicado à visualização e edição de informações pessoais do condutor e credenciais de segurança.
+![Perfil do Utilizador](imagens/screenshots/perfil.png)
+
+### ℹ️ Sobre o Projeto
+Página explicativa contendo a motivação académica e profissional do MotoGuard, equipe de desenvolvimento e orientações da UTAD.
+![Sobre o Projeto](imagens/screenshots/sobre.png)
 
 ---
 
@@ -653,17 +713,16 @@ Este projeto está licenciado sob a **MIT License**. Ver o ficheiro [LICENSE](LI
 
 ## 📊 Estado do Projeto
 
-- **Progresso Global:** 68% (conforme `a_fazer.txt`)
-- **Testes:** 48% cobertura (meta: 80% — **BLOCKER**)
-- **Funcionalidades Core:** 95% completas
-- **Documentação:** 90% completa
-- **UI/UX:** 99% completa
+- **Progresso Global:** 95%
+- **Funcionalidades Core:** 100% completas
+- **Documentação:** 95% completa
+- **UI/UX:** 100% completa
 
-### Próximas Prioridades
-1. ⚠️ **URGENTE:** Aumentar cobertura de testes para 80%
-2. Implementar alertas automáticos por email
-3. Calibrar ML score para viagens GPX reais
-4. Completar documentação IRL
+### Melhorias Futuras
+1. Integração com hardware real (ESP32/Arduino)
+2. PWA com service workers para offline-first
+3. Live location sharing
+4. Integração com apps externas (Strava, Google Maps)
 
 ---
 

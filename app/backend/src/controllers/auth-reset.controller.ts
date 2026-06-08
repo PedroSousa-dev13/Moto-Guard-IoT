@@ -65,7 +65,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       data: { resetToken: tokenHash },
     });
 
-    const resetLink = `${env.APP_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${env.APP_URL}/reset-password/${resetToken}`;
 
     // Enviar email com o link de reset
     if (env.RESEND_API_KEY) {

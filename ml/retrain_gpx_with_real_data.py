@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from features_gpx import GpxFeatureExtractor, FEATURE_NAMES_GPX
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-MODEL_VERSION = "gpx-isolation-forest-v2-real-data"
 OUTPUT_PATH = Path(__file__).parent / "models" / "gpx_model.pkl"
 
 
@@ -126,6 +125,7 @@ def train_with_real_data() -> None:
     model.fit(X_scaled)
 
     # Serializar Model_Artifact
+    model_version = f"gpx-isolation-forest-v2-real-data-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     artifact = {
         "model": model,
@@ -134,18 +134,20 @@ def train_with_real_data() -> None:
             "trained_at": datetime.now(timezone.utc).isoformat(),
             "n_samples": n_trips,
             "feature_names": FEATURE_NAMES_GPX,
-            "model_version": MODEL_VERSION,
+            "model_version": model_version,
             "model_type": "gpx",
             "data_source": "real_gpx_only",
             "n_estimators": 100,
             "contamination": contamination,
             "random_state": 42,
+            "sigmoid_midpoint": -0.30,
+            "sigmoid_k": 15,
         },
     }
     joblib.dump(artifact, OUTPUT_PATH)
 
     print(f"[retrain_gpx] Model_Artifact guardado em: {OUTPUT_PATH}")
-    print(f"[retrain_gpx] Metadados: n_samples={n_trips}, version={MODEL_VERSION}")
+    print(f"[retrain_gpx] Metadados: n_samples={n_trips}, version={model_version}")
     print(f"[retrain_gpx] ✓ Modelo treinado APENAS com viagens GPX reais!")
 
 

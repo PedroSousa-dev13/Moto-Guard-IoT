@@ -8,7 +8,7 @@ Input (stdin):
 
 Output (stdout):
   { "mlScore": int, "anomalyScore": float, "feedbackLabel": str,
-    "dominantFeatures": [str], "modelVersion": str, "inferenceMs": int }
+    "dominantFeatures": [str], "modelVersion": str, "modelType": str, "inferenceMs": int }
 
 Output de erro (stdout):
   { "error": str, "mlScore": null }
@@ -17,6 +17,8 @@ Output de erro (stdout):
 from __future__ import annotations
 
 import json
+import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -91,13 +93,14 @@ def _load_artifact(model_path: Path) -> dict:
     return artifact
 
 
-def _raw_score_to_ml_score(raw_score: float) -> int:
+def _sigmoid_score_to_ml(raw_score: float, midpoint: float = -0.30, k: float = 15) -> int:
     """
-    Converte score do Isolation Forest [-1, 1] → ML_Score [0, 100].
+    Converte raw_score do Isolation Forest → ML_Score [0, 100] usando sigmoid.
     raw_score próximo de 1 = normal → ML_Score alto
     raw_score próximo de -1 = anómalo → ML_Score baixo
     """
-    ml_score = round((raw_score + 1) / 2 * 100)
+    sigmoid = 1 / (1 + math.exp(-k * (raw_score - midpoint)))
+    ml_score = round(sigmoid * 100)
     return max(0, min(100, ml_score))
 
 
@@ -148,14 +151,15 @@ def infer(trip_data: dict, model_path: Path = DEFAULT_MODEL_PATH) -> dict:
         
         # Selecionar modelo e extrator apropriados
         if is_gpx:
-            # Usar modelo GPX
-            if not GPX_MODEL_PATH.exists():
+            # Usar modelo GPX (respeitar model_path se foi passado explicitamente)
+            model_path = model_path if model_path != DEFAULT_MODEL_PATH else GPX_MODEL_PATH
+            if not model_path.exists():
                 return {
-                    "error": "Modelo GPX não disponível. Execute train_gpx.py primeiro.",
+                    "error": f"Modelo GPX não disponível: {model_path}",
                     "mlScore": None,
+                    "anomalyScore": None,
                     "inferenceMs": int((time.monotonic() - t0) * 1000),
                 }
-            model_path = GPX_MODEL_PATH
             extractor = GpxFeatureExtractor()
             feature_names = FEATURE_NAMES_GPX
             print(f"[infer] Usando modelo GPX: {model_path}", file=sys.stderr)
@@ -184,16 +188,10 @@ def infer(trip_data: dict, model_path: Path = DEFAULT_MODEL_PATH) -> dict:
         raw_scores = model.score_samples(X_scaled)
         raw_score = float(raw_scores[0])
 
-        # Normalizar para [0, 100]
-        # O range de score_samples varia por modelo e dataset
-        # Usar sigmoid para mapear suavemente raw_score → [0, 100]
-        # raw_score típico: [-0.6, -0.05] onde mais negativo = mais anómalo
-        import math
-        k = 15  # steepness (menor = mais suave)
-        midpoint = -0.30  # ponto médio ajustado para GPX
-        sigmoid = 1 / (1 + math.exp(-k * (raw_score - midpoint)))
-        ml_score = round(sigmoid * 100)
-        ml_score = max(0, min(100, ml_score))
+        # Normalizar para [0, 100] usando sigmoid com parâmetros do modelo
+        midpoint = metadata.get("sigmoid_midpoint", -0.30)
+        k = metadata.get("sigmoid_k", 15)
+        ml_score = _sigmoid_score_to_ml(raw_score, midpoint=float(midpoint), k=float(k))
 
         dominant_features = _get_dominant_features(feature_vector, scaler, feature_names)
         feedback_label = _build_feedback_label(dominant_features, ml_score)
@@ -202,9 +200,11 @@ def infer(trip_data: dict, model_path: Path = DEFAULT_MODEL_PATH) -> dict:
         model_type = "GPX" if is_gpx else "Telemetria"
         print(f"[infer] {model_type} ML_Score={ml_score} raw={raw_score:.4f} inferenceMs={inference_ms}", file=sys.stderr)
 
+        anomaly_score_normalized = round(1 - (ml_score / 100), 4)
+
         return {
             "mlScore": ml_score,
-            "anomalyScore": round(raw_score, 4),
+            "anomalyScore": anomaly_score_normalized,
             "feedbackLabel": feedback_label,
             "dominantFeatures": dominant_features,
             "modelVersion": metadata.get("model_version", "unknown"),
@@ -228,11 +228,10 @@ if __name__ == "__main__":
         raw_input = sys.stdin.read()
         trip_data = json.loads(raw_input)
     except json.JSONDecodeError as e:
-        result = {"error": f"JSON inválido no stdin: {e}", "mlScore": None}
+        result = {"error": f"JSON inválido no stdin: {e}", "mlScore": None, "anomalyScore": None}
         print(json.dumps(result))
         sys.exit(1)
 
-    import os
     model_path_env = os.environ.get("ML_MODEL_PATH")
     model_path = Path(model_path_env) if model_path_env else DEFAULT_MODEL_PATH
 

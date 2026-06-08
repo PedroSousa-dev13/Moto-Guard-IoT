@@ -8,25 +8,19 @@ import React, { useCallback, useRef, useState, ChangeEvent, DragEvent } from "re
 import { parseGPX } from "./gpxParser";
 import type { GpxStats } from "./gpxParser";
 import type { ParseResult } from "../real-simulator/csvParser";
-import { Bike, RefreshCcw, AlertTriangle, CheckCircle2, Map as MapIcon } from "lucide-react";
+import { RefreshCcw, AlertTriangle, CheckCircle2, Map as MapIcon } from "lucide-react";
 
 interface GpxDropzoneProps {
-  onParsed: (result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number }) => void;
+  onParsed: (result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number; rawText: string }) => void;
+  profileName?: string;
 }
 
-const PROFILES = [
-  { value: "Naked", label: "🏍️ Naked (6v manual)" },
-  { value: "Scooter", label: "🛵 Scooter (CVT)" },
-  { value: "Desportiva", label: "🏎️ Desportiva (6v)" },
-];
-
-export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
+export default function GpxDropzone({ onParsed, profileName = "Naked" }: GpxDropzoneProps) {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<GpxStats | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [profile, setProfile] = useState("Naked");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(
@@ -43,7 +37,7 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
 
       try {
         const text = await file.text();
-        const result = parseGPX(text, { motorcycleProfile: profile });
+        const result = parseGPX(text, { motorcycleProfile: profileName });
 
         if ("type" in result) {
           // ParseError
@@ -54,14 +48,14 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
 
         const { gpxStats, ...parseResult } = result;
         setStats(gpxStats);
-        onParsed(parseResult, gpxStats, { fileName: file.name, fileSize: file.size });
+        onParsed(parseResult, gpxStats, { fileName: file.name, fileSize: file.size, rawText: text });
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Erro ao processar GPX.");
       } finally {
         setLoading(false);
       }
     },
-    [onParsed, profile]
+    [onParsed, profileName]
   );
 
   const handleDrop = useCallback(
@@ -91,24 +85,6 @@ export default function GpxDropzone({ onParsed }: GpxDropzoneProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Profile selector */}
-      <div className="flex items-center gap-4 p-4 bg-panel border border-border-glass-subtle rounded-2xl shadow-inner">
-        <label className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60 flex items-center gap-2 shrink-0">
-          <Bike size={16} /> Perfil de Moto
-        </label>
-        <select
-          value={profile}
-          onChange={(e) => setProfile(e.target.value)}
-          className="flex-1 bg-surface border border-border-glass-subtle rounded-xl px-4 py-2 text-sm font-black text-text uppercase tracking-widest outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
-        >
-          {PROFILES.map((p) => (
-            <option key={p.value} value={p.value} className="bg-surface">
-              {p.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Drop zone */}
       <div
         onDragOver={(e) => {
