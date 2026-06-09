@@ -1041,11 +1041,6 @@ class HeadlessSimulator:
                 # Detectar fim de rota e paragem total
                 if self.route_cursor and self.route_cursor.finished:
                     self._route_finished_ticks += 1
-                else:
-                    self._route_finished_ticks = 0
-
-                # Detectar fim de rota e paragem total
-                if self.route_cursor and self.route_cursor.finished:
                     finished_seconds = self._route_finished_ticks * self.dt
                     should_end = self.tele.velocidade < 0.5 or finished_seconds >= 5.0
                     if should_end:
@@ -1071,6 +1066,8 @@ class HeadlessSimulator:
                                     if hasattr(self, attr):
                                         delattr(self, attr)
                                 log("FIM DE ROTA ALCANÇADO E VEÍCULO PARADO — simulador em pausa.")
+                else:
+                    self._route_finished_ticks = 0
 
                 # Log a cada 10 ticks (~1Hz) para não inundar logs
                 if self._tick_count % 10 == 0:

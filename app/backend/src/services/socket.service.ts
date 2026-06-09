@@ -62,6 +62,7 @@ export class SocketService {
   private io: Server | null = null;
   private _connectedClients = 0;
   private tripActiveByDevice = new Map<string, boolean>();
+  private lastTripEndedEmitByDevice = new Map<string, number>(); // debounce de trip_ended
   private stationaryTicksByDevice = new Map<string, number>();
   private lastEventStatusByDevice = new Map<string, string>();
   private pendingEmergenciesByDevice = new Map<string, NodeJS.Timeout>();
@@ -155,12 +156,12 @@ export class SocketService {
         const isStopAction = ["parar", "stop_trip", "stop-trip", "trip_end", "trip-ended"].includes(normalizedAction);
 
         // ── Guard anti-repetição para "parar" ───────────────────────────
-        // Se o dispositivo foi parado nos últimos 5 segundos, ignoramos
+        // Se o dispositivo foi parado nos últimos 8 segundos, ignoramos
         // COMPLETAMENTE (nem sequer publicamos ao MQTT) para evitar
         // loops: frontend → backend → MQTT → simulador → backend → …
         if (isStopAction && transportDeviceId) {
           const recentStop = this.recentStopByDevice.get(transportDeviceId);
-          if (recentStop !== undefined && Date.now() - recentStop < 5000) {
+          if (recentStop !== undefined && Date.now() - recentStop < 8000) {
             console.log(`[SocketService] Stop duplicado ignorado para ${transportDeviceId} (${Date.now() - recentStop}ms desde último stop)`);
             return;
           }
@@ -168,7 +169,7 @@ export class SocketService {
           this.recentStopByDevice.set(transportDeviceId, Date.now());
           setTimeout(() => {
             this.recentStopByDevice.delete(transportDeviceId);
-          }, 5000);
+          }, 10000);
         }
 
         const sent = mqttService.publishCommand(command);
@@ -211,29 +212,39 @@ export class SocketService {
         if (isStopAction) {
           try {
             // ── Lógica de finalização de viagem ────────────────────────────
-            // Para fontes simulador (SIMULATOR, GPX_IMPORTED, DEVICE_REAL),
-            // o estado runtime NÃO é limpo aqui — o Python publica o seu
-            // próprio TRIP_ENDED via MQTT, e o handleTripLifecycle() trata
-            // de finalizar a viagem (endTrip()) com todos os dados.
+            // Determinar a fonte do stop para decidir a estratégia.
             const stopSource = command?.source?.toUpperCase()
               ?? (transportDeviceId ? this.lastSourceByDevice.get(transportDeviceId)?.toUpperCase() : undefined)
               ?? "";
             const simulatorStopSources = new Set(["SIMULATOR", "GPX_IMPORTED", "DEVICE_REAL"]);
-            const lastStatus = transportDeviceId
-              ? this.lastTelemetryByDevice.get(transportDeviceId)?.system?.event_status?.toUpperCase()
-              : null;
+            const isSimulatorSource = simulatorStopSources.has(stopSource);
             const now = Date.now();
             const lastTripEndedAt = transportDeviceId
               ? this.lastTripEndedAtByDevice.get(transportDeviceId) ?? 0
               : 0;
-            const recentTripEnded = transportDeviceId ? now - lastTripEndedAt < 3000 : false;
-            const isSimulatorStop = simulatorStopSources.has(stopSource) || lastStatus === "TRIP_ENDED";
+            const recentTripEnded = transportDeviceId ? now - lastTripEndedAt < 5000 : false;
 
-            if (!isSimulatorStop && !recentTripEnded) {
+            // Para fontes simulador (SIMULATOR, GPX_IMPORTED, DEVICE_REAL):
+            // O handleTripLifecycle() já trata de finalizar a viagem quando
+            // recebe TRIP_ENDED via telemetria. Aqui apenas limpamos o estado
+            // runtime. Se a viagem ainda está ativa (race condition), forçamos
+            // o fim.
+            if (isSimulatorSource) {
+              if (transportDeviceId) {
+                const tripStillActive = this.tripActiveByDevice.get(transportDeviceId) ?? false;
+                if (tripStillActive && !recentTripEnded) {
+                  // Race condition: o TRIP_ENDED da telemetria ainda não chegou
+                  // mas o user já carregou em Stop. Forçar fim da viagem.
+                  await this.forceEndTripsOnStopCommand(transportDeviceId);
+                }
+                this.clearRuntimeStateAfterStop(transportDeviceId);
+              }
+            } else if (!recentTripEnded) {
+              // Fonte não-simulador (ex: dispositivo real sem TRIP_ENDED)
               await this.forceEndTripsOnStopCommand(transportDeviceId ?? null);
               this.clearRuntimeStateAfterStop(transportDeviceId ?? null);
-            } else if (transportDeviceId && !(this.tripActiveByDevice.get(transportDeviceId) ?? false) && !recentTripEnded) {
-              // Caso de segurança: fonte simulador sem viagem ativa → limpar
+            } else if (transportDeviceId) {
+              // Recente trip ended — apenas limpar estado
               this.clearRuntimeStateAfterStop(transportDeviceId);
             }
 
@@ -478,10 +489,11 @@ export class SocketService {
     // Se não há viagem ativa mas o simulador enviou TRIP_ENDED,
     // suprimir silenciosamente — NÃO emitir trip_ended para o frontend
     // porque isso causa spam na consola de eventos.
-    // O frontend já lida com a UI cleanup via o useEffect de tripEndedSignal.
+    // Marcar recentStop para bloquear pacotes fantasma subsequentes.
     if (!tripActive && status === "TRIP_ENDED") {
       console.log(`[SocketService] TRIP_ENDED recebido para ${deviceId} sem viagem ativa — suprimido`);
       this.lastTripEndedAtByDevice.set(deviceId, Date.now());
+      this.recentStopByDevice.set(deviceId, Date.now());
       return;
     }
 
@@ -491,7 +503,12 @@ export class SocketService {
       // gerar dados, mas podem chegar ao backend pacotes que já estavam em
       // trânsito no MQTT. Estes pacotes "fantasma" não devem recriar a viagem.
       const recentStop = this.recentStopByDevice.get(deviceId);
-      if (recentStop !== undefined && Date.now() - recentStop < 5000) {
+      if (recentStop !== undefined && Date.now() - recentStop < 8000) {
+        return;
+      }
+      // Verificação adicional: se a viagem terminou recentemente, não recriar
+      const recentTripEnd = this.lastTripEndedAtByDevice.get(deviceId);
+      if (recentTripEnd !== undefined && Date.now() - recentTripEnd < 8000) {
         return;
       }
       this.startTrip(payload);
@@ -752,43 +769,11 @@ export class SocketService {
     this.stationaryTicksByDevice.set(deviceId, 0);
 
     if (!tripId) {
-      const now = endedAt.getTime();
-      const lastHandledAt = this.lastStopHandledAtByDevice.get(deviceId) ?? 0;
-      if (now - lastHandledAt < 5000) {
-        console.log(`[SocketService] forceEndTrip: debounce para ${deviceId} (${now - lastHandledAt}ms)`);
-        return;
-      }
-      this.lastStopHandledAtByDevice.set(deviceId, now);
-
-      // Check if there's a recently ended trip for this device (within last 30s)
-      const recentTrip = await prisma.trip.findFirst({
-        where: {
-          motorcycle: { deviceId },
-          status: "COMPLETED",
-          endedAt: { gte: new Date(endedAt.getTime() - 30000) },
-        },
-        orderBy: { endedAt: "desc" },
-      });
-
-      if (recentTrip) {
-        console.log(`Viagem já finalizada recentemente: ${recentTrip.id}`);
-        this.lastTripEndedAtByDevice.set(deviceId, Date.now());
-        this.io?.emit("trip_ended", {
-          deviceId,
-          motoModel: lastPayload?.system.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—",
-          timestamp: endedAt.toISOString(),
-          tripId: recentTrip.id,
-          distanceKm: recentTrip.distanceKm,
-          maxSpeedKmh: recentTrip.maxSpeedKmh,
-          status: "COMPLETED"
-        });
-        return;
-      }
-
-      // Sem viagem ativa e sem viagem recente — NÃO criar viagem fantasma.
-      // NÃO emitir trip_ended aqui — isso causaria spam no frontend.
-      console.log(`[SocketService] forceEndTrip: sem viagem ativa nem recente para ${deviceId} — ignorado (sem emissão)`);
+      // Sem viagem ativa — NÃO criar viagem fantasma, NÃO emitir trip_ended.
+      // Apenas marcar timestamps para bloquear recriações.
+      console.log(`[SocketService] forceEndTrip: sem viagem ativa para ${deviceId} — no-op`);
       this.lastTripEndedAtByDevice.set(deviceId, Date.now());
+      this.lastStopHandledAtByDevice.set(deviceId, Date.now());
       return;
     }
 
@@ -831,6 +816,11 @@ export class SocketService {
 
     const motoModel = payload?.system?.moto_model ?? this.lastMotoModelByDevice.get(deviceId) ?? "—";
 
+    // ── Debounce de trip_ended por device (3s) ────────────────────────────
+    // Evita que o frontend receba múltiplos trip_ended para a mesma viagem.
+    const lastEmit = this.lastTripEndedEmitByDevice.get(deviceId) ?? 0;
+    const canEmit = Date.now() - lastEmit > 3000;
+
     try {
       const allZeros = (distanceKm === 0 || distanceKm === null) &&
         (stats?.maxSpeed ?? 0) === 0 &&
@@ -852,10 +842,13 @@ export class SocketService {
           },
         });
         console.log(`Viagem cancelada (allZeros): ${tripId}`);
-        this.io?.emit("trip_ended", {
-          deviceId, motoModel, timestamp: endedAt.toISOString(),
-          tripId, status: "CANCELLED", error: "Viagem sem dados suficientes",
-        });
+        if (canEmit) {
+          this.lastTripEndedEmitByDevice.set(deviceId, Date.now());
+          this.io?.emit("trip_ended", {
+            deviceId, motoModel, timestamp: endedAt.toISOString(),
+            tripId, status: "CANCELLED", error: "Viagem sem dados suficientes",
+          });
+        }
       } else {
         const trip = await prisma.trip.update({
           where: { id: tripId },
@@ -873,10 +866,15 @@ export class SocketService {
 
         console.log(`Viagem finalizada: ${tripId} (${distanceKm.toFixed(2)} km)`);
 
-        this.io?.emit("trip_ended", {
-          deviceId, motoModel, timestamp: endedAt.toISOString(),
-          tripId, distanceKm, maxSpeedKmh: stats?.maxSpeed ?? 0, status: "COMPLETED",
-        });
+        if (canEmit) {
+          this.lastTripEndedEmitByDevice.set(deviceId, Date.now());
+          this.io?.emit("trip_ended", {
+            deviceId, motoModel, timestamp: endedAt.toISOString(),
+            tripId, distanceKm, maxSpeedKmh: stats?.maxSpeed ?? 0, status: "COMPLETED",
+          });
+        } else {
+          console.log(`[SocketService] trip_ended debounced para ${deviceId} (${Date.now() - lastEmit}ms desde último emit)`);
+        }
 
         if (doClustering && trip?.userId) {
           tripClusteringService.clusterUserTrips(trip.userId).catch((err) => {
@@ -886,12 +884,15 @@ export class SocketService {
       }
 
       this.lastTripEndedAtByDevice.set(deviceId, Date.now());
+      this.recentStopByDevice.set(deviceId, Date.now());
     } catch (error) {
       console.error("Erro ao finalizar viagem:", error);
-      this.io?.emit("trip_ended", {
-        deviceId, motoModel, timestamp: endedAt.toISOString(),
-        error: "Falha ao persistir fim da viagem",
-      });
+      if (canEmit) {
+        this.io?.emit("trip_ended", {
+          deviceId, motoModel, timestamp: endedAt.toISOString(),
+          error: "Falha ao persistir fim da viagem",
+        });
+      }
     } finally {
       this.activeTripIdByDevice.delete(deviceId);
       this.tripStatsByDevice.delete(deviceId);
@@ -940,106 +941,17 @@ export class SocketService {
     this.heuristicStateByDevice.delete(deviceId);
     this.profileThresholdsCacheByDevice.delete(deviceId);
     this.pendingEmergenciesByDevice.delete(deviceId);
-    this.recentStopByDevice.delete(deviceId);
+    // NÃO limpar recentStopByDevice nem lastTripEndedAtByDevice aqui!
+    // Estes guards precisam de sobreviver ao cleanup para bloquear pacotes fantasma.
     this.lastUserIdByDevice.delete(deviceId);
     this.lastMotoModelByDevice.delete(deviceId);
     this.lastSourceByDevice.delete(deviceId);
-    this.lastTripEndedAtByDevice.delete(deviceId);
+    this.lastTripEndedEmitByDevice.delete(deviceId);
     realtimeAnomalyService.clearDevice(deviceId);
   }
 
-  private async createCompletedTripFromLastPayload(
-    deviceId: string,
-    endedAt: Date,
-    stoppedAt?: Date,
-  ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
-    const lastPayload = this.lastTelemetryByDevice.get(deviceId);
-    if (!lastPayload) return null;
-
-    const userId = this.lastUserIdByDevice.get(deviceId) || undefined;
-    const motoModel = lastPayload.system.moto_model;
-    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel);
-    
-    if (!association && userId) {
-      await deviceAssociationService.registerDevice(
-        deviceId,
-        userId,
-        lastPayload.system.moto_model || `Simulador ${deviceId}`,
-      );
-      association = await deviceAssociationService.getAssociation(deviceId, userId);
-    }
-    if (!association) return null;
-
-    const rawStartedAt = new Date(lastPayload.system.timestamp);
-    const startedAtSafe = Number.isNaN(rawStartedAt.getTime()) ? endedAt : rawStartedAt;
-    const startedAt = startedAtSafe.getTime() > endedAt.getTime() ? endedAt : startedAtSafe;
-
-    const maxSpeedKmh = lastPayload.telemetry.speed_kmh ?? 0;
-    const maxRollDeg = Math.abs(lastPayload.imu.roll_deg ?? 0);
-    const maxGForce = lastPayload.imu.g_force ?? 0;
-    const distanceKm = 0;
-
-    const trip = await prisma.trip.create({
-      data: {
-        userId: association.userId,
-        motorcycleId: association.motorcycleId,
-        source: this.resolveSourceForDevice(deviceId),
-        startedAt,
-        endedAt,
-        ...(stoppedAt ? { stoppedAt } : {}),
-        status: "COMPLETED",
-        distanceKm,
-        maxSpeedKmh,
-        maxRollDeg,
-        maxGForce,
-        avgSpeedKmh: maxSpeedKmh,
-      },
-    });
-
-    return { tripId: trip.id, distanceKm, maxSpeedKmh };
-  }
-
-  private async createCompletedTripWithoutTelemetry(
-    deviceId: string,
-    endedAt: Date,
-    stoppedAt?: Date,
-  ): Promise<{ tripId: string; distanceKm: number; maxSpeedKmh: number } | null> {
-    const userId = this.lastUserIdByDevice.get(deviceId) || undefined;
-    const motoModel = this.lastMotoModelByDevice.get(deviceId);
-    let association = await deviceAssociationService.getAssociation(deviceId, userId, motoModel || undefined);
-    
-    if (!association && userId) {
-      await deviceAssociationService.registerDevice(
-        deviceId,
-        userId,
-        this.lastMotoModelByDevice.get(deviceId) ?? `Simulador ${deviceId}`,
-      );
-      association = await deviceAssociationService.getAssociation(deviceId, userId);
-    }
-    if (!association) return null;
-
-    const distanceKm = 0;
-    const maxSpeedKmh = 0;
-
-    const trip = await prisma.trip.create({
-      data: {
-        userId: association.userId,
-        motorcycleId: association.motorcycleId,
-        source: this.resolveSourceForDevice(deviceId),
-        startedAt: endedAt,
-        endedAt,
-        ...(stoppedAt ? { stoppedAt } : {}),
-        status: "COMPLETED",
-        distanceKm,
-        maxSpeedKmh,
-        maxRollDeg: 0,
-        maxGForce: 0,
-        avgSpeedKmh: 0,
-      },
-    });
-
-    return { tripId: trip.id, distanceKm, maxSpeedKmh };
-  }
+  // NOTA: createCompletedTripFromLastPayload e createCompletedTripWithoutTelemetry
+  // foram removidas — eram dead code que podia causar criação de viagens fantasma.
 
   private async ensureAssociationForDevice(deviceId: string, userId: string, motoModel: string): Promise<void> {
     this.lastUserIdByDevice.set(deviceId, userId);

@@ -18,6 +18,7 @@
     "db:events": "npx tsx scripts/view-database.ts events",
     "db:motas": "npx tsx scripts/view-database.ts motorcycles",
     "db:users": "npx tsx scripts/view-database.ts users",
+    "db:clean": "npx tsx scripts/clean-trips.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage"
   },

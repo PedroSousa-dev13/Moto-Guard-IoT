@@ -31,6 +31,8 @@ export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
   const lastKnownDeviceIdRef = useRef<string | null>(null);
   const anomalyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Cooldown: após reset, ignorar telemetria do device parado durante 5s
+  const telemetryCooldownRef = useRef<{ deviceId: string; until: number } | null>(null);
   const [telemetryByDevice, setTelemetryByDevice] = useState<Record<string, TelemetryPayload>>({});
   const [lastDeviceId, setLastDeviceId] = useState<string | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
@@ -63,6 +65,11 @@ export function useSocket() {
   const resetSimulationView = useCallback((sendStop = false) => {
     if (sendStop) {
       sendStopCommand();
+    }
+    // Definir cooldown para o device que está a ser parado
+    const deviceToBlock = lastKnownDeviceIdRef.current;
+    if (deviceToBlock) {
+      telemetryCooldownRef.current = { deviceId: deviceToBlock, until: Date.now() + 5000 };
     }
     setTelemetryByDevice({});
     setLastDeviceId(null);
@@ -200,6 +207,16 @@ export function useSocket() {
 
     socket.on("telemetry_update", (data: TelemetryPayload) => {
       const deviceId = data.system.device_id;
+
+      // Verificar cooldown: após reset, ignorar telemetria do device parado
+      const cooldown = telemetryCooldownRef.current;
+      if (cooldown && cooldown.deviceId === deviceId && Date.now() < cooldown.until) {
+        return;
+      }
+      if (cooldown && Date.now() >= cooldown.until) {
+        telemetryCooldownRef.current = null; // expirou
+      }
+
       lastKnownDeviceIdRef.current = deviceId;
       setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: data }));
       setLastDeviceId(deviceId);

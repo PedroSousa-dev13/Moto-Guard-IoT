@@ -110,7 +110,7 @@ export default function SimulatorContexts() {
   // O componente renderiza sempre que recebe telemetria ou o relógio avança
   // Comparamos a data da telemetria com a atual para ver se não é uma "viagem fantasma" morta.
   const isTelemetryFresh = telemetry?.system?.timestamp 
-    ? (Date.now() - new Date(telemetry.system.timestamp).getTime() < 15000) 
+    ? (Date.now() - new Date(telemetry.system.timestamp).getTime() < 5000) 
     : false;
   const running = status.ws && !!telemetry && !isTripEnded && isTelemetryFresh;
 
