@@ -410,6 +410,7 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="var(--green)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
+                  <Area type="monotone" dataKey="speed" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorSpeed)" animationDuration={500} />
                   <Area type="monotone" dataKey="rpm" stroke="var(--green)" strokeWidth={3} fillOpacity={1} fill="url(#colorRpm)" animationDuration={500} />
                 </AreaChart>
               </ResponsiveContainer>

@@ -664,14 +664,14 @@ function TripListCard({
   const isDisabled = selectedForComparison.length >= 2 && !isSelected;
 
   return (
-    <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 relative min-h-[160px] ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-white/10 hover:border-white/20'}`}>
+    <div className={`flex flex-col bg-surface/40 backdrop-blur-xl border rounded-[2rem] overflow-hidden transition-all duration-500 relative min-h-[160px] ${isOpen ? 'border-accent/40 shadow-2xl shadow-accent/5' : 'border-border-glass-subtle hover:border-border-glass'}`}>
       
       <div className="flex flex-col lg:flex-row min-h-[160px] relative z-10">
         <div className="flex-1 p-8 flex flex-col justify-center gap-6 cursor-pointer relative overflow-hidden z-10" onClick={() => onToggle(trip.id)}>
           <img src={motoImg} alt="moto" className="absolute inset-0 w-full h-full object-cover opacity-100 drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none z-0" />
           <div className="relative z-10 flex flex-col gap-6">
             <div className="flex flex-col gap-4">
-              <h3 className="text-xl font-black text-white tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>
+              <h3 className="text-xl font-black text-text tracking-tight m-0 leading-none">{trip.motorcycle?.name}</h3>
               <div className="flex flex-wrap gap-2.5">
                 <span className={`flex items-center gap-2 px-3 py-1 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
                   {badge.icon} {badge.label}
@@ -683,10 +683,10 @@ function TripListCard({
               </div>
             </div>
             <div className="flex flex-wrap gap-8 items-center">
-              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-white/70 hover:text-white transition-colors">
+              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-text-2 hover:text-text transition-colors">
                 <Calendar size={14} className="text-accent" /> {formatDate(trip.startedAt)}
               </div>
-              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-white/70 hover:text-white transition-colors">
+              <div className="flex items-center gap-2.5 text-[0.7rem] font-bold text-text-2 hover:text-text transition-colors">
                 <Clock size={14} className="text-accent" /> {formatDuration(trip.startedAt, trip.endedAt)}
               </div>
               {evCount > 0 && (
@@ -704,26 +704,26 @@ function TripListCard({
                    disabled={isDisabled}
                    onChange={() => onCompareToggle(trip.id)}
                  />
-                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-accent border-accent shadow-lg shadow-accent/20' : 'border-white/10 group-hover:border-white/30 bg-black/20'}`}>
+                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-accent border-accent shadow-lg shadow-accent/20' : 'border-border-glass-subtle group-hover:border-border-glass bg-black/20'}`}>
                    {isSelected && <Check size={16} className="text-white" strokeWidth={4} />}
                  </div>
-                 <span className={`text-[0.65rem] font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-accent' : 'text-white/70 group-hover:text-white'}`}>Comparar Viagem</span>
+                 <span className={`text-[0.65rem] font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-accent' : 'text-text-2 group-hover:text-text'}`}>Comparar Viagem</span>
                </label>
             </div>
           </div>
         </div>
-        <div className="lg:w-72 p-8 lg:border-l border-border-glass bg-white/5 flex flex-col justify-center items-end gap-8 shrink-0">
+        <div className="lg:w-72 p-8 lg:border-l border-border-glass bg-panel flex flex-col justify-center items-end gap-8 shrink-0">
           <div className="flex gap-8 justify-end w-full">
             <div className="flex flex-col items-end group/stat">
-              <span className="text-xl font-black text-white tracking-tighter tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
-              <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM</span>
+              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-text-2 uppercase tracking-widest">KM</span>
             </div>
             <div className="flex flex-col items-end group/stat">
-              <span className="text-xl font-black text-white tracking-tighter tabular-nums">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
-              <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM/H</span>
+              <span className="text-xl font-black text-text tracking-tighter tabular-nums">{trip.avgSpeedKmh?.toFixed(0) ?? "—"}</span>
+              <span className="text-[0.6rem] font-black text-text-2 uppercase tracking-widest">KM/H</span>
             </div>
           </div>
-          <button className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${isOpen ? 'bg-white/10 text-white border border-white/10' : 'bg-accent text-white shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'}`} onClick={() => onToggle(trip.id)}>
+          <button className={`w-full flex items-center justify-center gap-3 py-3 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest transition-all ${isOpen ? 'bg-panel text-text border border-border-glass-subtle' : 'bg-accent text-white shadow-xl shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]'}`} onClick={() => onToggle(trip.id)}>
             {isOpen ? "Ocultar" : "Detalhes"} {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
         </div>
@@ -734,7 +734,7 @@ function TripListCard({
           {detailLoadingId === trip.id ? (
             <div className="flex flex-col items-center justify-center py-12 gap-5">
               <div className="w-10 h-10 rounded-full border-4 border-accent/10 border-t-accent animate-spin" />
-              <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-white/60 animate-pulse">A extrair telemetria...</span>
+              <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-text-2 animate-pulse">A extrair telemetria...</span>
             </div>
           ) : (
             <div className="flex flex-col gap-10">
@@ -745,21 +745,21 @@ function TripListCard({
                   { label: "Inclinação Máx.", val: `${trip.maxRollDeg?.toFixed(1) ?? "—"}`, unit: "°", icon: <History size={14} /> },
                   { label: "Força G Máx.", val: `${trip.maxGForce?.toFixed(2) ?? "—"}`, unit: "G", icon: <Cpu size={14} /> }
                 ].map(stat => (
-                  <div key={stat.label} className="bg-white/5 border border-white/5 rounded-3xl p-6 flex flex-col gap-2 hover:border-accent/30 transition-colors shadow-inner group/mini">
-                    <div className="flex items-center gap-2 text-[0.55rem] font-black uppercase tracking-[0.15em] text-white/60">
+                  <div key={stat.label} className="bg-panel border border-border-glass-subtle rounded-3xl p-6 flex flex-col gap-2 hover:border-accent/30 transition-colors shadow-inner group/mini">
+                    <div className="flex items-center gap-2 text-[0.55rem] font-black uppercase tracking-[0.15em] text-text-2">
                        <span className="text-accent group-hover/mini:scale-110 transition-transform">{stat.icon}</span>
                        {stat.label}
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-black text-white tracking-tighter tabular-nums">{stat.val}</span>
-                      <span className="text-[0.6rem] font-bold text-white/40 uppercase tracking-widest">{stat.unit}</span>
+                      <span className="text-3xl font-black text-text tracking-tighter tabular-nums">{stat.val}</span>
+                      <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest">{stat.unit}</span>
                     </div>
                   </div>
                 ))}
               </div>
               
               <Link to={`/trips/${trip.id}`} className="group/btn">
-                <button className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 py-5 rounded-2xl font-black text-sm text-white transition-all group-hover/btn:border-accent/40 shadow-xl">
+                <button className="w-full flex items-center justify-center gap-3 bg-panel hover:bg-panel-hover border border-border-glass-subtle py-5 rounded-2xl font-black text-sm text-text transition-all group-hover/btn:border-accent/40 shadow-xl">
                   <Activity size={20} className="text-accent group-hover/btn:scale-125 transition-transform" /> Ver Relatório Pós‑Viagem Completo <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-3" />
                 </button>
               </Link>
@@ -772,12 +772,19 @@ function TripListCard({
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {trip.events.map((ev) => (
-                      <div key={ev.id} className={`flex items-center gap-5 p-5 rounded-3xl bg-surface-2/50 border border-border-glass-subtle border-l-4 group/ev hover:bg-surface-2/80 transition-colors ${severityColorClass(ev.severity)}`}>
+                      <div key={ev.id} className={`flex items-center gap-5 p-5 rounded-3xl bg-panel border border-border-glass-subtle border-l-4 group/ev hover:bg-panel-hover transition-colors ${severityColorClass(ev.severity)}`}>
                         <span className="text-3xl group-hover/ev:scale-125 transition-transform drop-shadow-lg shrink-0">{eventTypeIcon(ev.type)}</span>
                         <div className="flex flex-col flex-1 gap-1.5 min-w-0">
                           <div className="flex justify-between items-start gap-4">
-                            <span className="text-[0.85rem] font-black text-white leading-tight truncate">{ev.message}</span>
-                            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest whitespace-nowrap">{new Date(ev.occurredAt).toLocaleTimeString("pt-PT")}</span>
+                            <span className="text-[0.85rem] font-black text-text leading-tight truncate">{ev.message}</span>
+                            <span className="text-[0.6rem] font-black text-text-2 uppercase tracking-widest whitespace-nowrap">
+                              {(() => {
+                                const d = ev.occurredAt || (ev as any).occurred_at || ev.createdAt || (ev as any).created_at;
+                                if (!d) return "—";
+                                const date = new Date(d);
+                                return isNaN(date.getTime()) ? "—" : date.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+                              })()}
+                            </span>
                           </div>
                           {ev.speedKmh != null && (
                             <div className="flex items-center gap-2 text-[0.6rem] font-black uppercase tracking-widest text-accent/60">

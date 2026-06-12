@@ -42,7 +42,7 @@ interface SaveSimulatorGpxPayload {
   totalTime?: number;
 }
 
-const ALLOWED_MIME_TYPES = ["application/gpx+xml", "application/xml", "text/xml"];
+const ALLOWED_MIME_TYPES = ["application/gpx+xml", "application/xml", "text/xml", "application/octet-stream"];
 
 function isValidGpxMimeType(mime: string | undefined): boolean {
   if (!mime) return false;
@@ -169,10 +169,8 @@ export async function importGpx(req: GpxImportRequest, res: Response): Promise<v
     return;
   }
 
-  if (!isValidGpxMimeType(file.mimetype)) {
-    res.status(400).json({ error: "Tipo de ficheiro não suportado" });
-    return;
-  }
+  // MIME type validation removed — browsers send unreliable MIME types for .gpx files
+  // (e.g. application/octet-stream). The .gpx extension check above is sufficient.
 
   const requestedMotorcycleId =
     typeof req.body?.motorcycleId === "string" && req.body.motorcycleId.trim() !== ""
@@ -301,13 +299,7 @@ export async function parseGpxFile(req: GpxImportRequest, res: Response): Promis
     return;
   }
 
-  if (!isValidGpxMimeType(file.mimetype)) {
-    res.status(400).json({
-      success: false,
-      error: "Tipo de ficheiro não suportado"
-    });
-    return;
-  }
+  // MIME type validation removed — browsers send unreliable MIME types for .gpx files
 
   const maxSizeBytes = 10 * 1024 * 1024;
   if (file.size > maxSizeBytes) {
