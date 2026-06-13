@@ -130,7 +130,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
             <div className="absolute inset-0 z-10 pointer-events-none" style={{
               background: 'radial-gradient(ellipse at center, transparent 50%, rgba(6,6,12,0.6) 100%)',
             }} />
-            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-muted font-bold gap-3"><Loader2 className="animate-spin" /> Carregando 3D...</div>}>
+            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-white/70 font-bold gap-3"><Loader2 className="animate-spin" /> Carregando 3D...</div>}>
               <Motorcycle3DView
                 roll={imu?.roll_deg ?? 0}
                 pitch={imu?.pitch_deg ?? 0}
@@ -150,18 +150,18 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
             {/* Overlay telemetry */}
             <div className="absolute top-8 right-8 flex flex-col gap-3">
               <div className={`flex flex-col items-end px-4 py-2 rounded-xl backdrop-blur-md border ${statusBg(engineTempStatus)}`}>
-                <span className="text-[0.55rem] font-black uppercase tracking-widest opacity-60">Temp Motor</span>
+                <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">Temp Motor</span>
                 <span className={`text-lg font-black ${statusColor(engineTempStatus)}`}>{telemetry!.engine_temp_c}°C</span>
               </div>
               <div className={`flex flex-col items-end px-4 py-2 rounded-xl backdrop-blur-md border ${statusBg(frontTireStatus)}`}>
-                <span className="text-[0.55rem] font-black uppercase tracking-widest opacity-60">Pres. Dianteira</span>
+                <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">Pres. Dianteira</span>
                 <span className={`text-lg font-black ${statusColor(frontTireStatus)}`}>{health!.tire_pressure_front_bar} bar</span>
               </div>
             </div>
 
             <div className="absolute bottom-8 left-8">
               <div className={`flex flex-col px-4 py-2 rounded-xl backdrop-blur-md border ${statusBg(rearTireStatus)}`}>
-                <span className="text-[0.55rem] font-black uppercase tracking-widest opacity-60">Pres. Traseira</span>
+                <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">Pres. Traseira</span>
                 <span className={`text-lg font-black ${statusColor(rearTireStatus)}`}>{health!.tire_pressure_rear_bar} bar</span>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
                 <AlertTriangle size={18} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Pressão Óleo</span>
+                <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Pressão Óleo</span>
                 <span className="text-lg font-black tracking-tight text-text">{health?.oil_pressure_bar ?? '—'} bar</span>
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
                 <CheckCircle2 size={18} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Bateria</span>
+                <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Bateria</span>
                 <span className="text-lg font-black tracking-tight text-text">{telemetry?.voltage ?? '—'} V</span>
               </div>
             </div>

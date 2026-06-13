@@ -46,7 +46,7 @@ function statusBadge(status: string) {
     case "ACTIVE":    return { className: "bg-green/10 text-green border-green/20", label: "Ativa", icon: <Zap size={12} /> };
     case "COMPLETED": return { className: "bg-blue/10 text-blue border-blue/20", label: "Concluída", icon: <Calendar size={12} /> };
     case "CANCELLED": return { className: "bg-red/10 text-red border-red/20", label: "Cancelada", icon: <AlertCircle size={12} /> };
-    default:          return { className: "bg-white/10 text-muted border-white/20", label: status, icon: <Info size={12} /> };
+    default:          return { className: "bg-panel text-muted border-border-glass", label: status, icon: <Info size={12} /> };
   }
 }
 
@@ -55,7 +55,7 @@ function sourceBadge(source: TripSource) {
     case "SIMULATOR":    return { className: "bg-sky/10 text-sky border-sky/20", label: "Simulador", icon: <Monitor size={12} /> };
     case "GPX_IMPORTED": return { className: "bg-green/10 text-green border-green/20", label: "GPX", icon: <Database size={12} /> };
     case "DEVICE_REAL":  return { className: "bg-pink/10 text-pink border-pink/20", label: "Real", icon: <Cpu size={12} /> };
-    default:             return { className: "bg-white/10 text-muted border-white/20", label: source, icon: <Route size={12} /> };
+    default:             return { className: "bg-panel text-muted border-border-glass", label: source, icon: <Route size={12} /> };
   }
 }
 
@@ -92,13 +92,13 @@ function MotoCard({ moto, selected, tripCount, onClick }: {
   return (
     <div
       onClick={onClick}
-      className={`flex-shrink-0 w-52 h-36 rounded-2xl border transition-all cursor-pointer flex flex-col group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/20 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
+      className={`flex-shrink-0 w-52 h-36 rounded-2xl border transition-all cursor-pointer flex flex-col group relative overflow-hidden ${selected ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/20 scale-[1.02]" : "bg-surface-2 border-border-glass-subtle hover:bg-panel-hover hover:border-border-glass"}`}
     >
       <img src={img} alt={moto.name} className="moto-card-bg" />
       <div className="p-4 relative z-10 flex-1 flex flex-col justify-end">
         <div className="flex flex-col gap-0.5">
-          <div className="font-black text-sm text-white truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
-          <div className="text-[0.6rem] font-bold text-white/70 uppercase tracking-widest truncate">
+          <div className="font-black text-sm text-text truncate leading-tight group-hover:text-accent transition-colors">{moto.name}</div>
+          <div className="text-[0.6rem] font-bold text-text-2 uppercase tracking-widest truncate">
             {moto.brand} {moto.model}
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function Trips() {
           <History className="text-accent" size={32} />
           <h1 className="text-3xl font-black text-text tracking-tight m-0">Histórico de Viagens</h1>
         </div>
-        <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col gap-4">
+        <div className="bg-surface/40 backdrop-blur-xl border border-border-glass rounded-3xl p-6 flex flex-col gap-4">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
         </div>
       </div>
@@ -297,7 +297,7 @@ export default function Trips() {
             <Route size={16} className="text-accent/60" /> Explore e analise o seu histórico de condução premium.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+        <div className="flex items-center gap-2 bg-surface-2 p-1.5 rounded-2xl border border-border-glass-subtle shadow-inner">
           <button className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all ${view === "FEED" ? "bg-accent text-white shadow-lg shadow-accent/20" : "text-muted hover:text-text"}`}
             onClick={() => { setView("FEED"); setExpandedId(null); setPage(1); }}>
             <Activity size={18} /> Feed
@@ -314,30 +314,30 @@ export default function Trips() {
       </div>
 
       {/* HERO SUMMARY */}
-      <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl relative group">
+      <div className="bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl relative group">
         <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
         
         <div className="flex gap-16 flex-wrap justify-center md:justify-start relative z-10">
           <div className="flex flex-col gap-1">
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Total Viagens</span>
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">Total Viagens</span>
             <span className="text-5xl font-black text-text tracking-tighter tabular-nums">{activeCount}</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Distância Total</span>
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">Distância Total</span>
             <div className="flex items-baseline gap-2">
               <span className="text-5xl font-black text-text tracking-tighter tabular-nums">{totalKm.toFixed(1)}</span>
-              <span className="text-xs font-black text-muted opacity-40 uppercase tracking-widest">KM</span>
+              <span className="text-xs font-black text-muted uppercase tracking-widest">KM</span>
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score Médio</span>
+            <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">Safety Score Médio</span>
             <span className={`text-5xl font-black tracking-tighter tabular-nums transition-colors ${avgSafety === null ? "text-muted" : scoreStyle(avgSafety).className}`}>
               {avgSafety === null ? "—" : avgSafety.toFixed(0)}
             </span>
           </div>
         </div>
 
-        <div className="relative w-28 h-28 rounded-full bg-black/20 flex items-center justify-center border border-white/5 shadow-inner group-hover:border-accent/40 transition-all shrink-0">
+        <div className="relative w-28 h-28 rounded-full bg-black/20 flex items-center justify-center border border-border-glass-subtle shadow-inner group-hover:border-accent/40 transition-all shrink-0">
           <Activity size={56} className="text-accent opacity-20" />
           <div className="absolute inset-0 rounded-full border-2 border-accent animate-ping opacity-0 group-hover:opacity-10 transition-opacity" />
         </div>
@@ -346,20 +346,20 @@ export default function Trips() {
       {/* MOTO SELECTOR */}
       {motos.length > 0 && (
         <div className="flex flex-col gap-5">
-          <div className="text-[0.65rem] font-black uppercase tracking-widest text-muted ml-1 flex items-center gap-2 opacity-60">
+          <div className="text-[0.65rem] font-black uppercase tracking-widest text-muted ml-1 flex items-center gap-2">
             <Bike size={14} className="text-accent" /> Filtrar por Mota
           </div>
           <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-none px-1">
             <div
               onClick={() => { setSelectedMotoId("ALL"); setPage(1); setExpandedId(null); }}
-              className={`flex-shrink-0 w-52 p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden ${selectedMotoId === "ALL" ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/5 scale-[1.02]" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"}`}
+              className={`flex-shrink-0 w-52 p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden ${selectedMotoId === "ALL" ? "bg-accent/10 border-accent/40 shadow-lg shadow-accent/5 scale-[1.02]" : "bg-surface-2 border-border-glass-subtle hover:bg-panel-hover hover:border-border-glass"}`}
             >
               <div className="w-full h-24 rounded-xl bg-accent/5 flex items-center justify-center text-accent/40 group-hover:scale-105 transition-transform">
                 <Bike size={48} />
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="font-black text-sm text-text">Todas</span>
-                <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-40">Histórico Total</span>
+                <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest">Histórico Total</span>
               </div>
             </div>
             {motos.map((moto) => (
@@ -372,14 +372,14 @@ export default function Trips() {
       )}
 
       {/* FILTERS */}
-      <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 flex flex-col gap-8 shadow-xl">
+      <div className="bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2rem] p-8 flex flex-col gap-8 shadow-xl">
         <div className="flex items-center gap-3 text-[0.65rem] font-black uppercase tracking-widest text-text opacity-80">
           <div className="w-1.5 h-1.5 rounded-full bg-accent" />
           Filtros Inteligentes
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           <div className="flex flex-col gap-2.5">
-            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Origem</label>
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1">Origem</label>
             <select className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer shadow-sm" value={sourceFilter}
               onChange={(e) => {
                 const nextSource = e.target.value as TripSourceFilter;
@@ -399,7 +399,7 @@ export default function Trips() {
             </select>
           </div>
           <div className="flex flex-col gap-2.5">
-            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Estado</label>
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1">Estado</label>
             <select className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black uppercase tracking-widest text-text focus:outline-none focus:border-accent transition-all cursor-pointer shadow-sm" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value as TripStatusFilter); setPage(1); setExpandedId(null); }}>
               <option value="ALL" className="bg-surface">Todos</option>
@@ -409,18 +409,18 @@ export default function Trips() {
             </select>
           </div>
           <div className="flex flex-col gap-2.5">
-            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">De</label>
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1">De</label>
             <input className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all shadow-sm" type="date" value={fromDate}
               onChange={(e) => { setFromDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="flex flex-col gap-2.5">
-            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1 opacity-60">Até</label>
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted ml-1">Até</label>
             <input className="bg-surface border border-border-glass rounded-xl px-4 py-3 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all shadow-sm" type="date" value={toDate}
               onChange={(e) => { setToDate(e.target.value); setPage(1); setExpandedId(null); }} />
           </div>
           <div className="flex items-center pt-6 justify-center">
              <label className="flex items-center gap-3 cursor-pointer group">
-               <div className={`w-12 h-7 rounded-full transition-all relative flex items-center px-1.5 shadow-inner ${onlyWithEvents ? 'bg-accent' : 'bg-white/10'}`}>
+                <div className={`w-12 h-7 rounded-full transition-all relative flex items-center px-1.5 shadow-inner ${onlyWithEvents ? 'bg-accent' : 'bg-surface-3'}`}>
                  <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-xl ${onlyWithEvents ? 'translate-x-5' : 'translate-x-0'}`} />
                </div>
                <input type="checkbox" className="hidden" checked={onlyWithEvents}
@@ -433,18 +433,18 @@ export default function Trips() {
 
       {activeCount === 0 && (
         <div className="flex flex-col items-center justify-center py-32 text-center gap-8">
-          <div className="w-28 h-28 rounded-full bg-white/5 flex items-center justify-center text-muted/10 border border-white/5 shadow-inner">
+          <div className="w-28 h-28 rounded-full bg-surface-2 flex items-center justify-center text-muted border border-border-glass-subtle shadow-inner">
             <Route size={64} />
           </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-2xl font-black text-text m-0 tracking-tight">Sem viagens encontradas</h3>
-            <p className="text-muted text-sm font-medium max-w-sm m-0 leading-relaxed opacity-60">
+            <p className="text-muted text-sm font-medium max-w-sm m-0 leading-relaxed">
               {selectedMotoId !== "ALL"
                 ? "Esta mota ainda não tem viagens que correspondam aos filtros aplicados."
                 : "Inicie uma simulação no simulador IoT ou importe um ficheiro GPX para ver resultados aqui."}
             </p>
             {(sourceFilter !== "ALL" || statusFilter !== "ALL") && (
-              <p className="text-xs text-muted/70 font-semibold uppercase tracking-wider m-0">
+              <p className="text-xs text-muted font-semibold uppercase tracking-wider m-0">
                 Filtros ativos: origem={sourceFilter} | estado={statusFilter}
               </p>
             )}
@@ -476,17 +476,17 @@ export default function Trips() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 flex flex-col gap-4 shadow-xl">
+            <div className="bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2rem] p-6 flex flex-col gap-4 shadow-xl">
               <div className="flex items-center gap-3 text-[0.65rem] font-black uppercase tracking-widest text-text opacity-80">
                 <GitCompare size={16} className="text-accent" /> Seleciona Viagens para Comparar
               </div>
-              <p className="text-[0.7rem] font-medium text-muted opacity-60 m-0 pb-2">
+              <p className="text-[0.7rem] font-medium text-muted m-0 pb-2">
                 Escolhe entre 2 a 4 viagens para comparar métricas, scores e eventos lado a lado.
               </p>
               {filteredTrips.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
-                  <GitCompare size={40} className="text-muted/20" />
-                  <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-40">Sem viagens disponíveis</span>
+                  <GitCompare size={40} className="text-muted" />
+                  <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Sem viagens disponíveis</span>
                 </div>
               )}
               <div className="grid grid-cols-1 gap-4">
@@ -495,20 +495,20 @@ export default function Trips() {
                   const isDisabled = selectedForComparison.length >= 4 && !isSelected;
                   return (
                     <div key={trip.id}
-                      className={`flex items-center justify-between p-5 rounded-2xl border transition-all cursor-pointer ${isSelected ? 'bg-accent/10 border-accent/40 shadow-lg shadow-accent/5' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'} ${isDisabled ? 'opacity-30 pointer-events-none' : ''}`}
+                      className={`flex items-center justify-between p-5 rounded-2xl border transition-all cursor-pointer ${isSelected ? 'bg-accent/10 border-accent/40 shadow-lg shadow-accent/5' : 'bg-surface-2 border-border-glass-subtle hover:bg-panel-hover hover:border-border-glass'} ${isDisabled ? 'opacity-30 pointer-events-none' : ''}`}
                       onClick={() => { if (!isDisabled) handleCompareToggle(trip.id); }}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center font-black text-sm transition-all ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'border-white/10 text-muted'}`}>
+                        <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center font-black text-sm transition-all ${isSelected ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20' : 'border-border-glass text-muted'}`}>
                           {isSelected ? <Check size={18} strokeWidth={4} /> : selectedForComparison.indexOf(trip.id) + 1}
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="font-black text-sm text-text">{trip.motorcycle?.name}</span>
-                          <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest opacity-60">{formatDate(trip.startedAt)}</span>
+                          <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest">{formatDate(trip.startedAt)}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-6">
-                        <span className="text-[0.65rem] font-black text-text tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"} <span className="text-muted opacity-40 font-bold">KM</span></span>
+                        <span className="text-[0.65rem] font-black text-text tabular-nums">{trip.distanceKm?.toFixed(1) ?? "—"} <span className="text-muted font-bold">KM</span></span>
                         <span className={`text-[0.65rem] font-black ${trip.safetyScore != null ? scoreStyle(trip.safetyScore).className : 'text-muted'}`}>{trip.safetyScore ?? "—"}</span>
                       </div>
                     </div>
@@ -535,9 +535,9 @@ export default function Trips() {
       )}
 
       {activeCount > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-8 py-8 mt-4 border-t border-white/5 shrink-0">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-8 py-8 mt-4 border-t border-border-glass-subtle shrink-0">
           <div className="flex items-center gap-5">
-            <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted opacity-60">Itens por página</span>
+            <span className="text-[0.65rem] font-black uppercase tracking-widest text-muted">Itens por página</span>
             <select className="bg-surface border border-border-glass rounded-xl px-4 py-2 text-[0.7rem] font-black text-text focus:outline-none focus:border-accent transition-all cursor-pointer"
               value={pageSize}
               onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); setExpandedId(null); }}>
@@ -545,14 +545,14 @@ export default function Trips() {
             </select>
           </div>
           <div className="flex items-center gap-6">
-            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage <= 1}
+            <button className="w-12 h-12 rounded-2xl bg-surface-2 border border-border-glass-subtle flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage <= 1}
               onClick={() => { setPage((p) => Math.max(1, p - 1)); setExpandedId(null); }}>
               <ChevronLeft size={24} />
             </button>
             <span className="text-sm font-black text-text tracking-tight uppercase tracking-widest tabular-nums px-2">
               <span className="text-accent">{safePage}</span> / {totalPages}
             </span>
-            <button className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage >= totalPages}
+            <button className="w-12 h-12 rounded-2xl bg-surface-2 border border-border-glass-subtle flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 disabled:opacity-20 transition-all active:scale-90 shadow-lg" disabled={safePage >= totalPages}
               onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); setExpandedId(null); }}>
               <ChevronRight size={24} />
             </button>
@@ -574,14 +574,14 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
   const motoImg = imageFromCategory(item.motorcycle?.category);
 
   return (
-    <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5 relative min-h-[220px]">
+    <div className="flex flex-col lg:flex-row bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden group hover:border-accent/30 transition-all shadow-2xl hover:shadow-accent/5 relative min-h-[220px]">
       <div className="absolute inset-0 bg-radial-gradient from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       <div className="flex-1 p-10 flex flex-col justify-center gap-8 relative overflow-hidden z-10">
         <img src={motoImg} alt="moto" className="absolute inset-0 w-full h-full object-cover opacity-100 drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-[1.05] pointer-events-none z-0" />
         <div className="relative z-10 flex flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <h3 className="text-2xl font-black text-white tracking-tight m-0">{item.motorcycle?.name}</h3>
+            <h3 className="text-2xl font-black text-text tracking-tight m-0">{item.motorcycle?.name}</h3>
             <div className="flex flex-wrap gap-2.5">
               <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border ${badge.className}`}>
                 {badge.icon} {badge.label}
@@ -593,10 +593,10 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-8 items-center">
-            <div className="flex items-center gap-2.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
+            <div className="flex items-center gap-2.5 text-xs font-bold text-text-2 hover:text-text transition-colors">
               <Calendar size={16} className="text-accent" /> {formatDate(item.startedAt)}
             </div>
-            <div className="flex items-center gap-2.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
+            <div className="flex items-center gap-2.5 text-xs font-bold text-text-2 hover:text-text transition-colors">
               <Clock size={16} className="text-accent" /> {formatDuration(item.startedAt, item.endedAt ?? undefined)}
             </div>
             <div className={`flex items-center gap-2.5 text-xs font-black uppercase tracking-widest ${item.eventCounts?.total > 0 ? 'text-red' : 'text-green'}`}>
@@ -612,25 +612,25 @@ function TripFeedCard({ item }: { item: TripFeedItem }) {
           )}
         </div>
       </div>
-      <div className="lg:w-80 p-10 lg:border-l border-border-glass bg-white/5 flex flex-col justify-center items-center gap-10 shrink-0 relative">
+      <div className="lg:w-80 p-10 lg:border-l border-border-glass bg-surface-2 flex flex-col justify-center items-center gap-10 shrink-0 relative">
         <div className="flex gap-8">
           <div className={`flex flex-col items-center gap-2 group/score ${safety.className}`}>
             <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-surface shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.safetyScore}</div>
-            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-white/60">Safety</span>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted">Safety</span>
           </div>
           <div className={`flex flex-col items-center gap-2 group/score ${perf.className}`}>
             <div className="w-16 h-16 rounded-full border-2 border-current flex items-center justify-center text-xl font-black bg-surface shadow-inner group-hover/score:scale-110 transition-transform tabular-nums">{item.performanceScore}</div>
-            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-white/60">Perf</span>
+            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] text-muted">Perf</span>
           </div>
         </div>
         <div className="flex gap-10 justify-center w-full">
           <div className="flex flex-col items-center group/stat">
-            <span className="text-2xl font-black text-white tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
-            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM</span>
+            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.distanceKm?.toFixed(1)}</span>
+            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest">KM</span>
           </div>
           <div className="flex flex-col items-center group/stat">
-            <span className="text-2xl font-black text-white tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
-            <span className="text-[0.6rem] font-black text-white/50 uppercase tracking-widest">KM/H</span>
+            <span className="text-2xl font-black text-text tracking-tighter group-hover/stat:text-accent transition-colors tabular-nums">{item.avgSpeedKmh?.toFixed(0)}</span>
+            <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest">KM/H</span>
           </div>
         </div>
         <Link to={`/trips/${item.id}`} className="w-full">

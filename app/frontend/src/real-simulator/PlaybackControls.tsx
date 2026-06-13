@@ -147,7 +147,7 @@ export function PlaybackControls({
 
       {/* Speed selector */}
       <div className="flex flex-col gap-2 min-w-[100px]">
-        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted opacity-60">Velocidade</label>
+        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted">Velocidade</label>
         <div className="relative">
           <select
             className="w-full bg-panel border border-border-glass-subtle rounded-xl px-3 py-2 text-xs font-black text-text uppercase tracking-widest outline-none cursor-pointer hover:bg-panel-hover transition-colors appearance-none"
@@ -166,7 +166,7 @@ export function PlaybackControls({
 
       {/* Motorcycle / Profile Selector */}
       <div className="flex flex-col gap-2 min-w-[200px]">
-        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted opacity-60 flex items-center gap-1.5">
+        <label className="text-[0.6rem] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
           <Bike size={14} /> {profiles.length > 0 ? "[V2] Perfil da Mota" : "Mota da Garagem"}
         </label>
         {profiles.length > 0 ? (
@@ -211,7 +211,7 @@ export function PlaybackControls({
 
       {/* Emitted counter */}
       <div className="bg-panel border border-border-glass-subtle rounded-2xl px-5 py-3 flex flex-col gap-0.5 shadow-inner">
-        <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Payloads</span>
+        <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest">Payloads</span>
         <strong className="text-sm font-black text-accent tabular-nums tracking-tighter">{emittedCount.toLocaleString()}</strong>
       </div>
     </div>

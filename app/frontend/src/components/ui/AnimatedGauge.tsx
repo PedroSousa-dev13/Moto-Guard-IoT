@@ -146,13 +146,13 @@ const AnimatedGauge: React.FC<AnimatedGaugeProps> = ({
             {value.toFixed(decimals)}
           </span>
         </div>
-        <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest mt-1.5 opacity-50 group-hover:opacity-80 transition-opacity">
+        <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest mt-1.5 group-hover:opacity-80 transition-opacity">
           {unit}
         </span>
       </div>
       
       {/* Bottom label */}
-      <div className="absolute -bottom-1 text-[0.55rem] font-black text-muted uppercase tracking-[0.2em] opacity-45 group-hover:opacity-100 group-hover:text-text transition-all">
+      <div className="absolute -bottom-1 text-[0.55rem] font-black text-muted uppercase tracking-[0.2em] group-hover:opacity-100 group-hover:text-text transition-all">
         {label}
       </div>
     </div>

@@ -123,7 +123,7 @@ export default function GpxDropzone({ onParsed, selectedProfile }: GpxDropzonePr
           </div>
           <div className="flex flex-col items-center gap-1">
             <span className="text-sm font-black text-red uppercase tracking-widest text-center">{error}</span>
-            <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest">Clica ou arrasta para tentar outro ficheiro</span>
+            <span className="text-[0.65rem] font-medium text-muted uppercase tracking-widest">Clica ou arrasta para tentar outro ficheiro</span>
           </div>
         </div>
       ) : stats ? (
@@ -134,7 +134,7 @@ export default function GpxDropzone({ onParsed, selectedProfile }: GpxDropzonePr
           
           <div className="flex flex-col items-center gap-1">
             <span className="text-lg font-black text-green tracking-tight text-center">{stats.trackName}</span>
-            <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest">{fileName}</span>
+            <span className="text-[0.65rem] font-medium text-muted uppercase tracking-widest">{fileName}</span>
           </div>
 
           {/* Stats grid */}
@@ -150,22 +150,22 @@ export default function GpxDropzone({ onParsed, selectedProfile }: GpxDropzonePr
               { label: "Descida", value: `-${stats.elevationLoss} m` },
             ].map((s) => (
               <div key={s.label} className="bg-surface/50 border border-border-glass-subtle rounded-xl p-3 flex flex-col gap-0.5 shadow-inner">
-                <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest opacity-40">{s.label}</span>
+                <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest">{s.label}</span>
                 <span className="text-xs font-black text-text tabular-nums">{s.value}</span>
               </div>
             ))}
           </div>
 
-          <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest opacity-40">Clica ou arrasta para carregar outro ficheiro</span>
+          <span className="text-[0.6rem] font-black text-muted uppercase tracking-widest">Clica ou arrasta para carregar outro ficheiro</span>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-4 group-hover:scale-105 transition-transform">
-          <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-muted group-hover:text-accent group-hover:bg-accent/10 transition-all">
+          <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center text-muted group-hover:text-accent group-hover:bg-accent/10 transition-all">
             <MapIcon size={32} />
           </div>
           <div className="flex flex-col items-center gap-1">
             <span className="text-sm font-black text-text uppercase tracking-widest">Importar Rota GPX</span>
-            <span className="text-[0.65rem] font-medium text-muted opacity-40 uppercase tracking-widest text-center">
+            <span className="text-[0.65rem] font-medium text-muted uppercase tracking-widest text-center">
               Suporta rotas do Wikiloc, Strava, Komoot e outros.<br/>Arrasta um ficheiro ou clica para selecionar.
             </span>
           </div>

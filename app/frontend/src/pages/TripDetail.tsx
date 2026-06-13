@@ -62,15 +62,16 @@ function formatDateTime(date: string) {
 }
 
 function eventColor(severity: TripEvent["severity"] | "INFO") {
+  const isLight = document.documentElement.getAttribute('data-theme') !== 'dark';
   switch (severity) {
     case "CRITICAL":
-      return "#ef4444";
+      return isLight ? "#dc2626" : "#ef4444";
     case "WARNING":
-      return "#f59e0b";
+      return isLight ? "#d97706" : "#f59e0b";
     case "INFO":
-      return "#3b82f6";
+      return isLight ? "#2563eb" : "#3b82f6";
     default:
-      return "#64748b";
+      return isLight ? "#475569" : "#64748b";
   }
 }
 
@@ -489,14 +490,14 @@ export default function TripDetail() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
-            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-white/10 transition-all disabled:opacity-30 shadow-lg"
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-surface-2 border border-border-glass-subtle text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-panel-hover transition-all disabled:opacity-30 shadow-lg"
             onClick={exportGpx}
             disabled={exportingGpx}
           >
             <Navigation size={16} className="text-accent" /> {exportingGpx ? "A exportar..." : "GPX"}
           </button>
           <button
-            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-white/10 transition-all disabled:opacity-30 shadow-lg"
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-surface-2 border border-border-glass-subtle text-[0.65rem] font-black uppercase tracking-widest text-text hover:bg-panel-hover transition-all disabled:opacity-30 shadow-lg"
             onClick={exportCsv}
             disabled={exportingCsv || !telemetryRes?.data?.length}
           >
@@ -514,13 +515,13 @@ export default function TripDetail() {
 
       <div ref={reportRef} className="flex flex-col gap-10">
         {/* HERO SECTION */}
-        <div className="relative bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group min-h-[260px]">
+        <div className="relative bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden shadow-2xl group min-h-[260px]">
           <img src={imageFromCategory((trip.motorcycle as any)?.category)} alt="moto" className="moto-card-bg" />
           <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/80 to-surface/0 pointer-events-none" />
           <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-accent/10 blur-[120px] pointer-events-none group-hover:bg-accent/20 transition-colors" />
           
           <div className="flex-1 relative z-10 flex flex-col gap-5 text-center md:text-left justify-center">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter m-0 leading-tight flex flex-wrap items-center gap-4">
+            <h2 className="text-4xl md:text-5xl font-black text-text tracking-tighter m-0 leading-tight flex flex-wrap items-center gap-4">
               {trip.motorcycle?.name ?? "Viagem Sem Nome"}
               {summary.hasStunts && (
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-orange/10 border border-orange/20 text-orange font-black text-[0.6rem] uppercase tracking-widest animate-pulse shadow-[0_0_20px_rgba(249,115,22,0.15)]">
@@ -533,10 +534,10 @@ export default function TripDetail() {
               <div className="flex items-center gap-2.5 text-sm font-bold text-muted">
                 <Calendar size={20} className="text-accent/60" /> {formatDateTime(trip.startedAt)}
               </div>
-              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-80">
+              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em]">
                 <Zap size={20} className="text-accent/60" /> {trip.source}
               </div>
-              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-80">
+              <div className="flex items-center gap-2.5 text-[0.65rem] font-black text-muted uppercase tracking-[0.2em]">
                 <Activity size={20} className="text-accent/60" /> {trip.status}
               </div>
             </div>
@@ -545,7 +546,7 @@ export default function TripDetail() {
           <div className="flex gap-6 relative z-10 items-center">
             {trip.safetyScore != null && (
               <div className="bg-surface border border-border-glass p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
-                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Safety Score</span>
+                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">Safety Score</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.safetyScore >= 80 ? 'INFO' : (trip.safetyScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.safetyScore}
                 </span>
@@ -554,7 +555,7 @@ export default function TripDetail() {
             )}
             {trip.performanceScore != null && (
               <div className="bg-surface border border-border-glass p-8 rounded-[2rem] flex flex-col items-center justify-center gap-3 min-w-[170px] shadow-inner group/score hover:border-accent/40 transition-all">
-                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted opacity-60">Performance</span>
+                <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">Performance</span>
                 <span className={`text-6xl font-black tracking-tighter tabular-nums transition-transform group-hover/score:scale-110 drop-shadow-2xl`} style={{ color: eventColor(trip.performanceScore >= 80 ? 'INFO' : (trip.performanceScore >= 50 ? 'WARNING' : 'CRITICAL')) }}>
                   {trip.performanceScore}
                 </span>
@@ -566,15 +567,15 @@ export default function TripDetail() {
 
         {/* MAIN GRID: MAP + SIDE STATS */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
-          <div className="bg-surface/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
-            <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="bg-surface/40 backdrop-blur-xl border border-border-glass rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-8 border-b border-border-glass-subtle flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent shadow-lg">
                   <MapPin size={24} />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xl font-black text-text tracking-tight uppercase tracking-widest">Mapa de Rota</span>
-                  <span className="text-[0.65rem] font-black text-muted uppercase tracking-[0.2em] opacity-60">{routePoints.length} coordenadas registadas</span>
+                  <span className="text-[0.65rem] font-black text-muted uppercase tracking-[0.2em]">{routePoints.length} coordenadas registadas</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">

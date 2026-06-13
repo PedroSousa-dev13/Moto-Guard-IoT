@@ -191,13 +191,13 @@ export default function SimulatorPlayerBar({
               <div className="relative mt-2 w-full">
                 {isLoadingModels ? (
                   <select
-                    className="w-full player-bar-select border rounded-full pl-4 pr-10 py-1.5 text-[0.7rem] font-bold text-muted/40 outline-none cursor-not-allowed appearance-none text-center"
+                    className="w-full player-bar-select border rounded-full pl-4 pr-10 py-1.5 text-[0.7rem] font-bold text-muted outline-none cursor-not-allowed appearance-none text-center"
                     disabled
                   >
                     <option>A CARREGAR...</option>
                   </select>
                 ) : modelOptions.length === 0 ? (
-                  <div className="w-full player-bar-select border rounded-full px-4 py-1.5 text-[0.7rem] font-bold text-muted/30 text-center">
+                  <div className="w-full player-bar-select border rounded-full px-4 py-1.5 text-[0.7rem] font-bold text-muted text-center">
                     SEM MOTAS
                   </div>
                 ) : (
@@ -215,7 +215,7 @@ export default function SimulatorPlayerBar({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown size={12} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted/50 pointer-events-none" />
+                    <ChevronDown size={12} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
                   </>
                 )}
               </div>
@@ -337,19 +337,19 @@ export default function SimulatorPlayerBar({
                 <Terminal size={12} />
                 Consola de Eventos
               </div>
-              <span className="text-[0.55rem] font-black text-muted/40 uppercase tracking-widest">
+              <span className="text-[0.55rem] font-black text-muted uppercase tracking-widest">
                 {logs.length} entries
               </span>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar py-2 flex flex-col gap-1.5">
               {logs.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted/30">
+                <div className="h-full flex items-center justify-center text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted">
                   A aguardar eventos...
                 </div>
               ) : (
                 logs.map((entry, i) => (
                   <div key={i} className="text-[0.65rem] font-bold flex gap-2 animate-fade-in">
-                    <span className="text-muted/40 shrink-0 font-black tabular-nums">[{entry.time}]</span>
+                    <span className="text-muted shrink-0 font-black tabular-nums">[{entry.time}]</span>
                     <span className="break-words" style={{ color: entry.color }}>{entry.message}</span>
                   </div>
                 ))

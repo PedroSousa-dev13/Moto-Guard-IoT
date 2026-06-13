@@ -222,11 +222,11 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.mqtt ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle opacity-50"}`}>
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.mqtt ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle"}`}>
             <span className={`w-1.5 h-1.5 rounded-full bg-current ${status.mqtt ? 'animate-pulse' : ''}`} />
             MQTT
           </div>
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.ws ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle opacity-50"}`}>
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[0.7rem] font-black uppercase tracking-widest border transition-all ${status.ws ? "bg-green/10 text-green border-green/20" : "bg-panel text-muted border-border-glass-subtle"}`}>
             <span className={`w-1.5 h-1.5 rounded-full bg-current ${status.ws ? 'animate-pulse' : ''}`} />
             WS
           </div>
@@ -264,27 +264,27 @@ export default function Dashboard() {
             </Link>
           </div>
           
-          <div className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl flex-1 h-[120px] min-h-[120px] relative">
+          <div className="rounded-2xl overflow-hidden border border-border-glass-subtle shadow-2xl flex-1 h-[120px] min-h-[120px] relative">
             <LastTripMiniMap trip={lastTrip} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+            <div className="flex items-center gap-3 bg-surface-2 p-3 rounded-2xl border border-border-glass-subtle group/stat hover:bg-white/10 transition-colors">
               <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
                 <Clock size={16} />
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-text tabular-nums leading-none">{lastTrip ? fmtTime(lastTrip.startedAt) : "--:--"}</span>
-                <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest opacity-40 leading-none mt-1">Início</span>
+                <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest leading-none mt-1">Início</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 group/stat hover:bg-white/10 transition-colors">
+            <div className="flex items-center gap-3 bg-surface-2 p-3 rounded-2xl border border-border-glass-subtle group/stat hover:bg-white/10 transition-colors">
               <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
                 <Route size={16} />
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-text tabular-nums leading-none">{lastTrip ? `${(lastTrip.distanceKm || 0).toFixed(1)}` : "0.0"} <span className="text-[0.6rem] opacity-40">km</span></span>
-                <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest opacity-40 leading-none mt-1">Distância</span>
+                <span className="text-[0.5rem] font-black text-muted uppercase tracking-widest leading-none mt-1">Distância</span>
               </div>
             </div>
           </div>
@@ -483,7 +483,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col gap-1 max-w-[280px] px-1 mx-auto">
             <h3 className="text-lg font-black text-text m-0 tracking-tight">{hasData ? "Telemetria Ativa" : "Sistema em Standby"}</h3>
-            <p className="text-xs text-muted font-medium leading-relaxed m-0 opacity-60">
+            <p className="text-xs text-muted font-medium leading-relaxed m-0">
               {hasData 
                 ? "Recebendo fluxo constante de dados do motor e sensores periféricos." 
                 : "Aguardando conexão com o dispositivo ou simulador para processar dados."}

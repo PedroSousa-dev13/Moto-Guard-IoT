@@ -238,6 +238,14 @@ export default function MapCard({ location, telemetry, imu, msgCount, resetSigna
     setRouteEnd(null);
   }, [resetSignal]);
 
+  // Ao definir nova rota (routeSignal incrementado), limpa o trail azul
+  // para não misturar o percurso da viagem anterior com a nova.
+  useEffect(() => {
+    if (!trailRef.current) return;
+    trailPointsRef.current = [];
+    trailRef.current.setLatLngs([]);
+  }, [routeSignal]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
