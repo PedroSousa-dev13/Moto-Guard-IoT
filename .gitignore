@@ -436,6 +436,9 @@ app/models/VR-Mobil.glb
 *.glb
 *.fbx
 
+# ─── MotoGuard: exposed key file ───────────────────────────────────────────
+Novo Documento de Texto.txt
+
 # ─── MotoGuard: planning files ─────────────────────────────────────────────
 a_fazer.txt
 a_fazer.md

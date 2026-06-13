@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { io, Socket } from "socket.io-client";
 import type { ParsedRow, ParseResult } from "../real-simulator/csvParser";
+import { parseGPX } from "../gpx-simulator/gpxParser";
 import type { GpxStats } from "../gpx-simulator/gpxParser";
 import GpxDropzone from "../gpx-simulator/GpxDropzone";
 import RouteMap from "../real-simulator/RouteMap";
@@ -70,6 +71,7 @@ export default function GpxSimulator() {
   const socketRef = useRef<Socket | null>(null);
   const simulationStartTimeRef = useRef<Date>(new Date());
   const gpxPersistedRef = useRef(false);
+  const gpxRawTextRef = useRef<string | null>(null);
 
   // Dummy video ref (useSyncEngine requires it but we pass null)
   const videoRef = useRef<HTMLVideoElement>(null) as RefObject<HTMLVideoElement>;
@@ -214,8 +216,6 @@ export default function GpxSimulator() {
         );
         emitTelemetry(socket, payload);
 
-        // Forçar fecho no backend
-        socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
         void persistGpxData();
       }
       
@@ -257,8 +257,6 @@ export default function GpxSimulator() {
       );
       emitTelemetry(socket, payload);
 
-      // Notificar backend para fechar a viagem imediatamente
-      socket.emit("send_command", { acao: "parar", device_id: simSession.deviceId, source: "GPX_IMPORTED" });
       void persistGpxData();
     }
 
@@ -304,7 +302,8 @@ export default function GpxSimulator() {
   );
 
   // GPX parsed
-  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number }) => {
+  const handleGpxParsed = useCallback((result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number; rawText: string }) => {
+    gpxRawTextRef.current = meta.rawText;
     setGpxStats(stats);
     setGpxFileName(meta.fileName);
     setGpxFileSize(meta.fileSize);
@@ -328,6 +327,24 @@ export default function GpxSimulator() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-parse GPX when profile changes (only when idle)
+  useEffect(() => {
+    if (!selectedProfile || !gpxRawTextRef.current) return;
+    if (simSession.playbackState !== "idle") return;
+    const result = parseGPX(gpxRawTextRef.current, { motorcycleProfile: selectedProfile.name });
+    if ("type" in result) return;
+    const { gpxStats: newStats, ...parseResult } = result;
+    setGpxStats(newStats);
+    setTotalDurationSec(parseResult.durationSec);
+    setCurrentTimeSec(0);
+    setSession((prev) => ({
+      ...prev,
+      rows: parseResult.rows,
+      currentRowIndex: 0,
+      emittedCount: 0,
+    }));
+  }, [selectedProfile?.name, simSession.playbackState]);
 
   // Derived state
   const hasRows = simSession.rows.length > 0;

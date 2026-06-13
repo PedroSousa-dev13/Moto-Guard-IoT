@@ -117,7 +117,7 @@ export function PlaybackControls({
         <button
           className="w-12 h-12 flex items-center justify-center rounded-2xl bg-panel border border-border-glass-subtle text-muted hover:text-red hover:bg-red/10 transition-all shadow-inner active:scale-95 disabled:opacity-30"
           onClick={onStop}
-          disabled={disabled || playbackState === 'idle'}
+          disabled={disabled || playbackState === 'idle' || playbackState === 'stopped'}
           aria-label="Stop"
         >
           <Square size={20} fill="currentColor" />

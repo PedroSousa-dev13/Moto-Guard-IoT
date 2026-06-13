@@ -138,14 +138,24 @@ export default function Dashboard() {
   useEffect(() => {
     if (hasData && tel) {
       setHistory(prev => {
-        const next = [...prev, { 
-          time: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        const timeStr = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const newPoint = { 
+          time: timeStr,
           speed: tel.speed_kmh,
           rpm: tel.rpm / 100,
           temp: tel.engine_temp_c,
           batt: tel.voltage
-        }].slice(-300);
-        return next;
+        };
+        
+        // If history is empty, initialize it with 30 flat points of the current state
+        if (prev.length === 0) {
+          return Array.from({ length: 30 }, (_, i) => ({
+            ...newPoint,
+            time: new Date(Date.now() - (30 - i) * 1000).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          }));
+        }
+
+        return [...prev, newPoint].slice(-150); // limit to 150 points for better performance
       });
     } else if (!status.ws && !status.mqtt) {
       // Clear history if disconnected
@@ -324,23 +334,40 @@ export default function Dashboard() {
           <StatCard 
             icon={<Thermometer size={20} />} 
             label="Temperatura" 
-            value={fmt(tel?.engine_temp_c ?? 85)} 
-            unit="°C" 
             color="var(--yellow)" 
-            sparkData={tempSpark}
-            footer="Normal"
+            footer={tel?.engine_temp_c ? `Máxima: ${fmt(Math.max(...history.map(h => h.temp).filter(Boolean).concat(tel.engine_temp_c)))} °C` : "Normal"}
             loading={!hasData}
-          />
+          >
+            <AnimatedGauge 
+              value={tel?.engine_temp_c ?? 85} 
+              max={120} 
+              label="°C" 
+              unit="Motor" 
+              color="var(--yellow)" 
+              size={100}
+              strokeWidth={8}
+            />
+          </StatCard>
+
           <StatCard 
             icon={<Battery size={20} />} 
             label="Bateria" 
-            value={fmt(tel?.voltage ?? 12.5)} 
-            unit="V" 
             color="var(--red)" 
-            sparkData={battSpark}
-            footer="Saudável"
+            footer={tel?.voltage ? `Tensão Mínima: ${fmt(Math.min(...history.map(h => h.batt).filter(Boolean).concat(tel.voltage)), 1)} V` : "Saudável"}
             loading={!hasData}
-          />
+          >
+            <AnimatedGauge 
+              value={tel?.voltage ?? 12.5} 
+              min={10}
+              max={16} 
+              label="Volts" 
+              unit="Bateria" 
+              color="var(--red)" 
+              size={100}
+              strokeWidth={8}
+              decimals={1}
+            />
+          </StatCard>
         </div>
 
         {/* ALERTAS RECENTES */}

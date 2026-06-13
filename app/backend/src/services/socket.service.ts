@@ -80,6 +80,7 @@ export class SocketService {
   private tripStatsByDevice = new Map<string, TripStats>();
   private heuristicStateByDevice = new Map<string, HeuristicState>();
   private profileThresholdsCacheByDevice = new Map<string, { expiresAt: number; thresholds: MotorcycleProfileThresholds }>();
+  private creatingTripByDevice = new Set<string>();
 
   // Thresholds configuráveis via env.ts
 
@@ -494,6 +495,8 @@ export class SocketService {
       console.log(`[SocketService] TRIP_ENDED recebido para ${deviceId} sem viagem ativa — suprimido`);
       this.lastTripEndedAtByDevice.set(deviceId, Date.now());
       this.recentStopByDevice.set(deviceId, Date.now());
+      telemetryStore.clearLatestIfDevice(deviceId);
+      this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
       return;
     }
 
@@ -545,6 +548,13 @@ export class SocketService {
       console.log(`[SocketService] Viagem já ativa para ${deviceId}: ${existingTripId} — ignorando novo início`);
       return;
     }
+
+    // Race guard: evitar que duas chamadas concorrentes criem viagens duplicadas
+    if (this.creatingTripByDevice.has(deviceId)) {
+      console.log(`[SocketService] Criação de viagem já em curso para ${deviceId} — ignorando`);
+      return;
+    }
+    this.creatingTripByDevice.add(deviceId);
 
     try {
       // Priorizar o último utilizador que interagiu com este dispositivo (essencial para o simulador partilhado)
@@ -662,6 +672,8 @@ export class SocketService {
       console.log(`Viagem iniciada: ${trip.id} (device: ${deviceId}, user: ${association.userId})`);
     } catch (error) {
       console.error("Erro ao criar viagem:", error);
+    } finally {
+      this.creatingTripByDevice.delete(deviceId);
     }
   }
 
@@ -736,6 +748,8 @@ export class SocketService {
       endedAt: new Date(timestamp),
       doClustering: true,
     });
+    telemetryStore.clearLatestIfDevice(deviceId);
+    this.io?.emit("status", telemetryStore.getStatus(mqttService.connected));
   }
 
   private async forceEndTripsOnStopCommand(deviceId: string | null): Promise<void> {
@@ -787,6 +801,7 @@ export class SocketService {
       doClustering: false,
       stoppedAt: endedAt,
     });
+    telemetryStore.clearLatestIfDevice(deviceId);
   }
 
   private async finalizeTrip(params: {
@@ -1022,6 +1037,12 @@ export class SocketService {
     }
 
     if (!tripId) return;
+
+    // Ignorar eventos não reconhecidos (evita persistir TRIP_ENDED como evento)
+    if (eventType === "UNKNOWN_EVENT") {
+      console.log(`[SocketService] Evento "${status}" mapeado como UNKNOWN_EVENT — skip persist`);
+      return;
+    }
 
     console.log(`[SocketService] Persistindo evento "${status}" (${eventType}) para viagem ${tripId}`);
 

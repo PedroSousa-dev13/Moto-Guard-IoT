@@ -11,7 +11,7 @@ import type { ParseResult } from "../real-simulator/csvParser";
 import { Bike, RefreshCcw, AlertTriangle, CheckCircle2, Map as MapIcon } from "lucide-react";
 
 interface GpxDropzoneProps {
-  onParsed: (result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number }) => void;
+  onParsed: (result: ParseResult, stats: GpxStats, meta: { fileName: string; fileSize: number; rawText: string }) => void;
   selectedProfile: string;
 }
 
@@ -48,7 +48,7 @@ export default function GpxDropzone({ onParsed, selectedProfile }: GpxDropzonePr
 
         const { gpxStats, ...parseResult } = result;
         setStats(gpxStats);
-        onParsed(parseResult, gpxStats, { fileName: file.name, fileSize: file.size });
+        onParsed(parseResult, gpxStats, { fileName: file.name, fileSize: file.size, rawText: text });
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Erro ao processar GPX.");
       } finally {

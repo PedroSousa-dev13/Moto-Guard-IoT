@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
 import { motorcyclesAPI } from "../services/api";
 import { CATEGORY_DEVICE_MAP } from "../utils/categoryDeviceMap";
-import type { Motorcycle } from "../types";
+import type { Motorcycle, TelemetryPayload } from "../types";
 import GaugeCard from "../components/GaugeCard";
 import TempVoltCard from "../components/TempVoltCard";
 import IMUCard from "../components/IMUCard";
@@ -13,6 +13,18 @@ import SimulatorPlayerBar from "../components/SimulatorPlayerBar";
 import MotorcycleDigitalTwin from "../components/product/MotorcycleDigitalTwin";
 import Toast from "../components/ui/Toast";
 import { Activity, Wifi, Database, Clock, Settings2 } from 'lucide-react';
+
+const STALE_MS = 10000;
+
+function isTelemetryStale(t: TelemetryPayload | null): boolean {
+  if (!t) return false;
+  if (t.system?.event_status === "TRIP_ENDED") return true;
+  if (t.system?.timestamp) {
+    const age = Date.now() - new Date(t.system.timestamp).getTime();
+    if (age > STALE_MS) return true;
+  }
+  return false;
+}
 
 const DEFAULT_ROUTE = {
   start: { latitude: 41.2951, longitude: -7.7463 },
@@ -24,9 +36,23 @@ const ADMIN_EMAIL = 'admin@admin.com';
 
 export default function SimulatorContexts() {
   const { user } = useAuth();
-  const { telemetry, msgCount, logs, status, sendCommand, sendStopCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView, getLastKnownDeviceId } = useSocket();
-  const lastUpdate = telemetry?.system?.timestamp
-    ? new Date(telemetry.system.timestamp).toLocaleTimeString("pt-PT")
+  const { telemetry: rawTelemetry, msgCount, logs, status, sendCommand, sendStopCommand, addLog, devices, activeDeviceId, setActiveDeviceId, tripEndedSignal, resetSimulationView } = useSocket();
+
+  // Só mostramos telemetria se o utilizador já interagiu (selecionou device
+  // no dropdown, enviou comando, etc.) OU se é a primeira vez que carrega
+  // a página (nova sessão). Isto evita que dados do simulador MQTT de fundo
+  // apareçam ao voltar de outra página.
+  const [userInitiated, setUserInitiated] = useState(() => sessionStorage.getItem('sc:initiated') !== 'true');
+
+  const telemetry = useMemo(() => {
+    if (!rawTelemetry) return null;
+    if (isTelemetryStale(rawTelemetry)) return null;
+    if (!userInitiated) return null;
+    return rawTelemetry;
+  }, [rawTelemetry, userInitiated]);
+
+  const lastUpdate = rawTelemetry?.system?.timestamp
+    ? new Date(rawTelemetry.system.timestamp).toLocaleTimeString("pt-PT")
     : null;
   const [mapResetSignal, setMapResetSignal] = useState(0);
   const [mapRouteSignal, setMapRouteSignal] = useState(0);
@@ -36,6 +62,7 @@ export default function SimulatorContexts() {
 
   // Wrapper que deteta quando uma rota é enviada e incrementa o sinal
   function sendCommandAndSignal(cmd: any) {
+    setUserInitiated(true);
     // Determinar o device_id a usar (usar pendingDeviceIdRef se disponível)
     let targetDeviceId = pendingDeviceIdRef.current || activeDeviceId;
     let newDeviceId: string | null = null;
@@ -159,31 +186,12 @@ export default function SimulatorContexts() {
     resetSimulationView(false);
   }, [tripEndedSignal, resetSimulationView]);
 
-  // Cleanup: ao sair da página do simulador, parar o motor Python
+  // Cleanup: ao sair da página apenas limpa a vista local, NÃO termina a viagem
+  // e marca a sessão para não reaparecer telemetria fantasma ao voltar.
   useEffect(() => {
     return () => {
-      const deviceId = getLastKnownDeviceId();
-      if (!deviceId) return;
-
-      console.log('[SimulatorContexts] Unmounting — parando simulador', deviceId);
-
-      // 1. Via WebSocket (rápido, funciona na maioria dos casos)
-      sendStopCommand();
-
-      // 2. Via HTTP fetch com keepalive (fallback fiável mesmo durante
-      //    navegação entre páginas — o browser garante que o pedido
-      //    completo mesmo que o componente seja desmontado).
-      try {
-        fetch("/api/command", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ acao: "parar", device_id: deviceId, source: "SIMULATOR" }),
-          keepalive: true,
-        }).catch(() => {});
-      } catch {
-        // Ignorar erros — o WebSocket já tratou do caso normal
-      }
+      sessionStorage.setItem('sc:initiated', 'true');
+      resetSimulationView(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -215,7 +223,10 @@ export default function SimulatorContexts() {
               <select
                 className="bg-transparent border-none text-[0.7rem] font-black text-text uppercase tracking-widest focus:outline-none cursor-pointer"
                 value={activeDeviceId ?? ""}
-                onChange={(e) => setActiveDeviceId(e.target.value)}
+                onChange={(e) => {
+                  setActiveDeviceId(e.target.value);
+                  setUserInitiated(true);
+                }}
               >
                 {devices.map((d) => (
                   <option key={d} value={d} className="bg-surface">{d}</option>

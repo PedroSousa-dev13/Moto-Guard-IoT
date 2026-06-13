@@ -9,6 +9,7 @@ interface AnimatedGaugeProps {
   color: string;
   size?: number;
   strokeWidth?: number;
+  decimals?: number;
 }
 
 const AnimatedGauge: React.FC<AnimatedGaugeProps> = ({
@@ -19,7 +20,8 @@ const AnimatedGauge: React.FC<AnimatedGaugeProps> = ({
   unit,
   color,
   size = 130,
-  strokeWidth = 10,
+  strokeWidth = 8,
+  decimals = 0,
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -36,64 +38,121 @@ const AnimatedGauge: React.FC<AnimatedGaugeProps> = ({
   const strokeDasharray = `${circumference * arcLength} ${circumference}`;
   const offset = circumference * arcLength * (1 - percentage);
 
+  // Calculate coordinates of the glowing dot at the end of progress arc
+  const localAngle = percentage * 270; // 270 degrees total arc
+  const localRad = (localAngle * Math.PI) / 180;
+  const dotX = size / 2 + radius * Math.cos(localRad);
+  const dotY = size / 2 + radius * Math.sin(localRad);
+
+  const gradId = `gauge-grad-${color.replace(/[()#,\s]+/g, '-')}`;
+
   return (
     <div className="flex flex-col items-center justify-center relative group" style={{ width: size, height: size }}>
-      {/* Glow effect */}
+      {/* Background radial glow */}
       <div 
-        className="absolute inset-4 rounded-full blur-[20px] transition-all duration-700 opacity-20 group-hover:opacity-40"
+        className="absolute inset-4 rounded-full blur-[24px] transition-all duration-700 opacity-10 group-hover:opacity-25"
         style={{ backgroundColor: color }}
       />
       
+      {/* Inner glass panel */}
+      <div className="absolute rounded-full border border-white/[0.03] bg-white/[0.01] backdrop-blur-[1px]" style={{ width: size - 20, height: size - 20 }} />
+
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="transform -rotate-[225deg] drop-shadow-2xl"
+        className="transform -rotate-[225deg] drop-shadow-2xl overflow-visible"
       >
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity={0.6} />
+            <stop offset="100%" stopColor={color} stopOpacity={1} />
+          </linearGradient>
+        </defs>
+
+        {/* Outer subtle boundary line */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius + 4}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.02)"
+          strokeWidth={1}
+          strokeDasharray={strokeDasharray}
+          strokeLinecap="round"
+        />
+
         {/* Background track */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.05)"
+          stroke="rgba(255, 255, 255, 0.04)"
           strokeWidth={strokeWidth}
           strokeDasharray={strokeDasharray}
           strokeLinecap="round"
         />
         
-        {/* Progress arc */}
+        {/* Scale Ticks (Cockpit feel) */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius - 6}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.12)"
+          strokeWidth={2}
+          strokeDasharray="1 5"
+          strokeDashoffset={2}
+          className="transition-opacity opacity-40 group-hover:opacity-70"
+        />
+
+        {/* Dynamic Progress arc */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={color}
+          stroke={`url(#${gradId})`}
           strokeWidth={strokeWidth}
           strokeDasharray={strokeDasharray}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
+          className="transition-all duration-300 ease-out"
           style={{
-            filter: `drop-shadow(0 0 5px ${color})`,
+            filter: `drop-shadow(0 0 6px ${color})`,
           }}
         />
+
+        {/* Glow bead pointer at the end of progress */}
+        {percentage > 0.01 && (
+          <circle
+            cx={dotX}
+            cy={dotY}
+            r={strokeWidth / 2 + 1}
+            fill="#ffffff"
+            style={{
+              filter: `drop-shadow(0 0 4px ${color})`,
+            }}
+            className="transition-all duration-300 ease-out"
+          />
+        )}
       </svg>
       
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center mt-1">
         <div className="flex items-baseline gap-0.5">
           <span className="text-3xl font-black text-text tracking-tighter tabular-nums leading-none">
-            {Math.round(value)}
+            {value.toFixed(decimals)}
           </span>
         </div>
-        <span className="text-[0.6rem] font-bold text-muted uppercase tracking-widest mt-1 opacity-60">
+        <span className="text-[0.65rem] font-black text-muted uppercase tracking-widest mt-1.5 opacity-50 group-hover:opacity-80 transition-opacity">
           {unit}
         </span>
       </div>
       
       {/* Bottom label */}
-      <div className="absolute -bottom-1 text-[0.55rem] font-black text-muted uppercase tracking-[0.2em] opacity-40 group-hover:opacity-100 group-hover:text-text transition-all">
+      <div className="absolute -bottom-1 text-[0.55rem] font-black text-muted uppercase tracking-[0.2em] opacity-45 group-hover:opacity-100 group-hover:text-text transition-all">
         {label}
       </div>
     </div>

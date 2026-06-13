@@ -400,15 +400,32 @@ function Model({ roll, pitch, yaw, speed, rpm, engineTempStatus, modelColor }: M
 
     // Pitch subtil baseado na velocidade (inclina ligeiramente à frente a acelerar)
     const speedPitch = Math.min(speed / 200, 0.05);
+    const pitchRad = THREE.MathUtils.degToRad(smoothPitch.current);
 
     groupRef.current.rotation.set(
-      THREE.MathUtils.degToRad(smoothPitch.current * 0.3) + speedPitch,  // Pitch + inclinação de velocidade
+      pitchRad + speedPitch,                                                 // Pitch real + inclinação de velocidade
       Math.PI,                                                               // Virado para -Z (de costas para a câmara)
       THREE.MathUtils.degToRad(-smoothRoll.current),                      // Lean/roll completo
     );
 
-    // Base position
-    groupRef.current.position.set(0, 0, 0);
+    // Ajuste dinâmico de translação para simular pivô nas rodas (cavalinho / stoppie)
+    let py = 0;
+    let pz = 0;
+    const pivotOffset = 1.15; // Distância aproximada do centro do modelo às rodas
+
+    if (smoothPitch.current > 0) {
+      // Cavalinho (Wheelie): roda traseira no chão como ponto de rotação
+      py = Math.sin(pitchRad) * pivotOffset;
+      pz = -(1.0 - Math.cos(pitchRad)) * pivotOffset;
+    } else if (smoothPitch.current < 0) {
+      // Stoppie (Roda traseira levantada): roda dianteira no chão
+      py = Math.sin(-pitchRad) * pivotOffset;
+      pz = (1.0 - Math.cos(pitchRad)) * pivotOffset;
+    }
+
+    // Base position com deslocamento lateral por lean
+    const leanOffset = Math.sin(THREE.MathUtils.degToRad(smoothRoll.current)) * 0.5;
+    groupRef.current.position.set(leanOffset, py, pz);
 
     // Wheels spin based on speed
     for (const w of wheelsRef.current) w.rotation.x += (speed * delta) / 5;
@@ -418,10 +435,6 @@ function Model({ roll, pitch, yaw, speed, rpm, engineTempStatus, modelColor }: M
       vibPhase.current += delta * 50;
       groupRef.current.position.y += Math.sin(vibPhase.current) * (rpm / 15000) * 0.015;
     }
-
-    // Deslocamento lateral proporcional ao lean (a mota desloca-se para o lado da curva)
-    const leanOffset = Math.sin(THREE.MathUtils.degToRad(smoothRoll.current)) * 0.5;
-    groupRef.current.position.x = leanOffset;
   });
 
   return (

@@ -217,6 +217,12 @@ export function useSocket() {
         telemetryCooldownRef.current = null; // expirou
       }
 
+      // Ignorar telemetria fantasma: TRIP_ENDED ou dados com mais de 10s
+      // (ex: telemetryStore.latest reenviado ao reconetar WebSocket)
+      const isStale = data.system?.event_status === "TRIP_ENDED"
+        || (data.system?.timestamp && (Date.now() - new Date(data.system.timestamp).getTime() > 10000));
+      if (isStale) return;
+
       lastKnownDeviceIdRef.current = deviceId;
       setTelemetryByDevice((prev) => ({ ...prev, [deviceId]: data }));
       setLastDeviceId(deviceId);

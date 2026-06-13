@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 // Em Docker o backend é alcançável como http://backend:3000.
 // Localmente (fora de Docker) usa http://localhost:3000.
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3000";
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:3000";
 
 // https://vite.dev/config/
 export default defineConfig({
