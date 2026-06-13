@@ -125,7 +125,11 @@ export default function MotorcycleDigitalTwin({ data, sendCommand, running, rout
             </div>
           </div>
 
-          <div className="flex-1 relative bg-black/40 rounded-[2.5rem] border border-border-glass-subtle overflow-hidden min-h-[350px]">
+          <div className="flex-1 relative bg-black/60 rounded-[2.5rem] border border-border-glass-subtle overflow-hidden min-h-[350px] group/canvas" style={{ boxShadow: `0 0 60px ${modelColor}10, inset 0 -1px 0 ${modelColor}20` }}>
+            {/* Vignette overlay */}
+            <div className="absolute inset-0 z-10 pointer-events-none" style={{
+              background: 'radial-gradient(ellipse at center, transparent 50%, rgba(6,6,12,0.6) 100%)',
+            }} />
             <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-muted font-bold gap-3"><Loader2 className="animate-spin" /> Carregando 3D...</div>}>
               <Motorcycle3DView
                 roll={imu?.roll_deg ?? 0}
